@@ -337,6 +337,7 @@ dnl
 AC_LANG_CPLUSPLUS
 AC_CHECK_HEADERS(byteorder.h netinet/in.h sys/param.h)
 AC_MSG_CHECKING([whether ntohs and ntohl are defined])
+ac_ntoh_defined=no
 AC_COMPILE_IFELSE(
 	[AC_LANG_PROGRAM([[#if HAVE_SYS_TYPES_H
 # include <sys/types.h>
@@ -349,14 +350,33 @@ AC_COMPILE_IFELSE(
 # include <sys/param.h>
 #endif
 ]], [[(void) ntohs(0x0020), (void) ntohl(0x03040020);]])],
-	[AC_MSG_RESULT(yes)],
-	[AC_MSG_RESULT(no)
+	[AC_MSG_RESULT(yes)
+ac_ntoh_defined=yes],
+	[AC_MSG_RESULT(no)])
+if test $ac_ntoh_defined = no; then
+    AC_CHECK_HEADERS([arpa/inet.h], [have_arpa_inet_h=yes], [have_arpa_inet_h=no])
+    if test $have_arpa_inet_h = yes; then
+	AC_MSG_CHECKING([whether ntohs and ntohl are defined in <arpa/inet.h>])
+	AC_COMPILE_IFELSE(
+		[AC_LANG_PROGRAM([[#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#include <arpa/inet.h>
+]], [[(void) ntohs(0x0020), (void) ntohl(0x03040020);]])],
+		[AC_MSG_RESULT(yes)
+AC_DEFINE(NEED_ARPA_INET_H, 1, [Define to 1 if you must include <arpa/inet.h> to get `ntohl'.])
+ac_ntoh_defined=yes],
+		[AC_MSG_RESULT(no)])
+    fi
+fi
+if test $ac_ntoh_defined = no; then
     AC_MSG_ERROR([
 =========================================
 
 Cannot find a definition for ntohs and/or ntohl!
 
-=========================================])])
+=========================================])
+fi
 AC_LANG_C
 
 
