@@ -71,8 +71,10 @@ class Type1Font : public EfontProgram { public:
     Type1Definition *b_dict(PermString s) const	{ return _dict[dB][s]; }
     Type1Definition *bp_dict(PermString s) const { return _dict[dBP][s];}
     Type1Definition *fi_dict(PermString s) const { return _dict[dFI][s];}
-  
-    bool dict_each(int dict, int &, PermString &, Type1Definition *&) const;
+
+    typedef HashMap<PermString, Type1Definition *> DictHashMap;
+    DictHashMap::const_iterator dict_begin(int dict) const;
+    DictHashMap::iterator dict_begin(int dict);
     int first_dict_item(int d) const		{ return _index[d]; }
 
     Type1Definition *ensure(Dict, PermString);
@@ -131,11 +133,16 @@ class Type1Font : public EfontProgram { public:
 };
 
 
-inline bool
-Type1Font::dict_each(int dict, int &i, PermString &name,
-		     Type1Definition *&def) const
+inline Type1Font::DictHashMap::const_iterator
+Type1Font::dict_begin(int dict) const
 {
-    return _dict[dict].each(i, name, def);
+    return _dict[dict].begin();
+}
+
+inline Type1Font::DictHashMap::iterator
+Type1Font::dict_begin(int dict)
+{
+    return _dict[dict].begin();
 }
 
 inline void

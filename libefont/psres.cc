@@ -300,24 +300,21 @@ PsresDatabase::add_database(PsresDatabase *db, bool override)
 void
 PsresDatabaseSection::add_section(PsresDatabaseSection *s, bool override)
 {
-  int eacher = 0;
-  PermString key;
-  int index;
-  while (s->_map.each(eacher, key, index)) {
-    if (_map[key] > 0) {
-      if (!override) continue;
-      int my_index = _map[key];
-      _directories[my_index] = s->_directories[index];
-      _values[my_index] = s->_values[index];
-      _value_escaped[my_index] = s->_value_escaped[index];
-    } else {
-      int my_index = _directories.size();
-      _directories.push_back(s->_directories[index]);
-      _values.push_back(s->_values[index]);
-      _value_escaped.push_back(s->_value_escaped[index]);
-      _map.insert(key, my_index);
+    for (HashMap<PermString, int>::iterator i = s->_map.begin(); i; i++) {
+	int value = i.value();
+	if (_map[i.key()] <= 0) {
+	    int my_index = _directories.size();
+	    _directories.push_back(s->_directories[value]);
+	    _values.push_back(s->_values[value]);
+	    _value_escaped.push_back(s->_value_escaped[value]);
+	    _map.insert(i.key(), my_index);
+	} else if (override) {
+	    int my_index = _map[i.key()];
+	    _directories[my_index] = s->_directories[value];
+	    _values[my_index] = s->_values[value];
+	    _value_escaped[my_index] = s->_value_escaped[value];
+	}
     }
-  }
 }
 
 

@@ -41,12 +41,14 @@ AfmParser::trim_end()
 void
 AfmParser::static_initialize()
 {
-    if (name_enders['(']) return;
-    name_enders[' '] = name_enders['\t'] = name_enders['\r'] = true;
-    name_enders['\f'] = name_enders['\v'] = name_enders['\n'] = true;
-    name_enders['\0'] = name_enders['['] = name_enders[']'] = true;
-    name_enders['/'] = name_enders['('] = name_enders[')'] = true;
-    name_enders[';'] = true;
+    if (name_enders[(int)'('])
+	return;
+    name_enders[(int)' '] = name_enders[(int)'\t'] = name_enders[(int)'\r']
+	= name_enders[(int)'\f'] = name_enders[(int)'\v']
+	= name_enders[(int)'\n'] = name_enders[(int)'\0']
+	= name_enders[(int)'['] = name_enders[(int)']']	= name_enders[(int)'/']
+	= name_enders[(int)'('] = name_enders[(int)')']	= name_enders[(int)';']
+	= true;
   
     for (int c = '0'; c <= '9'; c++)
 	xvalue[c] = c - '0';
