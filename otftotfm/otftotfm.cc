@@ -82,10 +82,11 @@ using namespace Efont;
 #define ALTSELECTOR_CHAR_OPT	324
 #define INCLUDE_ALTERNATES_OPT	325
 #define EXCLUDE_ALTERNATES_OPT	326
-#define ALTSELECTOR_FEATURE_OPT	327
-#define DEFAULT_LIGKERN_OPT	328
-#define NO_ECOMMAND_OPT		329
-#define LETTER_FEATURE_OPT	330
+#define CLEAR_ALTERNATES_OPT	327
+#define ALTSELECTOR_FEATURE_OPT	328
+#define DEFAULT_LIGKERN_OPT	329
+#define NO_ECOMMAND_OPT		330
+#define LETTER_FEATURE_OPT	331
 
 #define AUTOMATIC_OPT		341
 #define FONT_NAME_OPT		342
@@ -144,6 +145,7 @@ static Clp_Option options[] = {
     { "design-size", 0, DESIGN_SIZE_OPT, Clp_ArgDouble, 0 },
     { "include-alternates", 0, INCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
     { "exclude-alternates", 0, EXCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
+    { "clear-alternates", 0, CLEAR_ALTERNATES_OPT, 0, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -202,9 +204,8 @@ static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
 static Vector<Efont::OpenType::Tag> altselector_features;
 static GlyphFilter null_filter;
-static HashMap<Efont::OpenType::Tag, GlyphFilter*> feature_filters(&null_filter);
-
-static GlyphFilter alternate_filter;
+static HashMap<Efont::OpenType::Tag, GlyphFilter*> feature_filters(0);
+static HashMap<Efont::OpenType::Tag, GlyphFilter*> altselector_feature_filters(0);
 
 static String font_name;
 static String encoding_file;
@@ -274,8 +275,9 @@ Encoding options:\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
       --altselector-char=CHAR  Set the alternate selector character to CHAR.\n\
       --altselector-feature=F  Activate feature F for --altselector-char.\n\
-      --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
       --include-alternates=PAT Include only alternate characters matching PAT.\n\
+      --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
+      --clear-alternates       Clear included/excluded alternates settings.\n\
 \n");
     printf("\
 Automatic mode options:\n\
@@ -1157,7 +1159,7 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
 	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%5d\t%s\n", i, subs[subno].unparse().c_str());
 
 	    // figure out which glyph filter to use
-	    int nunderstood = metrics.apply(subs, !dvipsenc_literal, i, *lookups[i].filter + alternate_filter, glyph_names);
+	    int nunderstood = metrics.apply(subs, !dvipsenc_literal, i, *lookups[i].filter, glyph_names);
 
 	    // mark as used
 	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;
@@ -1165,15 +1167,18 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
 
-    // apply 'aalt' feature if we have variant selectors
+    // apply alternate selectors
     if (metrics.altselectors() && !dvipsenc_literal) {
 	// apply default features
 	if (!altselector_features.size()) {
 	    altselector_features.push_back(OpenType::Tag("dlig"));
+	    altselector_feature_filters.insert(OpenType::Tag("dlig"), &null_filter);
 	    altselector_features.push_back(OpenType::Tag("salt"));
+	    altselector_feature_filters.insert(OpenType::Tag("salt"), &null_filter);
 	}
 	// do lookups
 	altselector_features.swap(interesting_features);
+	altselector_feature_filters.swap(feature_filters);
 	Vector<Lookup> alt_lookups(gsub.nlookups(), Lookup());
 	find_lookups(gsub.script_list(), gsub.feature_list(), alt_lookups, ErrorHandler::silent_handler());
 	Vector<OpenType::Substitution> alt_subs;
@@ -1182,9 +1187,10 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
 		OpenType::GsubLookup l = gsub.lookup(i);
 		alt_subs.clear();
 		(void) l.unparse_automatics(gsub, alt_subs);
-		metrics.apply_alternates(alt_subs, i, alternate_filter, glyph_names);
+		metrics.apply_alternates(alt_subs, i, *alt_lookups[i].filter, glyph_names);
 	    }
 	altselector_features.swap(interesting_features);
+	altselector_feature_filters.swap(feature_filters);
     }
 }
 
@@ -1420,6 +1426,9 @@ main(int argc, char *argv[])
     Vector<String> unicoding;
     bool no_ecommand = false, default_ligkern = false;
     String codingscheme;
+
+    GlyphFilter current_alternate_filter;
+    GlyphFilter* current_alternate_filter_ptr = &null_filter;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -1446,22 +1455,32 @@ main(int argc, char *argv[])
 
 	  case FEATURE_OPT: {
 	      OpenType::Tag t(clp->arg);
-	      if (t.valid())
-		  interesting_features.push_back(t);
-	      else
+	      if (!t.valid())
 		  usage_error(errh, "bad feature tag");
+	      else if (feature_filters[t])
+		  usage_error(errh, "feature '%s' included twice", t.text().c_str());
+	      else {
+		  if (!current_alternate_filter_ptr)
+		      current_alternate_filter_ptr = new GlyphFilter(current_alternate_filter);
+		  interesting_features.push_back(t);
+		  feature_filters.insert(t, current_alternate_filter_ptr);
+	      }
 	      break;
 	  }
       
 	  case LETTER_FEATURE_OPT: {
 	      OpenType::Tag t(clp->arg);
-	      if (t.valid()) {
+	      if (!t.valid())
+		  usage_error(errh, "bad feature tag");
+	      else if (feature_filters[t])
+		  usage_error(errh, "feature '%s' included twice", t.text().c_str());
+	      else {
 		  interesting_features.push_back(t);
 		  GlyphFilter* gf = new GlyphFilter;
 		  gf->add_substitution_filter("<Letter>", false, errh);
+		  *gf += current_alternate_filter;
 		  feature_filters.insert(t, gf); 
-	      } else
-		  usage_error(errh, "bad feature tag");
+	      }
 	      break;
 	  }
 
@@ -1526,10 +1545,16 @@ main(int argc, char *argv[])
 
 	  case ALTSELECTOR_FEATURE_OPT: {
 	      OpenType::Tag t(clp->arg);
-	      if (t.valid())
-		  altselector_features.push_back(t);
-	      else
+	      if (!t.valid())
 		  usage_error(errh, "bad feature tag");
+	      else if (altselector_feature_filters[t])
+		  usage_error(errh, "altselector feature '%s' included twice", t.text().c_str());
+	      else {
+		  if (!current_alternate_filter_ptr)
+		      current_alternate_filter_ptr = new GlyphFilter(current_alternate_filter);
+		  altselector_features.push_back(t);
+		  altselector_feature_filters.insert(t, current_alternate_filter_ptr);
+	      }
 	      break;
 	  }
 
@@ -1542,13 +1567,19 @@ main(int argc, char *argv[])
 		      s++;
 		  if (s > start) {
 		      String str(start, s - start);
-		      alternate_filter.add_alternate_filter(str, opt == EXCLUDE_ALTERNATES_OPT, errh);
+		      current_alternate_filter.add_alternate_filter(str, opt == EXCLUDE_ALTERNATES_OPT, errh);
 		  }
 		  while (isspace(*s))
 		      s++;
 	      }
+	      current_alternate_filter_ptr = 0;
 	      break;
 	  }
+
+	  case CLEAR_ALTERNATES_OPT:
+	    current_alternate_filter = null_filter;
+	    current_alternate_filter_ptr = &null_filter;
+	    break;
 	    
 	  case UNICODING_OPT:
 	    unicoding.push_back(clp->arg);
@@ -1732,6 +1763,7 @@ particular purpose.\n");
 	    interesting_scripts.push_back(Efont::OpenType::Tag());
 	}
 	std::sort(interesting_features.begin(), interesting_features.end());
+	std::sort(altselector_features.begin(), altselector_features.end());
 
 	// read glyphlist
 	if (String s = read_file(glyphlist_file, errh, true))

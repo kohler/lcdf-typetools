@@ -19,6 +19,7 @@
 #endif
 #include "glyphfilter.hh"
 #include <lcdf/error.hh>
+#include <lcdf/straccum.hh>
 #include <ctype.h>
 #include <algorithm>
 #include "uniprop.hh"
@@ -211,4 +212,20 @@ GlyphFilter::sort()
 	_patterns.erase(true_end, _patterns.end());
 	_sorted = true;
     }
+}
+
+void
+GlyphFilter::unparse(StringAccum& sa) const
+{
+    for (const Pattern* p = _patterns.begin(); p < _patterns.end(); p++) {
+	sa << (p->type & T_DST ? 'D' : 'S') << (p->type & T_NEGATE ? "!" : "") << (p->type & T_EXCLUDE ? "X" : "");
+	if (p->data == D_NAME)
+	    sa << '<' << p->pattern << '>';
+	else if (p->data == D_UNIPROP)
+	    sa << "[UNIPROP:" << p->u.uniprop.mask << '=' << p->u.uniprop.value << ']';
+	else
+	    sa.snprintf(20, "[U+%02x-U+%02x]", p->u.unirange.low, p->u.unirange.high);
+	sa << ' ';
+    }
+    sa.pop_back();
 }

@@ -1,5 +1,16 @@
 LCDF Typetools NEWS
 
+Version 2.16   19.Nov.2004
+
+* '--include-alternates' and '--exclude-alternates' options only apply to
+  features that appear later in the options list.
+
+* Fix bug where not all '--altselector-feature' features would be used.
+  Problem reported by Emil Lohse.
+
+* Add '--clear-alternates' option.
+
+
 Version 2.15   21.Sep.2004
 
 * AIX compile fixes.  Reported by Vladimir Volovich.

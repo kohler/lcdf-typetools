@@ -21,6 +21,8 @@ class GlyphFilter { public:
     
     GlyphFilter& operator+=(const GlyphFilter&);
 
+    void unparse(StringAccum&) const;
+
     struct Pattern {
 	uint16_t type;
 	uint16_t data;
@@ -97,5 +99,12 @@ GlyphFilter::check_eq(GlyphFilter& o)
 }
 
 GlyphFilter operator+(const GlyphFilter&, const GlyphFilter&);
+
+inline StringAccum&
+operator<<(StringAccum& sa, const GlyphFilter& gf)
+{
+    gf.unparse(sa);
+    return sa;
+}
 
 #endif

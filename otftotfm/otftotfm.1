@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.15
+.ds V 2.16
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -547,13 +547,26 @@ only interested in ".end" variants, you might run
 with an
 .BR \-\-include\-alternates= "'*.end'"
 option.
+.Sp
+The
+.B \-\-include\-alternates
+option only applies to feature options that follow it in the argument list.
+For instance, in the command line below, the '*.end' pattern will apply to
+"aalt" alternates, but not to "salt" alternates.
+.nf
+    \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-alternates\fR='*.end' \fB\-f\fRaalt \.\.\.
+.fi
 '
 .Sp
 .TP 5
 .BI \-\-exclude\-alternates= pattern
 Do not include alternate characters whose names match
 .IR pattern ,
-which uses the glob matching rules common from filename matches.
+which uses the glob matching rules common from filename matches.  Like
+.BR \-\-include\-alternates ,
+this option only applies to feature options that follow it in the argument
+list.
+'
 .Sp
 You can give any number of
 .B \-\-include\-
@@ -564,6 +577,16 @@ options.
 will use an alternate if it matches at least one of the include patterns,
 and none of the exclude patterns.  The patterns are applied to any feature
 introducing alternate characters, including "aalt" and "salt".
+'
+.Sp
+.TP 5
+.BI \-\-clear\-alternates
+Clears any include and exclude patterns introduced by
+.B \-\-include\-
+and
+.BR \-\-exclude\-alternates ,
+so that any following feature options or include/exclude patterns start
+from a blank slate.
 '
 .PD
 '
