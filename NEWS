@@ -1,6 +1,16 @@
 LCDF Typetools NEWS
 
-Version 0.18
+Version 0.18   9.Jul.2003
+
+* Otftotfm will now generate characters for some T1 glyphs automatically,
+  specifically 'cwm' (compound word mark), 'visualspace', and 'Germandbls'.
+  Requested by Marco Kuhlmann.
+
+* The glyphlist.txt file contains Unicode mappings for character names
+  found in the BlueSky Computer Modern math italic and symbol fonts.
+
+* It also contains fake Unicode mappings for the 'cwm', 'visualspace', and
+  'Germandbls' characters found in EC.enc.
 
 * otftotfm: Don't output a KRN between two characters if there exists a LIG
   for those two characters.
