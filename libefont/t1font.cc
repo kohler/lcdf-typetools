@@ -34,7 +34,7 @@ Type1Font::Type1Font(Type1Reader &reader)
     int x_length = accum.length();
     if (!x_length) continue;
     accum.push(0);		// ensure we don't run off the string
-    char *x = accum.value();
+    char *x = accum.data();
     
     // check for CHARSTRINGS
     if (reader.was_charstring()) {
@@ -206,7 +206,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     // check for NULL STRING
     if (!accum.length()) continue;
     accum.push(0);		// ensure we don't run off the string
-    char *pos = accum.value();
+    char *pos = accum.data();
     
     // skip to first `dup' token
     if (!got_any) {

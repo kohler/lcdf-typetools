@@ -79,14 +79,14 @@ class Type1Font: public Type1Program {
   
   bool is_mm() const			{ return mmspace() != 0;}
   
-  int subr_count() const		{ return _subrs.size(); }
+  int nsubrs() const			{ return _subrs.size(); }
   Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
   bool set_subr(int, const Type1Charstring &);
   bool remove_subr(int);
   
-  int glyph_count() const		{ return _glyphs.size(); }
+  int nglyphs() const			{ return _glyphs.size(); }
   Type1Subr *glyph(int i) const		{ return _glyphs[i]; }
-  
+
   Type1Charstring *subr(int) const;
   Type1Charstring *glyph(PermString) const;
   

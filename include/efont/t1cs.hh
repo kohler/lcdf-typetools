@@ -26,9 +26,10 @@ class Type1Charstring {
   int length() const				{ return _len; }
   
   void assign(unsigned char *, int);
-  
+  void prepend(const Type1Charstring &);
+    
   bool run(Type1Interp &) const;
-  
+
 };
 
 
@@ -38,7 +39,8 @@ class Type1Program {
   
   Type1Program()					{ }
   virtual ~Type1Program()				{ }
-  
+
+  virtual int nsubrs() const				{ return 0; }
   virtual Type1Charstring *subr(int) const		{ return 0; }
   virtual Type1Charstring *glyph(PermString) const	{ return 0; }
   

@@ -28,6 +28,21 @@ Type1Charstring::Type1Charstring(const Type1Charstring &t1cs)
 }
 
 void
+Type1Charstring::prepend(const Type1Charstring &t1cs)
+{
+  if (_key >= 0) decrypt();
+  if (t1cs._key >= 0) t1cs.decrypt();
+  unsigned char *new_data = new unsigned char[_len + t1cs._len];
+  if (new_data) {
+    memcpy(new_data, t1cs._data, t1cs._len);
+    memcpy(new_data + t1cs._len, _data, _len);
+    delete[] _data;
+    _data = new_data;
+    _len += t1cs._len;
+  }
+}
+
+void
 Type1Charstring::decrypt() const
 {
   if (_key < 0) return;

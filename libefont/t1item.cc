@@ -73,7 +73,7 @@ int
 Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
 {
   int paren_level = 0;
-  char *s = accum.value() + pos;
+  char *s = accum.data() + pos;
   
   do {
     switch (*s++) {
@@ -82,17 +82,17 @@ Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
      case '\\': if (paren_level && *s) s++; break;
      case 0:
       if (!reader) return -1;
-      pos = s - accum.value();
+      pos = s - accum.data();
       accum.pop();		// remove final 0 byte
       accum.push('\n');		// replace with \n
       if (!reader->next_line(accum)) return -1;
       accum.push(0);		// stick on a 0 byte
-      s = accum.value() + pos;
+      s = accum.data() + pos;
       break;
     }
   } while (paren_level);
   
-  return s - accum.value();
+  return s - accum.data();
 }
 
 int
@@ -100,7 +100,7 @@ Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
 {
   int paren_level = 0;
   int brace_level = 0;
-  char *s = accum.value() + pos;
+  char *s = accum.data() + pos;
   
   do {
     switch (*s++) {
@@ -116,30 +116,30 @@ Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
       break;
      case 0:
       if (!reader) return -1;
-      pos = s - accum.value();
+      pos = s - accum.data();
       accum.pop();		// remove final 0 byte
       accum.push('\n');		// replace with \n
       if (!reader->next_line(accum)) return -1;
       accum.push(0);		// stick on a 0 byte
-      s = accum.value() + pos;
+      s = accum.data() + pos;
       break;
     }
   } while (brace_level);
   
-  return s - accum.value();
+  return s - accum.data();
 }
 
 Type1Definition *
 Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
 		      bool force_definition = false)
 {
-  char *s = accum.value();
+  char *s = accum.data();
   while (isspace(*s))
     s++;
   if (*s != '/')
     return 0;
   s++;
-  int name_start_pos = s - accum.value();
+  int name_start_pos = s - accum.data();
   
   // find NAME LENGTH
   while (!isspace(*s) && *s != '[' && *s != '{' && *s != '('
@@ -147,11 +147,11 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
     s++;
   if (!*s)
     return 0;
-  int name_end_pos = s - accum.value();
+  int name_end_pos = s - accum.data();
   
   while (isspace(*s))
     s++;
-  int val_pos = s - accum.value();
+  int val_pos = s - accum.data();
   int val_end_pos = -1;
   bool check_def = false;
   
@@ -173,31 +173,31 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
        case '(': case ')': case 0: return 0;
       }
     } while (brack_level);
-    val_end_pos = s - accum.value();
+    val_end_pos = s - accum.data();
     
   } else {
     while (!isspace(*s) && *s)
       s++;
-    val_end_pos = s - accum.value();
+    val_end_pos = s - accum.data();
     if (!force_definition) check_def = true;
   }
   
   if (val_end_pos < 0)
     return 0;
-  s = accum.value() + val_end_pos;
+  s = accum.data() + val_end_pos;
   while (isspace(*s))
     s++;
   if (check_def && (s[0] != 'd' || s[1] != 'e' || s[2] != 'f'))
     if (strncmp(s, "dict def", 8) != 0)
       return 0;
   
-  PermString name(accum.value()+name_start_pos, name_end_pos - name_start_pos);
-  PermString def(s, accum.length() - 1 - (s - accum.value()));
+  PermString name(accum.data()+name_start_pos, name_end_pos - name_start_pos);
+  PermString def(s, accum.length() - 1 - (s - accum.data()));
   // -1 to get rid of trailing \0
   
   int val_length = val_end_pos - val_pos;
   char *val = new char[val_length + 1];
-  memcpy(val, accum.value() + val_pos, val_length);
+  memcpy(val, accum.data() + val_pos, val_length);
   val[val_length] = 0;
 
   return new Type1Definition(name, val, def);
@@ -727,10 +727,10 @@ Type1SubrGroupItem::gen(Type1Writer &w)
     
     int n;
     if (_is_subrs) {
-      n = font->subr_count();
+      n = font->nsubrs();
       while (n && !font->subr(n-1)) n--;
     } else
-      n = font->glyph_count();
+      n = font->nglyphs();
     
     w.print(_value, c - _value);
     char buf[128];
@@ -743,12 +743,12 @@ Type1SubrGroupItem::gen(Type1Writer &w)
   w << '\n';
   
   if (_is_subrs) {
-    int count = font->subr_count();
+    int count = font->nsubrs();
     for (int i = 0; i < count; i++)
       if (Type1Subr *g = font->subr_x(i))
 	g->gen(w);
   } else {
-    int count = font->glyph_count();
+    int count = font->nglyphs();
     for (int i = 0; i < count; i++)
       if (Type1Subr *g = font->glyph(i))
 	g->gen(w);

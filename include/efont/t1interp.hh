@@ -69,7 +69,7 @@ class Type1Interp {
     cIndex	= 32 + 29,
     cRoll	= 32 + 30,
     cSetcurrentpoint = 32 + 33,
-    
+
     cLastCommand = cSetcurrentpoint,
 
   };
@@ -121,6 +121,7 @@ class Type1Interp {
  private:
   
   int _errno;
+  int _error_data;
   bool _done;
   
   double _s[StackSize];
@@ -143,6 +144,7 @@ class Type1Interp {
   virtual ~Type1Interp()			{ }
   
   int errno() const				{ return _errno; }
+  int error_data() const			{ return _error_data; }
   bool done() const				{ return _done; }
   void set_done()				{ _done = true; }
   
@@ -167,7 +169,8 @@ class Type1Interp {
   Type1Charstring *get_glyph(PermString) const;
   
   virtual void init();
-  virtual bool error(int);
+  bool error(int c)				{ return error(c, 0); }
+  virtual bool error(int, int);
   virtual bool number(double);
   
   bool arith_command(int);

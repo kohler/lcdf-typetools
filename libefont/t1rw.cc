@@ -166,7 +166,7 @@ Type1Reader::test_charstring(StringAccum &str)
     return str.length() <= _charstring_start + _charstring_len;
   
   str.push(0);			// protect against running off end of string
-  char *s = str.value();
+  char *s = str.data();
   char *start;
   while (*s == ' ')
     s++;
@@ -195,7 +195,7 @@ Type1Reader::test_charstring(StringAccum &str)
     goto not;
   
   _charstring_len = strtol(start, 0, 10);
-  _charstring_start = (s - str.value()) + _charstring_definer.length();
+  _charstring_start = (s - str.data()) + _charstring_definer.length();
   str.pop();
   return str.length() <= _charstring_start + _charstring_len;
   
@@ -483,7 +483,7 @@ Type1PfbWriter::flush()
     fputc((l >> 8) & 0xFF, _f);
     fputc((l >> 16) & 0xFF, _f);
     fputc((l >> 24) & 0xFF, _f);
-    fwrite(_save.value(), 1, _save.length(), _f);
+    fwrite(_save.data(), 1, _save.length(), _f);
     _save.clear();
   }
 }
