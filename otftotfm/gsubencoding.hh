@@ -21,6 +21,8 @@ class GsubEncoding { public:
     // default destructor
 
     Glyph boundary_glyph() const		{ return _boundary_glyph; }
+    String coding_scheme() const		{ return _coding_scheme; }
+    void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
 
     inline Glyph glyph(int) const;
     inline const char *debug_code_name(int) const;
@@ -62,6 +64,7 @@ class GsubEncoding { public:
     Vector<Glyph> _encoding;
     mutable Vector<int> _emap;
     Glyph _boundary_glyph;
+    String _coding_scheme;
 
     struct Ligature {
 	Vector<int> in;

@@ -17,6 +17,7 @@ class DvipsEncoding { public:
     const String &name() const			{ return _name; }
     const String &filename() const		{ return _filename; }
     int boundary_char() const			{ return _boundary_char; }
+    const String &coding_scheme() const		{ return _coding_scheme; }
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
@@ -52,6 +53,7 @@ class DvipsEncoding { public:
 
     String _name;
     String _filename;
+    String _coding_scheme;
     String _initial_comment;
     String _final_text;
 

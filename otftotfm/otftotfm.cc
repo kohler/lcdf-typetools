@@ -359,14 +359,18 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	family_name = family_name.substring(0, 9) + family_name.substring(-10);
     fprintf(f, "(FAMILY %s)\n", family_name.c_str());
 
-    if (out_encoding_name)
+    double design_units = 1000;
+    if (gse.coding_scheme()) {
+	fprintf(f, "(CODINGSCHEME %.39s)\n", String(gse.coding_scheme()).c_str());
+	design_units = 1;
+    } else if (out_encoding_name)
 	fprintf(f, "(CODINGSCHEME %.39s)\n", out_encoding_name.c_str());
 
     fprintf(f, "(DESIGNSIZE R 10.0)\n"
-	    "(DESIGNUNITS R 1000)\n"
+	    "(DESIGNUNITS R %g)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
 	    "(COMMENT OTHER DIMENSIONS ARE MULTIPLES OF DESIGNSIZE/1000)\n"
-	    "(FONTDIMEN\n");
+	    "(FONTDIMEN\n", design_units);
 
     // figure out font dimensions
     CharstringBounds boundser(cff);
@@ -375,6 +379,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     if (slant)
 	boundser.shear(slant);
     int bounds[4], width;
+    double du = design_units / 1000;
     
     double val;
     if (cff->dict_value(Efont::Cff::oItalicAngle, 0, &val) && val)
@@ -385,12 +390,12 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	boundser.run(*cs, bounds, width);
 	// advance space width by letterspacing
 	width += letterspace;
-	fprintf(f, "   (SPACE D %d)\n", width);
+	fprintf(f, "   (SPACE R %g)\n", width * du);
 	if (cff->dict_value(Efont::Cff::oIsFixedPitch, 0, &val) && val)
 	    // fixed-pitch: no space stretch or shrink
-	    fprintf(f, "   (STRETCH D 0)\n   (SHRINK D 0)\n   (EXTRASPACE D %d)\n", width);
+	    fprintf(f, "   (STRETCH D 0)\n   (SHRINK D 0)\n   (EXTRASPACE R %g)\n", width * du);
 	else
-	    fprintf(f, "   (STRETCH D %d)\n   (SHRINK D %d)\n   (EXTRASPACE D %d)\n", width/2, width/3, width/6);
+	    fprintf(f, "   (STRETCH R %g)\n   (SHRINK R %g)\n   (EXTRASPACE R %g)\n", width * du / 2, width * du / 3, width * du / 6);
     }
 
     int xheight = 1000;
@@ -403,9 +408,9 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		xheight = bounds[3];
 	}
     if (xheight < 1000)
-	fprintf(f, "   (XHEIGHT D %d)\n", xheight);
+	fprintf(f, "   (XHEIGHT R %g)\n", xheight * du);
     
-    fprintf(f, "   (QUAD D 1000)\n   )\n");
+    fprintf(f, "   (QUAD R %g)\n   )\n", 1000 * du);
 
     if (boundary_char >= 0)
 	fprintf(f, "(BOUNDARYCHAR D %d)\n", boundary_char);
@@ -454,9 +459,9 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 			    glyph_comments[lig_code2[j]].c_str(),
 			    glyph_comments[lig_outcode[j]].c_str());
 		for (int j = 0; j < kern_code2.size(); j++)
-		    fprintf(f, "   (KRN %s R %d)%s\n",
+		    fprintf(f, "   (KRN %s R %g)%s\n",
 			    glyph_ids[kern_code2[j]].c_str(),
-			    kern_amt[j],
+			    kern_amt[j] * du,
 			    glyph_comments[kern_code2[j]].c_str());
 		fprintf(f, "   (STOP)\n");
 	    }
@@ -481,22 +486,22 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		    sa << "      (SETCHAR " << glyph_ids[i] << ')' << glyph_comments[i] << "\n";
 		} else if (s.op == Setting::HMOVETO && vpl) {
 		    boundser.translate(s.x, 0);
-		    sa << "      (MOVERIGHT R " << s.x << ")\n";
+		    sa << "      (MOVERIGHT R " << (s.x * du) << ")\n";
 		} else if (s.op == Setting::VMOVETO && vpl) {
 		    boundser.translate(0, s.x);
-		    sa << "      (MOVEUP R " << s.x << ")\n";
+		    sa << "      (MOVEUP R " << (s.x * du) << ")\n";
 		}
 	    }
 
 	    // output information
 	    boundser.bounds(bounds, width);
-	    fprintf(f, "   (CHARWD R %d)\n", width);
+	    fprintf(f, "   (CHARWD R %g)\n", width * du);
 	    if (bounds[3] > 0)
-		fprintf(f, "   (CHARHT R %d)\n", bounds[3]);
+		fprintf(f, "   (CHARHT R %g)\n", bounds[3] * du);
 	    if (bounds[1] < 0)
-		fprintf(f, "   (CHARDP R %d)\n", -bounds[1]);
+		fprintf(f, "   (CHARDP R %g)\n", -bounds[1] * du);
 	    if (bounds[2] > width)
-		fprintf(f, "   (CHARIC R %d)\n", bounds[2] - width);
+		fprintf(f, "   (CHARIC R %g)\n", (bounds[2] - width) * du);
 	    if (vpl && (settings.size() > 1 || settings[0].op != Setting::SHOW))
 		fprintf(f, "   (MAP\n%s      )\n", sa.c_str());
 	    fprintf(f, "   )\n");

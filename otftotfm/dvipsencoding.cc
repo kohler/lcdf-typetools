@@ -435,6 +435,19 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 		   && isspace(token[9])) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(10), &DvipsEncoding::parse_unicoding_words, &lerrh);
+	    
+	} else if (token.length() >= 13
+		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
+		   && isspace(token[12])) {
+	    int p = 13;
+	    while (p < token.length() && isspace(token[p]))
+		p++;
+	    int pp = token.length() - 1;
+	    while (pp > p && isspace(token[pp]))
+		pp--;
+	    _coding_scheme = token.substring(p, pp - p);
+	    if (_coding_scheme.length() > 39)
+		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");
 	}
 
     return 0;
@@ -483,6 +496,7 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 	    if (gid == 0)
 		bad_codepoint(i);
 	}
+    gsub_encoding.set_coding_scheme(_coding_scheme);
 }
 
 void
@@ -497,6 +511,7 @@ DvipsEncoding::make_literal_gsub_encoding(GsubEncoding &gsub_encoding, Efont::Cf
 	    if (gid == 0)
 		bad_codepoint(i);
 	}
+    gsub_encoding.set_coding_scheme(_coding_scheme);
 }
 
 void
