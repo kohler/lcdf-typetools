@@ -152,14 +152,14 @@ CharstringChecker::callothersubr()
     }
     //_connect = _flex_connect;
 #if 0
-    addbezier(point(ps_at(0), ps_at(1)),
-	      point(ps_at(4), ps_at(5)),
-	      point(ps_at(6), ps_at(7)),
-	      point(ps_at(8), ps_at(9)));
-    addbezier(point(ps_at(8), ps_at(9)),
-	      point(ps_at(10), ps_at(11)),
-	      point(ps_at(12), ps_at(13)),
-	      point(ps_at(14), ps_at(15)));
+    addbezier(Point(ps_at(0), ps_at(1)),
+	      Point(ps_at(4), ps_at(5)),
+	      Point(ps_at(6), ps_at(7)),
+	      Point(ps_at(8), ps_at(9)));
+    addbezier(Point(ps_at(8), ps_at(9)),
+	      Point(ps_at(10), ps_at(11)),
+	      Point(ps_at(12), ps_at(13)),
+	      Point(ps_at(14), ps_at(15)));
 #endif
     ps_clear();
     ps_push(top(0));
@@ -385,16 +385,16 @@ CharstringChecker::type1_command(int cmd)
      double ax = adx - asb + _sidebearing.x;
      double ay = ady + _sidebearing.y;
      
-     point real_sidebearing = _sidebearing;
-     point real_char_width = _char_width;
-     point original_origin = _origin;
+     Point real_sidebearing = _sidebearing;
+     Point real_char_width = _char_width;
+     Point original_origin = _origin;
      
      Type1Encoding *adobe = Type1Encoding::standard_encoding();
      if (!adobe) 
        return error(errInternal, cmd);
      Type1Charstring *t1cs = get_glyph((*adobe)[achar]);
      if (!t1cs) ERROR(errGlyph);
-     _origin = point(ax, ay);
+     _origin = Point(ax, ay);
      init();
      t1cs->run(*this);
      _origin = original_origin;
@@ -412,7 +412,7 @@ CharstringChecker::type1_command(int cmd)
     
    case CS::cSetcurrentpoint:
     CHECK_STACK(2);
-    _cp = point(at(0), at(1));
+    _cp = Point(at(0), at(1));
     _cp_exists = true;
     clear();
     break;

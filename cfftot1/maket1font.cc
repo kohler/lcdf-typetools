@@ -4,7 +4,7 @@
 #include "maket1font.hh"
 #include <efont/t1interp.hh>
 #include <efont/t1csgen.hh>
-#include "point.hh"
+#include <lcdf/point.hh>
 #include <efont/t1font.hh>
 #include <efont/t1item.hh>
 #include <efont/t1unparser.hh>

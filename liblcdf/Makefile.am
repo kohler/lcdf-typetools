@@ -8,6 +8,7 @@ liblcdf_a_SOURCES = clp.c \
 	filename.cc \
 	landmark.cc \
 	permstr.cc \
+	point.cc \
 	slurper.cc \
 	straccum.cc \
 	string.cc \
@@ -24,7 +25,7 @@ EXTRA_DIST = fixlibc.c
 srclinks:
 	test -d $(top_srcdir)/include || mkdir $(top_srcdir)/include
 	test -d $(top_srcdir)/include/lcdf || mkdir $(top_srcdir)/include/lcdf
-	for i in permstr straccum string landmark error filename slurper ; do \
+	for i in permstr point straccum string landmark error filename slurper ; do \
 	ln -sf ../../liblcdf/liblcdf/$$i.cc $$i.cc ; \
 	ln -sf ../../../liblcdf/include/lcdf/$$i.hh ../include/lcdf/$$i.hh ; done
 	for i in clp strtonum ; do \

@@ -5,7 +5,6 @@ bin_PROGRAMS = t1lint
 man_MANS = 
 
 t1lint_SOURCES = cscheck.hh cscheck.cc \
-	point.hh point.cc \
 	t1lint.cc \
 	templatei.cc
 

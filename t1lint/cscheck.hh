@@ -1,7 +1,7 @@
 #ifndef CSCHECK_HH
 #define CSCHECK_HH
 #include <efont/t1interp.hh>
-#include "point.hh"
+#include <lcdf/point.hh>
 #include <lcdf/vector.hh>
 class ErrorHandler;
 
@@ -20,7 +20,7 @@ class CharstringChecker : public Efont::CharstringInterp { public:
     
     ErrorHandler *_errh;
 
-    point _cp;
+    Point _cp;
   
     bool _started;
     bool _flex;
