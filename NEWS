@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.7   3.Aug.2004
+
+* otftotfm: Bug fix for obscure cases involving 'dotlessj' characters: the
+  output VPL could contain a reference to "(SETCHAR X)", which is illegal.
+  Reported by Marco Kuhlmann.
+
+
 Version 2.6   12.Jul.2004
 
 * t1testpage adds preliminary support for font smoke proofs with '--smoke'.

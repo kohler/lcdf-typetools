@@ -600,7 +600,12 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
 		    boundser.char_bounds(program->glyph_context(s.y));
-		    sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
+		    // 3.Aug.2004 -- reported by Marco Kuhlmann: Don't use
+		    // glyph_ids[] array when looking at a different font.
+		    if (program == family_cff)
+			sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
+		    else
+			sa << "      (SETCHAR D " << s.x << ")\n";
 		} else if (s.op == Setting::MOVE && vpl) {
 		    boundser.translate(s.x, s.y);
 		    if (s.x)
