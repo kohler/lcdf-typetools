@@ -22,17 +22,26 @@
 #include <algorithm>
 #include <lcdf/straccum.hh>
 
-Metrics::Metrics(int nglyphs)
+Metrics::Metrics(Efont::CharstringProgram *font, int nglyphs)
     : _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1),
-      _liveness_marked(false)
+      _design_units(1000), _liveness_marked(false)
 {
     _encoding.assign(256, Char());
+    add_mapped_font(font, String());
 }
 
 Metrics::~Metrics()
 {
     for (Char *c = _encoding.begin(); c != _encoding.end(); c++)
 	delete c->virtual_char;
+}
+
+int
+Metrics::add_mapped_font(Efont::CharstringProgram *font, const String &name)
+{
+    _mapped_fonts.push_back(font);
+    _mapped_font_names.push_back(name);
+    return _mapped_fonts.size() - 1;
 }
 
 void
@@ -51,10 +60,13 @@ Metrics::check() const
 	    assert(valid_code(k->in2));
 	if (const VirtualChar *vc = ch->virtual_char) {
 	    assert(vc->name);
+	    int font_number = 0;
 	    for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++) {
 		assert(s->valid_op());
-		if (s->op == Setting::SHOW)
+		if (s->op == Setting::SHOW && font_number == 0)
 		    assert(nonvirtual_code(s->x));
+		else if (s->op == Setting::FONT)
+		    font_number = s->x;
 	    }
 	}
 	assert(ch->built_in1 < 0 || valid_code(ch->built_in1));
@@ -74,10 +86,8 @@ Metrics::check() const
 }
 
 PermString
-Metrics::code_name(Code code, const Vector<PermString> *glyph_names) const
+Metrics::code_name(Code code) const
 {
-    if (!glyph_names)
-	glyph_names = &Efont::OpenType::debug_glyph_names;
     if (code < 0 || code >= _encoding.size())
 	return permprintf("<badcode%d>", code);
     else {
@@ -88,8 +98,8 @@ Metrics::code_name(Code code, const Vector<PermString> *glyph_names) const
 	    return "<boundary>";
 	else if (ch.glyph == _emptyslot_glyph)
 	    return "<emptyslot>";
-	else if (ch.glyph >= 0 && ch.glyph < glyph_names->size())
-	    return glyph_names->at_u(ch.glyph);
+	else if (ch.glyph >= 0 && ch.glyph < _mapped_fonts[0]->nglyphs())
+	    return _mapped_fonts[0]->glyph_name(ch.glyph);
 	else
 	    return permprintf("<glyph%d>", ch.glyph);
     }
@@ -158,8 +168,12 @@ Metrics::encode_virtual(Code code, PermString name, const Vector<Setting> &v)
     VirtualChar *vc = _encoding[code].virtual_char = new VirtualChar;
     vc->name = name;
     vc->setting = v;
-    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-	assert(s->valid_op() && (s->op != Setting::SHOW || nonvirtual_code(s->x)));
+    int font_number = 0;
+    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++) {
+	assert(s->valid_op() && (s->op != Setting::SHOW || font_number != 0 || nonvirtual_code(s->x)));
+	if (s->op == Setting::FONT)
+	    font_number = s->x;
+    }
 }
 
 void
@@ -826,10 +840,14 @@ Metrics::mark_liveness(int size, const Vector<Ligature3> &all_ligs)
     /* Characters reachable from live settings are base-live. */
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
 	if (ch->flag(Char::LIVE))
-	    if (VirtualChar *vc = ch->virtual_char)
+	    if (VirtualChar *vc = ch->virtual_char) {
+		int font_number = 0;
 		for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		    if (s->op == Setting::SHOW)
+		    if (s->op == Setting::SHOW && font_number == 0)
 			_encoding[s->x].flags |= Char::BASE_LIVE;
+		    else if (s->op == Setting::FONT)
+			font_number = s->x;
+	    }
 }
 
 void
@@ -842,10 +860,14 @@ Metrics::reencode(const Vector<Code> &reencoding)
 	}
 	for (Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
 	    k->in2 = reencoding[k->in2];
-	if (VirtualChar *vc = ch->virtual_char)
+	if (VirtualChar *vc = ch->virtual_char) {
+	    int font_number = 0;
 	    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		if (s->op == Setting::SHOW)
+		if (s->op == Setting::SHOW && font_number == 0)
 		    s->x = reencoding[s->x];
+		else if (s->op == Setting::FONT)
+		    font_number = s->x;
+	}
 	if (ch->built_in1 >= 0) {
 	    ch->built_in1 = reencoding[ch->built_in1];
 	    ch->built_in2 = reencoding[ch->built_in2];
@@ -908,11 +930,13 @@ Metrics::cut_encoding(int size)
        virtual chars. */
     for (Code c = 0; c < size; c++) {
 	if (VirtualChar *vc = _encoding[c].virtual_char) {
+	    int font_number = 0;
 	    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		if (s->op == Setting::SHOW && !good[s->x]) {
+		if (s->op == Setting::SHOW && font_number == 0 && !good[s->x]) {
 		    _encoding[c].clear();
 		    goto bad_virtual_char;
-		}
+		} else if (s->op == Setting::FONT)
+		    font_number = s->x;
 	}
 	good[c] = 1;
       bad_virtual_char: ;
@@ -1041,11 +1065,13 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	    if (VirtualChar *vc = _encoding[c].virtual_char) {
 		/* Make sure that if this virutal character appears, its parts
 		   will also appear, by scoring the parts less */
-		int score = scores[c] - 1;
+		int score = scores[c] - 1, font_number = 0;
 		for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		    if (s->op == Setting::SHOW
+		    if (s->op == Setting::SHOW && font_number == 0
 			&& score < scores[s->x])
 			scores[s->x] = score, changed = true;
+		    else if (s->op == Setting::FONT)
+			font_number = s->x;
 	    }
     }
 
@@ -1227,22 +1253,30 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 
     if (const VirtualChar *vc = ch.virtual_char) {
 	bool good = true;
+	int font_number = 0;
 	for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
 	    switch (s->op) {
 	      case Setting::MOVE:
 	      case Setting::RULE:
-	      case Setting::FONT:
 		v.push_back(*s);
 		break;
+	      case Setting::FONT:
+		v.push_back(*s);
+		font_number = s->x;
+		break;
 	      case Setting::SHOW:
-		good &= setting(s->x, v, (SettingMode)(sm | SET_KEEP));
+		if (font_number == 0)
+		    good &= setting(s->x, v, (SettingMode)(sm | SET_KEEP));
+		else
+		    v.push_back(*s);
 		break;
 	      case Setting::KERN:
 		if (sm & SET_INTERMEDIATE)
 		    v.push_back(*s);
 		else if (s > vc->setting.begin() && s + 1 < vc->setting.end()
 			 && s[-1].op == Setting::SHOW
-			 && s[1].op == Setting::SHOW)
+			 && s[1].op == Setting::SHOW
+			 && font_number == 0)
 		    if (int k = kern(s[-1].x, s[1].x))
 			v.push_back(Setting(Setting::MOVE, k, 0));
 		break;
@@ -1253,7 +1287,7 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 	if (ch.pdx != 0 || ch.pdy != 0)
 	    v.push_back(Setting(Setting::MOVE, ch.pdx, ch.pdy));
 	
-	v.push_back(Setting(Setting::SHOW, ch.base_code));
+	v.push_back(Setting(Setting::SHOW, ch.base_code, base_glyph(code)));
 	
 	if (ch.pdy != 0 || ch.adx - ch.pdx != 0)
 	    v.push_back(Setting(Setting::MOVE, ch.adx - ch.pdx, -ch.pdy));
@@ -1314,21 +1348,19 @@ Metrics::kerns(Code in1, Vector<Code> &in2, Vector<int> &kern) const
 /* debugging								     */
 
 void
-Metrics::unparse(const Vector<PermString> *glyph_names) const
+Metrics::unparse() const
 {
-    if (!glyph_names)
-	glyph_names = &Efont::OpenType::debug_glyph_names;
     for (Code c = 0; c < _encoding.size(); c++)
 	if (_encoding[c].glyph) {
 	    const Char &ch = _encoding[c];
-	    fprintf(stderr, "%4d/%s%s%s%s%s%s\n", c, code_str(c, glyph_names),
+	    fprintf(stderr, "%4d/%s%s%s%s%s%s\n", c, code_str(c),
 		    (ch.flag(Char::LIVE) ? " [L]" : ""),
 		    (ch.flag(Char::BASE_LIVE) ? " [B]" : ""),
 		    (ch.flag(Char::CONTEXT_ONLY) ? " [C]" : ""),
 		    (ch.flag(Char::BUILT) ? " [!]" : ""),
 		    (ch.base_code >= 0 ? " <BC>" : ""));
 	    if (ch.base_code >= 0 && ch.base_code != c)
-		fprintf(stderr, "\tBASE %d/%s\n", ch.base_code, code_str(ch.base_code, glyph_names));
+		fprintf(stderr, "\tBASE %d/%s\n", ch.base_code, code_str(ch.base_code));
 	    if (const VirtualChar *vc = ch.virtual_char) {
 		fprintf(stderr, "\t*");
 		for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
@@ -1337,7 +1369,7 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
 			fprintf(stderr, " {F%d}", s->x);
 			break;
 		      case Setting::SHOW:
-			fprintf(stderr, " %d/%s", s->x, code_str(s->x, glyph_names));
+			fprintf(stderr, " %d/%s", s->x, code_str(s->x));
 			break;
 		      case Setting::KERN:
 			fprintf(stderr, " <>");
@@ -1349,13 +1381,13 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
 			fprintf(stderr, " [%d,%d]", s->x, s->y);
 			break;
 		    }
-		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1, glyph_names), ch.built_in2, code_str(ch.built_in2, glyph_names));
+		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1), ch.built_in2, code_str(ch.built_in2));
 	    }
 	    for (const Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
-		fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2, glyph_names), l->out, code_str(l->out, glyph_names), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
+		fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2), l->out, code_str(l->out), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
 #if 0
 	    for (const Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
-		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2, glyph_names), k->kern);
+		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2), k->kern);
 #endif
 	}
 }

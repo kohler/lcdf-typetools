@@ -2,6 +2,7 @@
 #define OTFTOTFM_METRICS_HH
 #include <efont/otfgsub.hh>
 #include <efont/otfgpos.hh>
+namespace Efont { class CharstringProgram; }
 class DvipsEncoding;
 
 struct Setting {
@@ -23,7 +24,7 @@ class Metrics { public:
     typedef Efont::OpenType::Substitution Substitution;
     typedef Efont::OpenType::Positioning Positioning;
 
-    Metrics(int nglyphs);
+    Metrics(Efont::CharstringProgram *, int nglyphs);
     ~Metrics();
 
     void check() const;
@@ -34,11 +35,19 @@ class Metrics { public:
     String coding_scheme() const		{ return _coding_scheme; }
     void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
 
+    int design_units() const			{ return _design_units; }
+    void set_design_units(int du)		{ _design_units = du; }
+
+    int n_mapped_fonts() const			{ return _mapped_fonts.size();}
+    Efont::CharstringProgram *mapped_font(int i) const { return _mapped_fonts[i]; }
+    const String &mapped_font_name(int i) const { return _mapped_font_names[i]; }
+    int add_mapped_font(Efont::CharstringProgram *, const String &);
+
     inline int encoding_size() const		{ return _encoding.size(); }
     inline bool valid_code(Code) const;
     inline bool nonvirtual_code(Code) const;
-    PermString code_name(Code, const Vector<PermString> * = 0) const;
-    inline const char *code_str(Code, const Vector<PermString> * = 0) const;
+    PermString code_name(Code) const;
+    inline const char *code_str(Code) const;
 
     inline Glyph glyph(Code) const;
     inline Code encoding(Glyph) const;
@@ -78,7 +87,7 @@ class Metrics { public:
     int kerns(Code in1, Vector<Code> &in2, Vector<int> &kern) const;
     int kern(Code in1, Code in2) const;
 
-    void unparse(const Vector<PermString> *glyph_names = 0) const;
+    void unparse() const;
 
     struct Ligature {
 	Code in2;
@@ -139,8 +148,12 @@ class Metrics { public:
     Vector<Kern> _altselectors;
 
     String _coding_scheme;
+    int _design_units;
 
     bool _liveness_marked : 1;
+
+    Vector<Efont::CharstringProgram *> _mapped_fonts;
+    Vector<String> _mapped_font_names;
     
     Metrics(const Metrics &);	// does not exist
     Metrics &operator=(const Metrics &); // does not exist
@@ -220,9 +233,9 @@ Metrics::assign_emap(Glyph g, Code code)
 }
 
 inline const char *
-Metrics::code_str(Code code, const Vector<PermString> *glyph_names) const
+Metrics::code_str(Code code) const
 {
-    return code_name(code, glyph_names).c_str();
+    return code_name(code).c_str();
 }
 
 #endif
