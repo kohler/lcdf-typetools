@@ -41,9 +41,11 @@ using namespace Efont;
 #define PFA_OPT		304
 #define PFB_OPT		305
 #define OUTPUT_OPT	306
+#define NAME_OPT	307
 
 Clp_Option options[] = {
     { "help", 'h', HELP_OPT, 0, 0 },
+    { "name", 'n', NAME_OPT, Clp_ArgString, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "pfa", 'a', PFA_OPT, 0, 0 },
     { "pfb", 'b', PFA_OPT, 0, 0 },
@@ -61,7 +63,7 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
     va_list val;
     va_start(val, error_message);
     if (!error_message)
-	errh->message("Usage: %s [OPTION]... FONT", program_name);
+	errh->message("Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]", program_name);
     else
 	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
     errh->message("Type %s --help for more information.", program_name);
@@ -72,12 +74,17 @@ void
 usage()
 {
     printf("\
-'T1dotlessj' reads a PostScript Type 1 font, and creates a PostScript Type 1\n\
-font containing just a dotlessj character (by chopping the dot from the j).\n\
+'T1dotlessj' reads a PostScript Type 1 font, derives a new PostScript Type 1\n\
+font containing just a dotlessj character (by chopping the dot from the j),\n\
+and writes it to the standard output.\n\
 \n\
-Usage: %s [OPTION]... FONT\n\
+Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]\n\
 \n\
 Options:\n\
+  -a, --pfa                    Output PFA font.\n\
+  -b, --pfb                    Output PFB font. This is the default.\n\
+  -o, --output=FILE            Write output to FILE instead of standard output.\n\
+  -n, --name=NAME              Set output font's PostScript name.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not report errors to standard error.\n\
       --version                Print version number and exit.\n\
@@ -165,6 +172,9 @@ Sectioner::run(const CharstringContext &g)
 void
 Sectioner::undot(PermString font_name, ErrorHandler *errh)
 {
+    //for (String *s = _sections.begin(); s < _sections.end(); s++)
+    //    fprintf(stderr, "%d  %s\n", s - _sections.begin(), CharstringUnparser::unparse(Type1Charstring(*s)).c_str());
+
     if (_sections.size() < 3)
 	errh->fatal("%s: no dot to remove", font_name.c_str());
     
@@ -187,8 +197,10 @@ Type1Charstring
 Sectioner::gen(Type1Font *font)
 {
     StringAccum sa;
-    for (String *s = _sections.begin(); s < _sections.end(); s++)
+    for (String *s = _sections.begin(); s < _sections.end(); s++) {
+	fprintf(stderr, "%d  %s\n", s - _sections.begin(), CharstringUnparser::unparse(Type1Charstring(*s)).c_str());
 	sa << *s;
+    }
     Type1Charstring in(sa.take_string()), out;
     Type1CharstringGenInterp gen(precision());
     gen.set_hint_replacement_storage(font);
@@ -251,6 +263,7 @@ main(int argc, char *argv[])
     FILE *outputf = 0;
     const char *private_use_dotlessj = "uniF6BE";
     bool binary = true;
+    const char *font_name = 0;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -263,6 +276,10 @@ main(int argc, char *argv[])
 		errh = ErrorHandler::silent_handler();
 	    break;
 
+	  case NAME_OPT:
+	    font_name = clp->arg;
+	    break;
+	    
 	  case PFA_OPT:
 	    binary = false;
 	    break;
@@ -272,6 +289,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case OUTPUT_OPT:
+	  output_file:
 	    if (outputf)
 		usage_error(errh, "output file specified twice");
 	    if (strcmp(clp->arg, "-") == 0)
@@ -295,9 +313,12 @@ particular purpose.\n");
 	    break;
       
 	  case Clp_NotOption:
-	    if (input_file)
+	    if (input_file && outputf)
 		usage_error(errh, "too many arguments");
-	    input_file = clp->arg;
+	    else if (input_file)
+		goto output_file;
+	    else
+		input_file = clp->arg;
 	    break;
       
 	  case Clp_Done:
@@ -334,8 +355,21 @@ particular purpose.\n");
 	errh->fatal("%s: has no 'j' glyph to make dotless", font->font_name().c_str());
 
     // make new font
-    Type1Font *dotless_font = Type1Font::skeleton_make_copy(font, font->font_name() + String("--DotlessJ"));
+    String actual_font_name = (font_name ? font_name : font->font_name() + String("LCDFJ"));
+    if (actual_font_name.length() > 29 && !font_name) {
+	errh->warning("derived font name '%s' longer than 29 characters", actual_font_name.c_str());
+	errh->message("(Use the '--name' option to supply your own name.)");
+    }
+    Type1Font *dotless_font = Type1Font::skeleton_make_copy(font, actual_font_name);
     dotless_font->skeleton_common_subrs();
+    
+    // copy space and .notdef
+    if (Type1Charstring *notdef = font->glyph(".notdef"))
+	dotless_font->add_glyph(Type1Subr::make_glyph(".notdef", *notdef, " |-"));
+    if (Type1Charstring *space = font->glyph("space")) {
+	dotless_font->add_glyph(Type1Subr::make_glyph("space", *space, " |-"));
+	dotless_font->type1_encoding()->put(' ', "space");
+    }
 
     // create dotless j
     Sectioner sec(5);
@@ -343,15 +377,12 @@ particular purpose.\n");
     sec.undot(font->font_name(), errh);
     Type1Subr *dotlessj = Type1Subr::make_glyph("uni0237", sec.gen(dotless_font), " |-");
     dotless_font->add_glyph(dotlessj);
+    //fprintf(stderr, "!  %s\n", CharstringUnparser::unparse(dotlessj->t1cs()).c_str());
 
-    // copy space and .notdef
-    if (Type1Charstring *notdef = font->glyph(".notdef"))
-	dotless_font->add_glyph(Type1Subr::make_glyph(".notdef", *notdef, " |-"));
-    if (Type1Charstring *space = font->glyph("space"))
-	dotless_font->add_glyph(Type1Subr::make_glyph("space", *space, " |-"));
+    // encode dotless j
+    dotless_font->type1_encoding()->clear();
+    dotless_font->type1_encoding()->put('j', "uni0237");
 
-    // change font name
-    
     // write it to output
     if (!outputf)
 	outputf = stdout;

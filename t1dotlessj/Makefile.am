@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = t1dotlessj
-#man_MANS = t1lint.1
+man_MANS = t1dotlessj.1
 
 t1dotlessj_SOURCES = t1dotlessj.cc
 
@@ -11,4 +11,4 @@ t1dotlessj_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 INCLUDES = -I$(top_srcdir)/include
 CLEANFILES = @TEMPLATE_OBJS@
 
-#EXTRA_DIST = t1lint.1
+EXTRA_DIST = t1dotlessj.1
