@@ -93,6 +93,17 @@ ErrorHandler::fatal(const char *format, ...)
   return ERROR_RESULT;
 }
 
+int
+ErrorHandler::fatal(int exit_status, const char *format, ...)
+{
+  assert(exit_status >= 0 && exit_status < 0x1000);
+  va_list val;
+  va_start(val, format);
+  verror((Seriousness) (ERR_MIN_FATAL + (exit_status << ERRVERBOSITY_SHIFT)), String(), format, val);
+  va_end(val);
+  return ERROR_RESULT;
+}
+
 void
 ErrorHandler::ldebug(const String &where, const char *format, ...)
 {
@@ -137,6 +148,17 @@ ErrorHandler::lfatal(const String &where, const char *format, ...)
   va_list val;
   va_start(val, format);
   verror(ERR_FATAL, where, format, val);
+  va_end(val);
+  return ERROR_RESULT;
+}
+
+int
+ErrorHandler::lfatal(int exit_status, const String &where, const char *format, ...)
+{
+  assert(exit_status >= 0 && exit_status < 0x1000);
+  va_list val;
+  va_start(val, format);
+  verror((Seriousness) (ERR_MIN_FATAL + (exit_status << ERRVERBOSITY_SHIFT)), where, format, val);
   va_end(val);
   return ERROR_RESULT;
 }
@@ -595,8 +617,10 @@ FileErrorHandler::handle_text(Seriousness seriousness, const String &message)
     fwrite(s.data(), 1, s.length(), _f);
   }
   
-  if (seriousness >= ERR_MIN_FATAL)
-    exit(1);
+  if (seriousness >= ERR_MIN_FATAL) {
+    int exit_status = (seriousness - ERR_MIN_FATAL) >> ERRVERBOSITY_SHIFT;
+    exit(exit_status);
+  }
 }
 #endif
 

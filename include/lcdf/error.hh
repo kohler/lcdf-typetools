@@ -23,12 +23,16 @@ class ErrorHandler { public:
     ERRVERBOSITY_MAX	= 0xFFFF,
     ERRVERBOSITY_DEFAULT= ERRVERBOSITY_MAX,
     ERRVERBOSITY_MASK	= 0x0000FFFF,
+    ERRVERBOSITY_SHIFT	= 16,
 
     ERR_MIN_DEBUG	= 0x00000000,
     ERR_MIN_MESSAGE	= 0x00010000,
     ERR_MIN_WARNING	= 0x00020000,
     ERR_MIN_ERROR	= 0x00030000,
     ERR_MIN_FATAL	= 0x00040000,
+
+    // fatal() with no explicit exit status exits with this status
+    FATAL_EXITSTATUS	= 1,
     
     ERR_DEBUG		= ERR_MIN_DEBUG + ERRVERBOSITY_DEFAULT,
     ERR_CONTEXT_MESSAGE	= ERR_MIN_MESSAGE + ERRVERBOSITY_CONTEXT,
@@ -36,7 +40,7 @@ class ErrorHandler { public:
     ERR_WARNING		= ERR_MIN_WARNING + ERRVERBOSITY_DEFAULT,
     ERR_CONTEXT_ERROR	= ERR_MIN_ERROR + ERRVERBOSITY_CONTEXT,
     ERR_ERROR		= ERR_MIN_ERROR + ERRVERBOSITY_DEFAULT,
-    ERR_FATAL		= ERR_MIN_FATAL + ERRVERBOSITY_DEFAULT
+    ERR_FATAL		= ERR_MIN_FATAL + ERRVERBOSITY_DEFAULT + (FATAL_EXITSTATUS << ERRVERBOSITY_SHIFT)
   };
   
   ErrorHandler()			{ }
@@ -66,12 +70,14 @@ class ErrorHandler { public:
   int warning(const char *format, ...);
   int error(const char *format, ...);
   int fatal(const char *format, ...);
+  int fatal(int exit_status, const char *format, ...);
 
   void ldebug(const String &landmark, const char *format, ...);
   void lmessage(const String &landmark, const char *format, ...);
   int lwarning(const String &landmark, const char *format, ...);
   int lerror(const String &landmark, const char *format, ...);
   int lfatal(const String &landmark, const char *format, ...);
+  int lfatal(int exit_status, const String &landmark, const char *format, ...);
 
   int verror(Seriousness, const String &landmark, const char *format, va_list);
   int verror_text(Seriousness, const String &landmark, const String &text);
