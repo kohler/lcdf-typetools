@@ -433,8 +433,9 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
     
     // loop over substitutions
     int failures = 0;
-    for (const Substitution *s = sv.begin(); s != sv.end(); s++)
-	if ((s->is_single() || s->is_alternate()) && allow_single) {
+    for (const Substitution *s = sv.begin(); s != sv.end(); s++) {
+	bool is_single = s->is_single() || s->is_alternate();
+	if (is_single && allow_single) {
 	    Code e = encoding(s->in_glyph());
 	    if (e < 0 || e >= changed.size())
 		/* not encoded before this substitution began, ignore */;
@@ -456,7 +457,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
 		changed[e] = CH_ALL;
 	    }
 
-	} else if (s->is_simple_context()) {
+	} else if (!is_single && !s->is_multiple() && s->is_simple_context()) {
 	    // find a list of 'in' codes
 	    Vector<Glyph> in;
 	    s->all_in_glyphs(in);
@@ -518,6 +519,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
 	    
 	} else
 	    failures++;
+    }
 
     for (int i = 0; i < changed_context.size(); i++)
 	delete[] changed_context[i];
