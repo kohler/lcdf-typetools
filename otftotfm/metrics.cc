@@ -1179,7 +1179,7 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	StringAccum sa;
 	sa.append_fill_lines(unencoded, 68, "", "  ");
 	sa.pop_back();
-	errh->lwarning(" ", (unencoded.size() == 1 ? "not enough room in encoding, ignoring %d character" : "not enough room in encoding, ignoring %d characters"), unencoded.size());
+	errh->lwarning(" ", (unencoded.size() == 1 ? "not enough room in encoding, ignoring %d glyph" : "not enough room in encoding, ignoring %d glyphs"), unencoded.size());
 	errh->lmessage(" ", "(\
 This encoding doesn't have room for all the glyphs used by the\n\
 font, so I've ignored these:\n%s.)", sa.c_str());
