@@ -94,8 +94,9 @@ Type1MMSpace::error(ErrorHandler *errh, const char *s, ...) const
     char buf[1024];
     va_list val;
     va_start(val, s);
-    assert(strlen(s) < 900);
-    sprintf(buf, "%.32s: %s", _font_name.cc(), s);
+    assert(strlen(s) < 800);
+    sprintf(buf, (s[0] == ' ' ? "%.200s%s" : "%.200s: %s"),
+	    _font_name.cc(), s);
     errh->verror(ErrorHandler::ErrorKind, Landmark(), buf, val);
     va_end(val);
   }
@@ -107,7 +108,7 @@ bool
 Type1MMSpace::check(ErrorHandler *errh)
 {
   if (_ok)
-    return 1;
+    return true;
   
   if (_nmasters <= 0 || _nmasters > 16)
     return error(errh, "number of masters must be between 1 and 16");
@@ -146,8 +147,26 @@ Type1MMSpace::check(ErrorHandler *errh)
   if (_default_weight_vector.count() != _nmasters)
     return error(errh, "inconsistent weight vector");
   
-  _ok = 1;
-  return 1;
+  _ok = true;
+  return true;
+}
+
+bool
+Type1MMSpace::check_intermediate(ErrorHandler *errh)
+{
+  if (!_ok || _cdv)
+    return true;
+  
+  for (int a = 0; a < _naxes; a++)
+    for (int m = 0; m < _nmasters; m++)
+      if (_master_positions[m][a] != 0 && _master_positions[m][a] != 1) {
+	if (errh)
+	  errh->warning("%s requires intermediate master conversion programs",
+			_font_name.cc());
+	return false;
+      }
+
+  return true;
 }
 
 
@@ -173,23 +192,29 @@ Type1MMSpace::axis_high(int ax) const
 }
 
 
+Vector<double>
+Type1MMSpace::empty_design_vector() const
+{
+  return Vector<double>(_naxes, UNKDOUBLE);
+}
+
 bool
 Type1MMSpace::set_design(NumVector &design_vector, int ax, double value,
 			 ErrorHandler *errh) const
 {
   if (ax < 0 || ax >= _naxes)
-    return error(errh, "no axis number %d", ax);
+    return error(errh, " has only %d axes", _naxes);
   
   if (value < axis_low(ax)) {
     value = axis_low(ax);
     if (errh)
-      errh->warning("%s's %s raised to %g", _font_name.cc(),
+      errh->warning("raising %s's %s to %g", _font_name.cc(),
                     _axis_types[ax].cc(), value);
   }
   if (value > axis_high(ax)) {
     value = axis_high(ax);
     if (errh)
-      errh->warning("%s's %s lowered to %g", _font_name.cc(),
+      errh->warning("lowering %s's %s to %g", _font_name.cc(),
                     _axis_types[ax].cc(), value);
   }
   
@@ -203,7 +228,7 @@ Type1MMSpace::set_design(NumVector &design_vector, PermString ax_name,
 {
   int ax = axis(ax_name);
   if (ax < 0)
-    return error(errh, "no `%s' axis", ax_name.cc());
+    return error(errh, " has no `%s' axis", ax_name.cc());
   else
     return set_design(design_vector, ax, val, errh);
 }
@@ -216,8 +241,12 @@ Type1MMSpace::normalize_vector(ErrorHandler *errh) const
   NumVector &norm_design = *_norm_design_vector;
   
   for (int a = 0; a < _naxes; a++)
-    if (!KNOWN(design[a]))
-      return error(errh, "not all design coordinates specified");
+    if (!KNOWN(design[a])) {
+      if (errh)
+	errh->error("must specify %s's %s coordinate", _font_name.cc(),
+		    _axis_types[a].cc());
+      return false;
+    }
   
   // Move to normalized design coordinates.
   norm_design.assign(_naxes, UNKDOUBLE);
@@ -274,17 +303,14 @@ Type1MMSpace::convert_vector(ErrorHandler *errh) const
     
   } else
     for (int a = 0; a < _naxes; a++)
-      for (int m = 0; m < _nmasters; m++)
+      for (int m = 0; m < _nmasters; m++) {
         if (_master_positions[m][a] == 0)
           weight[m] *= 1 - norm_design[a];
         else if (_master_positions[m][a] == 1)
           weight[m] *= norm_design[a];
-        else {
-	  if (errh)
-	    errh->error("need intermediate master programs for %s",
-			_font_name.cc());
-	  return false;
-	}
+        else
+	  return error(errh, " requires intermediate master conversion programs");
+      }
   
   return true;
 }

@@ -28,10 +28,11 @@ class Type1Font: public Type1Program {
  public:
   
   enum Dict {
-    dFont = 0,		dF = 0,
-    dPrivate = 1,	dP = 1,
-    dBlend = 2,		dB = 2,
-    dBlendPrivate = 3,	dBP = 3,
+    dFont = 0,			dF = dFont,
+    dPrivate = 1,		dP = dPrivate,
+    dBlend = 2,			dB = dBlend,
+    dBlendPrivate = dP|dB,	dBP = dBlendPrivate,
+    dFontInfo = 4,		dFI = dFontInfo,
     dLast
   };
   
@@ -43,7 +44,7 @@ class Type1Font: public Type1Program {
   Vector<Type1Item *> _items;
   
   HashMap<PermString, Type1Definition *> *_dict;
-  int _index[6];
+  int _index[dLast];
   
   Vector<Type1Subr *> _subrs;
   Vector<Type1Subr *> _glyphs;
@@ -60,6 +61,7 @@ class Type1Font: public Type1Program {
   
   void read_encoding(Type1Reader &, const char *);
   void cache_defs() const;
+  void shift_indices(int, int);
   
  public:
   
@@ -89,9 +91,12 @@ class Type1Font: public Type1Program {
   Type1Definition *p_dict(PermString s) const	{ return _dict[dP][s]; }
   Type1Definition *b_dict(PermString s) const	{ return _dict[dB][s]; }
   Type1Definition *bp_dict(PermString s) const	{ return _dict[dBP][s];}
-  Type1Definition *ensure(Dict, PermString);
+  Type1Definition *fi_dict(PermString s) const	{ return _dict[dFI][s];}
   
   bool dict_each(Dict, int &, PermString &, Type1Definition *&) const;
+  
+  Type1Definition *ensure(Dict, PermString);
+  void add_header_comment(const char *);
   
   Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
   Type1MMSpace *mmspace() const;

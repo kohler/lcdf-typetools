@@ -10,6 +10,7 @@ class Type1Reader;
 class Type1Writer;
 class Type1Interp;
 class StringAccum;
+class Type1CopyItem;
 class Type1Subr;
 
 
@@ -25,6 +26,7 @@ class Type1Item {
   
   virtual void gen(Type1Writer &) = 0;
 
+  virtual Type1CopyItem *cast_copy()		{ return 0; }
   virtual Type1Subr *cast_subr()		{ return 0; }
   
 };
@@ -39,8 +41,13 @@ class Type1CopyItem: public Type1Item {
   
   Type1CopyItem(char *v, int l)		: _value(v), _length(l) { }
   ~Type1CopyItem()			{ delete[] _value; }
+
+  char *value() const			{ return _value; }
+  int length() const			{ return _length; }
   
   void gen(Type1Writer &);
+  
+  Type1CopyItem *cast_copy()		{ return this; }
   
 };
 

@@ -10,19 +10,24 @@
 #include "t1mm.hh"
 #include "error.hh"
 #include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
+
+static PermString::Initializer initializer;
+static PermString lenIV_str = "lenIV";
+static PermString FontInfo_str = "FontInfo";
 
 Type1Font::Type1Font(Type1Reader &reader)
   : _cached_defs(false), _glyph_map(-1), _encoding(0),
     _cached_mmspace(0), _mmspace(0)
 {
-  _dict = new HashMap<PermString, Type1Definition *>[4]((Type1Definition *)0);
-  for (int i = 0; i < 6; i++)
+  _dict = new HashMap<PermString, Type1Definition *>[dLast]((Type1Definition *)0);
+  for (int i = 0; i < dLast; i++)
     _index[i] = -1;
   
   Dict cur_dict = dF;
   int eexec_state = 0;
-
+  
   StringAccum accum;
   while (reader.next_line(accum)) {
     
@@ -82,17 +87,20 @@ Type1Font::Type1Font(Type1Reader &reader)
     if (x[0] == '/') {
       Type1Definition *fdi = Type1Definition::make(accum, &reader);
       if (!fdi) goto definition_fail;
-      if (fdi->name() == "lenIV") {
+      
+      if (fdi->name() == lenIV_str) {
 	int lenIV;
 	if (fdi->value_int(lenIV))
 	  Type1Subr::set_lenIV(lenIV);
       }
+      
       _dict[cur_dict].insert(fdi->name(), fdi);
       if (_index[cur_dict] < 0) _index[cur_dict] = _items.count();
       _items.append(fdi);
       accum.clear();
       continue;
     }
+    
    definition_fail:
     
     // check for ZEROS special case
@@ -127,7 +135,10 @@ Type1Font::Type1Font(Type1Reader &reader)
       bool in_private = (strstr(x, "/Private") != 0);
       bool in_blend = (strstr(x, "/Blend") != 0);
       cur_dict = (Dict)((in_private ? dP : dF) | (in_blend ? dB : dF));
-    }
+      if (cur_dict == dF && strstr(x, "/FontInfo") != 0)
+	cur_dict = dFontInfo;
+    } else if (cur_dict == dFontInfo && strstr(x, "end") != 0)
+      cur_dict = dFont;
   }
 }
 
@@ -234,6 +245,32 @@ Type1Font::glyph(PermString name) const
     return 0;
 }
 
+void
+Type1Font::shift_indices(int move_index, int delta)
+{
+  if (delta > 0) {
+    _items.resize(_items.count() + delta, (Type1Item *)0);
+    memmove(&_items[move_index + delta], &_items[move_index],
+	    sizeof(Type1Item *) * (_items.count() - move_index - delta));
+    
+    for (int i = dFont; i < dLast; i++)
+      if (_index[i] > move_index)
+	_index[i] += delta;
+    
+  } else {
+    memmove(&_items[move_index], &_items[move_index - delta],
+	    sizeof(Type1Item *) * (_items.count() - (move_index - delta)));
+    _items.resize(_items.count() + delta);
+    
+    for (int i = dFont; i < dLast; i++)
+      if (_index[i] >= move_index) {
+	if (_index[i] < move_index - delta)
+	  _index[i] = move_index;
+	else
+	  _index[i] += delta;
+      }
+  }
+}
 
 Type1Definition *
 Type1Font::ensure(Dict dict, PermString name)
@@ -243,15 +280,26 @@ Type1Font::ensure(Dict dict, PermString name)
   if (!def) {
     def = new Type1Definition(name, 0, "def");
     int move_index = _index[dict];
-    _items.append((Type1Item *)0);
-    for (int i = _items.count() - 2; i >= move_index; i--)
-      _items[i+1] = _items[i];
+    shift_indices(move_index, 1);
     _items[move_index] = def;
-    for (int i = dFont; i < dLast; i++)
-      if (_index[i] > move_index)
-	_index[i]++;
   }
   return def;
+}
+
+void
+Type1Font::add_header_comment(const char *comment)
+{
+  int i;
+  for (i = 0; i < _items.count(); i++) {
+    Type1CopyItem *copy = _items[i]->cast_copy();
+    if (!copy || copy->value()[0] != '%') break;
+  }
+  shift_indices(i, 1);
+  
+  int len = strlen(comment);
+  char *v = new char[len];
+  memcpy(v, comment, len);
+  _items[i] = new Type1CopyItem(v, len);
 }
 
 
@@ -303,7 +351,7 @@ Type1Font::create_mmspace(ErrorHandler *errh = 0) const
   Type1Definition *t1d;
   
   Vector< Vector<double> > master_positions;
-  t1d = dict("BlendDesignPositions");
+  t1d = fi_dict("BlendDesignPositions");
   if (!t1d || !t1d->value_numvec_vec(master_positions))
     return 0;
   
@@ -317,12 +365,12 @@ Type1Font::create_mmspace(ErrorHandler *errh = 0) const
   _mmspace->set_master_positions(master_positions);
   
   Vector< Vector<double> > normalize_in, normalize_out;
-  t1d = dict("BlendDesignMap");
+  t1d = fi_dict("BlendDesignMap");
   if (t1d && t1d->value_normalize(normalize_in, normalize_out))
     _mmspace->set_normalize(normalize_in, normalize_out);
   
   Vector<PermString> axis_types;
-  t1d = dict("BlendAxisTypes");
+  t1d = fi_dict("BlendAxisTypes");
   if (t1d && t1d->value_namevec(axis_types) && axis_types.count() == naxes)
     for (int a = 0; a < axis_types.count(); a++)
       _mmspace->set_axis_type(a, axis_types[a]);

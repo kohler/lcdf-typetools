@@ -80,11 +80,13 @@ class Type1MMSpace: public Type1Program {
   void set_weight_vector(const NumVector &);
   
   bool check(ErrorHandler * = 0);
-  
+  bool check_intermediate(ErrorHandler * = 0);
+
+  NumVector empty_design_vector() const;
   const NumVector &default_design_vector() const;
   bool set_design(NumVector &, int, double, ErrorHandler * = 0) const;
   bool set_design(NumVector &, PermString, double, ErrorHandler * = 0) const;
-
+  
   const NumVector &default_weight_vector() const;
   
   bool design_to_norm_design(const NumVector &, NumVector &,
