@@ -41,17 +41,23 @@ using namespace Efont;
 #define ENCODING_DIR_OPT	310
 #define ENCODING_NAME_OPT	311
 #define ENCODING_FILE_OPT	312
+#define PRINT_SCRIPTS_OPT	313
+#define PRINT_FEATURES_OPT	314
 
 Clp_Option options[] = {
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ArgString, 0 },
-    { "encoding-file", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
     { "encoding-name", 0, ENCODING_NAME_OPT, Clp_ArgString, 0 },
+    { "encoding-output", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
     { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
+    { "list-features", 0, PRINT_FEATURES_OPT, 0, 0 }, // deprecated
+    { "list-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 }, // deprecated
     { "literal-encoding", 'E', LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "print-features", 0, PRINT_FEATURES_OPT, 0, 0 }, // deprecated
+    { "print-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 }, // deprecated
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
@@ -95,16 +101,27 @@ void
 usage()
 {
     printf("\
-%s\n\
+'Otftopl' generates a TeX PL font metrics file from an OpenType font\n(\
+PostScript flavor only), including those ligatures and kerns that the PL\n\
+format supports. Supply '-s SCRIPT[.LANG]' options to specify the relevant\n\
+language, '-f FEAT' options to turn on optional OpenType features, and a\n\
+'-e ENC' option to specify a base encoding.\n\
 \n\
-General options:\n\
+Usage: %s [OPTIONS] [FONTFILE [OUTFILE]]\n\
+\n\
+Options:\n\
+  -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
   -E, --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
+  -o, --output=FILE            Output PL metrics to FILE.\n\
       --encoding-name=NAME     Output encoding name is NAME.\n\
-      --encoding-file=FILE     Output encoding to FILE.\n\
+      --encoding-output=FILE   Output encoding to FILE.\n\
       --encoding-directory=DIR Output encoding to a file in DIR.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
+      --print-scripts          Print font's supported scripts and exit.\n\
+      --print-features         Print font's supported features for specified\n\
+                               scripts and exit.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
@@ -416,10 +433,36 @@ output_encoding(const GsubEncoding &gsub_encoding,
 	stdout_used = true;
     } else if (!(f = fopen(encoding_file.c_str(), "w")))
 	errh->error("%s: %s", encoding_file.c_str(), strerror(errno));
+
+    {
+	fprintf(f, "%% Encoding created by otftopl%s\n", current_time.c_str());
+	String banner = String("Command line: '") + String(invocation.data(), invocation.length()) + String("'");
+	char *buf = banner.mutable_data();
+	// get rid of crap characters
+	for (int i = 0; i < banner.length(); i++)
+	    if (buf[i] < ' ' || buf[i] > 0176) {
+		if (buf[i] == '\n' || buf[i] == '\r')
+		    buf[i] = ' ';
+		else
+		    buf[i] = '.';
+	    }
+	// break lines at 80 characters -- it would be nice if this were in a
+	// library
+	while (banner.length() > 0) {
+	    int pos = banner.find_left(' '), last_pos = pos;
+	    while (pos < 75 && pos >= 0) {
+		last_pos = pos;
+		pos = banner.find_left(' ', pos + 1);
+	    }
+	    if (pos < 0)
+		last_pos = banner.length();
+	    fprintf(f, "%% ");
+	    fwrite(banner.data(), 1, last_pos, f);
+	    fputc('\n', f);
+	    banner = banner.substring(last_pos + 1);
+	}
+    }
     
-    fprintf(f, "%% Encoding created by '%s'\n", invocation.c_str());
-    if (current_time)
-	fprintf(f, "%%%s\n", current_time.c_str());
     fprintf(f, "/%s [\n%s] def\n", encoding_name.c_str(), sa.c_str());
 
     if (f != stdout)
@@ -427,43 +470,15 @@ output_encoding(const GsubEncoding &gsub_encoding,
 }
 
 static void
-do_file(const char *infn, const char *outfn,
+do_file(const OpenType::Font &otf, const char *outfn,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
 	ErrorHandler *errh)
 {
-    FILE *f;
-    if (!infn || strcmp(infn, "-") == 0) {
-	f = stdin;
-	infn = "<stdin>";
-    } else if (!(f = fopen(infn, "rb")))
-	errh->fatal("%s: %s", infn, strerror(errno));
-  
-    int c = getc(f);
-    ungetc(c, f);
-
-    if (c == EOF)
-	errh->fatal("%s: empty file", infn);
-    if (c != 'O')
-	errh->fatal("%s: not an OpenType/CFF font", infn);
-
-    StringAccum sa(150000);
-    while (!feof(f)) {
-	int forward = fread(sa.reserve(32768), 1, 32768, f);
-	sa.forward(forward);
-    }
-    if (f != stdin)
-	fclose(f);
-
-    LandmarkErrorHandler cerrh(errh, infn);
-    OpenType::Font otf(sa.take_string(), &cerrh);
-    if (!otf.ok())
-	return;
-
-    Cff cff(otf.table("CFF"), &cerrh);
+    Cff cff(otf.table("CFF"), errh);
     if (!cff.ok())
 	return;
 
-    Cff::Font font(&cff, PermString(), &cerrh);
+    Cff::Font font(&cff, PermString(), errh);
     if (!font.ok())
 	return;
     Vector<PermString> glyph_names;
@@ -480,7 +495,7 @@ do_file(const char *infn, const char *outfn,
     
     // initialize encoding
     GsubEncoding encoding;
-    OpenType::Cmap cmap(otf.table("cmap"), &cerrh);
+    OpenType::Cmap cmap(otf.table("cmap"), errh);
     assert(cmap.ok());
     if (dvipsenc_literal)
 	dvipsenc.make_literal_gsub_encoding(encoding, &font);
@@ -492,8 +507,8 @@ do_file(const char *infn, const char *outfn,
     interesting_features_used.assign(interesting_features.size(), 0);
     
     // apply activated GSUB features
-    OpenType::Gsub gsub(otf.table("GSUB"), &cerrh);
-    find_lookups(gsub.script_list(), gsub.feature_list(), lookups, &cerrh);
+    OpenType::Gsub gsub(otf.table("GSUB"), errh);
+    find_lookups(gsub.script_list(), gsub.feature_list(), lookups, errh);
     Vector<OpenType::Substitution> subs;
     for (int i = 0; i < lookups.size(); i++) {
 	OpenType::GsubLookup l = gsub.lookup(lookups[i]);
@@ -510,8 +525,8 @@ do_file(const char *infn, const char *outfn,
 	encoding.shrink_encoding(256, dvipsenc_in, glyph_names);
     
     // apply activated GPOS features
-    OpenType::Gpos gpos(otf.table("GPOS"), &cerrh);
-    find_lookups(gpos.script_list(), gpos.feature_list(), lookups, &cerrh);
+    OpenType::Gpos gpos(otf.table("GPOS"), errh);
+    find_lookups(gpos.script_list(), gpos.feature_list(), lookups, errh);
     Vector<OpenType::Positioning> poss;
     for (int i = 0; i < lookups.size(); i++) {
 	OpenType::GposLookup l = gpos.lookup(lookups[i]);
@@ -521,15 +536,27 @@ do_file(const char *infn, const char *outfn,
     }
 
     // apply LIGKERN commands to the result
-    dvipsenc.apply_ligkern(encoding, &cerrh);
+    dvipsenc.apply_ligkern(encoding, errh);
 
     // report unused features if any
-    sa.clear();
+    StringAccum sa;
+    int nunused = 0;
     for (int i = 0; i < interesting_features.size(); i++)
-	if (!interesting_features_used[i])
-	    sa << (sa ? " " : "") << interesting_features[i].text();
-    if (sa)
-	cerrh.warning("The following features you requested were not supported by this font:\n   %s", sa.c_str());
+	if (!interesting_features_used[i]) {
+	    nunused++;
+	    sa << (sa ? ", " : "") << interesting_features[i].text();
+	}
+    if (nunused) {
+	String w = (nunused == 1 ? "feature '%s' unsupported" : "features '%s' unsupported");
+	w += (interesting_scripts.size() == 2 ? " by script '%s'" : " by scripts '%s'");
+	StringAccum ssa;
+	for (int i = 0; i < interesting_scripts.size(); i += 2) {
+	    ssa << (i ? ", " : "") << interesting_scripts[i].text();
+	    if (!interesting_scripts[i+1].null())
+		ssa << '.' << interesting_scripts[i+1].text();
+	}
+	errh->warning(w.c_str(), sa.c_str(), ssa.c_str());
+    }
 
     if (dvipsenc_literal) {
 	encoding_name = dvipsenc_in.name();
@@ -537,6 +564,7 @@ do_file(const char *infn, const char *outfn,
 	output_encoding(encoding, glyph_names, errh);
     
     // output VPL code
+    FILE *f;
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;
 	outfn = "<stdout>";
@@ -557,6 +585,88 @@ do_file(const char *infn, const char *outfn,
 		encoding_name.c_str(), encoding_file.c_str());
 }
 
+static void
+collect_script_descriptions(const OpenType::ScriptList &script_list, Vector<String> &output, ErrorHandler *errh)
+{
+    Vector<OpenType::Tag> script, langsys;
+    script_list.language_systems(script, langsys, errh);
+    for (int i = 0; i < script.size(); i++) {
+	String what = script[i].text();
+	const char *s = script[i].script_description();
+	String where = (s ? s : "<unknown script>");
+	if (!langsys[i].null()) {
+	    what += String(".") + langsys[i].text();
+	    s = langsys[i].language_description();
+	    where += String("/") + (s ? s : "<unknown language>");
+	}
+	if (what.length() < 8)
+	    output.push_back(what + String("\t\t") + where);
+	else
+	    output.push_back(what + String("\t") + where);
+    }
+}
+
+static void
+do_print_scripts(const OpenType::Font &otf, ErrorHandler *errh)
+{
+    Vector<String> results;
+    if (String gsub_table = otf.table("GSUB")) {
+	OpenType::Gsub gsub(gsub_table, errh);
+	collect_script_descriptions(gsub.script_list(), results, errh);
+    }
+    if (String gpos_table = otf.table("GPOS")) {
+	OpenType::Gpos gpos(gpos_table, errh);
+	collect_script_descriptions(gpos.script_list(), results, errh);
+    }
+
+    if (results.size()) {
+	std::sort(results.begin(), results.end());
+	String *unique_result = std::unique(results.begin(), results.end());
+	for (String *sp = results.begin(); sp < unique_result; sp++)
+	    printf("%s\n", sp->c_str());
+    }
+}
+
+static void
+collect_feature_descriptions(const OpenType::ScriptList &script_list, const OpenType::FeatureList &feature_list, Vector<String> &output, ErrorHandler *errh)
+{
+    int required_fid;
+    Vector<int> fids;
+    for (int i = 0; i < interesting_scripts.size(); i += 2) {
+	// collect features applying to this script
+	script_list.features(interesting_scripts[i], interesting_scripts[i+1], required_fid, fids, errh);
+	for (int i = -1; i < fids.size(); i++) {
+	    int fid = (i < 0 ? required_fid : fids[i]);
+	    if (fid >= 0) {
+		OpenType::Tag tag = feature_list.feature_tag(fid);
+		const char *s = tag.feature_description();
+		output.push_back(tag.text() + String("\t") + (s ? s : "<unknown feature>"));
+	    }
+	}
+    }
+}
+
+static void
+do_print_features(const OpenType::Font &otf, ErrorHandler *errh)
+{
+    Vector<String> results;
+    if (String gsub_table = otf.table("GSUB")) {
+	OpenType::Gsub gsub(gsub_table, errh);
+	collect_feature_descriptions(gsub.script_list(), gsub.feature_list(), results, errh);
+    }
+    if (String gpos_table = otf.table("GPOS")) {
+	OpenType::Gpos gpos(gpos_table, errh);
+	collect_feature_descriptions(gpos.script_list(), gpos.feature_list(), results, errh);
+    }
+
+    if (results.size()) {
+	std::sort(results.begin(), results.end());
+	String *unique_result = std::unique(results.begin(), results.end());
+	for (String *sp = results.begin(); sp < unique_result; sp++)
+	    printf("%s\n", sp->c_str());
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -573,12 +683,14 @@ main(int argc, char **argv)
     for (int i = 0; i < argc; i++)
 	invocation << (i ? " " : "") << argv[i];
     
-    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
+    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     const char *output_file = 0;
     const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
     const char *encoding_file = 0;
     bool literal_encoding = false;
+    bool print_scripts = false;
+    bool print_features = false;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -586,7 +698,7 @@ main(int argc, char **argv)
 
 	  case FEATURE_OPT: {
 	      OpenType::Tag t(clp->arg);
-	      if (t.ok())
+	      if (t.valid())
 		  interesting_features.push_back(t);
 	      else
 		  usage_error(errh, "bad feature tag");
@@ -617,9 +729,9 @@ main(int argc, char **argv)
 	    break;
 	    
 	  case ENCODING_FILE_OPT:
-	    if (encoding_file)
+	    if (::encoding_file)
 		usage_error(errh, "encoding file specified twice");
-	    encoding_file = clp->arg;
+	    ::encoding_file = clp->arg;
 	    break;
 	    
 	  case ENCODING_DIR_OPT:
@@ -639,20 +751,28 @@ main(int argc, char **argv)
 	      String arg = clp->arg;
 	      int period = arg.find_left('.');
 	      OpenType::Tag scr(period <= 0 ? arg : arg.substring(0, period));
-	      if (scr.ok() && period > 0) {
+	      if (scr.valid() && period > 0) {
 		  OpenType::Tag lang(arg.substring(period + 1));
-		  if (lang.ok()) {
+		  if (lang.valid()) {
 		      interesting_scripts.push_back(scr);
 		      interesting_scripts.push_back(lang);
 		  } else
 		      usage_error(errh, "bad language tag");
-	      } else if (scr.ok()) {
+	      } else if (scr.valid()) {
 		  interesting_scripts.push_back(scr);
 		  interesting_scripts.push_back(OpenType::Tag(0U));
 	      } else
 		  usage_error(errh, "bad script tag");
 	      break;
 	  }
+
+	  case PRINT_FEATURES_OPT:
+	    print_features = true;
+	    break;
+
+	  case PRINT_SCRIPTS_OPT:
+	    print_scripts = true;
+	    break;
 	    
 	  case VERSION_OPT:
 	    printf("otftopl (LCDF typetools) %s\n", VERSION);
@@ -698,6 +818,34 @@ particular purpose.\n");
     }
   
   done:
+    // read font
+    String font_data = read_file(input_file, errh);
+    if (errh->nerrors())
+	exit(1);
+
+    LandmarkErrorHandler cerrh(errh, printable_filename(input_file));
+    BailErrorHandler bail_errh(&cerrh);
+
+    OpenType::Font otf(font_data, &bail_errh);
+    assert(otf.ok());
+
+    // figure out scripts we care about
+    if (!interesting_scripts.size()) {
+	interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
+	interesting_scripts.push_back(Efont::OpenType::Tag(0U));
+    }
+    if (interesting_features.size())
+	std::sort(interesting_features.begin(), interesting_features.end());
+
+    // read scripts or features
+    if (print_scripts) {
+	do_print_scripts(otf, &cerrh);
+	exit(errh->nerrors() > 0);
+    } else if (print_features) {
+	do_print_features(otf, &cerrh);
+	exit(errh->nerrors() > 0);
+    }
+
     // read glyphlist
     if (String s = read_file(glyphlist_file, errh, true))
 	DvipsEncoding::parse_glyphlist(s);
@@ -706,14 +854,7 @@ particular purpose.\n");
     if (encoding_file)
 	dvipsenc.parse(encoding_file, errh);
 
-    if (!interesting_scripts.size()) {
-	interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
-	interesting_scripts.push_back(Efont::OpenType::Tag(0U));
-    }
-    if (interesting_features.size())
-	std::sort(interesting_features.begin(), interesting_features.end());
-    
-    do_file(input_file, output_file, dvipsenc, literal_encoding, errh);
+    do_file(otf, output_file, dvipsenc, literal_encoding, &cerrh);
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }

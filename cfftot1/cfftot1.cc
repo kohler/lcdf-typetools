@@ -161,7 +161,7 @@ main(int argc, char **argv)
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
   
-    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
+    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     const char *output_file = 0;
   
@@ -185,8 +185,8 @@ main(int argc, char **argv)
 	    break;
       
 	  case VERSION_OPT:
-	    printf("cfftot1 (LCDF t1sicle) %s\n", VERSION);
-	    printf("Copyright (C) 2002 Eddie Kohler\n\
+	    printf("cfftot1 (LCDF typetools) %s\n", VERSION);
+	    printf("Copyright (C) 2002-2003 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

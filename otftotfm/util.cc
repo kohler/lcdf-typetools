@@ -14,7 +14,7 @@ read_file(String filename, ErrorHandler *errh, bool warning)
     if (!filename || filename == "-") {
 	filename = "<stdin>";
 	f = stdin;
-    } else if (!(f = fopen(filename.c_str(), "r"))) {
+    } else if (!(f = fopen(filename.c_str(), "rb"))) {
 	errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, strerror(errno));
 	return String();
     }

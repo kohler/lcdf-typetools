@@ -370,8 +370,8 @@ main(int argc, char **argv)
       break;
       
      case VERSION_OPT:
-      printf("t1lint (LCDF t1sicle) %s\n", VERSION);
-      printf("Copyright (C) 1999 Eddie Kohler\n\
+      printf("t1lint (LCDF typetools) %s\n", VERSION);
+      printf("Copyright (C) 1999-2003 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
