@@ -574,14 +574,17 @@ Metrics::apply_ligature(const Vector<Code> &in, const Substitution *s, int looku
 
     // check for replacing a fake ligature
     int old_out = -1;
-    if (Ligature *l = ligature_obj(cin1, cin2))
+    if (Ligature *l = ligature_obj(cin1, cin2)) {
+	if (l->out == cout)	// already created this same ligature
+	    return;
 	if (_encoding[l->out].flags & Char::BUILT)
 	    old_out = l->out;
+    }
     
     // make the final ligature
     add_ligature(cin1, cin2, cout);
 
-    //fprintf(stderr, "%s : %d/%s %d/%s => %d/%s\n", s->unparse().c_str(), cin1, code_str(cin1), cin2, code_str(cin2), cout, code_str(cout));
+    //fprintf(stderr, "%s : %d/%s %d/%s => %d/%s [was %d/%s]\n", s->unparse().c_str(), cin1, code_str(cin1), cin2, code_str(cin2), cout, code_str(cout), old_out, code_str(old_out));
 
     // if appropriate, swap old ligatures to point to the new result
     if (old_out >= 0)

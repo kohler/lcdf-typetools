@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 1.99   24.Feb.2004
+
+* otftotfm: Fix overfull encoding bug that could cause an assertion
+  failure, reported by Adam Lindsay.
+
+* otftotfm: Speed improvement.
+
+
 Version 1.98   22.Feb.2004
 
 * otftotfm: Add support for 'SSsmall' glyph. Einar Smith noted that the
