@@ -140,9 +140,11 @@ class Substitution { public:
     bool is_multiple() const;
     bool is_alternate() const;
     bool is_ligature() const;
+    bool is_single_lcontext() const;
     bool is_single_rcontext() const;
 
     // extract data
+    Glyph left_glyph() const;
     Glyph in_glyph() const;
     bool in_glyphs(Vector<Glyph> &) const;
     int in_nglyphs() const;
@@ -155,9 +157,10 @@ class Substitution { public:
     Glyph right_glyph() const;
 
     // alter
+    void add_outer_left(Glyph);
     Substitution in_out_append_glyph(Glyph) const;
-    void add_right(Glyph);
     bool out_alter(const Substitution &, int) throw ();
+    void add_outer_right(Glyph);
     
     void unparse(StringAccum &, const Vector<PermString> * = &debug_glyph_names) const;
     String unparse(const Vector<PermString> * = &debug_glyph_names) const;
@@ -188,6 +191,7 @@ class Substitution { public:
     static void assign(Substitute &, uint8_t &, int, const Glyph *);
     static void assign(Substitute &, uint8_t &, const Coverage &);
     static void assign(Substitute &, uint8_t &, const Substitute &, uint8_t);
+    static void assign_append(Substitute &, uint8_t &, const Substitute &, uint8_t, const Substitute &, uint8_t);
     static void assign_append(Substitute &, uint8_t &, const Substitute &, uint8_t, Glyph);
     static bool substitute_in(const Substitute &, uint8_t, const Coverage &);
     static bool substitute_in(const Substitute &, uint8_t, const GlyphSet &);
@@ -249,9 +253,21 @@ Substitution::is_ligature() const
 }
 
 inline bool
+Substitution::is_single_lcontext() const
+{
+    return _left_is == T_GLYPH && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_NONE;
+}
+
+inline bool
 Substitution::is_single_rcontext() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_GLYPH;
+}
+
+inline Glyph
+Substitution::left_glyph() const
+{
+    return extract_glyph(_left, _left_is);
 }
 
 inline Glyph

@@ -332,26 +332,31 @@ Substitution::is_noop() const
 }
 
 void
-Substitution::assign_append(Substitute &s, uint8_t &t, const Substitute &os, uint8_t ot, Glyph g)
+Substitution::assign_append(Substitute &s, uint8_t &t, const Substitute &ls, uint8_t lt, const Substitute &rs, uint8_t rt)
 {
     clear(s, t);
-    if (ot == T_NONE) {
-	s.gid = g;
-	t = T_GLYPH;
-    } else if (ot == T_GLYPH) {
-	s.gids = new Glyph[3];
-	s.gids[0] = 2;
-	s.gids[1] = os.gid;
-	s.gids[2] = g;
-	t = T_GLYPHS;
-    } else if (ot == T_GLYPHS) {
-	s.gids = new Glyph[os.gids[0] + 2];
-	s.gids[0] = os.gids[0] + 1;
-	memcpy(s.gids + 1, os.gids + 1, os.gids[0] * sizeof(Glyph));
-	s.gids[s.gids[0]] = g;
+    if (lt == T_NONE)
+	assign(s, t, rs, rt);
+    else if (rt == T_NONE)
+	assign(s, t, ls, lt);
+    else if (lt != T_COVERAGE && rt != T_COVERAGE) {
+	int nl = extract_nglyphs(ls, lt, false);
+	int nr = extract_nglyphs(rs, rt, false);
+	s.gids = new Glyph[nl + nr + 1];
+	s.gids[0] = nl + nr;
+	memcpy(&s.gids[1], extract_glyphptr(ls, lt), nl * sizeof(Glyph));
+	memcpy(&s.gids[1 + nl], extract_glyphptr(rs, rt), nr * sizeof(Glyph));
 	t = T_GLYPHS;
     } else
 	throw Error();
+}
+
+void
+Substitution::assign_append(Substitute &s, uint8_t &t, const Substitute &ls, uint8_t lt, Glyph rg)
+{
+    Substitute rs;
+    rs.gid = rg;
+    assign_append(s, t, ls, lt, rs, T_GLYPH);
 }
 
 Substitution
@@ -366,7 +371,19 @@ Substitution::in_out_append_glyph(Glyph g) const
 }
 
 void
-Substitution::add_right(Glyph g)
+Substitution::add_outer_left(Glyph g)
+{
+    Substitute x = _left;
+    uint8_t x_is = _left_is;
+    _left_is = T_NONE;
+    Substitute ls;
+    ls.gid = g;
+    assign_append(_left, _left_is, ls, T_GLYPH, x, x_is);
+    clear(x, x_is);
+}
+
+void
+Substitution::add_outer_right(Glyph g)
 {
     Substitute x = _right;
     uint8_t x_is = _right_is;
