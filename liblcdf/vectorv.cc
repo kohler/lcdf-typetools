@@ -15,6 +15,9 @@
  * legally binding.
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <lcdf/vector.hh>
 #include <string.h>
 

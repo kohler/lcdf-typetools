@@ -135,4 +135,9 @@ hashcode(PermString s)
     return (uintptr_t)(s.c_str());
 }
 
+PermString permprintf(const char *, ...);
+PermString vpermprintf(const char *, va_list);
+PermString permcat(PermString, PermString);
+PermString permcat(PermString, PermString, PermString);  
+
 #endif
