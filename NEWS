@@ -19,7 +19,10 @@ Version 0.16
   will screw up your installation.
 
 * otftotfm: In automatic mode, store dvips files (encodings and
-  psfonts.map) in 'TEXMF/dvips/VENDOR', rather than 'TEXMF/dvips'.
+  psfonts.map) in 'TEXMF/dvips/VENDOR', rather than 'TEXMF/dvips'. Users of
+  previous versions will probably want to move their 'TEXMF/dvips/a_*.enc'
+  and 'TEXMF/dvips/lcdftools.map' files to a 'TEXMF/dvips/lcdftools/'
+  directory, and run 'mktexlsr TEXMF'.
 
 
 Version 0.15   4.Jul.2003
