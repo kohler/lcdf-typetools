@@ -1,6 +1,6 @@
 /* otfinfo.cc -- driver for reporting information about OpenType fonts
  *
- * Copyright (c) 2003-2004 Eddie Kohler
+ * Copyright (c) 2003-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -49,6 +49,7 @@ using namespace Efont;
 #define QUERY_FEATURES_OPT	321
 #define QUERY_OPTICAL_SIZE_OPT	322
 #define QUERY_POSTSCRIPT_NAME_OPT 323
+#define QUERY_GLYPHS_OPT	324
 
 Clp_Option options[] = {
     
@@ -61,6 +62,7 @@ Clp_Option options[] = {
     { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "query-optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
     { "query-postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
+    { "query-glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
     
@@ -96,7 +98,7 @@ usage()
 'Otfinfo' reports information about an OpenType font to standard output.\n\
 Supply a '--query' to say what information you want.\n\
 \n\
-Usage: %s QUERY_OPTION [OTFFILES...]\n\n",
+Usage: %s [-sfzpg] [OTFFILES...]\n\n",
 	   program_name);
     printf("\
 Query options:\n\
@@ -104,6 +106,7 @@ Query options:\n\
   -f, --query-features         Report font's GSUB/GPOS features.\n\
   -z, --query-optical-size     Report font's optical size information.\n\
   -p, --query-postscript-name  Report font's PostScript name.\n\
+  -g, --query-glyphs           Report font's glyph names.\n\
 \n\
 Other options:\n\
       --script=SCRIPT[.LANG]   Set script used for --query-features [latn].\n\
@@ -296,6 +299,36 @@ do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHan
 	result_errh->message("%s", postscript_name.c_str());
 }
 
+static void
+do_query_glyphs(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    try {
+	// get font
+	Cff cff(otf.table("CFF"), errh);
+	if (!cff.ok())
+	    throw OpenType::Error();
+
+	Cff::FontParent *fp = cff.font(PermString(), errh);
+	if (!fp || !fp->ok())
+	    throw OpenType::Error();
+	Cff::Font *font = dynamic_cast<Cff::Font *>(fp);
+	if (!font) {
+	    errh->error("CID-keyed fonts not supported");
+	    throw OpenType::Error();
+	}
+
+	// save glyph names
+	Vector<PermString> glyph_names;
+	font->glyph_names(glyph_names);
+	for (PermString* s = glyph_names.begin(); s < glyph_names.end(); s++)
+	    result_errh->message("%s", s->c_str());
+    } catch (OpenType::Error) {
+	if (errh->nerrors() == before_nerrors)
+	    result_errh->message("no glyph name information");
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -336,6 +369,7 @@ main(int argc, char *argv[])
 	  case QUERY_FEATURES_OPT:
 	  case QUERY_OPTICAL_SIZE_OPT:
 	  case QUERY_POSTSCRIPT_NAME_OPT:
+	  case QUERY_GLYPHS_OPT:
 	    if (query)
 		usage_error(errh, "supply exactly one --query option");
 	    query = opt;
@@ -354,7 +388,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("otfinfo (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2003-2004 Eddie Kohler\n\
+	    printf("Copyright (C) 2003-2005 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -414,6 +448,8 @@ particular purpose.\n");
 	    do_query_optical_size(otf, &cerrh, result_errh);
 	else if (query == QUERY_POSTSCRIPT_NAME_OPT)
 	    do_query_postscript_name(otf, &cerrh, result_errh);
+	else if (query == QUERY_GLYPHS_OPT)
+	    do_query_glyphs(otf, &cerrh, result_errh);
     }
     
     return (errh->nerrors() == 0 ? 0 : 1);

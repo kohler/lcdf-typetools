@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.18
+.ds V 2.19
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -12,7 +12,7 @@
 otfinfo \- report information about OpenType fonts
 .SH SYNOPSIS
 .B otfinfo
-\%[\fB-sfzp\fR]
+\%[\fB-sfzpg\fR]
 \%[\fIFILE...\fR]
 '
 .SH DESCRIPTION
@@ -76,6 +76,20 @@ Print each font's PostScript name. For example:
 .nf
   MinionPro-SemiboldItCapt
 .fi
+'
+.Sp
+.TP 5
+.BR \-g ", " \-\-query\-glyphs
+Print the name of every glyph in each font, one per line. For example:
+.nf
+  \&.notdef
+  space
+  exclam
+  \&...
+  ncommaaccent.end
+  lje.alt
+.fi
+Works for PostScript-flavored OpenType fonts only.
 '
 .PD
 '
