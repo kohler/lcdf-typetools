@@ -115,7 +115,7 @@ class Metrics { public:
 	void swap(Char &);
 	bool visible() const		{ return glyph != 0; }
 	bool visible_base() const	{ return glyph != 0 && glyph != VIRTUAL_GLYPH; }
-	bool flag(int f) const		{ return flags & f; }
+	bool flag(int f) const		{ return (flags & f) != 0; }
 	bool context_setting(Code in1, Code in2) const;
     };
 

@@ -205,8 +205,9 @@ options to turn on optional OpenType features, and a '-e ENC' option to\n\
 specify a base encoding. Output files are written to the current directory\n(\
 but see '--automatic' and the 'directory' options).\n\
 \n\
-Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\
-\n\
+Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\n",
+	   program_name);
+    printf("\
 Font feature and transformation options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
@@ -221,7 +222,8 @@ Encoding options:\n\
       --unicoding=COMMAND      Add a UNICODING command.\n\
       --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
-\n\
+\n");
+    printf("\
 Automatic mode options:\n\
   -a, --automatic              Install in a TeX Directory Structure.\n\
   -v, --vendor=NAME            Set font vendor for TDS [lcdftools].\n\
@@ -234,7 +236,8 @@ Output options:\n\
       --no-virtual             Do not generate VFs or VPLs.\n\
       --no-encoding            Do not generate an encoding file.\n\
       --no-map                 Do not generate a psfonts.map line.\n\
-\n\
+\n");
+    printf("\
 File location options:\n\
       --tfm-directory=DIR      Put TFM files in DIR [.|automatic].\n\
       --pl-directory=DIR       Put PL files in DIR [.|automatic].\n\
@@ -258,7 +261,7 @@ Other options:\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name);
+Report bugs to <kohler@icir.org>.\n");
 }
 
 
@@ -1305,7 +1308,7 @@ main(int argc, char **argv)
 		      usage_error(errh, "bad language tag");
 	      } else if (scr.valid()) {
 		  interesting_scripts.push_back(scr);
-		  interesting_scripts.push_back(OpenType::Tag(0U));
+		  interesting_scripts.push_back(OpenType::Tag());
 	      } else
 		  usage_error(errh, "bad script tag");
 	      break;
@@ -1523,7 +1526,7 @@ particular purpose.\n");
     // figure out scripts we care about
     if (!interesting_scripts.size()) {
 	interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
-	interesting_scripts.push_back(Efont::OpenType::Tag(0U));
+	interesting_scripts.push_back(Efont::OpenType::Tag());
     }
     if (interesting_features.size())
 	std::sort(interesting_features.begin(), interesting_features.end());

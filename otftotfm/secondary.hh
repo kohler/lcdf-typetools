@@ -4,7 +4,7 @@
 #include <efont/cff.hh>
 class DvipsEncoding;
 class Metrics;
-class Setting;
+struct Setting;
 
 class Secondary { public:
     Secondary()				: _next(0) { }

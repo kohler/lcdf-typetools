@@ -924,12 +924,12 @@ MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer, Erro
 
     // unify Subrs
     for (int i = 0; i < _subrs.size(); i++)
-	if (_subrs[i] && _subrs[i]->unify(this))
-	    ;
+	if (_subrs[i])
+	    _subrs[i]->unify(this);
 
     for (int i = 0; i < _gsubrs.size(); i++)
-	if (_gsubrs[i] && _gsubrs[i]->unify(this))
-	    ;
+	if (_gsubrs[i])
+	    _gsubrs[i]->unify(this);
 }
 
 

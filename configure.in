@@ -83,12 +83,12 @@ dnl <new> and/or <new.h>
 dnl
 
 AC_LANG_CPLUSPLUS
-AC_CACHE_CHECK(whether <new> works, ac_cv_good_new_hdr,
-AC_TRY_LINK([#include <new>], [
+AC_CACHE_CHECK([whether <new> works], ac_cv_good_new_hdr,
+[AC_TRY_LINK([#include <new>], [
   int a;
   int *b = new(&a) int;
   return 0;
-], ac_cv_good_new_hdr=yes, ac_cv_good_new_hdr=no))
+], ac_cv_good_new_hdr=yes, ac_cv_good_new_hdr=no)])
 if test "$ac_cv_good_new_hdr" = yes; then
    AC_DEFINE(HAVE_NEW_HDR, 1, [Define if <new> exists and works.])
 fi
@@ -120,7 +120,7 @@ if test $ac_cv_working_strtod = no; then
 fi
 
 AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate)
-AC_CHECK_HEADERS(unistd.h fcntl.h)
+AC_CHECK_HEADERS(unistd.h fcntl.h sys/time.h)
 
 AC_SUBST(FIXLIBC_O)
 
@@ -133,13 +133,13 @@ AC_CHECK_HEADERS(inttypes.h, have_inttypes_h=yes, have_inttypes_h=no)
 AC_CHECK_HEADERS(sys/types.h, have_sys_types_h=yes, have_sys_types_h=no)
 
 if test $have_inttypes_h = no -a $have_sys_types_h = yes; then
-    AC_CACHE_CHECK(for uintXX_t typedefs, ac_cv_uint_t,
+    AC_CACHE_CHECK([for uintXX_t typedefs], ac_cv_uint_t,
     [AC_EGREP_HEADER(dnl
 changequote(<<,>>)<<(^|[^a-zA-Z_0-9])uint32_t[^a-zA-Z_0-9]>>changequote([,]),
     sys/types.h, ac_cv_uint_t=yes, ac_cv_uint_t=no)])
 fi
 if test $have_inttypes_h = no -a $have_sys_types_h = yes -a "$ac_cv_uint_t" = no; then
-    AC_CACHE_CHECK(for u_intXX_t typedefs, ac_cv_u_int_t,
+    AC_CACHE_CHECK([for u_intXX_t typedefs], ac_cv_u_int_t,
     [AC_EGREP_HEADER(dnl
 changequote(<<,>>)<<(^|[^a-zA-Z_0-9])u_int32_t[^a-zA-Z_0-9]>>changequote([,]),
     sys/types.h, ac_cv_u_int_t=yes, ac_cv_u_int_t=no)])
@@ -158,6 +158,19 @@ Assuming "short" has 16 bits and "int" has 32 bits.
 =========================================])
     AC_DEFINE(HAVE_FAKE_INT_TYPES, 1, [Define if intXX_t types are not available.])
 fi
+
+AC_CHECK_TYPES(uintptr_t, [], [],
+[#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+])
+
+AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(unsigned long)
+AC_CHECK_SIZEOF(unsigned int)
 
 
 dnl
