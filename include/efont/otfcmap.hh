@@ -15,7 +15,7 @@ class Cmap { public:
 
     Glyph map_uni(uint32_t c) const;
     int map_uni(const Vector<uint32_t> &in, Vector<Glyph> &out) const;
-    
+
   private:
 
     String _str;
@@ -33,7 +33,7 @@ class Cmap { public:
     int first_unicode_table() const	{ return _first_unicode_table; }
     int first_table(int platform, int encoding) const;
     int check_table(int t, ErrorHandler * = 0) const;
-    Glyph map_table(int t, uint32_t uni, ErrorHandler * = 0) const;
+    Glyph map_table(int t, uint32_t, ErrorHandler * = 0) const;
     void dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, ErrorHandler * = 0) const;
     
 };

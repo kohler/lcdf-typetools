@@ -255,7 +255,7 @@ Cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 	      return 0;
 	  int hi_byte = (uni >> 8) & 255;
 	  int subh = USHORT_AT(data + 6 + hi_byte * 2);
-	  if (subh == 0 && hi_byte)
+	  if (subh == 0 && hi_byte) // XXX?
 	      return 0;
 	  data += 524 + subh;
 	  int firstCode = USHORT_AT(data);
