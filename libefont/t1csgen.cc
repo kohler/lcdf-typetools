@@ -84,13 +84,11 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 	break;
     }
 
-    if (fucker)
-	fprintf(stderr, "T%.12g,%.12g F%.12g,%.12g %c %.12g\n", _true.x, _true.y, _false.x, _false.y, (kind ? kind : '-'), float_val);
     int big_val = (int)round(float_val * _f_precision);
-    int val = big_val / _precision;
     int frac = big_val % _precision;
-    if (frac != 0)
-	val = big_val;
+    int val = (frac == 0 ? big_val / _precision : big_val);
+    if (fucker)
+	fprintf(stderr, "T%.12g,%.12g F%.12g,%.12g %c %.12g %d/%d\n", _true.x, _true.y, _false.x, _false.y, (kind ? kind : '-'), float_val, val, frac);
 
     if (val >= -107 && val <= 107)
 	_ncs.append((char)(val + 139));
@@ -119,7 +117,7 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 	_ncs.append((char)(Charstring::cDiv - Charstring::cEscapeDelta));
     }
 
-    float_val = (double)big_val / _precision;
+    float_val = big_val / _f_precision;
     switch (kind) {
       case 'x':
 	_false.x += float_val;
