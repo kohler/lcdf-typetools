@@ -8,44 +8,6 @@
 #include <assert.h>
 
 
-Stroke::~Stroke()
-{
-  Bezier *b = _first;
-  do {
-    Bezier *n = b->_right;
-    delete b;
-    b = n;
-  } while (b && b != _first);
-}
-
-
-void
-Stroke::kill()
-{
-  Stroke *s = this;
-  while (s) {
-    Stroke *n = s->_next;
-    delete s;
-    s = n;
-  }
-}
-
-
-void
-Stroke::segment(Lens *lens)
-{
-  Bezier *b = _first;
-  do {
-    b->segment_curve(lens);
-    b = b->_right;
-  } while (b && b != _first);
-}
-
-
-/*****
- * Bezier
- **/
-
 Bezier::Bezier(const point &p1, const point &p2, const point &p3,
 	       const point &p4)
   : _flags(0)

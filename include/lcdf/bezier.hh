@@ -5,35 +5,14 @@
 #endif
 #include "point.hh"
 #include <X11/Xlib.h>
+#include "vector.hh"
 class Charpanel;
 class Bezier;
+class Stroke;
 class Lens;
 
-
-class Stroke {
-  
-  Bezier *_first;
-  Stroke *_next;
-  
-  friend class Type1Imager;
-  
- public:
-  
-  Stroke(Bezier *b)			: _first(b), _next(0) { }
-  ~Stroke();
-  void kill();
-  
-  Stroke *next() const			{ return _next; }
-  Bezier *bezier() const		{ return _first; }
-  
-  void draw(Lens *, Charpanel *, int);
-  void segment(Lens *);
-  
-};
-
-
 class Bezier {
-
+  
   friend class Stroke;
   
   int _flags;
@@ -75,7 +54,7 @@ class Bezier {
   int hit(point &, double);
   
   point eval(double) const;
-
+  
   const point &p(int i) const		{ return _p[i]; }
   point &p(int i)			{ return _p[i]; }
   Bezier *left() const			{ return _left; }
@@ -88,6 +67,7 @@ class Bezier {
   double bb_left() const;
   double bb_bottom() const;
   double bb_right() const;
+  bool have_bb() const			{ return _flags & BBExists; }
   void prepare_bb();
   void ensure_bb();
   
@@ -144,7 +124,7 @@ Bezier::bb_right() const
 inline void
 Bezier::ensure_bb()
 {
-  if (!(_flags & BBExists))
+  if (!have_bb())
     prepare_bb();
 }
 
