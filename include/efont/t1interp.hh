@@ -166,7 +166,7 @@ class Type1Interp { public:
 	othcITC_get = 25,
 	othcITC_unknown = 26,
 	othcITC_ifelse = 27,
-	othcITC_random = 28,
+	othcITC_random = 28
     };
 
     enum Errors {
@@ -192,7 +192,9 @@ class Type1Interp { public:
     };
 
     enum { STACK_SIZE = 48, PS_STACK_SIZE = 24, SCRATCH_SIZE = 32 };
-  
+
+    static const char * const command_names[];
+    
   private:
   
     int _error;
@@ -203,7 +205,7 @@ class Type1Interp { public:
     int _sp;
     double _ps_s[PS_STACK_SIZE];
     int _ps_sp;
-  
+
     Vector<double> *_weight_vector;
     Vector<double> _scratch_vector;
 

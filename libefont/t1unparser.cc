@@ -3,29 +3,6 @@
 #endif
 #include "t1unparser.hh"
 
-static const char *command_names[] = {
-    "error", "hstem", "UNKNOWN_2", "vstem", "vmoveto",
-    "rlineto", "hlineto", "vlineto", "rrcurveto", "closepath",
-  
-    "callsubr", "return", "escape", "hsbw", "endchar",
-    "UNKNOWN_15", "blend", "UNKNOWN_17", "hstemhm", "hintmask",
-  
-    "cntrmask", "rmoveto", "hmoveto", "vstemhm", "rcurveline",
-    "rlinecurve", "vvcurveto", "hhcurveto", "shortint", "callgsubr",
-  
-    "vhcurveto", "hvcurveto", "dotsection", "vstem3", "hstem3",
-    "and", "or", "not", "seac", "sbw",
-  
-    "store", "abs", "add", "sub", "div",
-    "load", "neg", "eq", "callothersubr", "pop",
-  
-    "drop", "UNKNOWN_12_19", "put", "get", "ifelse",
-    "random", "mul", "UNKNOWN_12_25", "sqrt", "dup",
-  
-    "exch", "index", "roll", "UNKNOWN_12_31", "UNKNOWN_12_32",
-    "setcurrentpoint", "hflex", "flex", "hflex1", "flex1"
-};
-
 Type1Unparser::Type1Unparser()
     : Type1Interp(0, 0),
       _one_command_per_line(false), _start_of_line(true)

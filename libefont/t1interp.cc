@@ -10,6 +10,30 @@
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STATE()		do { if (_t2state < T2_PATH) return error(errOrdering, cmd); } while (0)
 
+const char * const Type1Interp::command_names[] = {
+    "error", "hstem", "UNKNOWN_2", "vstem", "vmoveto",
+    "rlineto", "hlineto", "vlineto", "rrcurveto", "closepath",
+  
+    "callsubr", "return", "escape", "hsbw", "endchar",
+    "UNKNOWN_15", "blend", "UNKNOWN_17", "hstemhm", "hintmask",
+  
+    "cntrmask", "rmoveto", "hmoveto", "vstemhm", "rcurveline",
+    "rlinecurve", "vvcurveto", "hhcurveto", "shortint", "callgsubr",
+  
+    "vhcurveto", "hvcurveto", "dotsection", "vstem3", "hstem3",
+    "and", "or", "not", "seac", "sbw",
+  
+    "store", "abs", "add", "sub", "div",
+    "load", "neg", "eq", "callothersubr", "pop",
+  
+    "drop", "UNKNOWN_12_19", "put", "get", "ifelse",
+    "random", "mul", "UNKNOWN_12_25", "sqrt", "dup",
+  
+    "exch", "index", "roll", "UNKNOWN_12_31", "UNKNOWN_12_32",
+    "setcurrentpoint", "hflex", "flex", "hflex1", "flex1"
+};
+
+
 double Type1Interp::double_for_error;
 
 Type1Interp::Type1Interp(const EfontProgram *prog, Vector<double> *weight)
@@ -1030,7 +1054,7 @@ Type1Interp::char_sidebearing(int cmd, double, double)
 }
 
 void
-Type1Interp::char_width(int cmd, double, double)
+Type1Interp::char_width(int, double, double)
 {
 }
 
@@ -1083,6 +1107,7 @@ Type1Interp::char_rrcurveto(int cmd, double, double, double, double, double, dou
 void
 Type1Interp::char_flex(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3, double dx4, double dy4, double dx5, double dy5, double dx6, double dy6, double flex_depth)
 {
+    (void) flex_depth;
     char_rrcurveto(cmd, dx1, dy1, dx2, dy2, dx3, dy3);
     char_rrcurveto(cmd, dx4, dy4, dx5, dy5, dx6, dy6);
 }

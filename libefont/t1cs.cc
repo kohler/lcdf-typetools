@@ -11,22 +11,21 @@ EfontCharstring::~EfontCharstring()
 
 
 Type1Charstring::Type1Charstring(int lenIV, const String &s)
+    : EfontCharstring(), _key(-1)
 {
-    if (lenIV < 0) {
-	// lenIV < 0 means there is no charstring encryption.
+    if (lenIV < 0)		// no charstring encryption
 	_s = s;
-	_key = -1;
-    } else {
-	_s = s.substring(lenIV);
-	const unsigned char *d = reinterpret_cast<const unsigned char*>(_s.data());
+    else if (lenIV < s.length()) {
+	const unsigned char *d = reinterpret_cast<const unsigned char*>(s.data());
 	_key = t1R_cs;
-	for (int i = 0; i < _s.length(); i++, d++)
+	for (int i = 0; i < lenIV; i++, d++)
 	    _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
+	_s = s.substring(lenIV);
     }
 }
 
 Type1Charstring::Type1Charstring(const Type1Charstring &t1cs)
-    : _s(t1cs._s), _key(t1cs._key)
+    : EfontCharstring(t1cs), _s(t1cs._s), _key(t1cs._key)
 {
 }
 
@@ -126,7 +125,7 @@ Type1Charstring::run(Type1Interp &interp) const
 
 
 Type2Charstring::Type2Charstring(const Type2Charstring &t2cs)
-    : _s(t2cs._s)
+    : EfontCharstring(), _s(t2cs._s)
 {
 }
 
