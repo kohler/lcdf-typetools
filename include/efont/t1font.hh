@@ -36,6 +36,9 @@ class Type1Font: public Type1Program {
   };
   
  private:
+
+  mutable bool _cached_defs;
+  mutable PermString _font_name;
   
   Vector<Type1Item *> _items;
   
@@ -49,20 +52,18 @@ class Type1Font: public Type1Program {
   PermString _charstring_definer;
   Type1Encoding *_encoding;
   
-  PermString _error;
-  
   Type1Font(const Type1Font &);
   Type1Font &operator=(const Type1Font &);
   
   void read_encoding(Type1Reader &, const char *);
+  void cache_defs() const;
   
  public:
   
   Type1Font(Type1Reader &);
   ~Type1Font();
-  
-  bool set_error(PermString e)		{ _error = e; return false; }
-  PermString error() const		{ return _error; }
+
+  PermString font_name() const;
   
   int item_count() const		{ return _items.count(); }
   Type1Item *item(int i) const		{ return _items[i]; }
@@ -96,6 +97,13 @@ Type1Font::dict_each(Dict dict, int &i, PermString &n,
 		     Type1Definition *&d) const
 {
   return _dict[dict].each(i, n, d);
+}
+
+inline PermString
+Type1Font::font_name() const
+{
+  if (!_cached_defs) cache_defs();
+  return _font_name;
 }
 
 #endif

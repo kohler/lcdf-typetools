@@ -9,7 +9,7 @@
 extern int chunk_count, chunk_len;
 
 Type1Font::Type1Font(Type1Reader &reader)
-  : _glyph_map(-1), _encoding(0)
+  : _cached_defs(false), _glyph_map(-1), _encoding(0)
 {
   _dict = new HashMap<PermString, Type1Definition *>[4]((Type1Definition *)0);
   for (int i = 0; i < 6; i++)
@@ -268,4 +268,16 @@ Type1Font::write(Type1Writer &w)
     _items[i]->gen(w);
   
   w.flush();
+}
+
+
+void
+Type1Font::cache_defs() const
+{
+  Type1Definition *t1d;
+
+  t1d = dict("FontName");
+  if (t1d) t1d->value_name(_font_name);
+
+  _cached_defs = true;
 }
