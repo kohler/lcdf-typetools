@@ -4,7 +4,9 @@ AUTOMAKE_OPTIONS = foreign
 bin_PROGRAMS = otftoafm
 man_MANS = 
 
-otftoafm_SOURCES = otftoafm.cc \
+otftoafm_SOURCES = \
+	gsubencoding.cc gsubencoding.hh \
+	otftoafm.cc \
 	templatei.cc
 
 otftoafm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
