@@ -138,6 +138,7 @@ class Type1Charstring : public Charstring { public:
     
     const String &data_string() const;
     String substring(int pos, int len) const;
+    int first_caret_after(int pos) const;
     
     void assign(const String &);
     void prepend(const Type1Charstring &);
@@ -192,6 +193,10 @@ class EfontProgram { public:
     virtual int ngsubrs() const				{ return 0; }
     virtual Charstring *gsubr(int) const		{ return 0; }
     virtual int gsubr_bias() const			{ return 0; }
+
+    virtual int nxsubrs(bool g) const;
+    virtual Charstring *xsubr(bool g, int) const;
+    virtual int xsubr_bias(bool g) const;
     
     virtual int nglyphs() const				{ return 0; }
     virtual PermString glyph_name(int) const		{ return PermString();}
@@ -276,6 +281,25 @@ inline const uint8_t *
 Type2Charstring::data() const
 {
     return reinterpret_cast<const uint8_t *>(_s.data());
+}
+
+
+inline int
+EfontProgram::nxsubrs(bool g) const
+{
+    return (g ? ngsubrs() : nsubrs());
+}
+
+inline Charstring *
+EfontProgram::xsubr(bool g, int i) const
+{
+    return (g ? gsubr(i) : subr(i));
+}
+
+inline int
+EfontProgram::xsubr_bias(bool g) const
+{
+    return (g ? gsubr_bias() : subr_bias());
 }
 
 #endif

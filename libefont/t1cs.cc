@@ -153,6 +153,32 @@ Type1Charstring::run(CharstringInterp &interp) const
     return false;
 }
 
+int
+Type1Charstring::first_caret_after(int pos) const
+{
+    const uint8_t *data = Type1Charstring::data();
+    const uint8_t *edata = data + (pos < length() ? pos : length());
+
+    while (data < edata) {
+	if (*data >= 32 && *data <= 246)	// push small number
+	    data++;
+	else if (*data < 32) {			// a command
+	    if (*data == cEscape)
+		data += 2;
+	    else if (*data == cShortint)
+		data += 3;
+	    else
+		data++;
+	} else if (*data >= 247 && *data <= 254)	// push medium number
+	    data += 2;
+	else					// 255: push huge number
+	    data += 5;
+    }
+
+    const uint8_t *odata = Type1Charstring::data();
+    return (data > odata + length() ? length() : data - odata);
+}
+
 void
 Type1Charstring::assign_substring(int pos, int len, const String &cs)
 {
@@ -160,7 +186,10 @@ Type1Charstring::assign_substring(int pos, int len, const String &cs)
 	decrypt();
     if (pos < 0 || len < 0 || pos + len >= _s.length())
 	/* do nothing */;
-    else if (cs.length() <= len) {
+    else if (cs.length() == len) {
+	char *d = _s.mutable_data();
+	memcpy(d + pos, cs.data(), cs.length());
+    } else if (cs.length() <= len) {
 	char *d = _s.mutable_data();
 	memcpy(d + pos, cs.data(), cs.length());
 	memmove(d + pos + cs.length(), d + pos + len, _s.length() - pos - len);
