@@ -1,0 +1,123 @@
+\documentclass[11pt]{article}
+\renewcommand{\sfdefault}{MyriadPro}
+\usepackage{mathrmletter}
+
+\newcommand{\shapestart}{n}
+\newif\iffjords \fjordstrue
+\newif\ifswsh   \swshtrue
+\newif\ifitalic \italicfalse
+
+\input{features-fontspec}
+\ifitalic\renewcommand\shapestart{it}\else\renewcommand\shapestart{n}\fi
+
+\setlength{\topmargin}{-.75in}
+\addtolength{\textheight}{1.6in}
+\setlength{\parindent}{0pt}
+\addtolength{\oddsidemargin}{-.5in}
+\addtolength{\textwidth}{1in}
+\setlength{\parskip}{0.5\baselineskip}
+
+\begin{document}
+\pagestyle{empty}
+
+\begin{large}
+
+\setlength{\parskip}{0.5\baselineskip}
+\selectfont
+
+
+\def\br{\hfil\break}
+
+\makeatletter
+\long\def\test#1#2{
+
+\begin{tabular}{@{}ll@{}}
+{\sffamily\bfseries \testfontname} & {\sffamily #1} \\
+\end{tabular}
+
+\nobreak
+\begingroup
+#2\selectfont
+\iffjords
+\begin{tabular}{@{}p{.65\hsize}@{}p{.35\hsize}@{}}
+\else
+\begin{tabular}{@{}p{\hsize}@{}p{0pt}@{}}
+\fi
+It's funny ---\br
+it was always difficult ---\br
+You've stolen my thunder. \br
+When I come back you're sitting already \br
+and my speech is transmuted unspoken to waste. \br
+That's the kind of thing that irritates.
+&
+\iffjords
+\centering
+He spit in 26 fjords;
+
+\vskip.25\baselineskip
+Ellen said, ``!`COME!''
+
+\vskip.25\baselineskip
+\begin{tabular}{@{}r@{}r@{\quad}c@{}}
+\strut\char`\$399.20 && No 1/2 baked \\
+\strut+ \hfill 4.11 && 2/33d 1st 6.o \\
+\cline{1-1}
+\strut\char`\$403.31
+\end{tabular}
+\fi
+\\
+\end{tabular}
+
+\begin{tabular}{@{}lll}
+\framebox{\setbox0\hbox to 1in{ABCDEFGHOH-95\hskip0pt minus1fil\null}\dp0=0pt\ht0=8pt\box0}\hskip.3in\null &
+abcdefghijklmnopqrstuvwxyz &
+0123456789 \\
+\null \\
+\end{tabular}
+\endgroup
+
+}
+
+
+\test{}{\fontshape{\shapestart nk}}
+
+\test{-fkern -fliga}{\fontshape{\shapestart}}
+
+\test{-fkern -fliga -fonum}{\fontshape{\shapestart 9}}
+
+\test{-fkern -fliga -fonum -fpnum}{\fontshape{\shapestart 9p}}
+
+\test{-fkern -fliga -fcase}{\fontshape{\shapestart C}}
+
+\test{-fkern -fliga -fcase -fcpsp}{\fontshape{\shapestart Ccp}}
+
+\test{-fkern -fliga -fsmcp}{\ifitalic\fontshape{itsc}\else\fontshape{sc}\fi}
+
+\test{-fkern -fliga -fsmcp -flnum}{\ifitalic\fontshape{itsc0}\else\fontshape{sc0}\fi}
+
+\test{-fkern -fliga -fc2sc}{\ifitalic\fontshape{itc2sc}\else\fontshape{c2sc}\fi}
+
+\test{-fkern -fliga -fdlig}{\fontshape{\shapestart d}}
+
+\test{-fkern -fliga -fdlig -fcswh -fonum}{\fontshape{\shapestart dcsw}}
+
+\ifswsh
+\test{-fkern -fliga -fdlig -fswsh -fonum}{\fontshape{\shapestart dsw}}
+\fi
+
+\test{-fkern -fliga -fsalt}{\fontshape{\shapestart sa}}
+
+\test{-fkern -fliga -fzero}{\fontshape{\shapestart zero}}
+
+\test{-fkern -fliga -fdlig -fhist}{\fontshape{\shapestart dh}}
+
+\test{-fkern -fliga -fsups}{\fontshape{\shapestart sups}}
+
+\test{-fkern -fliga -ffrac -fordn}{\fontshape{\shapestart fror}}
+
+\fjordsfalse
+\test{-fornm}{\fontshape{\shapestart orn}}
+
+\end{large}
+
+\end{document}
