@@ -15,6 +15,9 @@
 //		V::V()
 // V &		V::operator=(const V &)
 
+template <class K, class V> class _HashMap_const_iterator;
+template <class K, class V> class _HashMap_iterator;
+
 template <class K, class V>
 class HashMap { public:
     
@@ -36,10 +39,10 @@ class HashMap { public:
     bool insert(const K &, const V &);
     void clear();
 
-    class const_iterator;
+    typedef _HashMap_const_iterator<K, V> const_iterator;
     const_iterator begin() const	{ return const_iterator(this, 0); }
     const_iterator end() const		{ return const_iterator(this, _capacity); }
-    class iterator;
+    typedef _HashMap_iterator<K, V> iterator;
     iterator begin()			{ return iterator(this, 0); }
     iterator end()			{ return iterator(this, _capacity); }
 
@@ -72,7 +75,8 @@ class HashMap { public:
 };
 
 template <class K, class V>
-class HashMap<K, V>::const_iterator { public:
+class _HashMap_const_iterator { public:
+    typedef _HashMap_const_iterator const_iterator;
     
     operator bool() const		{ return _pos < _hm->_capacity; }
     
@@ -86,22 +90,23 @@ class HashMap<K, V>::const_iterator { public:
 
     bool operator==(const const_iterator &) const;
     bool operator!=(const const_iterator &) const;
-    
+
   private:
     const HashMap<K, V> *_hm;
     int _pos;
-    const_iterator(const HashMap<K, V> *, int);
+    _HashMap_const_iterator(const HashMap<K, V> *, int);
     friend class HashMap<K, V>;
-    friend class iterator;
+    friend class _HashMap_iterator<K, V>;
 };
 
 template <class K, class V>
-class HashMap<K, V>::iterator : public HashMap<K, V>::const_iterator { public:
+class _HashMap_iterator : public _HashMap_const_iterator<K, V> { public:
+    typedef _HashMap_iterator iterator;
     
     V &value() const			{ return _hm->_e[_pos].value; }
 
   private:
-    iterator(const HashMap<K, V> *hm, int pos) : const_iterator(hm, pos) { }
+    _HashMap_iterator(const HashMap<K, V> *hm, int pos) : const_iterator(hm, pos) { }
     friend class HashMap<K, V>;
 };
 
@@ -146,14 +151,14 @@ HashMap<K, V>::findp(const K &key) const
 
 template <class K, class V>
 inline bool
-HashMap<K, V>::const_iterator::operator==(const const_iterator &i) const
+_HashMap_const_iterator<K, V>::operator==(const const_iterator &i) const
 {
     return _hm == i._hm && _pos == i._pos;
 }
 
 template <class K, class V>
 inline bool
-HashMap<K, V>::const_iterator::operator!=(const const_iterator &i) const
+_HashMap_const_iterator<K, V>::operator!=(const const_iterator &i) const
 {
     return _hm != i._hm || _pos != i._pos;
 }

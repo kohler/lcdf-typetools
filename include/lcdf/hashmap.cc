@@ -149,7 +149,7 @@ HashMap<K, V>::swap(HashMap<K, V> &o)
 }
 
 template <class K, class V>
-HashMap<K, V>::const_iterator::const_iterator(const HashMap<K, V> *hm, int pos)
+_HashMap_const_iterator<K, V>::_HashMap_const_iterator(const HashMap<K, V> *hm, int pos)
     : _hm(hm), _pos(pos)
 {
     typename HashMap<K, V>::Pair *e = _hm->_e;
@@ -160,7 +160,7 @@ HashMap<K, V>::const_iterator::const_iterator(const HashMap<K, V> *hm, int pos)
 
 template <class K, class V>
 void
-HashMap<K, V>::const_iterator::operator++(int)
+_HashMap_const_iterator<K, V>::operator++(int)
 {
     typename HashMap<K, V>::Pair *e = _hm->_e;
     int capacity = _hm->_capacity;
