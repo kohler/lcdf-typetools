@@ -13,7 +13,8 @@ libefont_a_SOURCES = \
 	findmet.cc \
 	metrics.cc \
 	otf.cc \
-	otfgpos.cc \
+	otfcmap.cc \
+	otfgsub.cc \
 	otfstrings.cc \
 	pairop.cc \
 	psres.cc \

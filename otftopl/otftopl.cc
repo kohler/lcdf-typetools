@@ -6,11 +6,11 @@
 #include <efont/t1font.hh>
 #include <efont/t1item.hh>
 #include <efont/t1bounds.hh>
+#include <efont/otfgsub.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
 #include <efont/cff.hh>
 #include <efont/otf.hh>
-#include <efont/otfgpos.hh>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -209,12 +209,18 @@ do_file(const char *infn, const char *outfn,
     if (!otf.ok())
 	return;
 
+    // XXX
     {
-	Vector<OpenTypeTag> v;
-	OpenTypeGlyphTable g(otf.table("GSUB"), &cerrh);
-	g.features("latn", 0U, v, &cerrh);
-	for (int i = 0; i < v.size(); i++)
-	    fprintf(stderr, "%s\n", v[i].text().cc());
+	OpenType_GSUB gsub(otf.table("GSUB"), &cerrh);
+	Vector<int> fids;
+	int required_fid;
+	gsub.script_list().features("latn", 0U, required_fid, fids, &cerrh);
+	if (required_fid >= 0)
+	    fids.push_back(required_fid);
+	Vector<OpenTypeTag> ftags;
+	gsub.feature_list().feature_tags(fids, ftags);
+	for (int i = 0; i < ftags.size(); i++)
+	    fprintf(stderr, "%s\n", ftags[i].text().cc());
     }
     
     EfontCFF cff(otf.table("CFF"), &cerrh);
