@@ -35,7 +35,7 @@ class Type1Font : public CharstringProgram { public:
 
     int nsubrs() const			{ return _subrs.size(); }
     Type1Charstring *subr(int) const;
-  
+
     int nglyphs() const			{ return _glyphs.size(); }
     PermString glyph_name(int) const;
     Type1Charstring *glyph(int) const;
@@ -90,10 +90,12 @@ class Type1Font : public CharstringProgram { public:
 
     // font skeletons
     static Type1Font *skeleton_make(PermString, const String &version = String());
+    static Type1Font *skeleton_make_copy(const Type1Font *, PermString);
     void skeleton_comments_end();
     void skeleton_fontinfo_end();
     void skeleton_fontdict_end();
     void skeleton_private_end();
+    void skeleton_common_subrs();
   
   private:
   

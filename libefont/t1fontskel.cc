@@ -265,18 +265,6 @@ Type1Font::skeleton_private_end()
     // Subrs
     add_item(new Type1SubrGroupItem(this, true, "/Subrs 0 array"));
     add_item(new Type1CopyItem("|-"));
-
-    // - first four Subrs have fixed definitions
-    // - 0: "3 0 callothersubr pop pop setcurrentpoint return"
-    set_subr(0, Type1Charstring(String::stable_string("\216\213\014\020\014\021\014\021\014\041\013", 11)), " |");
-    // - 1: "0 1 callothersubr return"
-    set_subr(1, Type1Charstring(String::stable_string("\213\214\014\020\013", 5)), " |");
-    // - 2: "0 2 callothersubr return"
-    set_subr(2, Type1Charstring(String::stable_string("\213\215\014\020\013", 5)), " |");
-    // - 3: "return"
-    set_subr(3, Type1Charstring(String::stable_string("\013", 1)), " |");
-    // - 4: "1 3 callothersubr pop callsubr return"
-    set_subr(4, Type1Charstring(String::stable_string("\214\216\014\020\014\021\012\013", 8)), " |");
     
     // CharStrings
     add_item(new Type1SubrGroupItem(this, false, "2 index /CharStrings 0 dict dup begin"));
@@ -299,6 +287,126 @@ mark currentfile closefile"));
 0000000000000000000000000000000000000000000000000000000000000000\n\
 0000000000000000000000000000000000000000000000000000000000000000\n\
 cleartomark"));
+}
+
+void
+Type1Font::skeleton_common_subrs()
+{
+    // - first four Subrs have fixed definitions
+    // - 0: "3 0 callothersubr pop pop setcurrentpoint return"
+    set_subr(0, Type1Charstring(String::stable_string("\216\213\014\020\014\021\014\021\014\041\013", 11)), " |");
+    // - 1: "0 1 callothersubr return"
+    set_subr(1, Type1Charstring(String::stable_string("\213\214\014\020\013", 5)), " |");
+    // - 2: "0 2 callothersubr return"
+    set_subr(2, Type1Charstring(String::stable_string("\213\215\014\020\013", 5)), " |");
+    // - 3: "return"
+    set_subr(3, Type1Charstring(String::stable_string("\013", 1)), " |");
+    // - 4: "1 3 callothersubr pop callsubr return"
+    set_subr(4, Type1Charstring(String::stable_string("\214\216\014\020\014\021\012\013", 8)), " |");
+}
+
+
+static void
+add_number_def(Type1Font *output, int dict, PermString name, const Type1Font *font)
+{
+    double v;
+    if (Type1Definition *t1d = font->dict(dict, name))
+	if (t1d->value_num(v))
+	    output->add_definition(dict, Type1Definition::make(name, v, "def"));
+}
+
+static void
+add_copy_def(Type1Font *output, int dict, PermString name, const Type1Font *font, const char *definer = "def")
+{
+    if (Type1Definition *t1d = font->dict(dict, name))
+	output->add_definition(dict, Type1Definition::make_literal(name, t1d->value(), definer));
+}
+
+static String
+font_dict_string(const Type1Font *font, int dict, PermString name)
+{
+    String s;
+    if (Type1Definition *d = font->dict(dict, name))
+	if (d->value_string(s))
+	    return s;
+    return String();
+}
+
+Type1Font *
+Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name)
+{
+    String version = font_dict_string(font, dFI, "version");
+    Type1Font *output = skeleton_make(font_name, version);
+
+    // other comments from font header
+    for (int i = 0; i < font->nitems(); i++)
+	if (Type1CopyItem *c = font->item(i)->cast_copy()) {
+	    if (c->length() > 1 && c->value()[0] == '%') {
+		if (c->value()[1] != '!')
+		    output->add_item(new Type1CopyItem(c->value()));
+	    } else
+		break;
+	} else
+	    break;
+
+    output->skeleton_comments_end();
+
+    // FontInfo dictionary
+    if (version)
+	output->add_definition(dFI, Type1Definition::make_string("version", version, "readonly def"));
+    if (String s = font_dict_string(font, dFI, "Notice"))
+	output->add_definition(dFI, Type1Definition::make_string("Notice", s, "readonly def"));
+    if (String s = font_dict_string(font, dFI, "Copyright"))
+	output->add_definition(dFI, Type1Definition::make_string("Copyright", s, "readonly def"));
+    if (String s = font_dict_string(font, dFI, "FullName"))
+	output->add_definition(dFI, Type1Definition::make_string("FullName", s, "readonly def"));
+    if (String s = font_dict_string(font, dFI, "FamilyName"))
+	output->add_definition(dFI, Type1Definition::make_string("FamilyName", s, "readonly def"));
+    if (String s = font_dict_string(font, dFI, "Weight"))
+	output->add_definition(dFI, Type1Definition::make_string("Weight", s, "readonly def"));
+    if (Type1Definition *t1d = font->fi_dict("isFixedPitch")) {
+	bool v;
+	if (t1d->value_bool(v))
+	    output->add_definition(dFI, Type1Definition::make_literal("isFixedPitch", (v ? "true" : "false"), "def"));
+    }
+    add_number_def(output, dFI, "ItalicAngle", font);
+    add_number_def(output, dFI, "UnderlinePosition", font);
+    add_number_def(output, dFI, "UnderlineThickness", font);
+    output->skeleton_fontinfo_end();
+    
+    // Encoding, other font dictionary entries
+    output->add_item(new Type1Encoding(*font->type1_encoding()));
+    add_number_def(output, dF, "PaintType", font);
+    add_number_def(output, dF, "FontType", font);
+    add_copy_def(output, dF, "FontMatrix", font, "readonly def");
+    add_number_def(output, dF, "StrokeWidth", font);
+    add_number_def(output, dF, "UniqueID", font);
+    add_copy_def(output, dF, "XUID", font, "readonly def");
+    add_copy_def(output, dF, "FontBBox", font, "readonly def");
+    output->skeleton_fontdict_end();
+
+    // Private dictionary
+    add_copy_def(output, dP, "BlueValues", font);
+    add_copy_def(output, dP, "OtherBlues", font);
+    add_copy_def(output, dP, "FamilyBlues", font);
+    add_copy_def(output, dP, "FamilyOtherBlues", font);
+    add_number_def(output, dP, "BlueScale", font);
+    add_number_def(output, dP, "BlueShift", font);
+    add_number_def(output, dP, "BlueFuzz", font);
+    add_copy_def(output, dP, "StdHW", font);
+    add_copy_def(output, dP, "StdVW", font);
+    add_copy_def(output, dP, "StemSnapH", font);
+    add_copy_def(output, dP, "StemSnapV", font);
+    add_copy_def(output, dP, "ForceBold", font);
+    add_number_def(output, dP, "LanguageGroup", font);
+    add_number_def(output, dP, "ExpansionFactor", font);
+    add_number_def(output, dP, "UniqueID", font);
+    output->add_definition(dP, Type1Definition::make_literal("MinFeature", "{16 16}", "|-"));
+    output->add_definition(dP, Type1Definition::make_literal("password", "5839", "def"));
+    output->add_definition(dP, Type1Definition::make_literal("lenIV", "0", "def"));
+    output->skeleton_private_end();
+
+    return output;
 }
 
 }
