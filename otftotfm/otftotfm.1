@@ -1,5 +1,5 @@
 '\"t
-.ds V 0.15
+.ds V 0.16
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -26,7 +26,7 @@ or, with the
 .B \-a 
 option, into a TeX Directory Structure.
 .LP
-OpenType fonts come with configurable knobs called
+OpenType fonts come with
 .IR features .
 Turning on the "small capitals" feature, for example, replaces lower-case
 letter glyphs with the corresponding small capitals. Other features control
@@ -62,7 +62,7 @@ option and it will generate human-readable PL and VPL files.
 '
 .SS Common features
 .PP
-Even "default" ligatures and pair kerns are generally optional in OpenType
+Even "default" ligatures and pair kerns are optional in OpenType
 fonts, so you'll generally provide the
 .BR \-f kern
 and 
@@ -79,9 +79,10 @@ for optional ligatures;
 to control digit glyphs;
 .BR \-f smcp,
 for small capitals;
-and
 .BR \-f swsh,
-for swash variants. See the OPENTYPE FEATURES section below for more
+for swash variants; and
+.BR \-f cswh,
+for contextual swash. See the OPENTYPE FEATURES section below for more
 information on these and other features.
 '
 .SS Automatic mode
@@ -221,6 +222,14 @@ Selects the
 encoding used for the font. No glyph substitutions will be permitted, so
 the output encoding will equal the input encoding (and otftotfm will not
 generate an output encoding).
+'
+.Sp
+.TP 5
+.BI \-\-ligkern= command
+Executes the specified LIGKERN
+.IR command .
+See ENCODINGS, below, for more information on LIGKERN syntax. For example,
+say "\fB\-\-ligkern\fR 'T {L} h'" to suppress any T_h ligature in the font.
 '
 .Sp
 .TP 5

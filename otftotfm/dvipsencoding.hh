@@ -24,6 +24,7 @@ class DvipsEncoding { public:
     int encoding_size() const			{ return _e.size(); }
 
     int parse(String filename, ErrorHandler *);
+    int parse_ligkern(const String &ligkern_text, ErrorHandler *);
 
     // also modifies 'this':
     void make_literal_gsub_encoding(GsubEncoding &, Efont::Cff::Font *);
@@ -52,8 +53,8 @@ class DvipsEncoding { public:
     String _initial_comment;
     String _final_text;
 
-    int parse_ligkern(Vector<String> &, ErrorHandler *);
-    int parse_unicoding(Vector<String> &, ErrorHandler *);
+    int parse_ligkern_words(Vector<String> &, ErrorHandler *);
+    int parse_unicoding_words(Vector<String> &, ErrorHandler *);
     int parse_words(const String &, int (DvipsEncoding::*)(Vector<String> &, ErrorHandler *), ErrorHandler *);
     void bad_codepoint(int);
 

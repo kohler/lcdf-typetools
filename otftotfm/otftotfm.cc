@@ -63,6 +63,7 @@ using namespace Efont;
 #define EXTEND_OPT		315
 #define SLANT_OPT		316
 #define LETTERSPACE_OPT		317
+#define LIGKERN_OPT		318
 
 #define AUTOMATIC_OPT		321
 #define FONT_NAME_OPT		322
@@ -104,6 +105,7 @@ Clp_Option options[] = {
     { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
     { "letterspacing", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
     { "letterspace", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
+    { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -201,6 +203,7 @@ Font feature options:\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
+      --ligkern=COMMAND        Execute a LIGKERN COMMAND on the font.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
@@ -868,6 +871,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
 	ErrorHandler *errh)
 {
+    // get font
     Cff cff(otf.table("CFF"), errh);
     if (!cff.ok())
 	return;
@@ -875,6 +879,8 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     Cff::Font font(&cff, PermString(), errh);
     if (!font.ok())
 	return;
+
+    // save glyph names
     Vector<PermString> glyph_names;
     font.glyph_names(glyph_names);
     OpenType::debug_glyph_names = glyph_names;
@@ -892,16 +898,8 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	set_typeface(sa.length() ? sa.take_string() : font_name, false);
     }
 
-    // prepare encoding
-    DvipsEncoding dvipsenc;
-    if (dvipsenc_in)
-	dvipsenc = dvipsenc_in;
-    else if (Type1Encoding *t1e = font.type1_encoding()) {
-	for (int i = 0; i < 256; i++)
-	    dvipsenc.encode(i, (*t1e)[i]);
-    }
-    
     // initialize encoding
+    DvipsEncoding dvipsenc(dvipsenc_in); // make copy
     GsubEncoding encoding(font.nglyphs());
     OpenType::Cmap cmap(otf.table("cmap"), errh);
     assert(cmap.ok());
@@ -1033,8 +1031,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    metrics_suffix = "--base";
 	else
 	    errh->warning("features require virtual fonts");
-    } else
-	output_flags &= ~G_VMETRICS;
+    }
     
     // output metrics
     if (!(output_flags & G_METRICS))
@@ -1051,7 +1048,16 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     // output virtual metrics
     if (!(output_flags & G_VMETRICS))
 	/* do nothing */;
-    else if (output_flags & G_BINARY) {
+    else if (!encoding.need_virtual()) {
+	if (automatic) {
+	    // erase old virtual font
+	    String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
+	    if (verbose)
+		errh->message("removing potential VF file '%s'", vf.c_str());
+	    if (unlink(vf.c_str()) < 0 && errno != ENOENT)
+		errh->error("removing %s: %s", vf.c_str(), strerror(errno));
+	}
+    } else if (output_flags & G_BINARY) {
 	String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
 	String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
 	write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, tfm, vf, errh);
@@ -1187,6 +1193,7 @@ main(int argc, char **argv)
     bool literal_encoding = false;
     bool query_scripts = false;
     bool query_features = false;
+    Vector<String> ligkern;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -1249,6 +1256,10 @@ main(int argc, char **argv)
 	    if (letterspace)
 		usage_error(errh, "letterspacing value specified twice");
 	    letterspace = clp->val.i;
+	    break;
+
+	  case LIGKERN_OPT:
+	    ligkern.push_back(clp->arg);
 	    break;
 	    
 	  case AUTOMATIC_OPT:
@@ -1413,11 +1424,27 @@ particular purpose.\n");
 
     // read encoding
     DvipsEncoding dvipsenc;
-    if (encoding_file)
+    if (encoding_file) {
 	if (String path = locate_encoding(encoding_file, errh))
 	    dvipsenc.parse(path, errh);
 	else
 	    errh->fatal("encoding '%s' not found", encoding_file.c_str());
+    } else {
+	// use encoding from font
+	Cff cff(otf.table("CFF"), &bail_errh);
+	Cff::Font font(&cff, PermString(), &bail_errh);
+	assert(cff.ok() && font.ok());
+	if (Type1Encoding *t1e = font.type1_encoding()) {
+	    for (int i = 0; i < 256; i++)
+		dvipsenc.encode(i, (*t1e)[i]);
+	} else
+	    errh->fatal("font has no encoding, specify one explicitly");
+    }
+
+    // apply ligkern commands
+    cerrh.set_landmark("--ligkern command");
+    for (int i = 0; i < ligkern.size(); i++)
+	dvipsenc.parse_ligkern(ligkern[i], &cerrh);
 
     do_file(input_file, otf, dvipsenc, literal_encoding, errh);
     

@@ -286,7 +286,7 @@ find_ligkern_op(const String &s)
 }
 
 int
-DvipsEncoding::parse_ligkern(Vector<String> &v, ErrorHandler *errh)
+DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 {
     int op;
     if (v.size() == 3) {
@@ -327,7 +327,7 @@ DvipsEncoding::parse_ligkern(Vector<String> &v, ErrorHandler *errh)
 }
 
 int
-DvipsEncoding::parse_unicoding(Vector<String> &v, ErrorHandler *errh)
+DvipsEncoding::parse_unicoding_words(Vector<String> &v, ErrorHandler *errh)
 {
     int av;
     if (v.size() < 2 || (v[1] != "=" && v[1] != "=:"))
@@ -422,22 +422,28 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 	    && memcmp(token.data(), "LIGKERN", 7) == 0
 	    && isspace(token[7])) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(8), &DvipsEncoding::parse_ligkern, &lerrh);
+	    parse_words(token.substring(8), &DvipsEncoding::parse_ligkern_words, &lerrh);
 	    
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
 		   && isspace(token[8])) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(9), &DvipsEncoding::parse_ligkern, &lerrh);
+	    parse_words(token.substring(9), &DvipsEncoding::parse_ligkern_words, &lerrh);
 	    
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace(token[9])) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(10), &DvipsEncoding::parse_unicoding, &lerrh);
+	    parse_words(token.substring(10), &DvipsEncoding::parse_unicoding_words, &lerrh);
 	}
 
     return 0;
+}
+
+int
+DvipsEncoding::parse_ligkern(const String &ligkern_text, ErrorHandler *errh)
+{
+    return parse_words(ligkern_text, &DvipsEncoding::parse_ligkern_words, errh);
 }
 
 void
