@@ -730,7 +730,8 @@ Type1MMRemover::Type1MMRemover(Type1Font *font, Vector<double> *wv,
 	    _hint_replacement_subr[i] = 1;
 
     // don't get rid of first 4 subrs
-    _subr_done[0] = _subr_done[1] = _subr_done[2] = _subr_done[3] = 1;
+    for (int i = 0; i < _nsubrs && i < 4; i++)
+	_subr_done[i] = 1;
 }
 
 Type1MMRemover::~Type1MMRemover()

@@ -182,6 +182,10 @@ do_file(const char *filename, PsresDatabase *psres)
   
   font = new MyFont(*reader);
   delete reader;
+  if (!font->ok())
+      errh->fatal("%s: invalid font", filename);
+  else if (font->nglyphs() == 0)
+      errh->fatal("%s: font contains no characters", filename);
   
   mmspace = font->create_mmspace(errh);
   if (!mmspace)
@@ -245,7 +249,7 @@ main(int argc, char **argv)
   int precision = 5;
   int subr_count = -1;
   FILE *outfile = 0;
-  ErrorHandler *errh =
+  ::errh =
       ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
   
   while (1) {
@@ -348,7 +352,8 @@ particular purpose.\n");
       break;
       
      case Clp_Done:
-      if (!font) usage_error("missing font argument");
+      if (!font)
+	  usage_error("missing font argument");
       goto done;
       
      case Clp_BadOption:
@@ -362,7 +367,8 @@ particular purpose.\n");
   }
   
  done:
-  if (outfile == 0) outfile = stdout;
+  if (outfile == 0)
+      outfile = stdout;
   
   if (amcp_info) {
     print_amcp_info(mmspace, outfile);

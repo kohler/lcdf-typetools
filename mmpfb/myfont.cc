@@ -41,10 +41,10 @@ MyFont::kill_def(Type1Definition *t1d, int whichd)
       StringAccum sa;
       sa << '%';
       t1d->gen(sa);
+      PermString name = t1d->name();
       Type1CopyItem *t1ci = new Type1CopyItem(sa.take_string());
       set_item(i, t1ci);
-      set_dict(whichd, t1d->name(), 0);
-      delete t1d;
+      set_dict(whichd, name, 0);
       return;
     }
   
@@ -288,6 +288,6 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
 void
 MyFont::interpolate_charstrings(int precision, ErrorHandler *errh)
 {
-  Type1MMRemover remover(this, &_weight_vector, precision, errh);
-  remover.run();
+    Type1MMRemover remover(this, &_weight_vector, precision, errh);
+    remover.run();
 }
