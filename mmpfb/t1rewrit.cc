@@ -647,6 +647,8 @@ extern "C" {
     }
 }
 
+namespace Efont { extern bool fucker; }
+
 void
 Type1MMRemover::run()
 {
@@ -687,6 +689,7 @@ Type1MMRemover::run()
     for (int i = 4; i < _nsubrs; i++)
 	if (hr.call_count(i) || _hint_replacement_subr[i]) {
 	    Type1Charstring *cs = _font->subr(i);
+	    Efont::fucker = (i == 44);
 	    if (one.rerun_subr(*cs)) {
 		_expand_all_subrs = true;
 		if (one.rerun_subr(*cs))

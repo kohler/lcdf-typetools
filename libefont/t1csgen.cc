@@ -20,6 +20,8 @@
 #include <cmath>
 namespace Efont {
 
+bool fucker;
+
 static const char * const command_desc[] = {
     0, 0, 0, 0, "y",
     "xy", "x", "y", "xyxyxy", 0,
@@ -81,7 +83,9 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 	_true.y = float_val;
 	break;
     }
-    
+
+    if (fucker)
+	fprintf(stderr, "T%.12g,%.12g F%.12g,%.12g %c %.12g\n", _true.x, _true.y, _false.x, _false.y, (kind ? kind : '-'), float_val);
     int big_val = (int)floor(float_val * _f_precision + 0.5);
     int val = big_val / _precision;
     int frac = big_val % _precision;
