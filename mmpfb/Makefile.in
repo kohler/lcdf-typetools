@@ -78,8 +78,8 @@ realclean: distclean
 
 dist:
 	mkdir -m 0777 ../$(PACKAGE)-$(VERSION)/mmpfb
-	cp Makefile.in hashmapi.cc vectori.cc myfont.cc myfont.hh main.cc \
-	mmpfb.man \
+	cp Makefile.in hashmapi.cc vectori.cc myfont.cc myfont.hh \
+	t1rewrit.cc t1rewrit.hh main.cc mmpfb.man \
 	../$(PACKAGE)-$(VERSION)/mmpfb
 
 .PHONY: all install install-prog install-man uninstall \
