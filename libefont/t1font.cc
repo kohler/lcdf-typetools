@@ -26,7 +26,7 @@ Type1Font::Type1Font(Type1Reader &reader)
     _dict[i].set_default_value((Type1Definition *)0);
   }
   
-  Dict cur_dict = dF;
+  Dict cur_dict = dFont;
   int eexec_state = 0;
   bool have_subrs = false;
   bool have_charstrings = false;
@@ -194,6 +194,9 @@ Type1Font::Type1Font(Type1Reader &reader)
       _items.push_back(new Type1EexecItem(false));
       eexec_state = 2;
     } else if (strstr(x, "begin") != 0) {
+      // 30.Sep.2002: NuevaMM's BlendFontInfo dict starts with a simple
+      // "/FontInfo ... begin" inside a "/Blend ... begin".
+      Dict was_dict = cur_dict;
       if (strstr(x, "/Private") != 0)
 	cur_dict = dPrivate;
       else if (strstr(x, "/FontInfo") != 0)
@@ -201,6 +204,8 @@ Type1Font::Type1Font(Type1Reader &reader)
       else
 	cur_dict = dFont;
       if (strstr(x, "/Blend") != 0)
+	cur_dict = (Dict)(cur_dict + dBlend);
+      else if (was_dict == dBlend && cur_dict == dFontInfo)
 	cur_dict = (Dict)(cur_dict + dBlend);
     } else if (cur_dict == dFontInfo && strstr(x, "end") != 0)
       cur_dict = dFont;
