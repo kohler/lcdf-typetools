@@ -1,22 +1,22 @@
 LCDF Typetools NEWS
 
-Version 0.50   2.Aug.2003
+Version 0.50   4.Aug.2003
 
 * otftotfm: Handle more complex substitutions, such as those required to
   support '-fordn' and '-ffrac'.
 
-* otftotfm: Rewrite GsubEncoding to Metrics, changing its fundamental
-  abstraction (to two-ligatures). Much simpler code.
-
 * otftotfm: The output virtual and base fonts can have different
-  "encodings" with overlapping encoding slots. This makes fonts more
+  "encodings" with overlapping encoding slots. This can make fonts more
   compact.
 
-* otftotfm prefers new characters introduced by early lookups to new
-  characters introduced by later lookups. This follows the spirit of the
+* When assigning slots to introduced characters, otftotfm prefers
+  characters introduced by earlier lookups. This follows the spirit of the
   OpenType specification, since early lookups in some ways "override" later
-  ones. The preivous scoring mechanism remains in force within each
+  ones. The previous scoring mechanism remains in force within each
   individual lookup.
+
+* otftotfm: Rewrite GsubEncoding to Metrics, changing its fundamental
+  abstraction (to two-ligatures). Simpler and cleaner overall.
 
 * otftotfm TODO: Ligatures that apply to middle or right context (for
   example, the two substitutions "a b c d => a b c y" and "b c => x" should
