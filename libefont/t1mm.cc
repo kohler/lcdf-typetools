@@ -253,7 +253,7 @@ MultipleMasterSpace::normalize_vector(ErrorHandler *errh) const
     if (_ndv) {
 	CharstringInterp ai;
 	if (!ai.interpret(this, &_ndv))
-	    return error(errh, "error in NDV program");
+	    return error(errh, "%s in NDV program", ai.error_string().c_str());
     
     } else
 	for (int a = 0; a < _naxes; a++) {
@@ -298,7 +298,7 @@ MultipleMasterSpace::convert_vector(ErrorHandler *errh) const
     if (_cdv) {
 	CharstringInterp ai;
 	if (!ai.interpret(this, &_cdv))
-	    return error(errh, "error in CDV program");
+	    return error(errh, "%s in CDV program", ai.error_string().c_str());
     
     } else
 	for (int a = 0; a < _naxes; a++)
