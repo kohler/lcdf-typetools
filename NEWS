@@ -1,6 +1,12 @@
 LCDF Typetools NEWS
 
-Version 0.16
+Version 0.16   6.Jul.2003
+
+* otftotfm: In automatic mode, store dvips files (encodings and
+  psfonts.map) in 'TEXMF/dvips/VENDOR', rather than 'TEXMF/dvips'. Users of
+  previous versions will probably want to move their 'TEXMF/dvips/a_*.enc'
+  and 'TEXMF/dvips/lcdftools.map' files to a 'TEXMF/dvips/lcdftools/'
+  directory, and run 'mktexlsr TEXMF'.
 
 * otftotfm: When there isn't enough encoding space for all new glyphs,
   prefer shorter ligatures made out of regular letters -- for instance,
@@ -17,12 +23,6 @@ Version 0.16
 * otftotfm: Remove virtual font 'N.vf' when installing a regular font
   'N.tfm' in automatic mode. This reduces the risk that an old virtual font
   will screw up your installation.
-
-* otftotfm: In automatic mode, store dvips files (encodings and
-  psfonts.map) in 'TEXMF/dvips/VENDOR', rather than 'TEXMF/dvips'. Users of
-  previous versions will probably want to move their 'TEXMF/dvips/a_*.enc'
-  and 'TEXMF/dvips/lcdftools.map' files to a 'TEXMF/dvips/lcdftools/'
-  directory, and run 'mktexlsr TEXMF'.
 
 
 Version 0.15   4.Jul.2003
