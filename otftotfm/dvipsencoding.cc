@@ -289,12 +289,12 @@ int
 DvipsEncoding::parse_unicoding(const Vector<String> &v)
 {
     int av;
-    if (v.size() < 3 || (v[1] != "=" && v[1] != "=:") || v[0] == "||"
+    if (v.size() < 2 || (v[1] != "=" && v[1] != "=:") || v[0] == "||"
 	|| (av = encoding_of(v[0])) < 0)
 	return -1;
     _unicoding_map.insert(v[0], _unicoding.size());
     
-    if (v.size() == 3 && v[2] == dot_notdef)
+    if (v.size() == 2 || (v.size() == 3 && v[2] == dot_notdef))
 	/* no warnings to delete a glyph */;
     else {
 	for (int i = 2; i < v.size(); i++) {

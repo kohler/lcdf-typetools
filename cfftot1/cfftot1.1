@@ -1,4 +1,4 @@
-.ds V 1.27
+.ds V 0.1
 .de Sp
 .if n .sp
 .if t .sp 0.4
@@ -34,9 +34,7 @@ Output font in binary PFB format. This is the default.
 '
 .Sp
 .TP 5
-.BI \-n " name"
-.TP 5
-.BI \-\-name " name"
+.BI \-n " name\fR, " \-\-name " name"
 Output the CFF's component font named
 .IR name .
 CFF files can contain more than one font, although few do. Use this option
@@ -45,9 +43,7 @@ cfftot1 chooses the collection's first font.
 '
 .Sp
 .TP 5
-.BI \-o " file"
-.TP 5
-.BI \-\-output " file"
+.BI \-o " file\fR, " \-\-output " file"
 Write output font to
 .IR file
 instead of the standard output.

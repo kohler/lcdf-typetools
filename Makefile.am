@@ -52,6 +52,6 @@ srclinks:
 	cd libefont && $(MAKE) srclinks
 
 versionize:
-	perl -pi -e "s/^\\.ds V.*/.ds V $(VERSION)/;" cfftot1/cfftot1.1
+	perl -pi -e "s/^\\.ds V.*/.ds V $(VERSION)/;" cfftot1/cfftot1.1 otftopl/otftopl.1
 
 .PHONY: srclinks rpm

@@ -1,4 +1,4 @@
-.ds V 1.27
+.ds V 0.1
 .de Sp
 .if n .sp
 .if t .sp 0.4
@@ -9,21 +9,28 @@ otftopl \- create TeX PL metrics files from PostScript OpenType fonts
 .SH SYNOPSIS
 .B otftopl
 \%[\fBoptions\fR]
-\%[\fIfont\fR [\fIoutput\fR]]
+\%\fIfont\fR [\fIoutput\fR [\fIencoding-output\fR]]
+
+.B otftopl
+\-a
+\%[\fBoptions\fR]
+\%\fIfont\fR [\fIoutput-directory\fR [\fIencoding-directory\fR]]
 .SH DESCRIPTION
 .BR Otftopl
-creates TeX PL metrics (and, optionally, a DVIPS-like encoding file) that
-correspond, as far as possible, to a PostScript-flavored OpenType font. If
-the file
+creates TeX font metrics and a 
+.BR dvips (1)-like
+encoding file that correspond, as far as possible, to a PostScript-flavored
+OpenType font. If the file
 .I output
 is not specified the generated PL metrics go to the standard output.
 If the file
-.I input
+.I font
 is not specified input comes from the standard input.
 .LP
-OpenType supports extensive substitutions and complex positionings that TeX
-can't handle. Many OpenType instructions useful for the Latin script are
-supported by TeX, however, including:
+.\"OpenType supports extensive substitutions and complex positionings that TeX
+.\"can't handle. 
+Many OpenType instructions useful for the Latin script are supported by
+TeX, including:
 .IP * 3
 Glyph substitutions, such as replacing 'a' with small caps 
 .SM 'A'.
@@ -33,45 +40,171 @@ Pair kerns, such as moving 'AV' closer together.
 Ligatures, such as replacing 'f' and 'i' with an integrated 'fi'
 glyph.
 .LP
-Otftopl reads an OpenType font, turns on font features chosen by the user,
-selects the instructions that TeX supports, and generates PL font metrics
-and a DVIPS encoding file that, together, implement those instructions.
-Feed the PL font metrics to
+Otftopl reads an OpenType font, turns on any font features you choose,
+selects the instructions that TeX supports, and generates font metrics and
+a dvips encoding file that, together, implement those instructions. By
+default otftopl generates human-readable PL font metrics. Either feed the
+PL font metrics to
 .BR pltotf (1)
-to get TFM font metrics that TeX can read.
-.LP
-
+to get TeX-readable TFM font metrics, or supply the
+.B \-\-tfm
+option and otftopl will run pltotf for you.
+.PP
+Otftopl runs in automatic mode or manual mode. In manual mode, you specify
+the names of the output metrics and encoding files. Automatic mode is
+easier; you specify
+.I directories
+for output metrics and encoding files, and otftopl chooses the filenames
+automatically. Provide the
+.BR \-a / \-\-automatic
+option to select automatic mode.
+.PP
+Otftopl also generates a prototype
+.I psfonts.map
+line for the font, suitable for
+.BR dvips (1)
+configuration files. It is written to the standard output unless some other
+file was written there already.
 '
 .SH OPTIONS
 .PD 0
 .TP 5
-.BI \-a "\fR, " \-\-pfa
-Output font in ASCII PFA format.
+.BI \-s " script\fR[.\fIlang\fR], " \-\-script= "script\fR[.\fIlang\fR]"
+Apply features suitable to the script system
+.I script
+and language system
+.IR lang .
+Scripts and language systems are two-to-four-letter names assigned by
+Microsoft and Adobe. Examples include "latn" (Latin script), "grek" (Greek
+script), and "yi.YIC" (Yi script with classic characters). If
+.I lang
+is not specified, otftopl will use the default language system for that
+script. You can give this option multiple times. Run "otftopl
+\-\-print\-scripts \fIfont\fR" to see the list of scripts and languages a
+font supports. Defaults to "latn".
 '
 .Sp
 .TP 5
-.BI \-b "\fR, " \-\-pfb
-Output font in binary PFB format. This is the default.
+.BI \-f " feature\fR, " \-\-feature= "feature"
+Activate the feature named
+.IR feature .
+Features are four-letter names assigned by Microsoft and Adobe; they are
+meant to correspond to font behaviors, such as kerning or small-capitals.
+Examples include "liga" (default ligatures), "dlig" (discretionary
+ligatures), "kern" (kerning), and "c2sc" (replacing capitals with small
+capitals). Give this option multiple times to apply multiple features. Run
+"otftopl \-\-print\-features [--script options] \fIfont\fR" to see the list
+of features a font supports for the specified collection of scripts.
+Defaults to any features required by the selected scripts.
 '
 .Sp
 .TP 5
-.BI \-n " name"
-.TP 5
-.BI \-\-name " name"
-Output the CFF's component font named
-.IR name .
-CFF files can contain more than one font, although few do. Use this option
-to select a particular font from a multi-font collection. By default
-cfftot1 chooses the collection's first font.
+.BI \-e " encoding\fR, " \-\-encoding= encoding
+Selects the
+.BR dvips (1)
+encoding used as a starting point. See ENCODINGS, below, for more
+information. Defaults to the font's encoding.
 '
 .Sp
 .TP 5
-.BI \-o " file"
+.BI \-\-literal\-encoding= encoding
+Selects the
+.BR dvips (1)
+encoding used for the font. No glyph substitutions will be permitted, so
+the output encoding will equal the input encoding (and otftopl will not
+generate an output encoding).
+'
+.Sp
 .TP 5
-.BI \-\-output " file"
-Write output font to
-.IR file
-instead of the standard output.
+.BI \-a "\fR, " \-\-automatic
+Select automatic mode.
+'
+.Sp
+.TP 5
+.BI \-n " fontname\fR, " \-\-name= fontname
+Set the name of the output font, which is used in the
+.BR dvips (1)
+.I psfonts.map
+line and, in automatic mode, to generate the output filename. The default
+is derived from the output filename in manual mode, and from the OpenType
+font's name and the features you selected in automatic mode.
+'
+.Sp
+.TP 5
+.BI \-t "\fR, " \-\-tfm
+Output TFM metrics, not PL metrics.
+'
+.Sp
+.TP 5
+.BI \-o " file-or-dir\fR, " \-\-output= file-or-dir
+The file (or, in automatic mode, directory) used for output font metrics.
+Same as the second non-option argument.
+'
+.Sp
+.TP 5
+.BI \-\-output\-encoding= file-or-dir
+The file (or, in automatic mode, directory) used for the output encoding.
+Same as the third non-option argument.
+'
+.Sp
+.TP 5
+.BI \-\-pl\-directory= dir
+The directory used for output PL font metrics in automatic mode. The
+.B \-\-output
+option overrides this setting. Defaults to the PLDESTDIR environment
+variable, or if that's not set, the current directory.
+'
+.Sp
+.TP 5
+.BI \-\-tfm\-directory= dir
+The directory used for output TFM font metrics in automatic mode. The
+.B \-\-output
+option overrides this setting. Defaults to the TFMDESTDIR environment
+variable, or if that's not set, the current directory.
+'
+.Sp
+.TP 5
+.BI \-\-encoding\-directory= dir
+The directory used for output encodings in automatic mode. The
+.B \-\-output\-encoding
+option overrides this setting. Defaults to the ENCODINGDESTDIR environment
+variable, or if that's not set, the current directory.
+'
+.Sp
+.TP 5
+.BR \-\-print\-scripts
+Print the scripts and language systems supported by the specified font and
+exit. The scripts are printed one per line, with human-readable
+descriptions; for example:
+.nf
+  cyrl            Cyrillic
+  grek            Greek
+  latn            Latin
+  latn.TUR        Latin/Turkish
+.fi
+'
+.Sp
+.TP 5
+.BR \-\-print\-features
+Print the features supported by the specified font, in the specified
+scripts and language systems, and exit. The scripts are printed one per
+line, with human-readable descriptions; for example:
+.nf
+  aalt    Access All Alternates
+  c2sc    Small Capitals From Capitals
+  case    Case-Sensitive Forms
+  cpsp    Capital Spacing
+  \&...
+  zero    Slashed Zero
+.fi
+'
+.Sp
+.TP 5
+.BI \-\-glyphlist= file
+Use
+.I file
+as the Adobe glyph list, which helps translate glyph names to Unicode code
+points. See ENCODINGS, below, for more information.
 '
 .Sp
 .TP 5
@@ -88,6 +221,44 @@ Print usage information and exit.
 .BR \-\-version
 Print the version number and some short non-warranty information and exit.
 .PD
+'
+.SH ENCODINGS
+.PP
+Otftopl uses its input encodings by translating glyph names into Unicode
+code points. For example, if an input encoding has "/dotlessi" at position
+10, then otftopl detects that the user wants to encode Unicode character
+U+0131 LATIN SMALL LETTER DOTLESS I at position 10. The output encoding
+will use whatever glyph the font suggests for that code point, given the
+collection of features you chose.
+.PP
+You can control this process with "UNICODING" comments in the input
+encoding file. UNICODING comments have the following format:
+.nf
+  % UNICODING \fIglyph\fR =: \fIchoice1\fR [\fIchoice2\fR ...] ;
+.fi
+\fIGlyph\fR and the
+.IR choice s
+are PostScript glyph names. This comment tells otftopl that the glyph named
+.I glyph 
+translates into the first Unicode code point in the
+.I choice
+list that the font supports. For example, this UNICODING:
+.nf
+  % UNICODING Delta =: Deltagreek Delta ;
+.fi
+tells otftopl that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
+U+2206 INCREMENT as an encoding for "/Delta". You can also map a glyph to
+nothing to remove that glyph from the input encoding; for instance:
+.nf
+  % UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
+.fi
+As with LIGKERN comments, you can specify multiple UNICODINGs per line;
+separate them with spaced semicolons.
+.PP
+Otftopl will use any unused spaces in the encoding for ligatures. Ligatures
+are mapped to their usual locations in the input encoding when possible.
+Ligatures and kerns can be inhibited by LIGKERN comments, as in
+.BR afm2tfm (1).
 '
 .SH "BUGS"
 .LP
@@ -106,6 +277,7 @@ fonts.
 .BR tftopl (1),
 .BR vptovf (1),
 .BR afm2tfm (1),
+.BR dvips (1),
 .BR cfftot1 (1)
 .LP
 .I "Adobe Type 1 Font Format"
@@ -115,7 +287,7 @@ Adobe Technical Notes #5176,
 and #5177,
 .I "The Type 2 Charstring Format"
 .LP
-.I "OpenType Specification" ,
+.IR "OpenType Specification" ,
 Version 1.4
 '
 .SH AUTHOR
