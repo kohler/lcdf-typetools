@@ -12,7 +12,7 @@
 
 double Type1Interp::double_for_error;
 
-Type1Interp::Type1Interp(Type1Program *prog)
+Type1Interp::Type1Interp(const Type1Program *prog)
   : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(0),
     _scratch_vector(ScratchSize, 0),
     _program(prog)

@@ -109,7 +109,7 @@ class Type1Interp {
   Vector<double> *_weight_vector;
   Vector<double> _scratch_vector;
   
-  Type1Program *_program;
+  const Type1Program *_program;
   
   static double double_for_error;
   
@@ -119,7 +119,7 @@ class Type1Interp {
   
  public:
   
-  Type1Interp(Type1Program *);
+  Type1Interp(const Type1Program *);
   virtual ~Type1Interp()			{ }
   
   int error() const				{ return _error; }
