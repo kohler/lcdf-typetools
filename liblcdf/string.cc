@@ -523,7 +523,7 @@ String::static_initialize()
 	// the pointer
 	oom_memo = new Memo;
 	oom_memo->_refcount++;
-	oom_memo->_real_data = oom_string_data;
+	oom_memo->_real_data = const_cast<char*>(&oom_string_data);
 	null_string_p = new String;
 	oom_string_p = new String(oom_memo->_real_data, 0, oom_memo);
     }
