@@ -116,7 +116,7 @@ int main(int c, char **v) {
 ac_cv_working_strtod=yes)])
 if test $ac_cv_working_strtod = no; then 
     FIXLIBC_O='fixlibc.o'
-    AC_DEFINE(BROKEN_STRTOD, 1, [Check for bad strtod.])
+    AC_DEFINE(BROKEN_STRTOD, 1, [Define if strtod is broken.])
 fi
 
 AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate)
@@ -215,7 +215,7 @@ double good_strtod(const char *nptr, char **endptr);
 #ifdef __cplusplus
 }
 /* Get rid of a possible inline macro under C++. */
-# undef inline
+# define inline inline
 #endif
 
 #endif /* LCDF_TYPETOOLS_CONFIG_H */])
