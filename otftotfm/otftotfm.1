@@ -425,18 +425,31 @@ encoding file. UNICODING comments have the following format:
 .IR choice s
 are PostScript glyph names. This comment tells otftotfm that the glyph named
 .I glyph 
-translates into the first Unicode code point in the
+translates into the first Unicode value in the
 .I choice
-list that the font supports. For example, this UNICODING:
+list that has a character in the font. For example, this:
+.nf
+  % UNICODING Delta =: uni0394 uni2206 ;
+.fi
+tells otftotfm that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
+U+2206 INCREMENT as an encoding for "/Delta". You can also supply regular
+glyph names, as in:
 .nf
   % UNICODING Delta =: Deltagreek Delta ;
 .fi
-tells otftotfm that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
-U+2206 INCREMENT as an encoding for "/Delta". You can also map a glyph to
-nothing to remove that glyph from the input encoding; for instance:
+Otftotfm uses the distributed
+.I glyphlist.txt
+file to translate regular glyph names to Unicode; see
+.IR http://partners.adobe.com/asn/developer/type/unicodegn.html .
+.LP
+You can also map a glyph to nothing to remove that glyph from the input
+encoding. This is useful to remove optional characters; for instance:
 .nf
   % UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
 .fi
+The f-ligatures will be added back to the encoding, preferably at their
+original locations, if some font feature requires them.
+.LP
 As with LIGKERN comments, you can specify multiple UNICODINGs per line;
 separate them with spaced semicolons.
 .PP
@@ -644,9 +657,9 @@ create a
 .I $HOME/texmf
 directory? If so, run the command "kpsewhich --expand-path='$TEXMF'" to
 verify that directory is not being found. You may need to set your TEXMF
-environment variable, to a value such as '{!!'"$HOME"'/texmf,!!$TEXMFMAIN}'
-(note the different kinds of quotes; on my machine, this expands to a value
-like '{!!/u/kohler/texmf,!!$TEXMFMAIN}').
+environment variable, to '{!!'"$HOME"'/texmf,!!$TEXMFMAIN}', for instance
+(note the different kinds of quotes; on my machine, this expands to
+\&'{!!/home/kohler/texmf,!!$TEXMFMAIN}').
 '
 .TP 5
 \&'\fIchar\fR' has no encoding, ignoring kern removal
@@ -664,10 +677,10 @@ the warning.
 .TP 5
 can't map '\fIchar\fR' to Unicode
 '
-One of the glyph names in a UNICODING block could not be converted to
-Unicode. This is problematic since the UNICODING block exists wholly to
-translate glyph names into Unicode. Fix the encoding file or ignore the
-warning.
+Another encoding file problem: One of the glyph names in an UNICODING block
+could not be converted to Unicode. This is problematic since UNICODING
+exists wholly to translate glyph names into Unicode. Fix the encoding file
+or ignore the warning.
 '
 .TP 5
 ignoring unencodable glyph(s) ...
