@@ -1,12 +1,15 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "t1mm.hh"
+# pragma implementation "t1mm.hh"
 #endif
 #include "t1mm.hh"
 #include "t1interp.hh"
 #ifdef T1FONT
-#include "t1item.hh"
-#include "t1font.hh"
-#undef KNOWN
+# include "t1item.hh"
+# include "t1font.hh"
+# undef KNOWN
 #endif
 #include "error.hh"
 #include <stdarg.h>

@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "amfm.hh"
+# pragma implementation "amfm.hh"
 #endif
 #include "amfm.hh"
 #include "afm.hh"

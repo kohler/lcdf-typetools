@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "metrics.hh"
+# pragma implementation "metrics.hh"
 #endif
 #include "metrics.hh"
 

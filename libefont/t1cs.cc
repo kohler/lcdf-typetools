@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "t1cs.hh"
+# pragma implementation "t1cs.hh"
 #endif
 #include "t1cs.hh"
 #include "t1interp.hh"
