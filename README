@@ -32,11 +32,12 @@ gmake. See 'INSTALL' in this directory for more detailed information about
 
 COPYRIGHT/LICENSE
 -----------------
-   All source code is Copyright (C) 1997-2003 Eddie Kohler.
+   All source code is Copyright (c) 1997-2003 Eddie Kohler.
 
    This code is distributed under the GNU General Public License, Version
 2, or, at your discretion, any later version. The GNU General Public
-License is available via the Web at <http://www.gnu.org/copyleft/gpl.html>
+License is available via the Web at <http://www.gnu.org/copyleft/gpl.html>,
+or in the COPYING file in this directory.
 
 AUTHOR
 ------

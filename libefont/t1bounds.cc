@@ -1,4 +1,18 @@
 // -*- related-file-name: "../include/efont/t1bounds.hh" -*-
+
+/* t1bounds.{cc,hh} -- charstring bounding box finder
+ *
+ * Copyright (c) 1998-2003 Eddie Kohler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -17,12 +31,6 @@ CharstringBounds::CharstringBounds(const EfontProgram *p, Vector<double> *weight
     _t = Transform(matrix).scaled(1000);
     _t.check_null(0.001);
 }
-
-/*void
-CharstringBounds::ignore_font_transform()
-{
-    _t = Transform();
-}*/
 
 void
 CharstringBounds::transform(const Transform &t)
