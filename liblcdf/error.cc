@@ -256,7 +256,7 @@ ErrorHandler::verror(Seriousness seriousness, const String &where,
      }
      
      case 'c': {
-       int c = va_arg(val, int);
+       int c = va_arg(val, int) & 0xFF;
        if (c == 0)
 	 msg << "\\0";
        else if (c == '\n')
