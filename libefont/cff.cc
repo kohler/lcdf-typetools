@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <efont/t1unparser.hh>
 
 #ifndef static_assert
 #define static_assert(c) switch (c) case 0: case (c):
@@ -591,7 +592,7 @@ Cff::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, ErrorHa
     } else if (POS_GT(pos + 3, len)) {
 	errh->error("%s: position out of range", index_name);
 	_offsize = -EFAULT;
-    } else if ((_offsize = data[pos + 2]), _offsize < 1 || _offsize > 4) {
+    } else if ((_offsize = data[pos + 2]), (_offsize < 1 || _offsize > 4)) {
 	errh->error("%s: offset size %d out of range", index_name, _offsize);
 	_offsize = -EINVAL;
     } else {
@@ -609,9 +610,12 @@ Cff::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, ErrorHa
     // check items in offset array
     uint32_t max_doff_allowed = len - (pos + 2 + (nitems + 1) * _offsize);
     uint32_t last_doff = 1;
-    for (const uint8_t *o = _offset; o <= _last_offset; o += _offsize) {
+    for (const uint8_t *o = _offset; o <= _last_offset && _offsize > 0; o += _offsize) {
 	uint32_t doff = offset_at(o);
-	if (doff > max_doff_allowed || doff < last_doff) {
+	if (doff > max_doff_allowed) {
+	    errh->error("%s: element out of range", index_name);
+	    _offsize = -EFAULT;
+	} else if (doff < last_doff) {
 	    errh->error("%s: garbled elements", index_name);
 	    break;
 	}
@@ -718,8 +722,8 @@ Cff::Dict::assign(Cff *cff, int pos, int dict_len, ErrorHandler *errh, const cha
 		  goto runoff;
 	      for (data++; data < end_data && pos < 1020; data++) {
 		  int d = *data;
-		  for (int i = 0; i < 2; i++, d <<= 8) {
-		      int digit = (d >> 8) & 0xF;
+		  for (int i = 0; i < 2; i++, d <<= 4) {
+		      int digit = (d >> 4) & 0xF;
 		      switch (digit) {
 			case 10:
 			  buf[pos++] = '.';
@@ -870,7 +874,7 @@ Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) con
 	      if (arity != 2 || num != truncnum || num < 0)
 		  goto bad_data;
 	      double off = _operands[_pointers[i] + 1];
-	      if (off < 0 || off + num >= _cff->length())
+	      if (off < 0 || off + num > _cff->length())
 		  goto bad_data;
 	      break;
 	  }

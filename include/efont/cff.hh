@@ -70,7 +70,7 @@ class Cff { public:
     static const int operator_types[];
 
 
-    class Cff::IndexIterator { public:
+    class IndexIterator { public:
 
 	IndexIterator()		: _offset(0), _last_offset(0), _offsize(-1) { }
 	IndexIterator(const uint8_t *, int, int, ErrorHandler * = 0, const char *index_name = "INDEX");
