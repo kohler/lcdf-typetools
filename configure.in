@@ -150,7 +150,11 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
     fi
 
     dnl check for kpathsea/kpathsea.h
-    AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
+    if test "x$enable_tetex_build" = xyes; then
+	kpse_header=yes
+    else
+	AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
+    fi
 
     dnl if not found and kpathsea prefix not set, check /usr/local
     if test "x$kpse_header" != xyes -a "x$kpathsea" = xyes -a -r /usr/local/include/kpathsea/tex-file.h; then
