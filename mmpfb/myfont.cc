@@ -230,8 +230,8 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   
   i = 0;
   while (dict_each(dBlendPrivate, i, name, def))
-    if (def) {
-      //errh->warning("didn't interpolate %s in BlendPrivate", name.cc());
+    if (def && name != "Erode") {
+      errh->warning("didn't interpolate %s in BlendPrivate", name.cc());
       kill_def(def, dBlendPrivate);
     }
   
