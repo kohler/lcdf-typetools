@@ -962,9 +962,9 @@ output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
 
     StringAccum command;
     if (vpl)
-	command << "vptovf " << pl_filename << ' ' << vf_filename << ' ' << tfm_filename;
+	command << "vptovf " << shell_quote(pl_filename) << ' ' << shell_quote(vf_filename) << ' ' << shell_quote(tfm_filename);
     else
-	command << "pltotf " << pl_filename << ' ' << tfm_filename;
+	command << "pltotf " << shell_quote(pl_filename) << ' ' << shell_quote(tfm_filename);
     
     int status = mysystem(command.c_str(), errh);
 

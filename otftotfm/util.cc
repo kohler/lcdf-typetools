@@ -18,6 +18,7 @@
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
 #include <lcdf/vector.hh>
+#include <ctype.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -74,6 +75,32 @@ pathname_filename(const String &path)
 	return path.substring(slash + 1);
     else
 	return path;
+}
+
+String
+shell_quote(const String &str)
+{
+    if (!str)
+	return String::stable_string("''");
+
+    const char *begin = str.begin();
+    const char *end = str.end();
+    StringAccum sa;
+    for (const char *s = begin; s < end; s++)
+	if (isalnum((unsigned char) *s) || *s == '_' || *s == '-' || *s == '+' || *s == '/' || *s == ':' || *s == '.')
+	    /* do nothing */;
+	else {
+	    sa.append(begin, s);
+	    sa.append('\\');
+	    begin = s;
+	}
+
+    if (!sa)
+	return str;
+    else {
+	sa.append(begin, end);
+	return sa.take_string();
+    }
 }
 
 int

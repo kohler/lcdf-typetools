@@ -305,7 +305,7 @@ update_odir(int o, String file, ErrorHandler *errh)
 
 	// run script
 	if (mktexupd) {
-	    String command = mktexupd + " '" + writable_texdir + directory + "' '" + file + "'";
+	    String command = mktexupd + " " + shell_quote(writable_texdir + directory) + " " + shell_quote(file);
 	    int retval = system(command.c_str());
 	    if (retval == 127)
 		errh->error("could not run '%s'", command.c_str());
@@ -358,7 +358,7 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	String pfb_filename = odir[O_TYPE1] + "/" + ps_fontname + ".pfb";
 	if (pfb_filename.find_left('\'') >= 0 || otf_filename.find_left('\'') >= 0)
 	    return String();
-	String command = "cfftot1 '" + otf_filename + "' -n '" + ps_fontname + "' '" + pfb_filename + "'";
+	String command = "cfftot1 " + shell_quote(otf_filename) + " -n " + shell_quote(ps_fontname) + " " + shell_quote(pfb_filename);
 	int retval = mysystem(command.c_str(), errh);
 	if (retval == 127)
 	    errh->error("could not run '%s'", command.c_str());
@@ -410,7 +410,7 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
 	    String pfb_filename = odir[O_TYPE1] + "/" + j_ps_fontname + ".pfb";
 	    if (pfb_filename.find_left('\'') >= 0 || base_filename.find_left('\'') >= 0)
 		return String();
-	    String command = "t1dotlessj '" + base_filename + "' -n '" + j_ps_fontname + "' '" + pfb_filename + "'";
+	    String command = "t1dotlessj " + shell_quote(base_filename) + " -n " + shell_quote(j_ps_fontname) + " " + shell_quote(pfb_filename);
 	    int retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
 		errh->warning("could not run '%s'", command.c_str());
