@@ -328,10 +328,10 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
     else {
 	// report nocreate/verbose
 	if (nocreate) {
-	    errh->message("would update %s", map_file.c_str());
+	    errh->message("would update %s for %s", map_file.c_str(), String(fontname).c_str());
 	    return 0;
 	} else if (verbose)
-	    errh->message("updating %s", map_file.c_str());
+	    errh->message("updating %s for %s", map_file.c_str(), String(fontname).c_str());
 	
 	int fd = open(map_file.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
@@ -379,6 +379,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	// append old encodings
 	int fl = 0;
 	int nl = text.find_left('\n') + 1;
+	bool changed = created;
 	while (fl < text.length()) {
 	    if (fl + fontname.length() + 1 < nl
 		&& memcmp(text.data() + fl, fontname.data(), fontname.length()) == 0
@@ -393,12 +394,21 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		} else {
 		    text = text.substring(0, fl) + text.substring(nl);
 		    nl = fl;
+		    changed = true;
 		}
 	    }
 	    fl = nl;
 	    nl = text.find_left('\n', fl) + 1;
 	}
 
+	// special case: empty mapline, unchanged file
+	if (!mapline && !changed) {
+	    fclose(f);
+	    if (verbose)
+		errh->message("%s unchanged", map_file.c_str());
+	    return 0;
+	}
+	
 	// add our text
 	text += mapline;
 
