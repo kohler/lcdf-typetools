@@ -1,3 +1,8 @@
+# Contents: The Adobe Glyph List, followed by extensions for TeX fonts and
+# encodings. We also extend the second field so that it can contain
+# multiple Unicode scalar values, separated by semicolons, analogous to
+# otftotfm's "% UNICODING" comments.
+###############################################################################
 # Name:          Adobe Glyph List
 # Table version: 2.0
 # Date:          September 20, 2002
@@ -4289,3 +4294,77 @@ zstroke;01B6
 zuhiragana;305A
 zukatakana;30BA
 #--end
+###############################################################################
+# TeX extensions
+# XXX Delta?
+Delta;0394;2206
+Ifractur;2111
+Ng;014A
+# XXX Omega?
+Omega;03A9;2126
+Rfractur;211C
+angbracketleft;27E8;2329
+angbracketright;27E9;232A
+arrowbothv;2195
+arrowdblbothv;21D5
+arrowleftbothalf;21BD
+arrowlefttophalf;21BC
+arrownortheast;2197
+arrownorthwest;2196
+arrowrightbothalf;21C1
+arrowrighttophalf;21C0
+arrowsoutheast;2198
+arrowsouthwest;2199
+bardbl;2225
+ceilingleft;2308
+ceilingright;2309
+circlecopyrt;20DD;25CB
+circledivide;2298
+circledot;2299
+circleminus;2296
+coproduct;2A3F
+diamond;2662;2666
+diamondmath;22C4
+emptyset;2205;F638
+epsilon1;03F5
+equivasymptotic;224D
+flat;266D
+floorleft;230A
+floorright;230B
+follows;227B
+followsequal;227D
+greatermuch;226B
+heart;2661;2665
+intersectionsq;2293
+latticetop;22A4
+lessmuch;226A
+lscript;2113
+natural;266E
+negationslash;0338
+ng;014B
+owner;220B
+# XXX phi?
+phi;03D5;03C6
+phi1;03C6
+pi1;03D6
+precedesequal;227C
+prime;2032;02B9
+rho1;03F1
+sharp;266F
+similarequal;2243
+slurabove;2322
+slurbelow;2323
+star;22C6
+subsetsqequal;2291
+supersetsqequal;2292
+triangle;25B3
+triangleinv;25BD
+triangleleft;25B9
+triangleright;25C3
+turnstileleft;22A2
+turnstileright;22A3
+unionmulti;228E
+unionsq;2294
+vector;20D7
+wreathproduct;2240
+# -- end TeX extensions
