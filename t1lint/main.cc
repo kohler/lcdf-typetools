@@ -138,9 +138,9 @@ check_blue_array(Vector<double> &blues, const char *name, double BlueScale,
   double max_diff = 1 / BlueScale;
   for (int i = 0; i < blues.size(); i += 2) {
     if (blues[i] > blues[i+1])
-      errh->error("%s zone %d in the wrong order", i/2);
+      errh->error("%s zone %d in the wrong order", name, i/2);
     else if (blues[i+1] - blues[i] >= max_diff)
-      errh->error("%s zone %d too large in relation to BlueScale", i/2);
+      errh->error("%s zone %d too large in relation to BlueScale", name, i/2);
   }
 }
 
@@ -317,7 +317,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   Type1Font *font = new Type1Font(*reader);
   
   if (font) {
-    PinnedErrorHandler cerrh(filename, errh);
+    PinnedErrorHandler cerrh(errh, filename);
     
     check_blues(font, &cerrh);
     check_stems(font, &cerrh);
@@ -333,8 +333,8 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     
     for (int i = 0; i < gc; i++) {
       Type1Subr *t1s = font->glyph(i);
-      ContextErrorHandler derrh(String("While interpreting `") + t1s->name()
-				+ "':", &cerrh);
+      ContextErrorHandler derrh
+	(&cerrh, String("While interpreting `") + t1s->name() + "':");
       cc.check(t1s->t1cs(), &derrh);
     }
     

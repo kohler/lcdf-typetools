@@ -22,20 +22,20 @@ dnl strerror, working strto[dl], strtoul, time
 dnl
 
 FIXLIBC_O=''
-AC_CHECK_FUNC(strerror, :, FIXLIBC_O='fixlibc.o')
+AC_CHECK_FUNC(strerror, AC_DEFINE(HAVE_STRERROR), FIXLIBC_O='fixlibc.o')
 
-AC_CACHE_CHECK(whether strtol works, ac_cv_working_strtoarith,
+AC_CACHE_CHECK(whether strtod works, ac_cv_working_strtod,
 [AC_TRY_RUN([#include <stdio.h>
 #include <stdlib.h>
 int main(int c, char **v) {
   char s[] = "12 ";
   char *endp;
-  long l = strtol(s, &endp, 10);
+  double d = strtod(s, &endp);
   exit(*endp == 0 ? 1 : 0);
-}], ac_cv_working_strtoarith=yes, ac_cv_working_strtoarith=no,
-ac_cv_working_strtoarith=yes)])
-if test $ac_cv_working_strtoarith = no ;
-then FIXLIBC_O='fixlibc.o'; AC_DEFINE_UNQUOTED(BROKEN_STRTOARITH)
+}], ac_cv_working_strtod=yes, ac_cv_working_strtod=no,
+ac_cv_working_strtod=yes)])
+if test $ac_cv_working_strtod = no ;
+then FIXLIBC_O='fixlibc.o'; AC_DEFINE_UNQUOTED(BROKEN_STRTOD)
 fi
 
 AC_CHECK_FUNCS(strtoul ctime)

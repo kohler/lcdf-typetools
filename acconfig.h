@@ -2,19 +2,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-/* Package and version. */
-#define PACKAGE "t1sicle"
-#define VERSION "97"
-
 /* Pathname separator character ('/' on Unix). */
 #define PATHNAME_SEPARATOR '/'
 
-/* Check for bad strtod and strtol. */
-#undef BROKEN_STRTOARITH
+/* Check for bad strtod. */
+#undef BROKEN_STRTOD
 
-/* Define to 0 if you don't want mmafm to run mmpfb when it needs to get an
-   intermediate master conversion program. */
-#define MMAFM_RUN_MMPFB 1
+/* Define if you have the strerror function. */
+#undef HAVE_STRERROR 
 
 /* Define to 1 since we have PermStrings and Strings. */
 #define HAVE_PERMSTRING 1
