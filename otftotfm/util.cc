@@ -80,6 +80,9 @@ pathname_filename(const String &path)
 String
 shell_quote(const String &str)
 {
+#if defined(_MSDOS) || defined(_WIN32)
+    return str;			// XXX
+#else
     if (!str)
 	return String::stable_string("''");
 
@@ -101,6 +104,7 @@ shell_quote(const String &str)
 	sa.append(begin, end);
 	return sa.take_string();
     }
+#endif
 }
 
 int

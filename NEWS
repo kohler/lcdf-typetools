@@ -1,6 +1,6 @@
 LCDF Typetools NEWS
 
-Version 2.19
+Version 2.19   3.Feb.2005
 
 * otftotfm: Add '--include-subs', '--exclude-subs', and '--clear-subs'
   options (inspired by Achim Blumensath).
