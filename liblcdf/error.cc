@@ -645,11 +645,12 @@ ErrorHandler::remove_conversion(ErrorHandler::Conversion *conv)
   return -1;
 }
 
-void
+ErrorHandler *
 ErrorHandler::static_initialize(ErrorHandler *default_handler)
 {
   the_default_handler = default_handler;
   the_silent_handler = new SilentErrorHandler;
+  return the_default_handler;
 }
 
 void

@@ -33,7 +33,7 @@ class ErrorHandler { public:
   ErrorHandler()			{ }
   virtual ~ErrorHandler()		{ }
   
-  static void static_initialize(ErrorHandler *);
+  static ErrorHandler *static_initialize(ErrorHandler *errh); // returns errh
   static void static_cleanup();
 
   static ErrorHandler *default_handler();
