@@ -191,6 +191,16 @@ operator==(PermString a, const char *b)
 }
 
 
+char
+PermString::operator[](int e) const
+{
+    if (e >= 0 && e < length())
+	return c_str()[e];
+    else
+	return 0;
+}
+
+
 static int pspos;
 static int pscap = 64;
 static char *psc = (char *)malloc(pscap);

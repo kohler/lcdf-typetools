@@ -19,6 +19,7 @@ class PermString { struct Doodad; public:
   
     operator bool() const		{ return _rep != 0; }
     int length() const			{ return doodad()->length; }
+    char operator[](int) const;
   
     friend bool operator==(PermString, PermString);
     friend bool operator!=(PermString, PermString);
