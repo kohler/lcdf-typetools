@@ -7,7 +7,6 @@
 #include "straccum.hh"
 #include <stdio.h>
 
-
 void
 StringAccum::grow(int want)
 {
@@ -23,7 +22,6 @@ StringAccum::grow(int want)
   else
     _s = (unsigned char *)malloc(_cap);
 }
-
 
 StringAccum &
 operator<<(StringAccum &sa, int i)

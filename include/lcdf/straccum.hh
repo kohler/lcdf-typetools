@@ -1,13 +1,12 @@
 #ifndef STRACCUM_HH
 #define STRACCUM_HH
 #ifdef __GNUG__
-#pragma interface
+# pragma interface
 #endif
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include "permstr.hh"
-
 
 class StringAccum {
   
