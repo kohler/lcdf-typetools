@@ -273,7 +273,7 @@ vpermprintf(const char *s, va_list val)
        }
        
        case 'c': {
-	 char c = va_arg(val, char);
+	 char c = (char)va_arg(val, int);
 	 append(&c, 1);
 	 goto pctdone;
        }
