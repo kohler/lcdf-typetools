@@ -1,5 +1,5 @@
 /*
- * vector.{cc,hh} -- simple array template class
+ * vectorv.cc -- template specialization for Vector<void *>
  * Eddie Kohler
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
@@ -16,94 +16,78 @@
  */
 
 #include "vector.hh"
+#include <cstring>
 
-template <class T>
-Vector<T>::Vector(const Vector<T> &o)
+Vector<void *>::Vector(const Vector<void *> &o)
     : _l(0), _n(0), _cap(0)
 {
     *this = o;
 }
 
-template <class T>
-Vector<T>::~Vector()
+Vector<void *>::~Vector()
 {
-    for (int i = 0; i < _n; i++)
-	_l[i].~T();
-    delete[] (unsigned char *)_l;
+    delete[] _l;
 }
 
-template <class T> Vector<T> &
-Vector<T>::operator=(const Vector<T> &o)
+Vector<void *> &
+Vector<void *>::operator=(const Vector<void *> &o)
 {
     if (&o != this) {
-	for (int i = 0; i < _n; i++)
-	    _l[i].~T();
 	_n = 0;
 	if (reserve(o._n)) {
 	    _n = o._n;
-	    for (int i = 0; i < _n; i++)
-		new(velt(i)) T(o._l[i]);
+	    memcpy(_l, o._l, sizeof(void *) * _n);
 	}
     }
     return *this;
 }
 
-template <class T> Vector<T> &
-Vector<T>::assign(int n, const T &e)
+Vector<void *> &
+Vector<void *>::assign(int n, void *e)
 {
-    resize(0, e);
-    resize(n, e);
+    _n = 0;
+    if (reserve(n)) {
+	_n = n;
+	for (int i = 0; i < _n; i++)
+	    _l[i] = e;
+    }
     return *this;
 }
 
-template <class T> bool
-Vector<T>::reserve(int want)
+bool
+Vector<void *>::reserve(int want)
 {
     if (want < 0)
 	want = _cap > 0 ? _cap * 2 : 4;
     if (want <= _cap)
 	return true;
   
-    T *new_l = (T *)new unsigned char[sizeof(T) * want];
-    if (!new_l) return false;
+    void **new_l = new void *[want];
+    if (!new_l)
+	return false;
   
-    for (int i = 0; i < _n; i++) {
-	new(velt(new_l, i)) T(_l[i]);
-	_l[i].~T();
-    }
-    delete[] (unsigned char *)_l;
+    memcpy(new_l, _l, sizeof(void *) * _n);
+    delete[] _l;
   
     _l = new_l;
     _cap = want;
     return true;
 }
 
-template <class T> void
-Vector<T>::shrink(int nn)
-{
-    if (nn < _n) {
-	for (int i = nn; i < _n; i++)
-	    _l[i].~T();
-	_n = nn;
-    }
-}
-
-template <class T> void
-Vector<T>::resize(int nn, const T &e)
+void
+Vector<void *>::resize(int nn, void *e)
 {
     if (nn <= _cap || reserve(nn)) {
-	for (int i = nn; i < _n; i++)
-	    _l[i].~T();
 	for (int i = _n; i < nn; i++)
-	    new(velt(i)) T(e);
+	    _l[i] = e;
 	_n = nn;
     }
 }
 
-template <class T> void
-Vector<T>::swap(Vector<T> &o)
+void
+Vector<void *>::swap(Vector<void *> &o)
 {
-    T *l = _l;
+    void **l = _l;
     int n = _n;
     int cap = _cap;
     _l = o._l;
