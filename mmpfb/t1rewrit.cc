@@ -14,6 +14,8 @@ using namespace Efont;
 static bool itc_complained = false;
 static ErrorHandler *itc_errh;
 
+namespace Efont { extern int fucker; }
+
 void
 itc_complain()
 {
@@ -398,6 +400,7 @@ Type1OneMMRemover::type1_command(int cmd)
 	  if (size() < 1)
 	      goto normal;
 	  int subrno = (int)pop();
+	  if (subrno == 44) fucker++;
 	  if (_subr_level < 1) { // otherwise, have already included prefix
 	      if (Type1Charstring *cs = _remover->subr_prefix(subrno))
 		  run_subr(cs);
@@ -406,8 +409,10 @@ Type1OneMMRemover::type1_command(int cmd)
 	      run_subr(cs);
 	  else {
 	      push(subrno);
+	      if (subrno == 44) fucker--;
 	      goto normal;
 	  }
+	  if (subrno == 44) fucker--;
 	  break;
       }
    
@@ -607,19 +612,23 @@ Type1MMRemover::~Type1MMRemover()
 Type1Charstring *
 Type1MMRemover::subr_prefix(int subrno)
 {
-    if (subrno < 0 || subrno >= _nsubrs) return 0;
+    if (subrno < 0 || subrno >= _nsubrs)
+	return 0;
   
     if (!_subr_done[subrno]) {
 	_subr_done[subrno] = 1;
     
 	Type1Charstring *subr = _font->subr(subrno);
-	if (!subr) return 0;
-    
+	if (!subr)
+	    return 0;
+
+	if (subrno == 44) fucker++;
 	Type1OneMMRemover one(this);
 	if (one.run_fresh_subr(*subr, !_hint_replacement_subr[subrno]))
 	    _must_expand_subr[subrno] = true;
 	_subr_prefix[subrno] = one.output_prefix();
 	one.output_main(*subr);
+	if (subrno == 44) fucker--;
     }
 
     return _subr_prefix[subrno];
@@ -647,16 +656,14 @@ extern "C" {
     }
 }
 
-namespace Efont { extern bool fucker; }
-
 void
 Type1MMRemover::run()
 {
     Type1OneMMRemover one(this);
   
     // check subroutines
-    for (int i = 0; i < _nsubrs; i++)
-	(void)subr_prefix(i);
+    for (int subrno = 0; subrno < _nsubrs; subrno++)
+	(void)subr_prefix(subrno);
 
     // expand glyphs
     Vector<PermString> bad_glyphs;
@@ -686,29 +693,28 @@ Type1MMRemover::run()
 	if (Type1Subr *g = _font->glyph_x(i))
 	    hr.run(g->t1cs());
     // don't remove first four subroutines!
-    for (int i = 4; i < _nsubrs; i++)
-	if (hr.call_count(i) || _hint_replacement_subr[i]) {
-	    Type1Charstring *cs = _font->subr(i);
-	    Efont::fucker = (i == 44);
+    for (int subrno = 4; subrno < _nsubrs; subrno++)
+	if (hr.call_count(subrno) || _hint_replacement_subr[subrno]) {
+	    Type1Charstring *cs = _font->subr(subrno);
+	    fucker = (subrno == 44);
 	    if (one.rerun_subr(*cs)) {
 		_expand_all_subrs = true;
 		if (one.rerun_subr(*cs))
-		    bad_glyphs.push_back(permprintf("subr %d", i));
+		    bad_glyphs.push_back(permprintf("subr %d", subrno));
 		_expand_all_subrs = false;
 	    }
 	    one.output_main(*cs);
 	} else
-	    _font->remove_subr(i);
+	    _font->remove_subr(subrno);
   
     // remove calls to removed subroutines
     Type1BadCallRemover bcr(this);
     for (int i = 0; i < _font->nglyphs(); i++)
 	if (Type1Subr *g = _font->glyph_x(i))
 	    bcr.run(g->t1cs());
-    for (int i = 4; i < _nsubrs; i++)
-	if (Type1Charstring *cs = _font->subr(i))
+    for (int subrno = 4; subrno < _nsubrs; subrno++)
+	if (Type1Charstring *cs = _font->subr(subrno))
 	    bcr.run(*cs);
-  
   
     // report warnings
     if (bad_glyphs.size()) {
@@ -772,16 +778,18 @@ SubrExpander::type1_command(int cmd)
       case CS::cCallsubr: {
 	  if (size() < 1)
 	      goto unknown;
-	  int which = (int)top(0);
-	  int renumber_which = (which >= 0 && which < _renumbering->size() ? (*_renumbering)[which] : which);
-	  if (renumber_which >= 0) {
-	      top(0) = renumber_which;
+	  int subrno = (int)top(0);
+	  int renumber_subrno = (subrno >= 0 && subrno < _renumbering->size() ? (*_renumbering)[subrno] : subrno);
+	  if (renumber_subrno >= 0) {
+	      top(0) = renumber_subrno;
 	      goto unknown;
 	  }
 	  pop();
-	  if (Charstring *subr_cs = get_subr(which)) {
+	  if (Charstring *subr_cs = get_subr(subrno)) {
 	      _subr_level++;
+	      if (subrno == 44) fucker++;
 	      subr_cs->run(*this);
+	      if (subrno == 44) fucker--;
 	      _subr_level--;
 	  }
 	  return !done();

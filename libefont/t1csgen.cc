@@ -20,7 +20,7 @@
 #include <cmath>
 namespace Efont {
 
-bool fucker;
+int fucker;
 
 static const char * const command_desc[] = {
     0, 0, 0, 0, "y",
