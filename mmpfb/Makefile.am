@@ -4,8 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 bin_PROGRAMS = mmpfb
 man_MANS = mmpfb.1
 
-mmpfb_SOURCES = templatei.cc \
-	myfont.cc myfont.hh \
+mmpfb_SOURCES = myfont.cc myfont.hh \
 	main.cc \
 	t1minimize.cc t1minimize.hh \
 	t1rewrit.cc t1rewrit.hh

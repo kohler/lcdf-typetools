@@ -264,18 +264,16 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   if (Type1Definition *def = bp_dict("BuildCharArray"))
     kill_def(def, dBlendPrivate);
   
-  int i = 0;
-  PermString name;
-  Type1Definition *def;
-  while (dict_each(dBlend, i, name, def))
-    if (def && name != "Private" && name != "FontInfo"
-	&& name != "ConvertDesignVector" && name != "NormalizeDesignVector")
-      errh->warning("didn't interpolate %s in Blend", name.cc());
-  
-  i = 0;
-  while (dict_each(dBlendPrivate, i, name, def))
-    if (def && name != "Erode")
-      errh->warning("didn't interpolate %s in BlendPrivate", name.cc());
+  for (DictHashMap::const_iterator i = dict_begin(dBlend); i; i++) {
+      PermString name = i.key();
+      if (i.value() && name != "Private" && name != "FontInfo"
+	  && name != "ConvertDesignVector" && name != "NormalizeDesignVector")
+	  errh->warning("didn't interpolate %s in Blend", name.cc());
+  }
+
+  for (DictHashMap::const_iterator i = dict_begin(dBlendPrivate); i; i++)
+      if (i.value() && i.key() != "Erode")
+	  errh->warning("didn't interpolate %s in BlendPrivate", i.key().cc());
   
   kill_def(p_dict("NDV"), dPrivate);
   kill_def(p_dict("CDV"), dPrivate);
