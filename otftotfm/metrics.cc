@@ -783,7 +783,12 @@ Metrics::cut_encoding(int size)
     /* Function makes it so that characters below 'size' do not point to
        characters above 'size', except for context ligatures. */
 
-    /* Maybe we don't need to do anything. */
+    /* Change "emptyslot"s to ".notdef"s. */
+    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
+	if (ch->glyph == emptyslot_glyph())
+	    ch->glyph = 0, ch->base_code = -1;
+    
+    /* Maybe we don't need to do anything else. */
     if (_encoding.size() <= size) {
 	_encoding.resize(size, Char());
 	return;
@@ -845,11 +850,6 @@ Metrics::cut_encoding(int size)
 	    }
     }
 
-    /* Finally, change "emptyslot"s to ".notdef"s. */
-    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
-	if (ch->glyph == emptyslot_glyph())
-	    ch->glyph = 0, ch->base_code = -1;
-    
     /* We are done! */
 }
 
@@ -1255,7 +1255,7 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
 	    }
 	    for (const Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
 		fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2, glyph_names), l->out, code_str(l->out, glyph_names), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
-#if 1
+#if 0
 	    for (const Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
 		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2, glyph_names), k->kern);
 #endif

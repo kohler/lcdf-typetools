@@ -318,6 +318,15 @@ Select automatic mode.
 .BI \-v " vendor\fR, " \-\-vendor= vendor
 Set the font vendor name, which is used to locate files within the TDS.
 Defaults to "lcdftools".
+.IP
+In automatic mode, TeX and friends will generally find required font files
+independently of the vendor you select. However, you will need to
+explicitly tell
+.M dvips 1
+to include
+.IR vendor .map
+as a psfonts.map file, using a configuration line such as "p
++\fIvendor\fR.map".
 '
 .Sp
 .TP 5
@@ -399,7 +408,7 @@ above. All default to ".".
 .BI \-\-map\-file= filename
 Set file in which otftotfm will write a
 .I psfonts.map
-line for the font. The default is standard out in manual mode, and
+line for the font. The default is the standard output in manual mode, and
 "TEXMF/dvips/\fIvendor\fR.map" elsewhere.
 .PD
 '
