@@ -12,7 +12,7 @@
 otftotfm \- create TeX font metrics from PostScript OpenType fonts
 .SH SYNOPSIS
 .B otftotfm
-\%[\fB-a\fR]
+\%[\fB\-a\fR]
 \%[\fBoptions\fR]
 \%\fIfontfile\fR.otf [\fItexname\fR]
 '
@@ -142,9 +142,9 @@ installs files under that directory tree as follows:
 .TS
 l	l	l	.
 \fBFile type\fR	\fBDirectory\fR	\fBFilename\fR
-TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[--base].tfm
+TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[\-\-base].tfm
 VF	TEXMF/fonts/vf/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vf
-PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[--base].pl
+PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[\-\-base].pl
 VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vpl
 encoding	TEXMF/fonts/enc/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
 	or TEXMF/dvips/\fIvendor\fR/
@@ -206,7 +206,7 @@ with the "\fB\-e\fR texnansx" option.
 Next, we decide on a naming scheme for the font metric files.  Let's use
 the OpenType font names as a base.  (There's generally no need to follow
 the six-character "Karl Berry" naming scheme.)  Just in case we come back
-later and add a different encoding scheme, we'll prepend "LY1--" to each
+later and add a different encoding scheme, we'll prepend "LY1\-\-" to each
 name.
 .PP
 We're now ready to run
@@ -215,37 +215,37 @@ for the first set of fonts.  Note the "\fB\-f\fRkern \fB\-f\fRliga"
 options, which access pair kerns and the default "f" ligatures.
 .Sp
 .nf
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Regular.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-Regular
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-It.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-It
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Semibold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-Semibold
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-SemiboldIt.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-SemiboldIt
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Bold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-Bold
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-BoldIt.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-BoldIt
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Regular.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-Regular
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-It.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-It
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Semibold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-Semibold
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-SemiboldIt.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-SemiboldIt
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Bold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-Bold
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-BoldIt.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-BoldIt
 .fi
 .Sp
 The small-caps fonts are generated with an additional "\fB\-f\fRsmcp"
-option.  We append "--fsmcp" to the font metric names as well,
+option.  We append "\-\-fsmcp" to the font metric names as well,
 differentiating them from the regular fonts.  Although MinionPro's italic
 fonts support small-caps, the LaTeX font selection scheme can't access them
 easily, so we've left them off.
 .Sp
 .nf
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Regular.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1--MinionPro-Regular--fsmcp
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Semibold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1--MinionPro-Semibold--fsmcp
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Bold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1--MinionPro-Bold--fsmcp
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Regular.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1\-\-MinionPro\-Regular\-\-fsmcp
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Semibold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1\-\-MinionPro\-Semibold\-\-fsmcp
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Bold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1\-\-MinionPro\-Bold\-\-fsmcp
 .fi
 .Sp
 To get old-style numerals, just add the "\fB\-f\fRonum" option to each
-invocation -- and, to reduce confusion, append "--fonum" to the font metric
+invocation -- and, to reduce confusion, append "\-\-fonum" to the font metric
 names.
 .PP
 At this point, all our font metric files are installed, and it's finally
@@ -257,27 +257,27 @@ Let's call the LaTeX font family "MinionPro".  Then the ".fd" file is
 .nf
     \eDeclareFontFamily{LY1}{MinionPro}{}
     \eDeclareFontShape{LY1}{MinionPro}{m}{n}%
-            { <-> LY1--MinionPro-Regular }{}
-    \eDeclareFontShape{LY1}{MinionPro}{m}{it}{ <-> LY1--MinionPro-It }{}
+            { <\-> LY1\-\-MinionPro\-Regular }{}
+    \eDeclareFontShape{LY1}{MinionPro}{m}{it}{ <\-> LY1\-\-MinionPro\-It }{}
     \eDeclareFontShape{LY1}{MinionPro}{m}{sc}%
-            { <-> LY1--MinionPro-Regular--fsmcp }{}
+            { <\-> LY1\-\-MinionPro\-Regular\-\-fsmcp }{}
     \eDeclareFontShape{LY1}{MinionPro}{sb}{n}%
-            { <-> LY1--MinionPro-Semibold }{}
+            { <\-> LY1\-\-MinionPro\-Semibold }{}
     \eDeclareFontShape{LY1}{MinionPro}{sb}{it}%
-            { <-> LY1--MinionPro-SemiboldIt }{}
+            { <\-> LY1\-\-MinionPro\-SemiboldIt }{}
     \eDeclareFontShape{LY1}{MinionPro}{sb}{sc}%
-            { <-> LY1--MinionPro-Semibold--fsmcp }{}
-    \eDeclareFontShape{LY1}{MinionPro}{b}{n}{ <-> LY1--MinionPro-Bold }{}
+            { <\-> LY1\-\-MinionPro\-Semibold\-\-fsmcp }{}
+    \eDeclareFontShape{LY1}{MinionPro}{b}{n}{ <\-> LY1\-\-MinionPro\-Bold }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{it}%
-            { <-> LY1--MinionPro-BoldIt }{}
+            { <\-> LY1\-\-MinionPro\-BoldIt }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{sc}%
-            { <-> LY1--MinionPro-Bold--fsmcp }{}
+            { <\-> LY1\-\-MinionPro\-Bold\-\-fsmcp }{}
     \eDeclareFontShape{LY1}{MinionPro}{bx}{n}%
-            { <-> ssub * MinionPro/b/n }{}
+            { <\-> ssub * MinionPro/b/n }{}
     \eDeclareFontShape{LY1}{MinionPro}{bx}{it}%
-            { <-> ssub * MinionPro/b/it }{}
+            { <\-> ssub * MinionPro/b/it }{}
     \eDeclareFontShape{LY1}{MinionPro}{bx}{sc}%
-            { <-> ssub * MinionPro/b/sc }{}
+            { <\-> ssub * MinionPro/b/sc }{}
 .fi
 .PP
 We're now ready to use MinionPro in LaTeX, with two lines like this in the
@@ -477,7 +477,7 @@ command unless you are using fontinst.
 .BI \-\-boundary\-char= char
 Sets the font's boundary character to
 .IR char ,
-which should either be a single non-digit character, or a number between -1
+which should either be a single non-digit character, or a number between \-1
 and 255. The default is taken from the encoding.
 '
 .Sp
@@ -485,14 +485,14 @@ and 255. The default is taken from the encoding.
 .BI \-\-altselector\-char= char
 Sets the font's alternate-selector character to
 .IR char ,
-which should either be a single non-digit character, or a number between -1
+which should either be a single non-digit character, or a number between \-1
 and 255.  Use an alternate selector if you want to choose between different
 versions of a character from within a TeX file.  For instance, say that your
 font provides three versions of "A".  If you want to access them all, pick a
 character to be your alternate selector -- say "*".  Then give 
 .B otftotfm
 the
-.BR \-\-altselector-char= '*'
+.BR \-\-altselector\-char= '*'
 option.  In TeX, "A" will produce the normal version, "A*" will produce the
 first alternate, and "A**" will produce the second alternate.  Furthermore,
 "s*t" will activate any discretionary "s_t" ligature in the font.  The
@@ -848,9 +848,9 @@ and
 ligatures and kerns.
 .PP
 You can set the 
-.B \-\-boundary-char
+.B \-\-boundary\-char
 and
-.B \-\-altselector-char
+.B \-\-altselector\-char
 from an encoding file with commands like this:
 .nf
     % LIGKERN || = \fIboundarychar\fR ;
@@ -860,7 +860,7 @@ As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
 commands, separated by spaced semicolons.
 .PP
 Finally, the CODINGSCHEME command specifies a default
-.B \-\-coding-scheme
+.B \-\-coding\-scheme
 for the encoding; for example:
 .nf
     % CODINGSCHEME EXTENDED TEX FONT ENCODING
@@ -1138,7 +1138,7 @@ no writable directory found in $TEXMF
 could not find a writable directory in your $VARTEXMF or $TEXMF path.  Did
 you create a
 .I $HOME/texmf
-directory?  If so, run the command "kpsewhich --expand-path='$TEXMF'" to
+directory?  If so, run the command "kpsewhich \-\-expand\-path='$TEXMF'" to
 verify that directory is not being found.  You may need to set your TEXMF
 environment variable, to '{!!'"$HOME"'/texmf,!!$TEXMFMAIN}', for instance
 (note the different kinds of quotes; on my machine, this expands to
