@@ -129,7 +129,19 @@ if test "x$kpathsea" = xno; then
     KPSEINTERFACE_O=
     LIBKPATHSEA=
 else
-    if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
+    if test "x$kpathsea" = xtexk-local; then
+	if test ! -d ../../texk/kpathsea; then
+	    AC_MSG_ERROR([
+=========================================
+
+You specified --with-kpathsea=texk-local, but I can't find the kpathsea
+directory.  I expected it to be in ../../texk/kpathsea.
+
+=========================================])
+	fi
+	CPPFLAGS="$CPPFLAGS -I\$(top_srcdir)/../../texk"
+	LDFLAGS="$LDFLAGS -L\$(top_srcdir)/../../texk/kpathsea/.libs"
+    elif test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
 	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
 	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
     else
@@ -165,14 +177,18 @@ using --without-kpathsea.
     dnl OK, found
     AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
     KPSEINTERFACE_O='kpseinterface.$(OBJEXT)'
-    LIBKPATHSEA='-lkpathsea'
+    if test "x$kpathsea" = xtexk-local; then
+	LIBKPATHSEA='$(top_srcdir)/../../texk/kpathsea/.libs/libkpathsea.a'
+    else
+	LIBKPATHSEA='-lkpathsea'
+    fi
 fi
 AC_SUBST([KPSEINTERFACE_O])
 AC_SUBST([LIBKPATHSEA])
 
 AC_ARG_ENABLE(selfauto-set, [  --disable-selfauto-set  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_set=yes)
 
-if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno; then
+if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno -a "x$kpathsea" != xtexk-local; then
     kpsewhich='kpsewhich'
     test "x$kpathsea" != xyes -a -x "$kpathsea/bin/kpsewhich" && kpsewhich="$kpathsea/bin/kpsewhich"
     SELFAUTOLOC=`$kpsewhich --expand-var='$SELFAUTOLOC' 2>/dev/null`
