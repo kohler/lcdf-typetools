@@ -8,6 +8,9 @@ Version 1.80   4.Dec.2003
   Sivan Toledo ("Exploiting Rich Fonts", TUGboat 21(2), 2000).  Requested
   by Martin Budaj.
 
+* Add default encoding for 'SS' character (same as 'Germandbls'). Reported
+  by Ulrich Dirr.
+
 
 Version 1.75   3.Dec.2003
 

@@ -4303,6 +4303,8 @@ Germandbls;D800
 Ng;014A
 Omega;2126;03A9
 Rfractur;211C
+# SS: invalid Unicode, used for secondary replacement from EC.enc
+SS;D800
 # altselector: invalid Unicode
 altselector;D802
 angbracketleft;27E8;2329
