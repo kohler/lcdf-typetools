@@ -1,5 +1,5 @@
-LCDF-TYPETOOLS 0.10
-==================
+LCDF-TYPETOOLS 0.11
+===================
 
 USAGE
 -----
@@ -11,11 +11,11 @@ flavored OpenType font, into PostScript Type 1 format. It correctly handles
 subroutines and hints. See the manual page 'cfftot1/cfftot1.1' for more
 information.
 
-   Otftopl creates TeX font metrics and encodings that correspond to a
+   Otftotfm creates TeX font metrics and encodings that correspond to a
 PostScript-flavored OpenType font. It will interpret glyph positionings,
 substitutions, and ligatures as far as it is able. You can say which
 OpenType features should be activated. See the manual page
-'otftopl/otftopl.1' for more information.
+'otftotfm/otftotfm.1' for more information.
 
    The other two programs are preliminary and have little or no
 documentation. T1lint checks a Type 1 font for correctness, and t1testpage

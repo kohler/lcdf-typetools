@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 0.11   26.Jun.2003
+
+* otftotfm: Handles the contextual substitutions necessary for 'cswh'
+  (Contextual Swash) and 'fina' (Terminal Forms) features.
+
+
 Version 0.10   26.Jun.2003
 
 * otftotfm: Update ls-R files for new encodings.
