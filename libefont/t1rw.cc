@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <cstring>
+namespace Efont {
 
 unsigned char Type1Reader::xvalue_store[257];
 unsigned char *Type1Reader::xvalue = &Type1Reader::xvalue_store[1];
@@ -555,4 +556,6 @@ Type1PFBWriter::print0(const unsigned char *c, int l)
 {
     char *m = _save.extend(l);
     memcpy(m, c, l);
+}
+
 }

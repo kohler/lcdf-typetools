@@ -3,6 +3,7 @@
 #include "hashmap.hh"
 #include "t1cs.hh"
 class ErrorHandler;
+namespace Efont {
 class Type1Encoding;
 
 class EfontCFF { public:
@@ -317,4 +318,5 @@ EfontCFF::Font::dict_value(DictOperator op, Vector<double> &val) const
     return dict_of(op).value(op, val);
 }
 
+}
 #endif

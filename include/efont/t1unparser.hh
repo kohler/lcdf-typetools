@@ -3,6 +3,7 @@
 #include "t1interp.hh"
 #include "straccum.hh"
 #include "string.hh"
+namespace Efont {
 
 class CharstringUnparser : public CharstringInterp { public:
 
@@ -35,4 +36,5 @@ class CharstringUnparser : public CharstringInterp { public:
 
 };
 
+}
 #endif

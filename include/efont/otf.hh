@@ -2,27 +2,25 @@
 #define EFONT_OTF_HH
 #include "t1cs.hh"			/* for uintXX_t definitions */
 class ErrorHandler;
+namespace Efont {
 
 class EfontOTF { public:
 
     EfontOTF(const String &, ErrorHandler * = 0);
-    ~EfontOTF();
+    // default destructor
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
 
-    const String &data_string() const	{ return _data_string; }
-    const uint8_t *data() const		{ return _data; }
-    int length() const			{ return _len; }
+    const String &data_string() const	{ return _str; }
+    const uint8_t *data() const		{ return _str.udata(); }
+    int length() const			{ return _str.length(); }
 
     String table(const char *) const;
 
   private:
 
-    String _data_string;
-    const uint8_t *_data;
-    int _len;
-
+    String _str;
     int _error;
 
     enum { HEADER_SIZE = 12, TABLE_DIR_ENTRY_SIZE = 16 };
@@ -31,4 +29,5 @@ class EfontOTF { public:
     
 };
 
+}
 #endif

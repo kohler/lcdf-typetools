@@ -3,7 +3,7 @@
 #endif
 #include "pairop.hh"
 #include <cstdio>
-
+namespace Efont {
 
 PairProgram::PairProgram(const PairProgram &o)
   : _reversed(o._reversed),
@@ -133,4 +133,6 @@ PairProgram::print() const
     printf("\n");
   }
 #endif
+}
+
 }

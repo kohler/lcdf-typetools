@@ -1,6 +1,7 @@
 #ifndef ENCODING_HH
 #define ENCODING_HH
 #include "vector.hh"
+namespace Efont {
 typedef int GlyphIndex;
 
 class Encoding8 {
@@ -21,4 +22,5 @@ class Encoding8 {
   
 };
 
+}
 #endif

@@ -4,6 +4,7 @@
 #include "t1cs.hh"
 #include "t1interp.hh"
 #include <cstring>
+namespace Efont {
 
 const char * const Charstring::command_names[] = {
     "error", "hstem", "UNKNOWN_2", "vstem", "vmoveto",
@@ -56,11 +57,6 @@ Type1Charstring::Type1Charstring(int lenIV, const String &s)
 	    _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
 	_s = s.substring(lenIV);
     }
-}
-
-Type1Charstring::Type1Charstring(const Type1Charstring &t1cs)
-    : Charstring(t1cs), _s(t1cs._s), _key(t1cs._key)
-{
 }
 
 void
@@ -199,11 +195,6 @@ Type1Charstring::assign_substring(int pos, int len, const String &cs)
 }
 
 
-Type2Charstring::Type2Charstring(const Type2Charstring &t2cs)
-    : Charstring(), _s(t2cs._s)
-{
-}
-
 bool
 Type2Charstring::run(CharstringInterp &interp) const
 {
@@ -288,3 +279,6 @@ EfontProgram::global_width_x(bool) const
 {
     return UNKDOUBLE;
 }
+
+}
+

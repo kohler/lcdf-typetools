@@ -15,6 +15,7 @@ typedef u_int16_t uint16_t;
 typedef u_int32_t uint32_t;
 # endif
 #endif
+namespace Efont {
 
 class CharstringInterp;
 class EfontMMSpace;
@@ -130,11 +131,13 @@ class Type1Charstring : public Charstring { public:
     Type1Charstring()				{ }
     Type1Charstring(const String &);		// unencrypted
     Type1Charstring(int lenIV, const String &);	// encrypted
-    Type1Charstring(const Type1Charstring &);
-    ~Type1Charstring()				{ }
+    // default copy constructor
+    // default destructor
+    // default assignment operator
   
     const uint8_t *data() const;
     int length() const				{ return _s.length(); }
+    operator bool() const			{ return _s.length() != 0; }
     
     const String &data_string() const;
     String substring(int pos, int len) const;
@@ -151,8 +154,6 @@ class Type1Charstring : public Charstring { public:
     mutable String _s;
     mutable int _key;
   
-    Type1Charstring &operator=(const Type1Charstring &);
-  
     void decrypt() const;
     
 };
@@ -162,8 +163,9 @@ class Type2Charstring : public Charstring { public:
   
     Type2Charstring()				{ }
     Type2Charstring(const String &);
-    Type2Charstring(const Type2Charstring &);
-    ~Type2Charstring()				{ }
+    // default copy constructor
+    // default destructor
+    // default assignment operator
     
     const uint8_t *data() const;
     int length() const				{ return _s.length(); }
@@ -173,8 +175,6 @@ class Type2Charstring : public Charstring { public:
   private:
   
     String _s;
-  
-    Type2Charstring &operator=(const Type2Charstring &);
 
 };
 
@@ -302,4 +302,5 @@ EfontProgram::xsubr_bias(bool g) const
     return (g ? gsubr_bias() : subr_bias());
 }
 
+}
 #endif

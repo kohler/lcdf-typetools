@@ -21,6 +21,7 @@
 # endif
 #endif
 #include <cstring>
+namespace Efont {
 
 static String::Initializer initializer;
 static String empty_string;
@@ -373,4 +374,6 @@ PsresDatabase::filename_value(PermString sec, PermString key) const
     return s->filename_value(key);
   else
     return Filename();
+}
+
 }

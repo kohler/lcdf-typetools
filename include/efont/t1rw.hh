@@ -3,6 +3,7 @@
 #include <cstdio>
 #include "string.hh"
 #include "straccum.hh"
+namespace Efont {
 
 class Type1Reader { public:
 
@@ -230,4 +231,5 @@ Type1Writer::operator<<(unsigned char c)
     return *this;
 }
 
+}
 #endif

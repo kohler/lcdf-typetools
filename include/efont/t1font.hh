@@ -4,6 +4,9 @@
 #include "hashmap.hh"
 #include "vector.hh"
 #include "permstr.hh"
+class StringAccum;
+class ErrorHandler;
+namespace Efont {
 class Type1Item;
 class Type1Definition;
 class Type1Encoding;
@@ -12,8 +15,6 @@ class Type1Subr;
 class Type1Reader;
 class Type1Writer;
 class EfontMMSpace;
-class StringAccum;
-class ErrorHandler;
 
 class Type1Font : public EfontProgram { public:
 
@@ -147,4 +148,5 @@ Type1Font::font_name() const
     return _font_name;
 }
 
+}
 #endif

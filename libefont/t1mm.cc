@@ -7,18 +7,12 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+namespace Efont {
 
 EfontMMSpace::EfontMMSpace(PermString fn, int na, int nm)
     : _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),
-      _axis_types(na, PermString()), _axis_labels(na, PermString()),
-      _ndv(0), _cdv(0)
+      _axis_types(na, PermString()), _axis_labels(na, PermString())
 {
-}
-
-EfontMMSpace::~EfontMMSpace()
-{
-    if (_own_ndv) delete _ndv;
-    if (_own_cdv) delete _cdv;
 }
 
 
@@ -46,22 +40,6 @@ void
 EfontMMSpace::set_axis_label(int ax, PermString t)
 {
     _axis_labels[ax] = t;
-}
-
-void
-EfontMMSpace::set_ndv(Type1Charstring *cs, bool own)
-{
-    if (_own_ndv) delete _ndv;
-    _ndv = cs;
-    _own_ndv = own;
-}
-
-void
-EfontMMSpace::set_cdv(Type1Charstring *cs, bool own)
-{
-    if (_own_cdv) delete _cdv;
-    _cdv = cs;
-    _own_cdv = own;
 }
 
 void
@@ -243,7 +221,7 @@ EfontMMSpace::normalize_vector(ErrorHandler *errh) const
   
     if (_ndv) {
 	CharstringInterp ai(this);
-	if (!_ndv->run(ai))
+	if (!_ndv.run(ai))
 	    return error(errh, "error in NDV program");
     
     } else
@@ -288,7 +266,7 @@ EfontMMSpace::convert_vector(ErrorHandler *errh) const
   
     if (_cdv) {
 	CharstringInterp ai(this);
-	if (!_cdv->run(ai))
+	if (!_cdv.run(ai))
 	    return error(errh, "error in CDV program");
     
     } else
@@ -354,4 +332,6 @@ EfontMMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
 	return error(errh, "bad conversion: weight vector doesn't sum to 1");
   
     return true;
+}
+
 }

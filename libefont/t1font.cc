@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
+namespace Efont {
 
 static PermString::Initializer initializer;
 static PermString lenIV_str = "lenIV";
@@ -768,12 +769,13 @@ Type1Font::create_mmspace(ErrorHandler *errh) const
 	    _mmspace->set_axis_type(a, axis_types[a]);
   
     int ndv, cdv;
+    Type1Charstring *cs;
     t1d = p_dict("NDV");
-    if (t1d && t1d->value_int(ndv))
-	_mmspace->set_ndv(subr(ndv), false);
+    if (t1d && t1d->value_int(ndv) && (cs = subr(ndv)))
+	_mmspace->set_ndv(*cs);
     t1d = p_dict("CDV");
-    if (t1d && t1d->value_int(cdv))
-	_mmspace->set_cdv(subr(cdv), false);
+    if (t1d && t1d->value_int(cdv) && (cs = subr(cdv)))
+	_mmspace->set_cdv(*cs);
   
     Vector<double> design_vector;
     t1d = dict("DesignVector");
@@ -790,4 +792,6 @@ Type1Font::create_mmspace(ErrorHandler *errh) const
 	_mmspace = 0;
     }
     return _mmspace;
+}
+
 }

@@ -14,6 +14,8 @@
 #define static_assert(c) switch (c) case 0: case (c):
 #endif
 
+namespace Efont {
+
 const char * const EfontCFF::operator_names[] = {
     "version", "Notice", "FullName", "FamilyName",
     "Weight", "FontBBox", "BlueValues", "OtherBlues",
@@ -1168,7 +1170,7 @@ EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 Charstring *
 EfontCFF::Font::subr(int i) const
 {
-    i += ::subr_bias(_charstring_type, nsubrs_x());
+    i += Efont::subr_bias(_charstring_type, nsubrs_x());
     if (i < 0 || i >= nsubrs_x())
 	return 0;
     if (!_subrs_cs[i])
@@ -1179,7 +1181,7 @@ EfontCFF::Font::subr(int i) const
 int
 EfontCFF::Font::subr_bias() const
 {
-    return ::subr_bias(_charstring_type, nsubrs_x());
+    return Efont::subr_bias(_charstring_type, nsubrs_x());
 }
 
 Charstring *
@@ -1191,7 +1193,7 @@ EfontCFF::Font::gsubr(int i) const
 int
 EfontCFF::Font::gsubr_bias() const
 {
-    return ::subr_bias(2, ngsubrs_x());
+    return Efont::subr_bias(2, ngsubrs_x());
 }
 
 PermString
@@ -1275,4 +1277,6 @@ EfontCFF::Font::dict_string(DictOperator op) const
 	return _cff->sid_string((int) vec[0]);
     else
 	return String();
+}
+
 }

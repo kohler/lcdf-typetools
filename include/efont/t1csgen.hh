@@ -2,6 +2,7 @@
 #define LIBEFONT_T1CSGEN_HH
 #include "t1interp.hh"
 #include "straccum.hh"
+namespace Efont {
 
 class Type1CharstringGen { public:
 
@@ -38,4 +39,5 @@ class Type1CharstringGen { public:
   
 };
 
+}
 #endif

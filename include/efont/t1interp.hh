@@ -3,6 +3,7 @@
 #include "vector.hh"
 #include "t1cs.hh"
 #include <cstdio>
+namespace Efont {
 
 // Allow unknown doubles to have some `fuzz' -- so if an unknown double
 // is a bit off from the canonical UNKDOUBLE value, we'll still recognize
@@ -222,4 +223,5 @@ CharstringInterp::callxsubr_command(bool g)
     return (g ? callgsubr_command() : callsubr_command());
 }
 
+}
 #endif

@@ -4,12 +4,13 @@
 #include "permstr.hh"
 #include "t1cs.hh"
 class ErrorHandler;
+namespace Efont {
 class Type1Font;
 
 class EfontMMSpace : public EfontProgram { public:
 
     EfontMMSpace(PermString, int naxes, int nmasters);
-    ~EfontMMSpace();
+    // default destructor
   
     typedef Vector<double> NumVector;
   
@@ -24,15 +25,15 @@ class EfontMMSpace : public EfontProgram { public:
     PermString axis_type(int a) const	{ return _axis_types[a]; }
     PermString axis_label(int a) const	{ return _axis_labels[a]; }
   
-    Type1Charstring *ndv() const	{ return _ndv; }
-    Type1Charstring *cdv() const	{ return _cdv; }
+    const Type1Charstring &ndv() const	{ return _ndv; }
+    const Type1Charstring &cdv() const	{ return _cdv; }
   
     void set_master_positions(const Vector<NumVector> &);
     void set_normalize(const Vector<NumVector> &, const Vector<NumVector> &);
     void set_axis_type(int, PermString);
     void set_axis_label(int, PermString);
-    void set_ndv(Type1Charstring *, bool own = false);
-    void set_cdv(Type1Charstring *, bool own = false);
+    void set_ndv(const Type1Charstring &cs) { _ndv = cs; }
+    void set_cdv(const Type1Charstring &cs) { _cdv = cs; }
     void set_design_vector(const NumVector &);
     void set_weight_vector(const NumVector &);
   
@@ -71,10 +72,8 @@ class EfontMMSpace : public EfontProgram { public:
     Vector<PermString> _axis_types;
     Vector<PermString> _axis_labels;
   
-    bool _own_ndv;
-    bool _own_cdv;
-    Type1Charstring *_ndv;
-    Type1Charstring *_cdv;
+    Type1Charstring _ndv;
+    Type1Charstring _cdv;
   
     NumVector _default_design_vector;
     NumVector _default_weight_vector;
@@ -97,13 +96,14 @@ class EfontMMSpace : public EfontProgram { public:
 inline const Vector<double> &
 EfontMMSpace::default_design_vector() const
 {
-  return _default_design_vector;
+    return _default_design_vector;
 }
 
 inline const Vector<double> &
 EfontMMSpace::default_weight_vector() const
 {
-  return _default_weight_vector;
+    return _default_weight_vector;
 }
 
+}
 #endif

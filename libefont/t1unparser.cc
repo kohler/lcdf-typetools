@@ -2,6 +2,7 @@
 # include <config.h>
 #endif
 #include "t1unparser.hh"
+namespace Efont {
 
 CharstringUnparser::CharstringUnparser()
     : CharstringInterp(0, 0),
@@ -116,4 +117,6 @@ CharstringUnparser::unparse(const Charstring &cs)
     CharstringUnparser u;
     cs.run(u);
     return u.value();
+}
+
 }

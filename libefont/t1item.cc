@@ -13,7 +13,7 @@
 #ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif
-
+namespace Efont {
 
 /*****
  * Type1NullItem
@@ -782,4 +782,6 @@ Type1IncludedFont::gen(Type1Writer &w)
     }
 
     fclose(f);
+}
+
 }

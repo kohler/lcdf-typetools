@@ -4,6 +4,7 @@
 #include "vector.hh"
 #include "permstr.hh"
 #include "straccum.hh"
+namespace Efont {
 class Type1Reader;
 class Type1Writer;
 class CharstringInterp;
@@ -252,4 +253,5 @@ Type1Definition::set_val(StringAccum &sa)
     _val = sa.take_string();
 }
 
+}
 #endif

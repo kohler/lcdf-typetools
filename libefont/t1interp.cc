@@ -13,6 +13,8 @@
 # define static_assert(c)	switch (c) case 0: case (c):
 #endif
 
+namespace Efont {
+
 static const char * const error_formats[] = {
     "charstring OK",				// errOK
     "charstring internal error in '%C'",	// errInternal
@@ -1190,4 +1192,6 @@ void
 CharstringInterp::char_hintmask(int, const uint8_t *, int)
 {
     /* do nothing */
+}
+
 }

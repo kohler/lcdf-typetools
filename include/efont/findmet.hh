@@ -1,113 +1,113 @@
-// -*- mode: c++; c-basic-offset: 2 -*-
 #ifndef FINDMET_HH
 #define FINDMET_HH
 #include "hashmap.hh"
 #include "vector.hh"
 #include "permstr.hh"
 class Filename;
+class ErrorHandler;
+namespace Efont {
 class Metrics;
 class AmfmMetrics;
-class ErrorHandler;
 class PsresDatabase;
-
 
 class MetricsFinder { public:
 
-  MetricsFinder()			: _next(0), _prev(0) { }
-  virtual ~MetricsFinder();
+    MetricsFinder()			: _next(0), _prev(0) { }
+    virtual ~MetricsFinder();
 
-  MetricsFinder *next() const		{ return _next; }
+    MetricsFinder *next() const		{ return _next; }
 
-  void add_finder(MetricsFinder *);
+    void add_finder(MetricsFinder *);
 
-  Metrics *find_metrics(PermString, ErrorHandler * = 0);
-  AmfmMetrics *find_amfm(PermString, ErrorHandler * = 0);
+    Metrics *find_metrics(PermString, ErrorHandler * = 0);
+    AmfmMetrics *find_amfm(PermString, ErrorHandler * = 0);
 
-  virtual Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
-  virtual AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
+    virtual Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
+    virtual AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
 
-  void record(Metrics *m);
-  virtual void record(Metrics *, PermString);
-  virtual void record(AmfmMetrics *);
+    void record(Metrics *m);
+    virtual void record(Metrics *, PermString);
+    virtual void record(AmfmMetrics *);
 
- private:
+  private:
   
-  MetricsFinder *_next;
-  MetricsFinder *_prev;
+    MetricsFinder *_next;
+    MetricsFinder *_prev;
 
-  MetricsFinder(const MetricsFinder &)			{ }
-  MetricsFinder &operator=(const MetricsFinder &)	{ return *this; }
+    MetricsFinder(const MetricsFinder &)			{ }
+    MetricsFinder &operator=(const MetricsFinder &)	{ return *this; }
 
- protected:
+  protected:
 
-  Metrics *try_metrics_file(const Filename &, MetricsFinder *, ErrorHandler *);
-  AmfmMetrics *try_amfm_file(const Filename &, MetricsFinder *, ErrorHandler *);
+    Metrics *try_metrics_file(const Filename &, MetricsFinder *, ErrorHandler *);
+    AmfmMetrics *try_amfm_file(const Filename &, MetricsFinder *, ErrorHandler *);
 
 };
 
 
 class CacheMetricsFinder: public MetricsFinder { public:
 
-  CacheMetricsFinder();
-  ~CacheMetricsFinder();
+    CacheMetricsFinder();
+    ~CacheMetricsFinder();
   
-  Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
-  AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
-  void record(Metrics *, PermString);
-  void record(AmfmMetrics *);
+    Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
+    AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
+    void record(Metrics *, PermString);
+    void record(AmfmMetrics *);
 
-  void clear();
+    void clear();
 
- private:
+  private:
   
-  HashMap<PermString, int> _metrics_map;
-  Vector<Metrics *> _metrics;
-  HashMap<PermString, int> _amfm_map;
-  Vector<AmfmMetrics *> _amfm;
+    HashMap<PermString, int> _metrics_map;
+    Vector<Metrics *> _metrics;
+    HashMap<PermString, int> _amfm_map;
+    Vector<AmfmMetrics *> _amfm;
     
 };
 
 
 class InstanceMetricsFinder: public MetricsFinder { public:
   
-  InstanceMetricsFinder(bool call_mmpfb = true);
+    InstanceMetricsFinder(bool call_mmpfb = true);
   
-  Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
+    Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
   
- private:
+  private:
 
-  bool _call_mmpfb;
+    bool _call_mmpfb;
   
-  Metrics *find_metrics_instance(PermString, MetricsFinder *, ErrorHandler *);
+    Metrics *find_metrics_instance(PermString, MetricsFinder *, ErrorHandler *);
   
 };
 
 
 class PsresMetricsFinder: public MetricsFinder { public:
 
-  PsresMetricsFinder(PsresDatabase *);
+    PsresMetricsFinder(PsresDatabase *);
   
-  Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
-  AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
+    Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
+    AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
   
- private:
+  private:
   
-  PsresDatabase *_psres;
+    PsresDatabase *_psres;
   
 };
 
 
 class DirectoryMetricsFinder: public MetricsFinder { public:
   
-  DirectoryMetricsFinder(PermString);
+    DirectoryMetricsFinder(PermString);
   
-  Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
-  AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
+    Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
+    AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
   
- private:
+  private:
   
-  PermString _directory;
+    PermString _directory;
   
 };
 
+}
 #endif

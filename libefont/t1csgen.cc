@@ -3,6 +3,7 @@
 #endif
 #include "t1csgen.hh"
 #include <cmath>
+namespace Efont {
 
 static const char * const command_desc[] = {
     0, 0, 0, 0, "y",
@@ -161,4 +162,6 @@ Type1CharstringGen::callsubr_string(int subr)
     csg.gen_number(subr);
     csg.gen_command(Charstring::cCallsubr);
     return csg._ncs.take_string();
+}
+
 }
