@@ -10,14 +10,15 @@ class CharstringBounds : public CharstringInterp { public:
     CharstringBounds(const EfontProgram *, Vector<double> *weight = 0);
     ~CharstringBounds()				{ }
 
-    const Transform &transform() const		{ return _t; }
-    void set_transform(const Transform &t)	{ _t = t; }
+    const Transform &transform() const		{ return _xf; }
+    void set_transform(const Transform &xf)	{ _xf = xf; }
     void transform(const Transform &);
     void translate(double, double);
     void extend(double);
     void shear(double);
     
     void init();
+    void init(const Transform &);
 
     const Point &width() const			{ return _width; }
     double x_width() const			{ return _width.x; }
@@ -29,6 +30,7 @@ class CharstringBounds : public CharstringInterp { public:
     void act_width(int, const Point &);
     void act_line(int, const Point &, const Point &);
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
+    void mark(const Point &);
 
     bool bounds(int bb[4], int &width, bool use_cur_width = false) const;
     bool run(const Charstring &, int bounds[4], int &width);
@@ -39,19 +41,21 @@ class CharstringBounds : public CharstringInterp { public:
     Point _lb;
     Point _rt;
     Point _width;
-    Transform _t;
+    Transform _xf;
 
-    void mark(const Point &);
-    void mark(const Bezier &);
+    void xf_mark(const Point &);
+    void xf_mark(const Bezier &);
 
-    bool inside(const Point &) const;
-    bool controls_inside(const Bezier &) const;
+    bool xf_inside(const Point &) const;
+    bool xf_controls_inside(const Bezier &) const;
     
 };
 
 inline void
-CharstringBounds::mark(const Point &p)
+CharstringBounds::xf_mark(const Point &p)
 {
+    if (!KNOWN(_lb.x))
+	_lb = _rt = p;
     if (p.x < _lb.x)
 	_lb.x = p.x;
     else if (p.x > _rt.x)
@@ -62,16 +66,22 @@ CharstringBounds::mark(const Point &p)
 	_rt.y = p.y;
 }
 
+inline void
+CharstringBounds::mark(const Point &p)
+{
+    xf_mark(p * _xf);
+}
+
 inline bool
-CharstringBounds::inside(const Point &p) const
+CharstringBounds::xf_inside(const Point &p) const
 {
     return p.x >= _lb.x && p.x <= _rt.x && p.y >= _lb.y && p.y <= _rt.y;
 }
 
 inline bool
-CharstringBounds::controls_inside(const Bezier &b) const
+CharstringBounds::xf_controls_inside(const Bezier &b) const
 {
-    return inside(b.point(1)) && inside(b.point(2));
+    return xf_inside(b.point(1)) && xf_inside(b.point(2));
 }
 
 }

@@ -28,26 +28,26 @@ CharstringBounds::CharstringBounds(const EfontProgram *p, Vector<double> *weight
 {
     double matrix[6];
     program()->font_matrix(matrix);
-    _t = Transform(matrix).scaled(1000);
-    _t.check_null(0.001);
+    _xf = Transform(matrix).scaled(1000);
+    _xf.check_null(0.001);
 }
 
 void
 CharstringBounds::transform(const Transform &t)
 {
-    _t = _t.transformed(t);
+    _xf = _xf.transformed(t);
 }
 
 void
 CharstringBounds::translate(double dx, double dy)
 {
-    _t.translate(dx, dy);
+    _xf.translate(dx, dy);
 }
 
 void
 CharstringBounds::extend(double e)
 {
-    _t.scale(e, 1);
+    _xf.scale(e, 1);
 }
 
 void
@@ -60,19 +60,25 @@ void
 CharstringBounds::init()
 {
     _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
-    CharstringInterp::init();
 }
 
 void
-CharstringBounds::mark(const Bezier &b)
+CharstringBounds::init(const Transform &t)
+{
+    _xf = t;
+    _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
+}
+
+void
+CharstringBounds::xf_mark(const Bezier &b)
 {
     Bezier b1, b2;
     b.halve(b1, b2);
-    mark(b1.point(3));
-    if (!controls_inside(b1))
-	mark(b1);
-    if (!controls_inside(b2))
-	mark(b2);
+    xf_mark(b1.point(3));
+    if (!xf_controls_inside(b1))
+	xf_mark(b1);
+    if (!xf_controls_inside(b2))
+	xf_mark(b2);
 }
 
 void
@@ -84,24 +90,24 @@ CharstringBounds::act_width(int, const Point &w)
 void
 CharstringBounds::act_line(int, const Point &p0, const Point &p1)
 {
-    if (!KNOWN(_lb.x))
-	_lb = _rt = p0 * _t;
-    mark(p1 * _t);
+    mark(p0);
+    mark(p1);
 }
 
 void
 CharstringBounds::act_curve(int, const Point &p0, const Point &p1, const Point &p2, const Point &p3)
 {
-    if (!KNOWN(_lb.x))
-	_lb = _rt = p0 * _t;
-    Point q1 = p1 * _t;
-    Point q2 = p2 * _t;
-    Point q3 = p3 * _t;
-    mark(q3);
+    Point q0 = p0 * _xf;
+    Point q1 = p1 * _xf;
+    Point q2 = p2 * _xf;
+    Point q3 = p3 * _xf;
 
-    if (!inside(q1) || !inside(q2)) {
-	Bezier b(p0 * _t, q1, q2, q3);
-	mark(b);
+    xf_mark(q0);
+    xf_mark(q3);
+
+    if (!xf_inside(q1) || !xf_inside(q2)) {
+	Bezier b(q0, q1, q2, q3);
+	xf_mark(b);
     }
 }
 
@@ -118,9 +124,9 @@ CharstringBounds::bounds(int bb[4], int &width, bool use_cur_width) const
     }
     Point p;
     if (use_cur_width)
-	p = _width * _t;
+	p = _width * _xf;
     else
-	p = Point(0, 0) * _t;
+	p = Point(0, 0) * _xf;
     width = (int) ceil(p.x);
     return error() >= 0;
 }
@@ -129,6 +135,7 @@ bool
 CharstringBounds::run(const Charstring &cs, int bb[4], int &width)
 {
     init();
+    CharstringInterp::init();
     cs.run(*this);
     return bounds(bb, width, true);
 }
@@ -136,9 +143,9 @@ CharstringBounds::run(const Charstring &cs, int bb[4], int &width)
 bool
 CharstringBounds::run_incr(const Charstring &cs)
 {
-    init();
+    CharstringInterp::init();
     cs.run(*this);
-    _t.translate(_width);
+    _xf.translate(_width);
     return error() >= 0;
 }
 
