@@ -23,8 +23,8 @@ class MultipleMasterSpace : public CharstringProgram { public:
   
     PermString axis_type(int a) const	{ return _axis_types[a]; }
     PermString axis_label(int a) const	{ return _axis_labels[a]; }
-    PermString axis_abbreviation(int a) const;
-    static inline PermString axis_abbreviation(PermString);
+    inline PermString axis_abbreviation(int a) const;
+    static PermString axis_abbreviation(PermString);
   
     const Type1Charstring &ndv() const	{ return _ndv; }
     const Type1Charstring &cdv() const	{ return _cdv; }
