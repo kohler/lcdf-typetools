@@ -600,7 +600,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     // don't print KRN x after printing LIG x
     uint32_t used[8];
     for (int i = 0; i <= 256; i++)
-	if (metrics.glyph(i)) {
+	if (metrics.glyph(i) && minimum_kern < 10000) {
 	    int any_lig = metrics.ligatures(i, lig_code2, lig_outcode, lig_context);
 	    int any_kern = metrics.kerns(i, kern_code2, kern_amt);
 	    if (any_lig || any_kern) {
@@ -1018,6 +1018,9 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
     }
 
     // output metrics
+    double save_minimum_kern = minimum_kern;
+    if (need_virtual)
+	minimum_kern = 100000;
     if (!(output_flags & G_METRICS))
 	/* do nothing */;
     else if (output_flags & G_BINARY) {
@@ -1028,6 +1031,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	output_pl(metrics, ps_name, boundary_char, family_otf, family_cff, false, outfile, errh);
 	update_odir(O_PL, outfile, errh);
     }
+    minimum_kern = save_minimum_kern;
 
     // print DVIPS map line
     if (errh->nerrors() == 0 && (output_flags & G_PSFONTSMAP)) {
