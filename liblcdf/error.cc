@@ -25,6 +25,7 @@
 #include <lcdf/hashmap.hh>
 #include <errno.h>
 #include <ctype.h>
+#include <algorithm>
 #ifndef __KERNEL__
 # include <stdlib.h>
 #endif
@@ -233,19 +234,12 @@ do_number_flags(char *pos, char *after_last, int base, int flags,
 }
 
 String
-ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
+ErrorHandler::make_text(Seriousness, const char *s, va_list val)
 {
   StringAccum msg;
   char numbuf[NUMBUF_SIZE];	// for numerics
   String placeholder;		// to ensure temporaries aren't destroyed
-  String s_placeholder;		// ditto, in case we change `s'
   numbuf[NUMBUF_SIZE-1] = 0;
-  
-  if (seriousness >= ERR_MIN_WARNING && seriousness < ERR_MIN_ERROR) {
-    // prepend `warning: ' to every line
-    s_placeholder = prepend_lines("warning: ", s);
-    s = s_placeholder.c_str();
-  }
   
   // declare and initialize these here to make gcc shut up about possible 
   // use before initialization
@@ -497,32 +491,32 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 }
 
 String
-ErrorHandler::decorate_text(Seriousness, const String &prefix, const String &landmark, const String &text)
+ErrorHandler::decorate_text(Seriousness seriousness, const String &prefix, const String &landmark, const String &text)
 {
   String new_text;
   
-  if (!landmark)
+  // prepend 'warning: ' to every line if appropriate
+  if (seriousness >= ERR_MIN_WARNING && seriousness < ERR_MIN_ERROR)
+    new_text = prepend_lines("warning: ", text);
+  else
     new_text = text;
 
-  else if (landmark.length() > 2 && landmark[0] == '\\'
-	   && landmark.back() == '\\')
+  // handle landmark
+  if (landmark
+      && !(landmark.length() > 2 && landmark[0] == '\\'
+	   && landmark.back() == '\\')) {
     // ignore special-purpose landmarks (begin and end with a backslash `\')
-    new_text = text;
-
-  else {
     // fix landmark: skip trailing spaces and trailing colon
     int i, len = landmark.length();
     for (i = len - 1; i >= 0; i--)
       if (!isspace(landmark[i]))
 	break;
+    if (i >= 0 && landmark[i] == ':')
+      i--;
 
     // prepend landmark, unless all spaces
-    if (i >= 0) {
-      if (landmark[i] == ':')
-	i--;
-      new_text = prepend_lines(landmark.substring(0, i+1) + ": ", text);
-    } else
-      new_text = text;
+    if (i >= 0)
+      new_text = prepend_lines(landmark.substring(0, i+1) + ": ", new_text);
   }
 
   // prepend prefix, if any
@@ -564,13 +558,15 @@ ErrorHandler::prepend_lines(const String &prepend, const String &text)
     return text;
   
   StringAccum sa;
-  int pos = 0, nl;
-  while ((nl = text.find_left('\n', pos)) >= 0) {
-    sa << prepend << text.substring(pos, nl - pos + 1);
-    pos = nl + 1;
+  const char *begin = text.begin();
+  const char *end = text.end();
+  const char *nl;
+  while ((nl = std::find(begin, end, '\n')) < end) {
+    sa << prepend << text.substring(begin, nl + 1);
+    begin = nl + 1;
   }
-  if (pos < text.length())
-    sa << prepend << text.substring(pos);
+  if (begin < end)
+    sa << prepend << text.substring(begin, end);
   
   return sa.take_string();
 }
@@ -606,16 +602,10 @@ FileErrorHandler::FileErrorHandler(FILE *f, const String &context)
 void
 FileErrorHandler::handle_text(Seriousness seriousness, const String &message)
 {
-  int pos = 0, nl;
-  while ((nl = message.find_left('\n', pos)) >= 0) {
-    String s = _context + message.substring(pos, nl - pos) + "\n";
-    fwrite(s.data(), 1, s.length(), _f);
-    pos = nl + 1;
-  }
-  if (pos < message.length()) {
-    String s = _context + message.substring(pos) + "\n";
-    fwrite(s.data(), 1, s.length(), _f);
-  }
+  String text = prepend_lines(_context, message);
+  if (text && text.back() != '\n')
+    text += '\n';
+  fwrite(text.data(), 1, text.length(), _f);
   
   if (seriousness >= ERR_MIN_FATAL) {
     int exit_status = (seriousness - ERR_MIN_FATAL) >> ERRVERBOSITY_SHIFT;
@@ -795,7 +785,7 @@ ContextErrorHandler::decorate_text(Seriousness seriousness, const String &prefix
       _context = String();
     }
   }
-  return context_lines + _errh->decorate_text(seriousness, String(), landmark, prepend_lines(_indent + prefix, text));
+  return context_lines + _errh->decorate_text(seriousness, _indent + prefix, landmark, text);
 }
 
 
@@ -813,23 +803,6 @@ String
 PrefixErrorHandler::decorate_text(Seriousness seriousness, const String &prefix, const String &landmark, const String &text)
 {
   return _errh->decorate_text(seriousness, _prefix + prefix, landmark, text);
-}
-
-
-//
-// INDENT ERROR HANDLER
-//
-
-IndentErrorHandler::IndentErrorHandler(ErrorHandler *errh,
-				       const String &indent)
-  : ErrorVeneer(errh), _indent(indent)
-{
-}
-
-String
-IndentErrorHandler::decorate_text(Seriousness seriousness, const String &prefix, const String &landmark, const String &text)
-{
-  return _errh->decorate_text(seriousness, String(), landmark, prepend_lines(_indent + prefix, text));
 }
 
 

@@ -144,8 +144,7 @@ class ErrorVeneer : public ErrorHandler { public:
 };
 
 class ContextErrorHandler : public ErrorVeneer { public:
-  ContextErrorHandler(ErrorHandler *, const String &context,
-		      const String &indent = "  ");
+  ContextErrorHandler(ErrorHandler *, const String &context, const String &indent = "  ");
   String decorate_text(Seriousness, const String &, const String &, const String &);
  private:
   String _context;
@@ -157,13 +156,6 @@ class PrefixErrorHandler : public ErrorVeneer { public:
   String decorate_text(Seriousness, const String &, const String &, const String &);
  private:
   String _prefix;
-};
-
-class IndentErrorHandler : public ErrorVeneer { public:
-  IndentErrorHandler(ErrorHandler *, const String &indent);
-  String decorate_text(Seriousness, const String &, const String &, const String &);
- private:
-  String _indent;
 };
 
 class LandmarkErrorHandler : public ErrorVeneer { public:
