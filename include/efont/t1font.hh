@@ -15,7 +15,7 @@ class Type1Reader;
 class Type1Writer;
 class MultipleMasterSpace;
 
-class Type1Font : public EfontProgram { public:
+class Type1Font : public CharstringProgram { public:
 
     Type1Font(PermString);
     Type1Font(Type1Reader &);
