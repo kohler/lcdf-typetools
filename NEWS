@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 0.51   5.Aug.2003
+
+* otftotfm: Fix crashes with small encodings and absent boundary
+  characters. Reported by Bruce D'Arcus.
+
+* otftotfm: Add '--boundary-char' and '--kpathsea-debug' options.
+
+
 Version 0.50   4.Aug.2003
 
 * otftotfm: Handle more complex substitutions, such as those required to

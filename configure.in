@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 0.50)
+AM_INIT_AUTOMAKE(lcdf-typetools, 0.51)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -139,7 +139,7 @@ changequote(<<,>>)<<(^|[^a-zA-Z_0-9])uint32_t[^a-zA-Z_0-9]>>changequote([,]),
     sys/types.h, ac_cv_uint_t=yes, ac_cv_uint_t=no)])
 fi
 if test $have_inttypes_h = no -a $have_sys_types_h = yes -a "$ac_cv_uint_t" = no; then
-    AC_CACHE_CHECK(for u_intXX_t typedefs, ac_cv_uint_t,
+    AC_CACHE_CHECK(for u_intXX_t typedefs, ac_cv_u_int_t,
     [AC_EGREP_HEADER(dnl
 changequote(<<,>>)<<(^|[^a-zA-Z_0-9])u_int32_t[^a-zA-Z_0-9]>>changequote([,]),
     sys/types.h, ac_cv_u_int_t=yes, ac_cv_u_int_t=no)])

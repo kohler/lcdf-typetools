@@ -58,7 +58,7 @@ class Metrics { public:
     enum { CODE_ALL = 0x7FFFFFFF };
     void remove_ligatures(Code in1, Code in2);
     void remove_kerns(Code in1, Code in2);
-    void reencode_right_ligkern(Code old_in2, Code new_in2);
+    int reencode_right_ligkern(Code old_in2, Code new_in2);
     
     int apply(const Vector<Substitution> &, bool allow_single, int lookup);
     int apply(const Vector<Positioning> &);

@@ -293,6 +293,14 @@ command unless you are using fontinst. As a side effect, if you specify a
 coding scheme, the PL output will have DESIGNUNITS set to 1 instead of the
 default of 1000. This won't change the eventual TFM metrics, but fontinst
 seems to prefer DESIGNUNITS 1.
+'
+.Sp
+.TP 5
+.BI \-\-boundary\-char= char
+Sets the font's boundary character to
+.IR char ,
+which should be a number between -1 and 255. The default is taken from the
+encoding.
 .PD
 '
 '
@@ -447,6 +455,13 @@ program's hypothetical progress to standard error.
 .TP 5
 .BR \-q ", " \-\-quiet
 Do not generate any error messages.
+'
+.Sp
+.TP 5
+.BI \-\-kpathsea\-debug= flags
+Sets path searching debugging flags. See the
+.I Kpathsea
+manual for details.
 '
 .Sp
 .TP 5

@@ -47,3 +47,9 @@ kpsei_find_file(const char *name, int format)
 	return 0;
     }
 }
+
+void
+kpsei_set_debug_flags(unsigned flags)
+{
+    kpathsea_debug = flags;
+}

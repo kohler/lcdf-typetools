@@ -340,20 +340,38 @@ Metrics::remove_kerns(Code in1, Code in2)
     }
 }
 
-void
+int
 Metrics::reencode_right_ligkern(Code old_in2, Code new_in2)
 {
+    int nchanges = 0;
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++) {
 	for (Ligature *l = ch->ligatures.begin(); l != ch->ligatures.end(); l++)
-	    if (l->in2 == old_in2)
-		l->in2 = new_in2;
+	    if (l->in2 == old_in2) {
+		if (new_in2 >= 0)
+		    l->in2 = new_in2;
+		else {
+		    *l = ch->ligatures.back();
+		    ch->ligatures.pop_back();
+		    l--;
+		}
+		nchanges++;
+	    }
 	for (Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
-	    if (k->in2 == old_in2)
-		k->in2 = new_in2;
+	    if (k->in2 == old_in2) {
+		if (new_in2 >= 0)
+		    k->in2 = new_in2;
+		else {
+		    *k = ch->kerns.back();
+		    ch->kerns.pop_back();
+		    k--;
+		}
+		nchanges++;
+	    }
 	// XXX?
 	if (ch->context_setting(-1, old_in2))
 	    ch->built_in2 = new_in2;
     }
+    return nchanges;
 }
 
 
@@ -1056,6 +1074,12 @@ font, so I've ignored those listed above.)", sa.c_str());
 void
 Metrics::make_base(int size)
 {
+    if (_encoding.size() <= size) {
+	/* If the encoding has not grown, there cannot be any base characters
+	   left to swap in. */
+	return;
+    }
+    
     assert(_encoding.size() > size);
     bool reencoded = false;
     Vector<Code> reencoding;
@@ -1231,7 +1255,7 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
 	    }
 	    for (const Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
 		fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2, glyph_names), l->out, code_str(l->out, glyph_names), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
-#if 0
+#if 1
 	    for (const Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
 		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2, glyph_names), k->kern);
 #endif

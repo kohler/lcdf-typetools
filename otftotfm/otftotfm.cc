@@ -56,6 +56,7 @@ using namespace Efont;
 #define HELP_OPT		302
 #define QUERY_SCRIPTS_OPT	303
 #define QUERY_FEATURES_OPT	304
+#define KPATHSEA_DEBUG_OPT	305
 
 #define SCRIPT_OPT		311
 #define FEATURE_OPT		312
@@ -67,6 +68,7 @@ using namespace Efont;
 #define LIGKERN_OPT		318
 #define CODINGSCHEME_OPT	319
 #define UNICODING_OPT		320
+#define BOUNDARY_CHAR_OPT	321
 
 #define AUTOMATIC_OPT		331
 #define FONT_NAME_OPT		332
@@ -111,6 +113,7 @@ Clp_Option options[] = {
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
+    { "boundary-char", 0, BOUNDARY_CHAR_OPT, Clp_ArgInt, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -134,6 +137,7 @@ Clp_Option options[] = {
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
     { "no-create", 0, NOCREATE_OPT, 0, Clp_OnlyNegated },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
+    { "kpathsea-debug", 0, KPATHSEA_DEBUG_OPT, Clp_ArgInt, 0 },
 
     { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
@@ -212,10 +216,11 @@ Font feature and transformation options:\n\
 \n\
 Encoding options:\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
-      --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
+      --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
       --ligkern=COMMAND        Add a LIGKERN command.\n\
       --unicoding=COMMAND      Add a UNICODING command.\n\
-      --coding-scheme=SCHEME   Set the output coding scheme.\n\
+      --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
+      --boundary-char=CHAR     Set the boundary character to CHAR.\n\
 \n\
 Automatic mode options:\n\
   -a, --automatic              Install in a TeX Directory Structure.\n\
@@ -245,8 +250,11 @@ Other options:\n\
                                scripts and exit.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -V, --verbose                Print progress information to standard error.\n\
-      --no-create              Print messages, don't modify any files.\n\
-  -h, --help                   Print this message and exit.\n\
+      --no-create              Print messages, don't modify any files.\n"
+#if HAVE_KPATHSEA
+"      --kpathsea-debug=MASK    Set path searching debug flags to MASK.\n"
+#endif
+"  -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
@@ -1062,7 +1070,10 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     }
 
     // reencode right components of boundary_glyph as boundary_char
-    encoding.reencode_right_ligkern(256, dvipsenc.boundary_char());
+    int boundary_char = dvipsenc.boundary_char();
+    if (encoding.reencode_right_ligkern(256, boundary_char) > 0
+	&& boundary_char < 0)
+	errh->warning("no boundary character, removed some ligatures and/or kerns\n(You may want to try the --boundary-char option.)");
 
     // report unused and underused features if any
     report_underused_features(feature_usage, errh);
@@ -1341,6 +1352,10 @@ main(int argc, char **argv)
 	  case LIGKERN_OPT:
 	    ligkern.push_back(clp->arg);
 	    break;
+
+	  case BOUNDARY_CHAR_OPT:
+	    ligkern.push_back(String("|| = ") + clp->arg);
+	    break;
 	    
 	  case UNICODING_OPT:
 	    unicoding.push_back(clp->arg);
@@ -1442,6 +1457,14 @@ main(int argc, char **argv)
 
 	  case NOCREATE_OPT:
 	    nocreate = clp->negated;
+	    break;
+
+	  case KPATHSEA_DEBUG_OPT:
+#if HAVE_KPATHSEA
+	    kpsei_set_debug_flags(clp->val.u);
+#else
+	    errh->warning("Not compiled with kpathsea!");
+#endif
 	    break;
 
 	  case VERSION_OPT:
