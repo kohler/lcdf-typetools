@@ -12,11 +12,15 @@ class DvipsEncoding { public:
     static int parse_glyphlist(String);
     static int glyphname_unicode(const String &);
     static void glyphname_unicode(String, Vector<int> &);
-    
-    int encoding_of(const String &) const;
 
-    int parse(const String &, ErrorHandler *);
+    operator bool() const			{ return _e.size() > 0; }
 
+    void encode(int, PermString);
+    int encoding_of(PermString) const;
+
+    int parse(String filename, ErrorHandler *);
+
+    // also modifies 'this':
     void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::EfontCFF::Font * = 0);
     
   private:

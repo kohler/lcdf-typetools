@@ -8,7 +8,8 @@ otftoafm_SOURCES = \
 	dvipsencoding.cc dvipsencoding.hh \
 	gsubencoding.cc gsubencoding.hh \
 	otftoafm.cc \
-	templatei.cc
+	templatei.cc \
+	util.cc util.hh
 
 otftoafm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 

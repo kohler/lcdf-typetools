@@ -33,7 +33,7 @@ GsubEncoding::force_encoding(Glyph g)
 void
 GsubEncoding::encode(int code, Glyph g)
 {
-    assert(code >= 0);
+    assert(code >= 0 && g >= 0);
     if (code >= _encoding.size()) {
 	_encoding.resize(code + 1, 0);
 	_substitutions.resize(code + 1, 0);
@@ -74,6 +74,7 @@ GsubEncoding::apply(const Substitution &s)
 	    l.in.push_back(code);
 	}
 	l.out = force_encoding(s.out_glyph());
+	l.skip = 1;
 	_ligatures.push_back(l);
       ligature_fail: ;
     }
@@ -93,7 +94,7 @@ GsubEncoding::find_skippable_twoligature(int a, int b, bool add_fake)
 {
     for (int i = 0; i < _ligatures.size(); i++) {
 	const Ligature &l = _ligatures[i];
-	if (l.in.size() == 2 && l.in[0] == a && l.in[1] == b && l.out != a)
+	if (l.in.size() == 2 && l.in[0] == a && l.in[1] == b && l.skip == 0)
 	    return l.out;
     }
     if (add_fake) {
@@ -102,6 +103,7 @@ GsubEncoding::find_skippable_twoligature(int a, int b, bool add_fake)
 	fakel.in.push_back(a);
 	fakel.in.push_back(b);
 	fakel.out = _encoding.size() - 1;
+	fakel.skip = 0;
 	_fake_ligatures.push_back(fakel);
 	return fakel.out;
     } else
@@ -111,6 +113,17 @@ GsubEncoding::find_skippable_twoligature(int a, int b, bool add_fake)
 void
 GsubEncoding::simplify_ligatures(bool add_fake)
 {
+    // mark ligatures as skippable
+    for (int i = 0; i < _ligatures.size(); i++) {
+	int c = _ligatures[i].out;
+	for (int j = 0; j < _ligatures.size(); j++)
+	    if (_ligatures[j].in[0] == c)
+		goto must_skip;
+	_ligatures[i].skip = 0;
+      must_skip: ;
+    }
+
+    // actually simplify
     for (int i = 0; i < _ligatures.size(); i++) {
 	Ligature &l = _ligatures[i];
 	while (l.in.size() > 2) {
@@ -196,6 +209,26 @@ GsubEncoding::shrink_encoding(int size)
 
     // finally, shrink encoding for real
     _encoding.resize(size, 0);
+}
+
+
+int
+GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const
+{
+    int n = 0;
+    code2.clear();
+    outcode.clear();
+    skip.clear();
+    for (int i = 0; i < _ligatures.size(); i++) {
+	const Ligature &l = _ligatures[i];
+	if (l.in.size() == 2 && l.in[0] == code1) {
+	    code2.push_back(l.in[1]);
+	    outcode.push_back(l.out);
+	    skip.push_back(l.skip);
+	    n++;
+	}
+    }
+    return n;
 }
 
 

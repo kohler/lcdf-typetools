@@ -22,6 +22,8 @@ class GsubEncoding { public:
     void simplify_ligatures(bool add_fake);
     void shrink_encoding(int size);
 
+    int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const;
+    
     void unparse(const Vector<PermString> * = 0) const;
     
     enum { FAKE_LIGATURE = 0xFFFF };

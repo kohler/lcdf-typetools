@@ -20,6 +20,9 @@
 /* Define if you have u_intXX_t types but not uintXX_t types. */
 #undef HAVE_U_INT_TYPES
 
+/* Data directory. */
+#undef SHAREDIR
+
 @TOP@
 @BOTTOM@
 

@@ -9,6 +9,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <algorithm>
+#include "util.hh"
 
 static String::Initializer initializer;
 static HashMap<String, int> glyphlist(-1);
@@ -115,8 +116,16 @@ DvipsEncoding::DvipsEncoding()
 {
 }
 
+void
+DvipsEncoding::encode(int e, PermString what)
+{
+    if (e >= _e.size())
+	_e.resize(e + 1, PermString(".notdef"));
+    _e[e] = what;
+}
+
 int
-DvipsEncoding::encoding_of(const String &a) const
+DvipsEncoding::encoding_of(PermString a) const
 {
     for (int i = 0; i < _e.size(); i++)
 	if (_e[i] == a)
@@ -273,7 +282,7 @@ int
 DvipsEncoding::parse_unicoding(const Vector<String> &v)
 {
     int av;
-    if (v.size() < 3 || v[1] != "=" || v[0] == "||"
+    if (v.size() < 3 || (v[1] != "=" && v[1] != "=:") || v[0] == "||"
 	|| (av = encoding_of(v[0])) < 0)
 	return -1;
     _unicoding_map.insert(v[0], _unicoding.size());
@@ -319,20 +328,28 @@ DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(const V
     return 0;
 }
 
-int
-DvipsEncoding::parse(const String &s, ErrorHandler *errh)
+static String
+landmark(const String &filename, int line)
 {
+    return filename + String::stable_string(":", 1) + String(line);
+}
+
+int
+DvipsEncoding::parse(String filename, ErrorHandler *errh)
+{
+    String s = read_file(filename, errh);
+    filename = printable_filename(filename);
     int pos = 0, line = 1;
 
     // parse text
     String token = tokenize(s, pos, line);
     if (!token || token[0] != '/')
-	return errh->lerror(String(line), "encoding parse error");
+	return errh->lerror(landmark(filename, line), "parse error, expected name");
     _name = token.substring(1);
     _initial_comment = s.substring(0, pos - token.length());
 
     if (tokenize(s, pos, line) != "[")
-	return errh->lerror(String(line), "encoding parse error, expected [");
+	return errh->lerror(landmark(filename, line), "parse error, expected [");
 
     while ((token = tokenize(s, pos, line)) && token[0] == '/')
 	_e.push_back(token.substring(1));
@@ -347,13 +364,13 @@ DvipsEncoding::parse(const String &s, ErrorHandler *errh)
 	    && memcmp(token.data(), "LIGKERN", 7) == 0
 	    && isspace(token[7])) {
 	    if (parse_words(token.substring(8), &DvipsEncoding::parse_ligkern) < 0)
-		errh->lerror(String(line), "encoding parse error in LIGKERN");
+		errh->lerror(landmark(filename, line), "parse error in LIGKERN");
 	    
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace(token[9])) {
 	    if (parse_words(token.substring(10), &DvipsEncoding::parse_unicoding) < 0)
-		errh->lerror(String(line), "encoding parse error in UNICODING");
+		errh->lerror(landmark(filename, line), "parse error in UNICODING");
 	}
 
     return 0;
@@ -378,6 +395,9 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 		// if that didn't work, try the glyph name as a last resort
 		if (!gid && font)
 		    gid = font->glyphid(_e[i]);
+		// map unknown glyphs to 0
+		if (gid < 0)
+		    gid = 0;
 	    }
 
 	    gsub_encoding.encode(i, gid);

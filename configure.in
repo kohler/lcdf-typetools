@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(t1sicle, 0.9)
+AM_INIT_AUTOMAKE(lcdf-typetools, 0.9)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -94,6 +94,25 @@ Neither uint32_t nor u_int32_t defined by <inttypes.h> or <sys/types.h>!
 
 =========================================])
 fi
+
+
+dnl
+dnl set path variables
+dnl
+
+shell_expand () {
+  val=`eval echo '$'"$1"`
+  while echo "x$val" | fgrep '$' >/dev/null 2>&1; do val=`eval echo "$val"`; done
+  eval "$1='$val'"
+}
+
+dnl Preset $prefix and $exec_prefix.
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
+test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
+
+shell_expand datadir
+
+AC_DEFINE_UNQUOTED(SHAREDIR, "$datadir/lcdf-typetools")
 
 
 dnl
