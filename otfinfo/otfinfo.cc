@@ -89,8 +89,8 @@ void
 usage()
 {
     printf("\
-'Otfinfo' reports information about an OpenType font, depending on the\n\
-'--query' option you supply. Results are written to standard output.\n\
+'Otfinfo' reports information about an OpenType font to standard output.\n\
+Supply a '--query' to say what information you want.\n\
 \n\
 Usage: %s QUERY_OPTION [OTFFILES...]\n\n",
 	   program_name);
