@@ -22,7 +22,8 @@ class DvipsEncoding { public:
     void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
 
     void encode(int, PermString);
-    int encoding_of(PermString) const;
+    inline int encoding_of(PermString) const;
+    int encoding_of(PermString, bool encode);
     inline bool encoded(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
@@ -51,6 +52,7 @@ class DvipsEncoding { public:
     };
 
     Vector<PermString> _e;
+    Vector<bool> _encoding_required;
     int _boundary_char;
     int _altselector_char;
 
@@ -81,6 +83,12 @@ inline bool
 DvipsEncoding::encoded(int e) const
 {
     return e >= 0 && e < _e.size() && _e[e] != dot_notdef;
+}
+
+inline int
+DvipsEncoding::encoding_of(PermString what) const
+{
+    return const_cast<DvipsEncoding *>(this)->encoding_of(what, false);
 }
 
 #endif

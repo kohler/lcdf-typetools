@@ -842,7 +842,7 @@ write_encoding_file(String &filename, const String &encoding_name,
 	update_odir(O_ENCODING, filename, errh);
     return 0;
 }
-	
+
 static void
 output_encoding(const Metrics &metrics,
 		const Vector<PermString> &glyph_names,

@@ -366,9 +366,9 @@ The "salt" feature can still substitute any character.
 '
 .Sp
 .TP 5
-.BI \-E " amt\fR, " \-\-extend= amt
+.BI \-E " fac\fR, " \-\-extend= fac
 Widen, or extend, the font by a factor of
-.IR amt .
+.IR fac .
 Like
 .M afm2tfm 1 's
 .B \-e
@@ -397,11 +397,25 @@ kerns are added to maintain alignment at the ends of lines.
 '
 .Sp
 .TP 5
+.BI \-\-math\-spacing
+Ignore the font's claimed character widths, deriving horizontal metrics
+from bounding boxes instead.  This results in similar spacing as the
+Computer Modern Math Italic font, with increased sidebearings for letters
+like f and j.
+'
+.Sp
+.TP 5
 .BI "\-k " "N\fR, " \-\-min\-kern= N
 Only output kerning pairs whose absolute value is
 .IR N
 or larger.  Smaller minimum kerns make kerning more precise and the output
 TFM file bigger.  The default minimum kern is 2.0.
+'
+.Sp
+.TP 5
+.BI \-\-space\-factor= fac
+Scale the width of the inter-word space by a factor of
+.IR fac .
 '
 .Sp
 .TP 5

@@ -20,11 +20,13 @@ call_nopts -ae7t -fliga -fkern ~/Fonts/+OTF/MinionPro/MinionPro-It.otf MinioProI
 }
 
 W () {
-    call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fsmcp -fsmcp
+    call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka
 
+    exit 0
+
+    call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fsmcp -fsmcp
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fcpsp -fcpsp
 
-    call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fsmcp--Flnum -fsmcp -flnum
     
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-It.otf WarnoProIt--eka

@@ -149,14 +149,27 @@ DvipsEncoding::encode(int e, PermString what)
 }
 
 int
-DvipsEncoding::encoding_of(PermString a) const
+DvipsEncoding::encoding_of(PermString what, bool encoding_required)
 {
+    int slot = -1;
     for (int i = 0; i < _e.size(); i++)
-	if (_e[i] == a)
-	    return i;
-    if (a == "||")
+	if (_e[i] == what) {
+	    slot = i;
+	    goto use_slot;
+	} else if (!_e[i] || _e[i] == dot_notdef)
+	    slot = i;
+    if (what == "||")
 	return _boundary_char;
-    return -1;
+    else if (!encoding_required || slot < 0)
+	return -1;
+  use_slot:
+    if (encoding_required) {
+	if (slot >= _encoding_required.size())
+	    _encoding_required.resize(slot + 1, false);
+	_encoding_required[slot] = true;
+	this->encode(slot, what);
+    }
+    return slot;
 }
 
 static String
@@ -296,6 +309,8 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 {
     _file_had_ligkern = true;
     int op;
+    long l;
+    char *endptr;
     if (v.size() == 3) {
 	if (v[0] == "||" && v[1] == "=") {
 	    char *endptr;
@@ -311,6 +326,12 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 		return 0;
 	    else
 		return errh->error("parse error in altselector character assignment");
+	} else if ((l = strtol(v[0].c_str(), &endptr, 0)) && endptr == v[0].end() && v[1] == "=") {
+	    if (l >= 0 && l < 256) {
+		encode(l, v[2]);
+		return 0;
+	    } else
+		return errh->error("encoding value '%d' out of range", l); 
 	} else if ((op = find_ligkern_op(v[1])) >= J_NOKERN) {
 	    int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
 	    if (av < 0)
@@ -325,13 +346,13 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 	    return -1;
     } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= J_LIG
 	       && op <= J_CLIGC_SS) {
-	int av = encoding_of(v[0]);
+	int av = encoding_of(v[0], true);
 	if (av < 0)
 	    return errh->warning("'%s' has no encoding, ignoring ligature", v[0].c_str());
-	int bv = encoding_of(v[1]);
+	int bv = encoding_of(v[1], true);
 	if (bv < 0)
 	    return errh->warning("'%s' has no encoding, ignoring ligature", v[1].c_str());
-	int cv = encoding_of(v[3]);
+	int cv = encoding_of(v[3], true);
 	if (cv < 0)
 	    return errh->warning("'%s' has no encoding, ignoring ligature", v[3].c_str());
 	Ligature lig = { av, bv, op, cv };
@@ -541,7 +562,7 @@ DvipsEncoding::x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const
     }
 }
 
-	
+
 void
 DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary, bool literal, ErrorHandler *errh)
 {
@@ -571,10 +592,16 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	// do not use a Unicode-mapped glyph if literal
 	if (literal)
 	    glyph = 0;
-	
-	// use named glyph if (1) name contains a dot, or (2) nothing found
+
+	// use named glyph if (1) name contains a dot, or (2) nothing found.
+	// special case for "UNICODING foo =: ;", which should turn off the
+	// character UNLESS it was explicitly requested or the encoding is
+	// literal.
+	bool named_glyph = !unicodes_explicit || unicodes.size() > 0
+	    || (_encoding_required.size() > code && _encoding_required[code])
+	    || literal;
 	if (font
-	    && !unicodes_explicit
+	    && named_glyph
 	    && (glyph <= 0
 		|| std::find(chname.begin(), chname.end(), '.') < chname.end()))
 	    if (Efont::OpenType::Glyph named_glyph = font->glyphid(chname))
@@ -611,106 +638,6 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 }
 
 
-#if 0
-void
-DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary, ErrorHandler *errh)
-{
-    for (int i = 0; i < _e.size(); i++) {
-	PermString chname = _e[i];
-
-	// the altselector character has its own glyph name
-	if (i == _altselector_char)
-	    chname = "altselector";
-
-	// common case: skip .notdef
-	if (chname == dot_notdef)
-	    continue;
-	
-	Efont::OpenType::Glyph gid = 0;
-	
-	// check UNICODING map
-	int m = _unicoding_map[chname];
-	if (m >= 0) {
-	    // use first mapped character in the list; secondaries are allowed
-	    for (; _unicoding[m] >= 0 && gid <= 0; m++) {
-		gid = map_uni(_unicoding[m], cmap, metrics);
-		if (gid <= 0 && secondary
-		    && secondary->encode_uni(i, chname, _unicoding[m], *this, metrics, errh))
-		    goto encoded;
-	    }
-	} else {
-	    // otherwise, try to map this glyph name to Unicode
-	    bool more;
-	    if ((m = glyphname_unicode(chname, &more)) >= 0)
-		gid = map_uni(m, cmap, metrics);
-	    // might be multiple possibilities
-	    if (!gid && more) {
-		String gn = chname;
-		do {
-		    gn += String("/");
-		    if ((m = glyphname_unicode(gn, &more)) >= 0)
-			gid = map_uni(m, cmap, metrics);
-		} while (!gid && more);
-	    }
-	    // if that didn't work, try the glyph name
-	    if (!gid && font)
-		gid = font->glyphid(chname);
-	    // always try the literal glyph name if it contained a '.'
-	    if (font && std::find(chname.begin(), chname.end(), '.') < chname.end())
-		if (Efont::OpenType::Glyph gid2 = font->glyphid(chname))
-		    gid = gid2;
-	    // as a last resort, try adding it with secondary
-	    if (gid <= 0 && secondary
-		&& (m = glyphname_unicode(chname)) >= 0
-		&& secondary->encode_uni(i, chname, m, *this, metrics, errh))
-		goto encoded;
-	    // map unknown glyphs to 0
-	    if (gid < 0)
-		gid = 0;
-	}
-
-	metrics.encode(i, gid);
-	if (gid == 0)
-	    bad_codepoint(i);
-
-      encoded: ;
-    }
-    metrics.set_coding_scheme(_coding_scheme);
-}
-
-void
-DvipsEncoding::make_literal_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font)
-{
-    for (int i = 0; i < _e.size(); i++)
-	if (_e[i] != dot_notdef) {
-	    Efont::OpenType::Glyph gid = font->glyphid(_e[i]);
-	    if (gid < 0)
-		gid = 0;
-	    metrics.encode(i, gid);
-	    if (gid == 0)
-		bad_codepoint(i);
-	}
-    metrics.set_coding_scheme(_coding_scheme);
-}
-
-const Vector<uint32_t> &
-DvipsEncoding::unicodes() const
-{
-    if (_unicodes.size() == 0) {
-	_unicodes.assign(_e.size(), 0xFFFFFFFFU);
-	for (int i = 0; i < _e.size(); i++)
-	    if (_e[i] != dot_notdef) {
-		int m = _unicoding_map[_e[i]];
-		if (m >= 0)
-		    _unicodes[i] = _unicoding[m];
-		else if ((m = glyphname_unicode(_e[i])) >= 0)
-		    _unicodes[i] = m;
-	    }
-    }
-    return _unicodes;
-}
-#endif
-
 void
 DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const
 {
@@ -721,13 +648,16 @@ DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const
 	    /* nada */;
 	else if (l.join == J_NOLIG || l.join == J_NOLIGKERN)
 	    metrics.remove_ligatures(l.c1, l.c2);
-	else if (l.join == J_LIG)
+	else if (l.join == J_LIG) {
+	    metrics.remove_ligatures(l.c1, l.c2);
 	    metrics.add_ligature(l.c1, l.c2, l.d);
-	else if (l.join == J_LIGC)
+	} else if (l.join == J_LIGC) {
+	    metrics.remove_ligatures(l.c1, l.c2);
 	    metrics.add_ligature(l.c1, l.c2, metrics.pair_code(l.d, l.c2));
-	else if (l.join == J_CLIG)
+	} else if (l.join == J_CLIG) {
+	    metrics.remove_ligatures(l.c1, l.c2);
 	    metrics.add_ligature(l.c1, l.c2, metrics.pair_code(l.c1, l.d));
-	else {
+	} else {
 	    static int complex_join_warning = 0;
 	    if (!complex_join_warning) {
 		errh->warning("complex LIGKERN ligature removed (I only support '=:', '=:|', and '|=:')");
