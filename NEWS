@@ -3,9 +3,29 @@ LCDF Typetools NEWS
 Version 0.8   23.Jun.2003
 
 * otftopl has been renamed to otftotfm. The new program takes different
-  options; automatic mode is particularly different.
+  options. Automatic mode is particularly different, and TFM output is now
+  the default.
 
-* otftotfm:
+* otftotfm: Automatic mode now sticks files into a TeX Directory Structure
+  hierarchy. This works well with many TeX installations. It also
+  automatically translates OpenType fonts into Type 1 PostScript with
+  cfftot1 (unless you configure with --disable-cfftot1), and modifies a
+  psfonts.map file for each font. See the manual page for more information.
+
+* otftotfm: Generates virtual fonts when required to support glyph
+  positioning features. ("-f cpsp" is one example.)
+
+* otftotfm: Warns when a feature could not be completely implemented.
+
+* otftotfm: Add --verbose and --no-create options, among others
+  (--no-virtual, --map-file, --vendor, --typeface, --no-type1...).
+
+* otftotfm: Encoding files are now named "a_SIGNATURE.enc", not
+  "auto_SIGNATURE.enc".
+
+* The configure script now searches for the kpathsea library, since
+  otftotfm's automatic mode depends on kpathsea. Provide
+  '--without-kpathsea' to disable it.
 
 
 Version 0.7   13.Jun.2003

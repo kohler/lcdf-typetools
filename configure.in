@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 0.7)
+AM_INIT_AUTOMAKE(lcdf-typetools, 0.8)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -20,7 +20,7 @@ AC_HEADER_DIRENT
 
 
 dnl
-dnl kpathsea, cfftota
+dnl kpathsea, cfftot1
 dnl
 
 AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
@@ -32,7 +32,6 @@ else
     if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
 	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
 	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
-	AC_MSG_NOTICE([foo])
     fi
     AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
     AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
@@ -40,9 +39,9 @@ else
 	AC_MSG_ERROR([
 =========================================
 
-I can't find the 'kpsewhich' program. Tell me where to look with the
---with-kpathsea=PREFIX option, or disable support with --without-kpathsea.
-XXX
+I can't find the kpathsea library and/or header files. Tell me where to look
+with the --with-kpathsea=PREFIX option, or disable support with
+ --without-kpathsea.
 
 =========================================])
     fi
