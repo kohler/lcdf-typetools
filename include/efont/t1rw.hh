@@ -15,7 +15,7 @@ class Type1Reader { public:
     virtual int more_data(unsigned char *, int) = 0;
     virtual bool preserve_whitespace() const { return false; }
   
-    virtual void switch_eexec(bool);
+    void switch_eexec(bool, unsigned char *, int);
     virtual void set_charstring_definer(PermString);
   
     bool next_line(StringAccum &);
@@ -36,6 +36,7 @@ class Type1Reader { public:
     int _charstring_len;
   
     int _ungot;
+    int _crlf;
   
     bool _eexec;
     bool _binary_eexec;

@@ -249,18 +249,16 @@ Type1Font::read(Type1Reader &reader)
 	add_item(new Type1CopyItem(s));
 	x = s.data();
 
-	if (eexec_state == 0 && strncmp(x, "currentfile eexec", 17) == 0) {
+	if (eexec_state == 0 && strncmp(x, "currentfile eexec", 17) == 0 && (isspace(x[17]) || !x[17])) {
 	    // allow arbitrary whitespace after "currentfile eexec".
 	    // note: strlen("currentfile eexec") == 17
-	    while (isspace(x[17]))
-		x++;
-	    if (!x[17]) {
-		reader.switch_eexec(true);
-		add_item(new Type1EexecItem(true));
-		eexec_state = 1;
-	    }
+	    for (x += 17; isspace(*x); x++)
+		/* nada */;
+	    reader.switch_eexec(true, (unsigned char *)x, (s.data() + s.length()) - x);
+	    set_item(nitems() - 1, new Type1EexecItem(true));
+	    eexec_state = 1;
 	} else if (eexec_state == 1 && strstr(x, "currentfile closefile") != 0) {
-	    reader.switch_eexec(false);
+	    reader.switch_eexec(false, 0, 0);
 	    add_item(new Type1EexecItem(false));
 	    eexec_state = 2;
 	} else if (strstr(x, "begin") != 0) {

@@ -59,6 +59,8 @@ Type1CopyItem::gen(Type1Writer &w)
 void
 Type1EexecItem::gen(Type1Writer &w)
 {
+    if (_eexec_on)
+	w << "currentfile eexec\n";
     w.switch_eexec(_eexec_on);
 }
 

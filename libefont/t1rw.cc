@@ -63,9 +63,26 @@ Type1Reader::set_charstring_definer(PermString x)
 }
 
 void
-Type1Reader::switch_eexec(bool on)
+Type1Reader::switch_eexec(bool on, unsigned char *data, int len)
 {
-    if (on) start_eexec();
+    if (on) {
+	if (_pos < len + 2) {
+	    unsigned char *new_data = new unsigned char[len + 2 + DATA_SIZE];
+	    assert(_len <= DATA_SIZE);
+	    memcpy(new_data + len + 2, _data + _pos, _len - _pos);
+	    _len = len + 2 + _len - _pos;
+	    _pos = len + 2;
+	    delete[] _data;
+	    _data = new_data;
+	}
+	if (_crlf == 0 || _crlf == 2)
+	    _data[--_pos] = '\n';
+	if (_crlf == 1 || _crlf == 2)
+	    _data[--_pos] = '\r';
+	memcpy(_data + _pos - len, data, len);
+	_pos -= len;
+	start_eexec();
+    }
     _eexec = on;
 }
 
@@ -75,8 +92,10 @@ Type1Reader::more_data()
 {
     _pos = 0;
     _len = more_data(_data, DATA_SIZE);
-    if (_len < 0) return -1;
-    else return _data[_pos++];
+    if (_len < 0)
+	return -1;
+    else
+	return _data[_pos++];
 }
 
 
@@ -103,11 +122,14 @@ int
 Type1Reader::ascii_eexec_get()
 {
     int d1 = get_base();
-    while (isspace(d1)) d1 = get_base();
+    while (isspace(d1))
+	d1 = get_base();
   
     int d2 = get_base();
-    while (isspace(d2)) d2 = get_base();
-    if (d2 < 0) return -1;
+    while (isspace(d2))
+	d2 = get_base();
+    if (d2 < 0)
+	return -1;
   
     return eexec((xvalue[d1] << 4) | (xvalue[d2]));
 }
@@ -229,22 +251,26 @@ Type1Reader::test_charstring(StringAccum &str)
 bool
 Type1Reader::next_line(StringAccum &s)
 {
-    if (_len < 0) return false;
+    if (_len < 0)
+	return false;
+    
     // Can't be a charstring if incoming accumulator has nonzero length.
     _charstring_start = 0;
     _charstring_len = (s.length() > 0 ? 0 : -1);
-  
+
     int first_char = _ungot < 0 ? get() : _ungot;
     _ungot = -1;
-  
+
     for (int c = first_char; c >= 0; c = get())
 	switch (c) {
       
 	  case '\n':
 	    if (test_charstring(s))
 		goto normal;
-	    else
+	    else {
+		_crlf = 0;
 		goto done;
+	    }
       
 	  case '\r':
 	    // check for \r\n (counts as only one line ending)
@@ -252,7 +278,9 @@ Type1Reader::next_line(StringAccum &s)
 		goto normal;
 	    c = get();
 	    if (c != '\n' || preserve_whitespace())
-		_ungot = c;
+		_ungot = c, _crlf = 1;
+	    else
+		_crlf = 2;
 	    goto done;
       
 	  normal:
@@ -284,7 +312,8 @@ Type1Reader::get_data(unsigned char *data, int len)
 
     for (; pos < len; pos++) {
 	int c = get();
-	if (c < 0) break;
+	if (c < 0)
+	    break;
 	*data++ = c;
     }
 
