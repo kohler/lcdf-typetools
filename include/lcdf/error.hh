@@ -1,8 +1,10 @@
 #ifndef ERROR_HH
 #define ERROR_HH
 #include "string.hh"
+#ifndef __KERNEL__
+# include <stdio.h>
+#endif
 #include <stdarg.h>
-#include <stdio.h>
 
 class ErrorHandler {
   
@@ -11,12 +13,17 @@ class ErrorHandler {
   enum Seriousness { Message, Warning, Error, Fatal };
   
   ErrorHandler()			{ }
+  ErrorHandler(ErrorHandler *errh)	{ }
   virtual ~ErrorHandler()		{ }
+  static void static_initialize(ErrorHandler *);
+  static void static_cleanup();
   
+  static ErrorHandler *default_handler();
   static ErrorHandler *silent_handler();
   
   virtual int nwarnings() const = 0;
   virtual int nerrors() const = 0;
+  virtual void reset_counts() = 0;
   
   // all error functions always return -1
   virtual int verror(Seriousness, const String &, const char *, va_list);
@@ -25,7 +32,8 @@ class ErrorHandler {
   int lwarning(const String &, const char *, ...);
   int lerror(const String &, const char *, ...);
   int lfatal(const String &, const char *, ...);
-
+  static String fix_landmark(const String &);
+  
   void message(const String &);
   void message(const char *, ...);
   int warning(const char *, ...);
@@ -34,68 +42,89 @@ class ErrorHandler {
   
 };
 
-
 class CountingErrorHandler : public ErrorHandler {
   
-  int _nwarnings;
   int _nerrors;
-  
+  int _nwarnings;
+
  public:
-  
-  CountingErrorHandler();
-  
-  int nwarnings() const			{ return _nwarnings; }
-  int nerrors() const			{ return _nerrors; }
+
+  CountingErrorHandler()		: _nerrors(0), _nwarnings(0) { }
+
+  int nerrors() const;
+  int nwarnings() const;
+  void reset_counts();
+
   void count(Seriousness);
+
+};
+
+class IndirectErrorHandler : public ErrorHandler {
+
+ protected:
   
+  ErrorHandler *_errh;
+
+ public:
+
+  IndirectErrorHandler(ErrorHandler *e)	: _errh(e) { }
+
+  int nerrors() const;
+  int nwarnings() const;
+  void reset_counts();
+
 };
 
 
+#ifndef __KERNEL__
 class FileErrorHandler : public CountingErrorHandler {
   
   FILE *_f;
-  String _context;
   
  public:
   
-  FileErrorHandler(FILE *, const String & = String());
+  FileErrorHandler(FILE *);
   
   void vmessage(Seriousness, const String &);
   
 };
+#endif
 
+class PinnedErrorHandler : public IndirectErrorHandler {
 
-class PinnedErrorHandler : public ErrorHandler {
+  String _context;
+
+ public:
+
+  PinnedErrorHandler(ErrorHandler *, const String &);
+
+  int verror(Seriousness, const String &, const char *, va_list);
+  void vmessage(Seriousness, const String &);
+
+};
+
+class ContextErrorHandler : public IndirectErrorHandler {
   
-  String _null_context;
-  ErrorHandler *_errh;
+  String _context;
+  String _indent;
   
  public:
   
-  PinnedErrorHandler(const String &, ErrorHandler *);
-  
-  int nwarnings() const			{ return _errh->nwarnings(); }
-  int nerrors() const			{ return _errh->nerrors(); }
+  ContextErrorHandler(ErrorHandler *, const String &context = "",
+		      const String &indent = "  ");
   
   int verror(Seriousness, const String &, const char *, va_list);
   void vmessage(Seriousness, const String &);
   
 };
 
-
-class ContextErrorHandler : public ErrorHandler {
+class PrefixErrorHandler : public IndirectErrorHandler {
   
-  String _context;
-  ErrorHandler *_errh;
-  String _indent;
+  String _prefix;
   
  public:
   
-  ContextErrorHandler(const String &context, ErrorHandler *,
-		      const String &indent = "  ");
-  
-  int nwarnings() const			{ return _errh->nwarnings(); }
-  int nerrors() const			{ return _errh->nerrors(); }
+  PrefixErrorHandler(ErrorHandler *, const String &prefix);
   
   int verror(Seriousness, const String &, const char *, va_list);
   void vmessage(Seriousness, const String &);
