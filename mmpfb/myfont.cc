@@ -6,8 +6,8 @@
 #include <efont/t1interp.hh>
 #include "t1rewrit.hh"
 #include <efont/t1mm.hh>
-#include "error.hh"
-#include "straccum.hh"
+#include <lcdf/error.hh>
+#include <lcdf/straccum.hh>
 #include <cstring>
 #include <cstdio>
 #include <cmath>

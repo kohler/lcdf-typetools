@@ -6,8 +6,8 @@
 #include <efont/t1mm.hh>
 #include "myfont.hh"
 #include "t1rewrit.hh"
-#include "clp.h"
-#include "error.hh"
+#include <lcdf/clp.h>
+#include <lcdf/error.hh>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>

@@ -3,8 +3,8 @@
 #endif
 #include "t1rewrit.hh"
 #include <efont/t1item.hh>
-#include "error.hh"
-#include "straccum.hh"
+#include <lcdf/error.hh>
+#include <lcdf/straccum.hh>
 #include <cstdio>
 #include <cmath>
 

@@ -3,12 +3,12 @@
 #endif
 #include <efont/findmet.hh>
 #include <efont/psres.hh>
-#include "slurper.hh"
+#include <lcdf/slurper.hh>
 #include <efont/afm.hh>
 #include <efont/afmw.hh>
 #include <efont/amfm.hh>
-#include "error.hh"
-#include "clp.h"
+#include <lcdf/error.hh>
+#include <lcdf/clp.h>
 #include <cstdio>
 #include <cstring>
 #include <cerrno>

@@ -2,7 +2,7 @@
 #define T1REWRIT_HH
 #include <efont/t1interp.hh>
 #include <efont/t1font.hh>
-#include "straccum.hh"
+#include <lcdf/straccum.hh>
 
 class Type1CharstringGen { public:
 

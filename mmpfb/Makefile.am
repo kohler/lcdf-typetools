@@ -12,6 +12,6 @@ mmpfb_SOURCES = hashmapi.cc \
 
 mmpfb_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
 
-INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/include
+INCLUDES = -I$(top_srcdir)/include
 
 EXTRA_DIST = mmpfb.1
