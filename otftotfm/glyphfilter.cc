@@ -1,6 +1,6 @@
 /* glyphfilter.{cc,hh} -- define subsets of characters
  *
- * Copyright (c) 2004 Eddie Kohler
+ * Copyright (c) 2004-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -130,14 +130,17 @@ GlyphFilter::add_pattern(const String& pattern, int ptype, ErrorHandler* errh)
 	{
 	    const char* dash = std::find(begin, word, '-');
 	    if (parse_unicode_number(begin, dash, 1, p.u.unirange.low)) {
-		if (dash == word) {
+		if (dash == word)
 		    p.u.unirange.high = p.u.unirange.low;
-		    goto next_clause;
-		} else if (dash == word - 1) {
+		else if (dash == word - 1)
 		    p.u.unirange.high = 0xFFFFFFFFU;
-		    goto next_clause;
-		} else if (parse_unicode_number(dash + 1, word, 0, p.u.unirange.high))
-		    goto next_clause;
+		else if (parse_unicode_number(dash + 1, word, 0, p.u.unirange.high))
+		    /* do nothing */;
+		else
+		    goto next_clause; // without adding pattern
+		p.data = D_UNIRANGE;
+		_patterns.push_back(p);
+		goto next_clause;
 	    }
 	}
 
@@ -227,5 +230,6 @@ GlyphFilter::unparse(StringAccum& sa) const
 	    sa.snprintf(20, "[U+%02x-U+%02x]", p->u.unirange.low, p->u.unirange.high);
 	sa << ' ';
     }
-    sa.pop_back();
+    if (_patterns.size())
+	sa.pop_back();
 }
