@@ -51,7 +51,7 @@ static const struct {
     { "VF", "VFDESTDIR", "fonts/vf/%" },
     { "VPL", "VPLDESTDIR", "fonts/vpl/%" },
     { "Type 1", "T1DESTDIR", "fonts/type1/%" },
-    { "DVIPS map", 0, "dvips" }
+    { "DVIPS map", "DVIPS directory", "dvips" }
 };
 
 #if HAVE_KPATHSEA
@@ -70,11 +70,9 @@ kpsei_string(char *x)
     free((void *)x);
     return s;
 }
-#endif
 
-#if HAVE_KPATHSEA
 static void
-find_writable_texdir(ErrorHandler *errh)
+find_writable_texdir(ErrorHandler *errh, const char *)
 {
     String actual_path = kpsei_string(kpsei_path_expand("$TEXMF"));
     String path = actual_path;
@@ -87,10 +85,44 @@ find_writable_texdir(ErrorHandler *errh)
     }
     if (writable_texdir && writable_texdir.back() != '/')
 	writable_texdir += "/";
-    if (!writable_texdir)
-	errh->warning("no writable directory found in $TEXMF\nlooked in %s", actual_path.c_str());
+    if (!writable_texdir) {
+	errh->warning("no writable directory found in $TEXMF");
+	errh->message("(You probably need to set your TEXMF environment variable; see the\n\
+manual for more information. The current TEXMF path is\n\
+'%s'.)", actual_path.c_str());
+    }
+    writable_texdir_tried = true;
 }
 #endif
+
+static String
+get_vendor()
+{
+    return (vendor ? vendor : DEFAULT_VENDOR);
+}
+
+bool
+set_vendor(const String &s)
+{
+    bool had = (bool) vendor;
+    vendor = s;
+    return !had;
+}
+
+static String
+get_typeface()
+{
+    return (typeface ? typeface : DEFAULT_TYPEFACE);
+}
+
+bool
+set_typeface(const String &s, bool override)
+{
+    bool had = (bool) typeface;
+    if (!had || override)
+	typeface = s;
+    return !had;
+}
 
 String
 getodir(int o, ErrorHandler *errh)
@@ -102,18 +134,13 @@ getodir(int o, ErrorHandler *errh)
     
 #ifdef HAVE_KPATHSEA
     if (!odir[o] && automatic && !writable_texdir_tried)
-	find_writable_texdir(errh);
+	find_writable_texdir(errh, odir_info[o].name);
 
     if (!odir[o] && automatic && writable_texdir) {
 	String dir = writable_texdir + odir_info[o].texdir;
 
-	if (dir.back() == '%') {
-	    if (!vendor)
-		vendor = DEFAULT_VENDOR;
-	    if (!typeface)
-		typeface = DEFAULT_TYPEFACE;
-	    dir = dir.substring(0, -1) + vendor + "/" + typeface;
-	}
+	if (dir.back() == '%')
+	    dir = dir.substring(0, -1) + get_vendor() + "/" + get_typeface();
 	
 	// create parent directories as appropriate
 	int slash = writable_texdir.length() - 1;
@@ -136,12 +163,15 @@ getodir(int o, ErrorHandler *errh)
     
     if (!odir[o]) {
 	if (automatic)
-	    errh->warning("%s not specified, using '.'", odir_info[o].envvar);
+	    errh->warning("%s not specified, using '.' for %s files", odir_info[o].envvar, odir_info[o].name);
 	odir[o] = ".";
     }
     
     while (odir[o].length() && odir[o].back() == '/')
 	odir[o] = odir[o].substring(0, -1);
+    
+    if (verbose)
+	errh->message("using '%s' for %s files", odir[o].c_str(), odir_info[o].name);
     return odir[o];
 }
 
@@ -235,23 +265,6 @@ update_odir(int o, String file, ErrorHandler *errh)
 }
 
 bool
-set_vendor(const String &s)
-{
-    bool had = (bool) vendor;
-    vendor = s;
-    return !had;
-}
-
-bool
-set_typeface(const String &s, bool override)
-{
-    bool had = (bool) typeface;
-    if (!had || override)
-	typeface = s;
-    return !had;
-}
-
-bool
 set_map_file(const String &s)
 {
     bool had = (bool) map_file;
@@ -304,7 +317,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 {
 #if HAVE_KPATHSEA
     if (automatic && !map_file && getodir(O_MAP, errh))
-	map_file = odir[O_MAP] + "/" + vendor + ".map";
+	map_file = odir[O_MAP] + "/" + get_vendor() + ".map";
 #endif
 
     if (map_file == "" || map_file == "-")
