@@ -6,9 +6,11 @@
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
-# include <netinet/in.h>		/* for ntohl() */
-#elif defined(HAVE_SYS_PARAM_H)
+#if HAVE_BYTEORDER_H
+# include <byteorder.h>			/* for ntohl() */
+#elif HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #else
 # error "configury disaster! Report this error to kohler@icir.org"
