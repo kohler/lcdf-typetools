@@ -168,6 +168,8 @@ Type1Reader::test_charstring(StringAccum &str)
   str.push(0);			// protect against running off end of string
   char *s = str.value();
   char *start;
+  while (*s == ' ')
+    s++;
   
   if (s[0] == '/')
     s++;
