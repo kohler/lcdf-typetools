@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 0.4   3.Jun.2003
+
+* otftopl: Added --slant and --extend options.
+
+* otftopl's generated encodings have slightly different form, and are thus
+  friendlier to ps2pk's bad parser.
+
+
 Version 0.3   3.Jun.2003
 
 * Fixed bug: cfftot1 produced invalid results for fonts with encodings

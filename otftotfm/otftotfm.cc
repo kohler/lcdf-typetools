@@ -53,6 +53,8 @@ using namespace Efont;
 #define TFM_DIR_OPT		317
 #define AUTOMATIC_OPT		318
 #define PL_DIR_OPT		319
+#define EXTEND_OPT		320
+#define SLANT_OPT		321
 
 Clp_Option options[] = {
     
@@ -69,6 +71,9 @@ Clp_Option options[] = {
     { "tfm-directory", 0, TFM_DIR_OPT, Clp_ArgString, 0 },
     
     { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
+
+    { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
+    { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
     
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "output-encoding", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
@@ -102,6 +107,9 @@ static Vector<int> interesting_features_used;
 static String encoding_file;
 static String new_encoding_name;
 static String new_encoding_file;
+
+static double extend;
+static double slant;
 
 static String font_name;
 
@@ -144,6 +152,8 @@ Input options:\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
+  -E, --extend=F               Widen characters by a factor of F.\n\
+  -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
 \n\
 Output options:\n\
   -a, --automatic              Derive output filenames automatically.\n\
@@ -286,6 +296,10 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 
     // figure out font dimensions
     CharstringBounds boundser(cff);
+    if (extend)
+	boundser.extend(extend);
+    if (slant)
+	boundser.shear(1 + slant);
     int bounds[4], width;
     
     double val;
@@ -804,10 +818,16 @@ encoding, or try '--automatic' mode.)");
     }
 
     // print DVIPS map line
-    if (!stdout_used && errh->nerrors() == 0)
-	printf("%s %s \"%s ReEncodeFont\" <[%s\n",
-	       font_name.c_str(), font.font_name().c_str(),
-	       new_encoding_name.c_str(), new_encoding_file.c_str());
+    if (!stdout_used && errh->nerrors() == 0) {
+	sa.clear();
+	sa << font_name << ' ' << font.font_name() << " \"";
+	if (extend)
+	    sa << extend << " ExtendFont ";
+	if (slant)
+	    sa << slant << " SlantFont ";
+	sa << new_encoding_name << " ReEncodeFont\" <[" << new_encoding_file << '\n';
+	printf("%s", sa.c_str());
+    }
 }
 
 static void
@@ -955,6 +975,18 @@ main(int argc, char **argv)
 	    encoding_file = clp->arg;
 	    break;
 
+	  case EXTEND_OPT:
+	    if (extend)
+		usage_error(errh, "extend value specified twice");
+	    extend = clp->val.d;
+	    break;
+
+	  case SLANT_OPT:
+	    if (slant)
+		usage_error(errh, "slant value specified twice");
+	    slant = clp->val.d;
+	    break;
+	    
 	  case AUTOMATIC_OPT:
 	    automatic = !clp->negated;
 	    break;

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 0.3)
+AM_INIT_AUTOMAKE(lcdf-typetools, 0.4)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
