@@ -86,7 +86,7 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 
     if (fucker)
 	fprintf(stderr, "T%.12g,%.12g F%.12g,%.12g %c %.12g\n", _true.x, _true.y, _false.x, _false.y, (kind ? kind : '-'), float_val);
-    int big_val = (int)floor(float_val * _f_precision + 0.5);
+    int big_val = (int)round(float_val * _f_precision);
     int val = big_val / _precision;
     int frac = big_val % _precision;
     if (frac != 0)
@@ -166,8 +166,8 @@ Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
     
     double dx = p.x - _false.x;
     double dy = p.y - _false.y;
-    int big_dx = (int)floor(dx * _f_precision + 0.5);
-    int big_dy = (int)floor(dy * _f_precision + 0.5);
+    int big_dx = (int)round(dx * _f_precision);
+    int big_dy = (int)round(dy * _f_precision);
 
     if (big_dx == 0 && big_dy == 0 && _state != S_INITIAL)
 	/* do nothing */;
