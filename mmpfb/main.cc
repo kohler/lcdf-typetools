@@ -234,8 +234,8 @@ main(int argc, char **argv)
   int precision = 5;
   int subr_count = -1;
   FILE *outfile = 0;
-  ErrorHandler *default_errh = new FileErrorHandler(stderr);
-  default_errh = new PinnedErrorHandler("mmpfb", default_errh);
+  ErrorHandler *default_errh =
+    new PinnedErrorHandler(new FileErrorHandler(stderr), "mmpfb");
   errh = default_errh;
   
   while (1) {
