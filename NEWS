@@ -1,5 +1,18 @@
 LCDF Typetools NEWS
 
+Version 0.9   25.Jun.2003
+
+* otftotfm: psfonts.map lines contain the file name only (no directories).
+  Requested by Norbert Preining.
+
+* otftotfm: Properly report errors when encoding files can't be found.
+
+* Fix kpathsea searching and dependency problems reported by Bruce D'Arcus
+  and Claire Connelly, among others.
+
+* Fix templates to allow compilation with GCC 2.95.
+
+
 Version 0.8   23.Jun.2003
 
 * otftopl has been renamed to otftotfm. The new program takes different
