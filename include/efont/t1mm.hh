@@ -23,6 +23,8 @@ class EfontMMSpace : public EfontProgram { public:
   
     PermString axis_type(int a) const	{ return _axis_types[a]; }
     PermString axis_label(int a) const	{ return _axis_labels[a]; }
+    PermString axis_abbreviation(int a) const;
+    static PermString axis_abbreviation(PermString);
   
     const Type1Charstring &ndv() const	{ return _ndv; }
     const Type1Charstring &cdv() const	{ return _cdv; }
@@ -102,6 +104,12 @@ inline const Vector<double> &
 EfontMMSpace::default_weight_vector() const
 {
     return _default_weight_vector;
+}
+
+inline PermString
+EfontMMSpace::axis_abbreviation(int a) const
+{
+    return axis_abbreviation(_axis_types[a]);
 }
 
 }

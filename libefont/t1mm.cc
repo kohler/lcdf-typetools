@@ -56,6 +56,22 @@ EfontMMSpace::set_weight_vector(const NumVector &v)
 }
 
 
+PermString
+EfontMMSpace::axis_abbreviation(PermString atype)
+{
+    if (atype == "Weight")
+	return "wt";
+    else if (atype == "Width")
+	return "wd";
+    else if (atype == "OpticalSize")
+	return "op";
+    else if (atype == "Style")
+	return "st";
+    else
+	return atype;
+}
+
+
 bool
 EfontMMSpace::error(ErrorHandler *errh, const char *s, ...) const
 {
