@@ -4,28 +4,32 @@
 #include "t1font.hh"
 #include "straccum.hh"
 
-class Type1CharstringGen {
-  
-    StringAccum _ncs;
-    int _precision;
-    double _f_precision;
-    double _f_rounder;
-  
-  public:
-  
+class Type1CharstringGen { public:
+
     Type1CharstringGen(int precision = 5);
 
-    void clear()			{ _ncs.clear(); }
+    void clear();
     char *data() const			{ return _ncs.data(); }
     int length() const			{ return _ncs.length(); }
 
-    void gen_number(double);
+    void gen_number(double, int = 0);
     void gen_command(int);
-    void gen_stack(Type1Interp &);
+    void gen_stack(Type1Interp &, int for_cmd);
 
     Type1Charstring *output();
     void output(Type1Charstring &);
 
+  private:
+  
+    StringAccum _ncs;
+    int _precision;
+    double _f_precision;
+    
+    double _true_x;
+    double _true_y;
+    double _false_x;
+    double _false_y;
+  
 };
 
 
@@ -49,7 +53,7 @@ class Type1MMRemover {
   Type1MMRemover(Type1Font *, Vector<double> *, int, ErrorHandler *);
   ~Type1MMRemover();
   
-  PsfontProgram *program() const	{ return _font; }
+  EfontProgram *program() const	{ return _font; }
   Vector<double> *weight_vector() const	{ return _weight_vector; }
   int nmasters() const			{ return _weight_vector->size(); }
   int precision() const			{ return _precision; }
@@ -79,7 +83,7 @@ class Type1SubrRemover {
   Type1SubrRemover(Type1Font *, ErrorHandler *);
   ~Type1SubrRemover();
   
-  PsfontProgram *program() const		{ return _font; }
+  EfontProgram *program() const			{ return _font; }
   ErrorHandler *errh() const			{ return _errh; }
   
   void mark_save(int n);

@@ -11,6 +11,29 @@
 static bool itc_complained = false;
 static ErrorHandler *itc_errh;
 
+static const char * const command_desc[] = {
+    0, 0, 0, 0, "y",
+    "xy", "x", "y", "xyxyxy", 0,
+
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+
+    0, "xy", "x", 0, 0,
+    0, 0, 0, 0, 0,
+
+    "yxyx", "xxyy", 0, 0, 0,
+    0, 0, 0, 0, 0,
+
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+  
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+  
+    0, 0, 0, 0, 0,
+    "XY", 0, 0, 0, 0
+};
+
 void
 itc_complain()
 {
@@ -21,18 +44,41 @@ itc_complain()
 
 Type1CharstringGen::Type1CharstringGen(int precision)
 {
-    if (precision >= 0 && precision <= 107)
+    if (precision >= 1 && precision <= 107)
 	_precision = precision;
     else
 	_precision = 5;
     _f_precision = _precision;
-    _f_rounder = (1. / _f_precision) / 2;
 }
 
 void
-Type1CharstringGen::gen_number(double float_val)
+Type1CharstringGen::clear()
 {
-    int big_val = (int)floor(float_val * _f_precision + _f_rounder);
+    _ncs.clear();
+    _true_x = _true_y = _false_x = _false_y = 0;
+}
+
+void
+Type1CharstringGen::gen_number(double float_val, int kind)
+{
+    switch (kind) {
+      case 'x':
+	_true_x += float_val;
+	float_val = _true_x - _false_x;
+	break;
+      case 'y':
+	_true_y += float_val;
+	float_val = _true_y - _false_y;
+	break;
+      case 'X':
+	_true_x = float_val;
+	break;
+      case 'Y':
+	_true_y = float_val;
+	break;
+    }
+    
+    int big_val = (int)floor(float_val * _f_precision + 0.5);
     int val = big_val / _precision;
     int frac = big_val % _precision;
     if (frac != 0)
@@ -64,6 +110,22 @@ Type1CharstringGen::gen_number(double float_val)
 	_ncs.append((char)Type1Interp::cEscape);
 	_ncs.append((char)(Type1Interp::cDiv - Type1Interp::cEscapeDelta));
     }
+
+    float_val = (double)big_val / _precision;
+    switch (kind) {
+      case 'x':
+	_false_x += float_val;
+	break;
+      case 'y':
+	_false_y += float_val;
+	break;
+      case 'X':
+	_false_x = float_val;
+	break;
+      case 'Y':
+	_false_y = float_val;
+	break;
+    }
 }
 
 
@@ -78,9 +140,13 @@ Type1CharstringGen::gen_command(int command)
 }
 
 void
-Type1CharstringGen::gen_stack(Type1Interp &interp)
+Type1CharstringGen::gen_stack(Type1Interp &interp, int for_cmd)
 {
-    for (int i = 0; i < interp.size(); i++)
+    const char *str = (for_cmd <= Type1Interp::cLastCommand ? command_desc[for_cmd] : (const char *)0);
+    int i;
+    for (i = 0; str && *str && i < interp.size(); i++, str++)
+	gen_number(interp.at(i), *str);
+    for (; i < interp.size(); i++)
 	gen_number(interp.at(i));
     interp.clear();
 }
@@ -143,7 +209,7 @@ bool
 HintReplacementDetector::type1_command(int cmd)
 {
     switch (cmd) {
-    
+	
       case cCallothersubr: {
 	  if (size() < 2)
 	      goto unknown;
@@ -165,7 +231,7 @@ HintReplacementDetector::type1_command(int cmd)
 	  } else
 	      goto unknown;
       }
-   
+
       case cCallsubr: {
 	  if (size() < 1)
 	      return error(errUnderflow, cmd);
@@ -173,7 +239,7 @@ HintReplacementDetector::type1_command(int cmd)
 	  if (!_count_calls_below || _subr_level < _count_calls_below)
 	      _call_counts[which]++;
      
-	  PsfontCharstring *subr_cs = get_subr(which);
+	  EfontCharstring *subr_cs = get_subr(which);
 	  if (!subr_cs)
 	      return error(errSubr, which);
 
@@ -185,7 +251,7 @@ HintReplacementDetector::type1_command(int cmd)
 	      return false;
 	  return !done();
       }
-   
+
       case cEndchar:
       case cReturn:
 	return Type1Interp::type1_command(cmd);
@@ -210,7 +276,7 @@ HintReplacementDetector::type1_command(int cmd)
       case cEq:
       case cIfelse:
 	return arith_command(cmd);
-    
+
       case cPop:
 	if (ps_size() >= 1)
 	    push(ps_pop());
@@ -458,14 +524,15 @@ Type1OneMMRemover::type1_command(int cmd)
 	      _must_expand = true;
 	      goto normal;
 	  }
-	  _prefix_gen.gen_stack(*this);
+	  _prefix_gen.gen_stack(*this, 0);
 	  _prefix_gen.gen_command(cCallothersubr);
 	  break;
       }
    
       case cCallsubr: {
 	  // expand subroutines in line if necessary
-	  if (size() < 1) goto normal;
+	  if (size() < 1)
+	      goto normal;
 	  int subrno = (int)pop();
 	  if (_subr_level < 1) { // otherwise, have already included prefix
 	      if (Type1Charstring *cs = _remover->subr_prefix(subrno))
@@ -484,14 +551,15 @@ Type1OneMMRemover::type1_command(int cmd)
 	if (ps_size() >= 1)
 	    push(ps_pop());
 	else if (_in_prefix && ps_size() == 0) {
-	    _prefix_gen.gen_stack(*this);
+	    _prefix_gen.gen_stack(*this, 0);
 	    _prefix_gen.gen_command(cPop);
 	} else
 	    goto normal;
 	break;
     
       case cDiv:
-	if (size() < 2) goto normal;
+	if (size() < 2)
+	    goto normal;
 	top(1) /= top(0);
 	pop();
 	break;
@@ -501,7 +569,7 @@ Type1OneMMRemover::type1_command(int cmd)
     
       normal:
       default:
-	_main_gen.gen_stack(*this);
+	_main_gen.gen_stack(*this, cmd);
 	_main_gen.gen_command(cmd);
 	_in_prefix = 0;
 	return (cmd != cEndchar);
@@ -526,7 +594,7 @@ Type1OneMMRemover::run(const Type1Charstring &cs,
     cs.run(*this);
 
     if (in_subr) {
-	_main_gen.gen_stack(*this);
+	_main_gen.gen_stack(*this, cReturn);
 	_main_gen.gen_command(cReturn);
     }
     if (_must_expand)
@@ -613,10 +681,10 @@ Type1BadCallRemover::type1_command(int cmd)
 	  } else
 	      goto normal;
       }
-   
+
       normal:
       default:
-	_gen.gen_stack(*this);
+	_gen.gen_stack(*this, 0);
 	_gen.gen_command(cmd);
 	return (cmd != cEndchar && cmd != cReturn);
     
@@ -700,7 +768,7 @@ Type1MMRemover::subr_expander(int subrno)
     if (!_subr_done[subrno])
 	(void)subr_prefix(subrno);
     if (!_expand_all_subrs && !_must_expand_subr[subrno])
-	return 0;
+    	return 0;
     return _font->subr(subrno);
 }
 
@@ -744,7 +812,7 @@ Type1MMRemover::run()
 	    one.output_main(g->t1cs());
 	}
     }
-  
+    
     // remove uncalled subroutines, expand hint replacement subroutines
     HintReplacementDetector hr(_font, _weight_vector, 0);
     for (int i = 0; i < _font->nglyphs(); i++)
@@ -838,7 +906,7 @@ SubrExpander::type1_command(int cmd)
 	  if (size() < 1)
 	      goto unknown;
 	  int which = (int)top(0);
-	  PsfontCharstring *subr_cs = get_subr(which);
+	  EfontCharstring *subr_cs = get_subr(which);
 	  if (!subr_cs || !_expand[which])
 	      goto unknown;
 	  pop();
@@ -858,13 +926,13 @@ SubrExpander::type1_command(int cmd)
 	goto end_cs;
     
       end_cs:
-	_gen.gen_stack(*this);
+	_gen.gen_stack(*this, cmd);
 	_gen.gen_command(cmd);
 	return false;
     
       default:
       unknown:
-	_gen.gen_stack(*this);
+	_gen.gen_stack(*this, cmd);
 	_gen.gen_command(cmd);
 	break;
     

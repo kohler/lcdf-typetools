@@ -1,7 +1,7 @@
 #ifndef MYFONT_HH
 #define MYFONT_HH
 #include "t1font.hh"
-class PsfontMMSpace;
+class EfontMMSpace;
 class ErrorHandler;
 
 class MyFont: public Type1Font {
@@ -21,7 +21,7 @@ class MyFont: public Type1Font {
   MyFont(Type1Reader &);
   ~MyFont();
   
-  bool set_design_vector(PsfontMMSpace *, const Vector<double> &,
+  bool set_design_vector(EfontMMSpace *, const Vector<double> &,
 			 ErrorHandler * = 0);
   
   void interpolate_dicts(ErrorHandler * = 0);

@@ -62,7 +62,7 @@ Clp_Option options[] = {
 static const char *program_name;
 static ErrorHandler *errh;
 static MyFont *font;
-static PsfontMMSpace *mmspace;
+static EfontMMSpace *mmspace;
 
 static Vector<PermString> ax_names;
 static Vector<int> ax_nums;
@@ -204,7 +204,7 @@ print_conversion_program(FILE *f, Type1Charstring *cs, PermString name)
 
 
 static void
-print_amcp_info(PsfontMMSpace *mmspace, FILE *f)
+print_amcp_info(EfontMMSpace *mmspace, FILE *f)
 {
   Type1Charstring *ndv = mmspace->ndv();
   Type1Charstring *cdv = mmspace->cdv();
@@ -281,10 +281,13 @@ main(int argc, char **argv)
 
      case PRECISION_OPT:
       if (clp->val.i > 107) {
-	errh->warning("precision lowered to 107");
-	precision = 107;
+	  errh->warning("precision lowered to 107");
+	  precision = 107;
+      } else if (clp->val.i < 1) {
+	  errh->warning("precision raised to 1");
+	  precision = 1;
       } else
-	precision = clp->val.i;
+	  precision = clp->val.i;
       break;
 
      case SUBRS_OPT:
