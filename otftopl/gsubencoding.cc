@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cstdio>
 #include <algorithm>
+#include <lcdf/straccum.hh>
 
 GsubEncoding::GsubEncoding()
 {
@@ -232,7 +233,7 @@ GsubEncoding::cut_encoding(int size)
 }
 
 void
-GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names)
+GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names, ErrorHandler *errh)
 {
     if (_encoding.size() <= size) {
 	_encoding.resize(size, 0);
@@ -280,9 +281,19 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 	    }
 
 	// complain if they can't fit
-	if (slotnum < slots.size())
-	    // XXX
-	    fprintf(stderr, "cannot shrink encoding!\n");
+	if (slotnum < slots.size()) {
+	    // collect names of unencoded glyphs
+	    Vector<String> unencoded;
+	    for (int s = slotnum; s < slots.size(); s++)
+		unencoded.push_back(glyph_names[ _encoding[ slots[s].position ] ]);
+	    std::sort(unencoded.begin(), unencoded.end());
+	    StringAccum sa;
+	    sa.append_fill_lines(unencoded, 68, "", "  ");
+	    errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable ligature:" : "ignoring unencodable ligatures:"));
+	    errh->lmessage(" ", "%s(\
+This encoding doesn't have enough room for all the ligatures used by\n\
+the font, so I've ignored those listed above.)", sa.c_str());
+	}
     }
 
     // reassign codes
@@ -405,5 +416,3 @@ GsubEncoding::unparse(const Vector<PermString> *gns) const
 	    fprintf(stderr, "\n");
 	}
 }
-
-#include <lcdf/vector.cc>

@@ -26,7 +26,7 @@ class GsubEncoding { public:
     void simplify_kerns();
 
     void cut_encoding(int size);
-    void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names);
+    void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names, ErrorHandler *);
 
     void add_twoligature(int code1, int code2, int outcode);
     enum { CODE_ALL = 0x7FFFFFFF };

@@ -719,7 +719,7 @@ do_file(const OpenType::Font &otf, String outfile,
     if (dvipsenc_literal)
 	encoding.cut_encoding(256);
     else
-	encoding.shrink_encoding(256, dvipsenc_in, glyph_names);
+	encoding.shrink_encoding(256, dvipsenc_in, glyph_names, errh);
     
     // apply activated GPOS features
     OpenType::Gpos gpos(otf.table("GPOS"), errh);
