@@ -25,6 +25,7 @@
 #include "util.hh"
 
 static String::Initializer initializer;
+enum { GLYPHLIST_MORE = 0x40000000 };
 static HashMap<String, int> glyphlist(-1);
 static PermString::Initializer perm_initializer;
 PermString DvipsEncoding::dot_notdef(".notdef");
@@ -47,8 +48,10 @@ DvipsEncoding::parse_glyphlist(String text)
 	    int first = pos;
 	    for (; pos < len && !isspace(data[pos]) && data[pos] != ';'; pos++)
 		/* nada */;
+	    String glyph_name = text.substring(first, pos - first);
 	    int value;
 	    char *next;
+	  read_uni:
 	    if (first == pos
 		|| pos + 1 >= len
 		|| data[pos] != ';'
@@ -59,11 +62,20 @@ DvipsEncoding::parse_glyphlist(String text)
 	    while (*next == ' ' || *next == '\t')
 		next++;
 	    if (*next == '\r' || *next == '\n')
-		glyphlist.insert(text.substring(first, pos - first), value);
+		glyphlist.insert(glyph_name, value);
+	    else if (*next == ';')
+		glyphlist.insert(glyph_name, value | GLYPHLIST_MORE);
+	    else
+		while (*next != '\r' && *next != '\n' && *next != ';')
+		    next++;
 	    pos = next - data;
-	}
-	while (pos < len && data[pos] != '\n' && data[pos] != '\r')
-	    pos++;
+	    if (*next == ';') {	// read another possibility
+		glyph_name += "/"; // XXX handles "DDDD;DDDD DDDD;DDDD" badly
+		goto read_uni;
+	    }
+	} else
+	    while (pos < len && data[pos] != '\n' && data[pos] != '\r')
+		pos++;
     }
 }
 
@@ -84,12 +96,14 @@ uniparsenumber(const char *a, int len)
 }
 
 void
-DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis)
+DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
 {
     // first, drop all characters to the right of the first dot
     int dot = gn.find_left('.');
     if (dot >= 0)
 	gn = gn.substring(0, dot);
+    if (more)
+	*more = false;
 
     // then, separate into components
     while (gn) {
@@ -97,13 +111,15 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis)
 	if (underscore < 0)
 	    underscore = gn.length();
 	String component = gn.substring(0, underscore);
-	gn = gn.substring(underscore);
+	gn = gn.substring(underscore + 1);
 
 	// check glyphlist
 	int value = glyphlist[component];
-	if (value >= 0)
-	    unis.push_back(value);
-	else if (component.length() >= 7
+	if (value >= 0) {
+	    unis.push_back(value & ~GLYPHLIST_MORE);
+	    if (more && (value & GLYPHLIST_MORE) && dot < 0 && underscore < 0)
+		*more = true;
+	} else if (component.length() >= 7
 		 && (component.length() % 4) == 3
 		 && memcmp(component.data(), "uni", 3) == 0) {
 	    int old_size = unis.size();
@@ -123,10 +139,10 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis)
 }
 
 int
-DvipsEncoding::glyphname_unicode(const String &gn)
+DvipsEncoding::glyphname_unicode(const String &gn, bool *more)
 {
     Vector<int> unis;
-    glyphname_unicode(gn, unis);
+    glyphname_unicode(gn, unis, more);
     return (unis.size() == 1 ? unis[0] : -1);
 }
 
@@ -344,14 +360,21 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, ErrorHandler *errh)
     if (v.size() == 2 || (v.size() == 3 && v[2] == dot_notdef))
 	/* no warnings to delete a glyph */;
     else {
+	bool more;		// some care to get all possibilities
 	for (int i = 2; i < v.size(); i++) {
-	    int uni = glyphname_unicode(v[i]);
+	    int uni = glyphname_unicode(v[i], &more);
 	    if (uni < 0) {
 		errh->warning("can't map '%s' to Unicode", v[i].c_str());
 		if (i == 2)
 		    errh->warning("target '%s' will be deleted from encoding", v[0].c_str());
+	    } else {
+		_unicoding.push_back(uni);
+		while (more) {
+		    v[i] += "/";
+		    if ((uni = glyphname_unicode(v[i], &more)) >= 0)
+			_unicoding.push_back(uni);
+		}
 	    }
-	    _unicoding.push_back(uni);
 	}
     }
     
@@ -369,13 +392,14 @@ DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(Vector<
 	while (pos < len && isspace(data[pos]))
 	    pos++;
 	int first = pos;
-	while (pos < len && !isspace(data[pos]))
+	while (pos < len && !isspace(data[pos]) && data[pos] != ';')
 	    pos++;
-	if (pos == first)
-	    /* do nothing */;
-	else if (pos == first + 1 && data[first] == ';') {
-	    (this->*method)(words, errh);
-	    words.clear();
+	if (pos == first) {
+	    pos++;		// step past semicolon (or harmlessly past EOS)
+	    if (words.size() > 0) {
+		(this->*method)(words, errh);
+		words.clear();
+	    }
 	} else
 	    words.push_back(s.substring(first, pos - first));
     }
@@ -495,8 +519,18 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 		    gid = cmap.map_uni(_unicoding[m]);
 	    } else {
 		// otherwise, try to map this glyph name to Unicode
-		if ((m = glyphname_unicode(_e[i])) >= 0)
+		bool more;
+		if ((m = glyphname_unicode(_e[i], &more)) >= 0)
 		    gid = cmap.map_uni(m);
+		// might be multiple possibilities
+		if (!gid && more) {
+		    String gn = _e[i];
+		    do {
+			gn += String("/");
+			if ((m = glyphname_unicode(gn, &more)) >= 0)
+			    gid = cmap.map_uni(m);
+		    } while (!gid && more);
+		}
 		// if that didn't work, try the glyph name as a last resort
 		if (!gid && font)
 		    gid = font->glyphid(_e[i]);
@@ -535,7 +569,7 @@ DvipsEncoding::unicodes(Vector<uint32_t> &unicodes) const
 	if (_e[i] != dot_notdef) {
 	    int m = _unicoding_map[_e[i]];
 	    if (m >= 0)
-		unicodes[i] = m;
+		unicodes[i] = _unicoding[m];
 	    else if ((m = glyphname_unicode(_e[i])) >= 0)
 		unicodes[i] = m;
 	}
