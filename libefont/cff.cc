@@ -1175,8 +1175,8 @@ EfontCFF::Font::font_matrix(double matrix[6]) const
     if (dict_value(oFontMatrix, t1d_matrix) && t1d_matrix.size() == 6)
 	memcpy(&matrix[0], &t1d_matrix[0], sizeof(double) * 6);
     else {
-	matrix[0] = matrix[4] = 0.001;
-	matrix[1] = matrix[2] = matrix[3] = matrix[5] = 0;
+	matrix[0] = matrix[3] = 0.001;
+	matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
     }
 }
 

@@ -7,8 +7,8 @@
 
 Transform::Transform()
 {
-    _m[0] = _m[4] = 1;
-    _m[1] = _m[2] = _m[3] = _m[5] = 0;
+    _m[0] = _m[3] = 1;
+    _m[1] = _m[2] = _m[4] = _m[5] = 0;
     _null = true;
 }
 
@@ -39,46 +39,46 @@ void
 Transform::check_null(double tolerance)
 {
     _null = (fabs(_m[0] - 1) < tolerance && fabs(_m[1]) < tolerance
-	     && fabs(_m[2]) < tolerance && fabs(_m[3]) < tolerance
-	     && fabs(_m[4] - 1) < tolerance && fabs(_m[5]) < tolerance);
+	     && fabs(_m[2]) < tolerance && fabs(_m[3] - 1) < tolerance
+	     && fabs(_m[4]) < tolerance && fabs(_m[5]) < tolerance);
 }
 
 
 void
-Transform::add_scale(double x, double y)
+Transform::scale(double x, double y)
 {
     _m[0] *= x;
-    _m[1] *= y;
-    _m[3] *= x;
-    _m[4] *= y;
+    _m[1] *= x;
+    _m[2] *= y;
+    _m[3] *= y;
 
     if (x != 1 || y != 1)
 	_null = false;
 }
 
 void
-Transform::add_rotate(double r)
+Transform::rotate(double r)
 {
     double c = cos(r);
     double s = sin(r);
     
-    double a = _m[0], b = _m[1];
+    double a = _m[0], b = _m[2];
     _m[0] = a*c + b*s;
-    _m[1] = b*c - a*s;
+    _m[2] = b*c - a*s;
     
-    a = _m[3], b = _m[4];
-    _m[3] = a*c + b*s;
-    _m[4] = b*c - a*s;
+    a = _m[1], b = _m[3];
+    _m[1] = a*c + b*s;
+    _m[3] = b*c - a*s;
 
     if (r != 0)
 	_null = false;
 }
 
 void
-Transform::add_translate(double x, double y)
+Transform::translate(double x, double y)
 {
-    _m[2] += _m[0]*x + _m[1]*y;
-    _m[5] += _m[3]*x + _m[4]*y;
+    _m[4] += _m[0]*x + _m[2]*y;
+    _m[5] += _m[1]*x + _m[3]*y;
 
     if (x != 0 || y != 0)
 	_null = false;
@@ -87,12 +87,12 @@ Transform::add_translate(double x, double y)
 Transform
 Transform::transformed(const Transform &t) const
 {
-    return Transform(_m[0] * t._m[0] + _m[1] * t._m[3],
-		     _m[0] * t._m[1] + _m[1] * t._m[4],
-		     _m[0] * t._m[2] + _m[1] * t._m[5] + _m[2],
-		     _m[3] * t._m[0] + _m[4] * t._m[3],
-		     _m[3] * t._m[1] + _m[4] * t._m[4],
-		     _m[3] * t._m[2] + _m[4] * t._m[5] + _m[5]);
+    return Transform(_m[0] * t._m[0] + _m[2] * t._m[1],
+		     _m[1] * t._m[0] + _m[3] * t._m[1],
+		     _m[0] * t._m[2] + _m[2] * t._m[3],
+		     _m[1] * t._m[2] + _m[3] * t._m[3],
+		     _m[0] * t._m[4] + _m[2] * t._m[5] + _m[4],
+		     _m[1] * t._m[4] + _m[3] * t._m[5] + _m[5]);
 }
 
 
@@ -100,15 +100,15 @@ void
 Transform::real_apply_to(Point &p) const
 {
     double x = p.x;
-    p.x = x*_m[0] + p.y*_m[1] + _m[2];
-    p.y = x*_m[3] + p.y*_m[4] + _m[5];
+    p.x = x*_m[0] + p.y*_m[2] + _m[4];
+    p.y = x*_m[1] + p.y*_m[3] + _m[5];
 }
 
 Point
 Transform::real_apply(const Point &p) const
 {
-    return Point(p.x*_m[0] + p.y*_m[1] + _m[2],
-		 p.x*_m[3] + p.y*_m[4] + _m[5]);
+    return Point(p.x*_m[0] + p.y*_m[2] + _m[4],
+		 p.x*_m[1] + p.y*_m[3] + _m[5]);
 }
 
 Bezier &
