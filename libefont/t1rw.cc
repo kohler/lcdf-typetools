@@ -263,7 +263,7 @@ int
 Type1PfaReader::more_data(unsigned char *data, int len)
 {
   size_t size = fread(data, 1, len, _f);
-  return size ? size : -1;
+  return size ? (int)size : -1;
 }
 
 
