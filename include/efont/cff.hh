@@ -188,10 +188,16 @@ class EfontCFF::Font : public EfontProgram { public:
 
     PermString font_name() const	{ return _font_name; }
     
-    int nsubrs() const			{ return _subrs_index.nitems(); }
+    int nsubrs_x() const		{ return _subrs_index.nitems(); }
+    int ngsubrs_x() const		{ return _cff->ngsubrs(); }
+    
+    int nsubrs() const			{ return nsubrs_x(); }
     Charstring *subr(int) const;
-    int ngsubrs() const			{ return _cff->ngsubrs(); }
+    int subr_bias() const;
+    
+    int ngsubrs() const			{ return ngsubrs_x(); }
     Charstring *gsubr(int) const;
+    int gsubr_bias() const;
 
     int nglyphs() const			{ return _charstrings_index.nitems(); }
     void glyph_names(Vector<PermString> &) const;

@@ -1168,18 +1168,30 @@ EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 Charstring *
 EfontCFF::Font::subr(int i) const
 {
-    i += subr_bias(_charstring_type, nsubrs());
-    if (i < 0 || i >= nsubrs())
+    i += ::subr_bias(_charstring_type, nsubrs_x());
+    if (i < 0 || i >= nsubrs_x())
 	return 0;
     if (!_subrs_cs[i])
 	_subrs_cs[i] = charstring(_subrs_index, i);
     return _subrs_cs[i];
 }
 
+int
+EfontCFF::Font::subr_bias() const
+{
+    return ::subr_bias(_charstring_type, nsubrs_x());
+}
+
 Charstring *
 EfontCFF::Font::gsubr(int i) const
 {
     return _cff->gsubr(i);
+}
+
+int
+EfontCFF::Font::gsubr_bias() const
+{
+    return ::subr_bias(2, ngsubrs_x());
 }
 
 PermString
