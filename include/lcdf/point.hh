@@ -25,14 +25,14 @@ struct point {
   int on_line(const point &, const point &, double) const;
   int on_segment(const point &, const point &, double) const;
   
-  friend static point operator+(const point &, const point &);
-  friend static point operator-(const point &, const point &);
+  friend point operator+(const point &, const point &);
+  friend point operator-(const point &, const point &);
   point &operator+=(const point &);
   point &operator-=(const point &);
-  friend static point operator*(double, const point &);
-  friend static point operator*(const point &, double);
-  friend static int operator==(const point &, const point &);
-  friend static int operator!=(const point &, const point &);
+  friend point operator*(double, const point &);
+  friend point operator*(const point &, double);
+  friend int operator==(const point &, const point &);
+  friend int operator!=(const point &, const point &);
   point &operator*=(double);
   
 };
