@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.97   6.Feb.2004
+
+* cfftot1: Fix bug in handling fonts with supplemental encodings. Problem
+  reported by Eike <eiked>.
+
+
 Version 1.96   11.Jan.2004
 
 * otftotfm: Handle alternate characters like 'Q.alt' in the input encoding:
