@@ -8,6 +8,9 @@ Version 0.16
   'N.tfm' in automatic mode. This reduces the risk that an old virtual font
   will screw up your installation.
 
+* otftotfm: In automatic mode, store dvips files (encodings and
+  psfonts.map) in 'TEXMF/dvips/VENDOR', rather than 'TEXMF/dvips'.
+
 
 Version 0.15   4.Jul.2003
 

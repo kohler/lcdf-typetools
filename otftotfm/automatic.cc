@@ -45,13 +45,13 @@ static const struct {
     const char *envvar;
     const char *texdir;
 } odir_info[] = {
-    { "encoding", "ENCODINGDESTDIR", "dvips" },
+    { "encoding", "ENCODINGDESTDIR", "dvips/@" },
     { "TFM", "TFMDESTDIR", "fonts/tfm/%" },
     { "PL", "PLDESTDIR", "fonts/pl/%" },
     { "VF", "VFDESTDIR", "fonts/vf/%" },
     { "VPL", "VPLDESTDIR", "fonts/vpl/%" },
     { "Type 1", "T1DESTDIR", "fonts/type1/%" },
-    { "DVIPS map", "DVIPS directory", "dvips" }
+    { "DVIPS map", "DVIPS directory", "dvips/@" }
 };
 
 #if HAVE_KPATHSEA
@@ -141,6 +141,8 @@ getodir(int o, ErrorHandler *errh)
 
 	if (dir.back() == '%')
 	    dir = dir.substring(0, -1) + get_vendor() + "/" + get_typeface();
+	else if (dir.back() == '@')
+	    dir = dir.substring(0, -1) + get_vendor();
 	
 	// create parent directories as appropriate
 	int slash = writable_texdir.length() - 1;
