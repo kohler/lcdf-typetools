@@ -16,18 +16,20 @@ class StringAccum {
   int _len;
   int _cap;
   
-  void grow(int);
+  bool grow(int);
   void erase()				{ _s = 0; _len = 0; _cap = 0; }
+  
+  StringAccum(const StringAccum &);
+  StringAccum &operator=(const StringAccum &);
   
  public:
   
   StringAccum()				: _s(0), _len(0), _cap(0) { }
   explicit StringAccum(int);
-  StringAccum(const StringAccum &);
-  ~StringAccum()			{ if (_s) free(_s); }
+  ~StringAccum()			{ delete[] _s; }
 
   char *cc();
-  char *value() const			{ return (char *)_s; }
+  char *data() const			{ return (char *)_s; }
   int length() const			{ return _len; }
   
   void clear()				{ _len = 0; }
@@ -36,115 +38,118 @@ class StringAccum {
   void forward(int f)			{ _len += f; assert(_len <= _cap); }
   char *extend(int);
 
-  void push(const char *, int);
   void push(unsigned char);
+  void push(char);
   void push(int);
-  void append(unsigned char);
-  void append(int);
+  void push(const char *, int);
   
   void pop(int n = 1)			{ if (_len >= n) _len -= n; }
   
   void take(unsigned char *&s, int &l)	{ s = _s; l = _len; erase(); }
   unsigned char *take_bytes();
   char *take();
+#ifdef HAVE_STRING
+  String take_string();
+#endif
   
+  StringAccum &operator<<(char c);
+  StringAccum &operator<<(const char *);
+#ifdef HAVE_PERMSTRING
+  StringAccum &operator<<(PermString);
+#endif
+#ifdef HAVE_STRING
+  StringAccum &operator<<(const String &);
+#endif
+  StringAccum &operator<<(int);
+  StringAccum &operator<<(unsigned);
+  StringAccum &operator<<(double);
+
   // STRING OPERATIONS
   
   char operator[](int i) const	{ assert(i>=0 && i<_len); return (char)_s[i]; }
   char &operator[](int i)	{ assert(i>=0 && i<_len); return (char &)_s[i]; }
 
-  StringAccum &operator=(const StringAccum &);
-  
 };
 
 
 inline
 StringAccum::StringAccum(int cap)
-  : _s((unsigned char *)malloc(cap)), _len(0), _cap(cap)
+  : _s(new unsigned char[cap]), _len(0), _cap(cap)
 {
 }
 
 inline void
 StringAccum::push(unsigned char c)
 {
-  if (_len >= _cap) grow(_len);
-  _s[_len++] = c;
+  if (_len < _cap || grow(_len))
+    _s[_len++] = c;
+}
+
+inline void
+StringAccum::push(char c)
+{
+  push(static_cast<unsigned char>(c));
 }
 
 inline void
 StringAccum::push(int c)
 {
-  assert(c >= 0 && c < 256);
-  push((unsigned char)c);
+  push(static_cast<unsigned char>(c));
 }
 
 inline void
-StringAccum::push(const char *s, int length)
+StringAccum::push(const char *s, int len)
 {
-  memcpy(extend(length), s, length);
-}
-
-inline void
-StringAccum::append(unsigned char c)
-{
-  push(c);
-}
-
-inline void
-StringAccum::append(int c)
-{
-  push(c);
+  if (char *x = extend(len))
+    memcpy(x, s, len);
 }
 
 inline char *
 StringAccum::reserve(int hm)
 {
-  if (_len + hm > _cap) grow(_len + hm);
-  return (char *)(_s + _len);
+  if (_len + hm <= _cap || grow(_len + hm))
+    return (char *)(_s + _len);
+  else
+    return 0;
 }
 
 inline char *
 StringAccum::extend(int amt)
 {
   char *c = reserve(amt);
-  _len += amt;
+  if (c) _len += amt;
   return c;
 }
 
 inline StringAccum &
-operator<<(StringAccum &sa, char c)
+StringAccum::operator<<(char c)
 {
-  sa.push(c);
-  return sa;
+  push(c);
+  return *this;
 }
 
-StringAccum &operator<<(StringAccum &, int);
-StringAccum &operator<<(StringAccum &, unsigned);
-StringAccum &operator<<(StringAccum &, double);
-
 inline StringAccum &
-operator<<(StringAccum &sa, const char *s)
+StringAccum::operator<<(const char *s)
 {
-  int len = strlen(s);
-  memcpy(sa.extend(len), s, len);
-  return sa;
+  push(s, strlen(s));
+  return *this;
 }
 
 #ifdef HAVE_PERMSTRING
 inline StringAccum &
-operator<<(StringAccum &sa, PermString s)
+StringAccum::operator<<(PermString s)
 {
-  sa.push(s.cc(), s.length());
-  return sa;
+  push(s.cc(), s.length());
+  return *this;
 }
 #endif
 
 #ifdef HAVE_STRING
 inline StringAccum &
-operator<<(StringAccum &sa, const String &s)
+StringAccum::operator<<(const String &s)
 {
-  sa.push(s.data(), s.length());
-  return sa;
+  push(s.data(), s.length());
+  return *this;
 }
 #endif
 
@@ -159,28 +164,26 @@ StringAccum::take_bytes()
 inline char *
 StringAccum::take()
 {
-  return (char *)take_bytes();
+  return reinterpret_cast<char *>(take_bytes());
 }
-
-// STRING OPERATIONS
 
 inline bool
 operator==(const StringAccum &sa1, const StringAccum &sa2)
 {
   return sa1.length() == sa2.length()
-    && memcmp(sa1.value(), sa2.value(), sa1.length()) == 0;
+    && memcmp(sa1.data(), sa2.data(), sa1.length());
 }
 
 inline bool
-operator==(const StringAccum &sa, const char *cc)
+operator==(StringAccum &sa1, const char *cc2)
 {
-  return strcmp(sa.value(), cc) == 0;
+  return strcmp(sa1.cc(), cc2) == 0;
 }
 
 inline bool
-operator==(const char *cc, const StringAccum &sa)
+operator==(const char *cc1, StringAccum &sa2)
 {
-  return sa == cc;
+  return strcmp(sa2.cc(), cc1) == 0;
 }
 
 inline bool
@@ -190,15 +193,15 @@ operator!=(const StringAccum &sa1, const StringAccum &sa2)
 }
 
 inline bool
-operator!=(const StringAccum &sa, const char *cc)
+operator!=(StringAccum &sa1, const char *cc2)
 {
-  return !(sa == cc);
+  return !(sa1 == cc2);
 }
 
 inline bool
-operator!=(const char *cc, const StringAccum &sa)
+operator!=(const char *cc1, StringAccum &sa2)
 {
-  return !(sa == cc);
+  return !(sa2 == cc1);
 }
 
 #endif

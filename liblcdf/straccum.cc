@@ -1,74 +1,79 @@
+/*
+ * straccum.{cc,hh} -- build up strings with operator<<
+ * Eddie Kohler
+ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
 #include "straccum.hh"
 #include <stdio.h>
 
-StringAccum::StringAccum(const StringAccum &sa)
-  : _s((unsigned char *)malloc(sa._cap)), _len(sa._len), _cap(sa._cap)
-{
-  // try to copy (sa._len+1) bytes in case someone called cc()
-  memcpy(_s, sa._s, (sa._cap > sa._len ? sa._len + 1 : sa._len));
-}
-
-void
+bool
 StringAccum::grow(int want)
 {
-  if (_cap)
-    _cap *= 2;
-  else
-    _cap = 128;
-  while (_cap <= want)
-    _cap *= 2;
+  int ncap = (_cap ? _cap * 2 : 128);
+  while (ncap <= want)
+    ncap *= 2;
+
+  unsigned char *n = new unsigned char[ncap];
+  if (!n)
+    return false;
   
   if (_s)
-    _s = (unsigned char *)realloc(_s, _cap);
-  else
-    _s = (unsigned char *)malloc(_cap);
+    memcpy(n, _s, _cap);
+  delete[] _s;
+  _s = n;
+  _cap = ncap;
+  return true;
 }
 
 char *
 StringAccum::cc()
 {
-  if (_len >= _cap) grow(_len);
-  _s[_len] = 0;
-  return value();
+  if (_len < _cap || grow(_len))
+    _s[_len] = 0;
+  return reinterpret_cast<char *>(_s);
 }
 
-StringAccum &
-StringAccum::operator=(const StringAccum &sa)
+#ifdef HAVE_STRING
+String
+StringAccum::take_string()
 {
-  if (&sa != this) {
-    if (sa._len >= _cap) grow(sa._len);
-    memcpy(_s, sa._s, sa._len + 1);
-    _len = sa._len;
+  int len = length();
+  return String::claim_string(take(), len);
+}
+#endif
+
+StringAccum &
+StringAccum::operator<<(int i)
+{
+  if (char *x = reserve(256)) {
+    int len;
+    sprintf(x, "%d%n", i, &len);
+    forward(len);
   }
   return *this;
 }
 
 StringAccum &
-operator<<(StringAccum &sa, int i)
+StringAccum::operator<<(unsigned u)
 {
-  int len;
-  sprintf(sa.reserve(256), "%d%n", i, &len);
-  sa.forward(len);
-  return sa;
+  if (char *x = reserve(256)) {
+    int len;
+    sprintf(x, "%u%n", u, &len);
+    forward(len);
+  }
+  return *this;
 }
 
 StringAccum &
-operator<<(StringAccum &sa, unsigned u)
+StringAccum::operator<<(double d)
 {
-  int len;
-  sprintf(sa.reserve(256), "%u%n", u, &len);
-  sa.forward(len);
-  return sa;
-}
-
-StringAccum &
-operator<<(StringAccum &sa, double d)
-{
-  int len;
-  sprintf(sa.reserve(256), "%g%n", d, &len);
-  sa.forward(len);
-  return sa;
+  if (char *x = reserve(256)) {
+    int len;
+    sprintf(x, "%g%n", d, &len);
+    forward(len);
+  }
+  return *this;
 }
