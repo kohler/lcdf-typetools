@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.12   19.Aug.2004
+
+* Catch bug that would affect otftotfm on 64-bit machines.
+
+
 Version 2.11   18.Aug.2004
 
 * otftotfm: Adjust TDS 1.1 support thanks to Olaf Weber.

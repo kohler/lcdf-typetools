@@ -570,7 +570,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    } else {
 		if (chdir(updmap_dir.c_str()) < 0)
 		    errh->fatal("%s: %s during chdir", updmap_dir.c_str(), strerror(errno));
-		if (execl("./updmap", updmap_file.c_str(), 0) < 0)
+		if (execl("./updmap", updmap_file.c_str(), (const char*) 0) < 0)
 		    errh->fatal("%s: %s during exec", updmap_file.c_str(), strerror(errno));
 		exit(1);	// should never get here
 	    }
