@@ -533,6 +533,7 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("password", "5839", "def"));
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("lenIV", "0", "def"));
     output->skeleton_private_end();
+    output->skeleton_common_subrs();
 
     // add glyphs
     MakeType1CharstringInterp maker(5);
