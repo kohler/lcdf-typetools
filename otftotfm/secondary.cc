@@ -16,7 +16,7 @@
 #include "metrics.hh"
 #include "dvipsencoding.hh"
 #include <efont/t1bounds.hh>
-#include <cstdarg>
+#include <stdarg.h>
 
 enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_VISIBLESPACE = 0x2423,	// U+2423 OPEN BOX

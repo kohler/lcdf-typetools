@@ -33,15 +33,16 @@
 #include <lcdf/hashmap.hh>
 #include <efont/cff.hh>
 #include <efont/otf.hh>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-#include <cstdarg>
-#include <cctype>
-#include <cerrno>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <errno.h>
+#include <signal.h>
 #include <algorithm>
 #ifdef HAVE_CTIME
-# include <ctime>
+# include <time.h>
 #endif
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -262,6 +263,37 @@ Other options:\n\
       --version                Print version number and exit.\n\
 \n\
 Report bugs to <kohler@icir.org>.\n");
+}
+
+extern "C" {
+static void
+sigchld_handler(int s)
+{
+#if !HAVE_SIGACTION
+    signal(s, sigchld_handler);
+#else
+    (void) s;
+#endif
+}
+}
+
+static void
+handle_sigchld()
+{
+#ifdef SIGCHLD
+    int sigchld = SIGCHLD;
+#else
+    int sigchld = SIGCLD;
+#endif
+#if HAVE_SIGACTION
+    struct sigaction sa;
+    sigaction(sigchld, 0, &sa);
+    sa.sa_handler = sigchld_handler;
+    sa.sa_flags = 0;
+    sigaction(sigchld, &sa, 0);
+#else
+    signal(sigchld, sigchld_handler);
+#endif
 }
 
 
@@ -1264,6 +1296,7 @@ do_query_features(const OpenType::Font &otf, ErrorHandler *errh)
 int
 main(int argc, char **argv)
 {
+    handle_sigchld();
     String::static_initialize();
     Clp_Parser *clp =
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);

@@ -98,25 +98,42 @@ a TeX installation that follows the TeX Directory Structure standard
 (http://www.tug.org/tds/), such as most Unix TeX installations.
 '
 .PP
-Simple instructions for web2c-based installations: First, create a
+Simple instructions for web2c-based installations:
+'
+.IP 1. 3
+Create a
 .I $HOME/texmf
-directory, if you don't have one already. Add a
+directory.
+.IP 2. 3
+Add a
 .I $HOME/texmf/dvips
-subdirectory, and create a file
-.I $HOME/texmf/dvips/config.ps
-containing the line "p +lcdftools.map" (or add that line to your 
-.I ~/.dvipsrc
-or an existing
-.IR config.ps );
-this will help
+subdirectory to hold encodings and map files. Otftotfm will create and
+modify a file
+.I $HOME/texmf/dvips/lcdftools/lcdftools.map
+containing information about fonts it creates.
+.IP 3. 3
+Tell
 .M dvips 1
-find your new fonts. Now, after running "otftotfm
+how to find the
+.I lcdftools.map
+file. The simplest way is to create a file
+.IR $HOME/texmf/dvips/config.ps ,
+containing the single line "p +lcdftools.map".
+You could also add this line to your
+.IR ~/.dvipsrc
+or an existing
+.IR config.ps ,
+or create a script
+.I $HOME/texmf/dvips/updmap
+that does the right thing. 
+.PP
+Now, after running "otftotfm
 .B \-a
 .IR file .otf
 .IR fontname \&",
 you will immediately be able to refer to the font in TeX using the
 .I fontname
-you supplied to otftotfm. Of course, you will have to write .fd files
+you supplied to otftotfm. You will have to write .fd files
 and/or typescripts to make the font conveniently accessible from LaTeX or
 ConTeXt. See the DIAGNOSTICS section if you have problems with these
 instructions.
@@ -167,7 +184,12 @@ psfonts.map	\-	\-\-map\-file
 .PP
 Otftotfm will update the
 .I TEXMF/ls-R
-file when installing files under TEXMF.
+file when installing files under TEXMF. After changing a psfonts.map file,
+it also checks for an executable file called
+.IR TEXMF/dvips/updmap ;
+if found, this file is executed from the
+.I TEXMF/dvips
+directory.
 '
 .SH OPTIONS
 With long options, you need type only as many characters as will make the

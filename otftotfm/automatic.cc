@@ -15,11 +15,11 @@
 #include "automatic.hh"
 #include "kpseinterface.h"
 #include "util.hh"
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-#include <cerrno>
-#include <cctype>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <ctype.h>
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -27,6 +27,9 @@
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_WAIT_H
+# include <sys/wait.h>
 #endif
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
@@ -57,7 +60,8 @@ static const struct {
     { "VF", "VFDESTDIR", "fonts/vf/%" },
     { "VPL", "VPLDESTDIR", "fonts/vpl/%" },
     { "Type 1", "T1DESTDIR", "fonts/type1/%" },
-    { "DVIPS map", "DVIPS directory", "dvips/@" }
+    { "DVIPS map", "DVIPS directory", "dvips/@" },
+    { "DVIPS updmap", "DVIPS directory", "dvips" }
 };
 
 #if HAVE_KPATHSEA
@@ -199,6 +203,15 @@ odirname(int o)
     return odir_info[o].name;
 }
 
+static bool
+file_in_kpathsea_odir(int o, const String &file)
+{
+    return odir_kpathsea[o]
+	&& file.length() > odir[o].length()
+	&& memcmp(file.data(), odir[o].data(), odir[o].length()) == 0
+	&& file[odir[o].length()] == '/';
+}
+
 void
 update_odir(int o, String file, ErrorHandler *errh)
 {
@@ -209,10 +222,7 @@ update_odir(int o, String file, ErrorHandler *errh)
 
     // exit if this directory was not found via kpathsea, or the file is not
     // in the kpathsea directory
-    if (!odir_kpathsea[o]
-	|| file.length() <= odir[o].length()
-	|| memcmp(file.data(), odir[o].data(), odir[0].length() != 0)
-	|| file[odir[o].length()] != '/')
+    if (!file_in_kpathsea_odir(o, file))
 	return;
 
     assert(writable_texdir && writable_texdir.length() <= odir[o].length()
@@ -436,6 +446,41 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	// inform about the new file if necessary
 	if (created)
 	    update_odir(O_MAP, map_file, errh);
+
+#if HAVE_KPATHSEA && !WIN32
+	// run 'updmap' if present
+	String updmap_dir = getodir(O_MAP_PARENT, errh);
+	String updmap_file = updmap_dir + "/updmap";
+	if (automatic && file_in_kpathsea_odir(O_MAP_PARENT, map_file)
+	    && access(updmap_file.c_str(), X_OK) >= 0) {
+	    // want to run 'updmap' from its directory, can't use system()
+	    if (verbose)
+		errh->message("running %s", updmap_file.c_str());
+	    if (pid_t child = fork()) {
+# if HAVE_WAITPID
+		int status;
+		while (1) {
+		    pid_t answer = waitpid(child, &status, 0);
+		    if (answer >= 0)
+			break;
+		    else if (errno != EINTR)
+			errh->fatal("%s during wait", strerror(errno));
+		}
+		if (!WIFEXITED(status))
+		    errh->warning("%s exited abnormally", updmap_file.c_str());
+		else if (WEXITSTATUS(status) != 0)
+		    errh->warning("%s exited with status %d", updmap_file.c_str(), WEXITSTATUS(status));
+# endif
+	    } else {
+		if (chdir(updmap_dir.c_str()) < 0)
+		    errh->fatal("%s: %s during chdir", updmap_dir.c_str(), strerror(errno));
+		if (execl("updmap", 0) < 0)
+		    errh->fatal("updmap: %s during exec", strerror(errno));
+		exit(1);	// should never get here
+	    }
+	} else if (verbose)
+	    errh->message("not running updmap");
+#endif
     }
 
     return 0;

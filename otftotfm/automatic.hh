@@ -3,7 +3,8 @@
 #include <lcdf/string.hh>
 class ErrorHandler;
 
-enum { O_ENCODING = 0, O_TFM, O_PL, O_VF, O_VPL, O_TYPE1, O_MAP, NUMODIR };
+enum { O_ENCODING = 0, O_TFM, O_PL, O_VF, O_VPL, O_TYPE1, O_MAP, O_MAP_PARENT,
+       NUMODIR };
 
 extern bool automatic;
 extern bool nocreate;
