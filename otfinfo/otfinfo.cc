@@ -15,18 +15,13 @@
 # include <config.h>
 #endif
 #include <efont/psres.hh>
-#include <efont/t1rw.hh>
-#include <efont/t1font.hh>
-#include <efont/t1item.hh>
-#include <efont/t1bounds.hh>
-#include <efont/otfcmap.hh>
 #include <efont/otfgsub.hh>
 #include <efont/otfgpos.hh>
+#include <efont/otfname.hh>
+#include <efont/cff.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
-#include <lcdf/hashmap.hh>
-#include <efont/cff.hh>
-#include <efont/otf.hh>
+#include <lcdf/straccum.hh>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -34,14 +29,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <algorithm>
-#ifdef HAVE_CTIME
-# include <time.h>
-#endif
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-# include <fcntl.h>
 #endif
 
 using namespace Efont;
@@ -54,7 +43,8 @@ using namespace Efont;
 
 #define QUERY_SCRIPTS_OPT	320
 #define QUERY_FEATURES_OPT	321
-#define QUERY_SIZE_OPT		322
+#define QUERY_OPTICAL_SIZE_OPT	322
+#define QUERY_POSTSCRIPT_NAME_OPT 323
 
 Clp_Option options[] = {
     
@@ -65,6 +55,8 @@ Clp_Option options[] = {
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "query-scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
     { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
+    { "query-optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
+    { "query-postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
     
@@ -74,8 +66,7 @@ Clp_Option options[] = {
 static const char *program_name;
 static String::Initializer initializer;
 
-static Vector<Efont::OpenType::Tag> interesting_scripts;
-static Vector<Efont::OpenType::Tag> interesting_features;
+static Efont::OpenType::Tag script, langsys;
 
 bool verbose = false;
 bool quiet = false;
@@ -98,66 +89,22 @@ void
 usage()
 {
     printf("\
-'Otftotfm' generates TeX font metrics files from an OpenType font (PostScript\n\
-flavor only), including ligatures, kerns and positionings that TeX supports.\n\
-Supply '-s SCRIPT[.LANG]' options to specify the relevant language, '-f FEAT'\n\
-options to turn on optional OpenType features, and a '-e ENC' option to\n\
-specify a base encoding. Output files are written to the current directory\n(\
-but see '--automatic' and the 'directory' options).\n\
+'Otfinfo' reports information about an OpenType font, depending on the\n\
+'--query' option you supply. Results are written to standard output.\n\
 \n\
-Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\n",
+Usage: %s QUERY_OPTION [OTFFILES...]\n\n",
 	   program_name);
     printf("\
-Font feature and transformation options:\n\
-  -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
-  -f, --feature=FEAT           Apply feature FEAT.\n\
-  -E, --extend=F               Widen characters by a factor of F.\n\
-  -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
-  -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
-\n\
-Encoding options:\n\
-  -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
-      --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
-      --ligkern=COMMAND        Add a LIGKERN command.\n\
-      --unicoding=COMMAND      Add a UNICODING command.\n\
-      --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
-      --boundary-char=CHAR     Set the boundary character to CHAR.\n\
-\n");
-    printf("\
-Automatic mode options:\n\
-  -a, --automatic              Install in a TeX Directory Structure.\n\
-  -v, --vendor=NAME            Set font vendor for TDS [lcdftools].\n\
-      --typeface=NAME          Set typeface name for TDS [<font family>].\n\
-      --no-type1               Do not generate a Type 1 font.\n\
-\n\
-Output options:\n\
-  -n, --name=NAME              Generated font name is NAME.\n\
-  -p, --pl                     Output human-readable PL/VPLs, not TFM/VFs.\n\
-      --no-virtual             Do not generate VFs or VPLs.\n\
-      --no-encoding            Do not generate an encoding file.\n\
-      --no-map                 Do not generate a psfonts.map line.\n\
-\n");
-    printf("\
-File location options:\n\
-      --tfm-directory=DIR      Put TFM files in DIR [.|automatic].\n\
-      --pl-directory=DIR       Put PL files in DIR [.|automatic].\n\
-      --vf-directory=DIR       Put VF files in DIR [.|automatic].\n\
-      --vpl-directory=DIR      Put VPL files in DIR [.|automatic].\n\
-      --encoding-directory=DIR Put encoding files in DIR [.|automatic].\n\
-      --type1-directory=DIR    Put Type 1 fonts in DIR [automatic].\n\
-      --map-file=FILE          Update FILE with psfonts.map information [-].\n\
+Query options:\n\
+  -s, --query-scripts          Report font's supported scripts.\n\
+  -f, --query-features         Report font's GSUB/GPOS features.\n\
+  -z, --query-optical-size     Report font's optical size information.\n\
+  -p, --query-postscript-name  Report font's PostScript name.\n\
 \n\
 Other options:\n\
-  --qs, --query-scripts        Print font's supported scripts and exit.\n\
-  --qf, --query-features       Print font's supported features for specified\n\
-                               scripts and exit.\n\
-      --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
+      --script=SCRIPT[.LANG]   Set script used for --query-features [latn].\n\
   -V, --verbose                Print progress information to standard error.\n\
-      --no-create              Print messages, don't modify any files.\n"
-#if HAVE_KPATHSEA
-"      --kpathsea-debug=MASK    Set path searching debug flags to MASK.\n"
-#endif
-"  -h, --help                   Print this message and exit.\n\
+  -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
@@ -226,7 +173,7 @@ collect_script_descriptions(const OpenType::ScriptList &script_list, Vector<Stri
 }
 
 static void
-do_query_scripts(const OpenType::Font &otf, ErrorHandler *errh)
+do_query_scripts(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
     Vector<String> results;
     if (String gsub_table = otf.table("GSUB")) {
@@ -242,7 +189,7 @@ do_query_scripts(const OpenType::Font &otf, ErrorHandler *errh)
 	std::sort(results.begin(), results.end());
 	String *unique_result = std::unique(results.begin(), results.end());
 	for (String *sp = results.begin(); sp < unique_result; sp++)
-	    printf("%s\n", sp->c_str());
+	    result_errh->message("%s", sp->c_str());
     }
 }
 
@@ -251,22 +198,20 @@ collect_feature_descriptions(const OpenType::ScriptList &script_list, const Open
 {
     int required_fid;
     Vector<int> fids;
-    for (int i = 0; i < interesting_scripts.size(); i += 2) {
-	// collect features applying to this script
-	script_list.features(interesting_scripts[i], interesting_scripts[i+1], required_fid, fids, errh);
-	for (int i = -1; i < fids.size(); i++) {
-	    int fid = (i < 0 ? required_fid : fids[i]);
-	    if (fid >= 0) {
-		OpenType::Tag tag = feature_list.tag(fid);
-		const char *s = tag.feature_description();
-		output.push_back(tag.text() + String("\t") + (s ? s : "<unknown feature>"));
-	    }
+    // collect features applying to this script
+    script_list.features(script, langsys, required_fid, fids, errh);
+    for (int i = -1; i < fids.size(); i++) {
+	int fid = (i < 0 ? required_fid : fids[i]);
+	if (fid >= 0) {
+	    OpenType::Tag tag = feature_list.tag(fid);
+	    const char *s = tag.feature_description();
+	    output.push_back(tag.text() + String("\t") + (s ? s : "<unknown feature>"));
 	}
     }
 }
 
 static void
-do_query_features(const OpenType::Font &otf, ErrorHandler *errh)
+do_query_features(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
     Vector<String> results;
     if (String gsub_table = otf.table("GSUB")) {
@@ -282,8 +227,69 @@ do_query_features(const OpenType::Font &otf, ErrorHandler *errh)
 	std::sort(results.begin(), results.end());
 	String *unique_result = std::unique(results.begin(), results.end());
 	for (String *sp = results.begin(); sp < unique_result; sp++)
-	    printf("%s\n", sp->c_str());
+	    result_errh->message("%s", sp->c_str());
     }
+}
+
+static void
+do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    try {
+	String gpos_table = otf.table("GPOS");
+	if (!gpos_table)
+	    throw OpenType::Error();
+
+	OpenType::Gpos gpos(gpos_table, errh);
+	OpenType::Name name(otf.table("name"), errh);
+
+	// extract 'size' feature
+	int required_fid;
+	Vector<int> fids;
+	gpos.script_list().features(script, langsys, required_fid, fids, errh);
+
+	int size_fid = gpos.feature_list().find(OpenType::Tag("size"), fids);
+	if (size_fid < 0)
+	    throw OpenType::Error();
+
+	// it looks like Adobe fonts implement an old, incorrect idea
+	// of what the FeatureParams offset means.
+	OpenType::Data size_data = gpos.feature_list().params(size_fid, 10, errh, true);
+	if (!size_data.length())
+	    throw OpenType::Error();
+
+	StringAccum sa;
+	sa << "design size " << (size_data.u16(0) / 10.) << " pt";
+	if (size_data.u16(2) != 0) {
+	    sa << ", size range (" << (size_data.u16(6) / 10.) << " pt, "
+	       << (size_data.u16(8) / 10.) << " pt], "
+	       << "subfamily ID " << size_data.u16(2);
+	    if (String n = name.find(size_data.u16(4), OpenType::Name::EnglishPlatformPred()))
+		sa << ", subfamily name " << n;
+	}
+	
+	result_errh->message("%s", sa.c_str());
+	
+    } catch (OpenType::Error) {
+	if (errh->nerrors() == before_nerrors)
+	    result_errh->message("no optical size information");
+    }
+}
+
+static void
+do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    String postscript_name = "no PostScript name information";
+
+    if (String name_table = otf.table("name")) {
+	OpenType::Name name(name_table, errh);
+	if (name.ok())
+	    postscript_name = name.find(OpenType::Name::N_POSTSCRIPT, OpenType::Name::EnglishPlatformPred());
+    }
+
+    if (errh->nerrors() == before_nerrors)
+	result_errh->message("%s", postscript_name.c_str());
 }
 
 int
@@ -295,41 +301,42 @@ main(int argc, char **argv)
     program_name = Clp_ProgramName(clp);
     
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
-    const char *input_file = 0;
-    bool query_scripts = false;
-    bool query_features = false;
+    Vector<const char *> input_files;
+    int query = 0;
   
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
 
 	  case SCRIPT_OPT: {
+	      if (!script.null())
+		  usage_error(errh, "--script already specified");
 	      String arg = clp->arg;
 	      int period = arg.find_left('.');
 	      OpenType::Tag scr(period <= 0 ? arg : arg.substring(0, period));
 	      if (scr.valid() && period > 0) {
 		  OpenType::Tag lang(arg.substring(period + 1));
 		  if (lang.valid()) {
-		      interesting_scripts.push_back(scr);
-		      interesting_scripts.push_back(lang);
+		      script = scr;
+		      langsys = lang;
 		  } else
 		      usage_error(errh, "bad language tag");
-	      } else if (scr.valid()) {
-		  interesting_scripts.push_back(scr);
-		  interesting_scripts.push_back(OpenType::Tag());
-	      } else
+	      } else if (scr.valid())
+		  script = scr;
+	      else
 		  usage_error(errh, "bad script tag");
 	      break;
 	  }
 	    
+	  case QUERY_SCRIPTS_OPT:
 	  case QUERY_FEATURES_OPT:
-	    query_features = true;
+	  case QUERY_OPTICAL_SIZE_OPT:
+	  case QUERY_POSTSCRIPT_NAME_OPT:
+	    if (query)
+		usage_error(errh, "supply exactly one --query option");
+	    query = opt;
 	    break;
 
-	  case QUERY_SCRIPTS_OPT:
-	    query_scripts = true;
-	    break;
-	    
 	  case QUIET_OPT:
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
@@ -356,10 +363,7 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_NotOption:
-	    if (input_file)
-		usage_error(errh, "too many arguments");
-	    else
-		input_file = clp->arg;
+	    input_files.push_back(clp->arg);
 	    break;
 
 	  case Clp_Done:
@@ -376,32 +380,36 @@ particular purpose.\n");
     }
     
   done:
-    // read font
-    String font_data = read_file(input_file, errh);
-    if (errh->nerrors())
-	exit(1);
+    if (!query)
+	usage_error(errh, "supply exactly one --query option");
+    if (!input_files.size())
+	input_files.push_back("-");
+    if (script.null())
+	script = Efont::OpenType::Tag("latn");
 
-    LandmarkErrorHandler cerrh(errh, printable_filename(input_file));
-    BailErrorHandler bail_errh(&cerrh);
+    FileErrorHandler stdout_errh(stdout);
+    for (const char **input_filep = input_files.begin(); input_filep != input_files.end(); input_filep++) {
+	int before_nerrors = errh->nerrors();
+	String font_data = read_file(*input_filep, errh);
+	if (errh->nerrors() != before_nerrors)
+	    continue;
 
-    OpenType::Font otf(font_data, &bail_errh);
-    assert(otf.ok());
+	String input_file = printable_filename(*input_filep);
+	LandmarkErrorHandler cerrh(errh, input_file);
+	OpenType::Font otf(font_data, &cerrh);
+	if (!otf.ok())
+	    continue;
 
-    // figure out scripts we care about
-    if (!interesting_scripts.size()) {
-	interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
-	interesting_scripts.push_back(Efont::OpenType::Tag());
-    }
-    if (interesting_features.size())
-	std::sort(interesting_features.begin(), interesting_features.end());
-
-    // read scripts or features
-    if (query_scripts) {
-	do_query_scripts(otf, &cerrh);
-	exit(errh->nerrors() > 0);
-    } else if (query_features) {
-	do_query_features(otf, &cerrh);
-	exit(errh->nerrors() > 0);
+	PrefixErrorHandler stdout_cerrh(&stdout_errh, input_file + ":");
+	ErrorHandler *result_errh = (input_files.size() > 1 ? &stdout_cerrh : &stdout_errh);
+	if (query == QUERY_SCRIPTS_OPT)
+	    do_query_scripts(otf, &cerrh, result_errh);
+	else if (query == QUERY_FEATURES_OPT)
+	    do_query_features(otf, &cerrh, result_errh);
+	else if (query == QUERY_OPTICAL_SIZE_OPT)
+	    do_query_optical_size(otf, &cerrh, result_errh);
+	else if (query == QUERY_POSTSCRIPT_NAME_OPT)
+	    do_query_postscript_name(otf, &cerrh, result_errh);
     }
     
     return (errh->nerrors() == 0 ? 0 : 1);

@@ -1,5 +1,5 @@
 '\"t
-.ds V 1.50b1
+.ds V 1.50b2
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -33,9 +33,9 @@ OpenType fonts come with
 Turning on the "small capitals" feature, for example, replaces lower-case
 letter glyphs with the corresponding small capitals. Other features control
 the spacing of capital letters, whether numbers are lining or old-style,
-and so forth. (You can check the features a font supports using otftotfm's
-.B \-\-query\-features
-option.)
+and so forth. (You can check the features a font supports using "\fBotfinfo\fR \-f";
+see
+.M otfinfo 1 .)
 .LP
 OpenType features can be more complex than TeX can handle, but many
 features useful for Western scripts (Latin, Greek, and Cyrillic, for
@@ -207,8 +207,8 @@ Microsoft and Adobe. Examples include "latn" (Latin script), "grek" (Greek
 script), and "yi.YIC" (Yi script with classic characters). If
 .I lang
 is not specified, otftotfm will use the default language system for that
-script. You can give this option multiple times. Run "otftotfm
-\-\-query\-scripts \fIfont\fR" to see the list of scripts and languages a
+script. You can give this option multiple times. Run "\fBotfinfo\fR
+\-s \fIfont\fR" to see the list of scripts and languages a
 font supports. Defaults to "latn".
 '
 .Sp
@@ -221,8 +221,8 @@ meant to correspond to font behaviors, such as kerning or small-capitals.
 Examples include "liga" (default ligatures), "dlig" (discretionary
 ligatures), "kern" (kerning), and "c2sc" (replacing capitals with small
 capitals). Give this option multiple times to apply multiple features. Run
-"otftotfm \-\-query\-features [--script options] \fIfont\fR" to see the list
-of features a font supports for the specified collection of scripts.
+"\fBotfinfo\fR \-f [--script option] \fIfont\fR" to see the list
+of features a font supports for a specified script.
 Defaults to any features required by the selected scripts.
 '
 .Sp
@@ -437,34 +437,6 @@ line for the font. The default is the standard output in manual mode, and
 '
 .SS Miscellaneous options
 .PD 0
-.TP 5
-.BR \-\-qs ", " \-\-query\-scripts
-Print the scripts and language systems supported by the specified font and
-exit. The scripts are printed one per line, with human-readable
-descriptions; for example:
-.nf
-  cyrl            Cyrillic
-  grek            Greek
-  latn            Latin
-  latn.TUR        Latin/Turkish
-.fi
-'
-.Sp
-.TP 5
-.BR \-\-qf ", " \-\-query\-features
-Print the features supported by the specified font, in the specified
-scripts and language systems, and exit. The scripts are printed one per
-line, with human-readable descriptions; for example:
-.nf
-  aalt    Access All Alternates
-  c2sc    Small Capitals From Capitals
-  case    Case-Sensitive Forms
-  cpsp    Capital Spacing
-  \&...
-  zero    Slashed Zero
-.fi
-'
-.Sp
 .TP 5
 .BI \-\-glyphlist= file
 Use
@@ -901,6 +873,7 @@ fonts.
 .M afm2tfm 1 ,
 .M dvips 1 ,
 .M cfftot1 1 ,
+.M otfinfo 1 ,
 .M kpsewhich 1
 .LP
 .I "Adobe Type 1 Font Format"

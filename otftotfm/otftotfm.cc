@@ -140,16 +140,14 @@ Clp_Option options[] = {
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
     { "kpathsea-debug", 0, KPATHSEA_DEBUG_OPT, Clp_ArgInt, 0 },
 
-    { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
-    { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
-    { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
-    { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
 
     { "tfm", 't', TFM_OPT, 0, 0 }, // deprecated
-    { "print-features", 0, QUERY_FEATURES_OPT, 0, 0 }, // deprecated
-    { "print-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 }, // deprecated
+    { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
+    { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
+    { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
+    { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     
 };
 
@@ -249,9 +247,6 @@ File location options:\n\
       --map-file=FILE          Update FILE with psfonts.map information [-].\n\
 \n\
 Other options:\n\
-  --qs, --query-scripts        Print font's supported scripts and exit.\n\
-  --qf, --query-features       Print font's supported features for specified\n\
-                               scripts and exit.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -V, --verbose                Print progress information to standard error.\n\
       --no-create              Print messages, don't modify any files.\n"
@@ -644,7 +639,7 @@ find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &f
 	scripts.features(script, langsys, required, fids, errh);
 
 	// only use the selected features
-	features.filter_features(fids, interesting_features);
+	features.filter(fids, interesting_features);
 
 	// mark features as having been used
 	for (int j = (required < 0 ? 0 : -1); j < fids.size(); j++) {
@@ -1211,88 +1206,6 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 }
 
 
-static void
-collect_script_descriptions(const OpenType::ScriptList &script_list, Vector<String> &output, ErrorHandler *errh)
-{
-    Vector<OpenType::Tag> script, langsys;
-    script_list.language_systems(script, langsys, errh);
-    for (int i = 0; i < script.size(); i++) {
-	String what = script[i].text();
-	const char *s = script[i].script_description();
-	String where = (s ? s : "<unknown script>");
-	if (!langsys[i].null()) {
-	    what += String(".") + langsys[i].text();
-	    s = langsys[i].language_description();
-	    where += String("/") + (s ? s : "<unknown language>");
-	}
-	if (what.length() < 8)
-	    output.push_back(what + String("\t\t") + where);
-	else
-	    output.push_back(what + String("\t") + where);
-    }
-}
-
-static void
-do_query_scripts(const OpenType::Font &otf, ErrorHandler *errh)
-{
-    Vector<String> results;
-    if (String gsub_table = otf.table("GSUB")) {
-	OpenType::Gsub gsub(gsub_table, errh);
-	collect_script_descriptions(gsub.script_list(), results, errh);
-    }
-    if (String gpos_table = otf.table("GPOS")) {
-	OpenType::Gpos gpos(gpos_table, errh);
-	collect_script_descriptions(gpos.script_list(), results, errh);
-    }
-
-    if (results.size()) {
-	std::sort(results.begin(), results.end());
-	String *unique_result = std::unique(results.begin(), results.end());
-	for (String *sp = results.begin(); sp < unique_result; sp++)
-	    printf("%s\n", sp->c_str());
-    }
-}
-
-static void
-collect_feature_descriptions(const OpenType::ScriptList &script_list, const OpenType::FeatureList &feature_list, Vector<String> &output, ErrorHandler *errh)
-{
-    int required_fid;
-    Vector<int> fids;
-    for (int i = 0; i < interesting_scripts.size(); i += 2) {
-	// collect features applying to this script
-	script_list.features(interesting_scripts[i], interesting_scripts[i+1], required_fid, fids, errh);
-	for (int i = -1; i < fids.size(); i++) {
-	    int fid = (i < 0 ? required_fid : fids[i]);
-	    if (fid >= 0) {
-		OpenType::Tag tag = feature_list.tag(fid);
-		const char *s = tag.feature_description();
-		output.push_back(tag.text() + String("\t") + (s ? s : "<unknown feature>"));
-	    }
-	}
-    }
-}
-
-static void
-do_query_features(const OpenType::Font &otf, ErrorHandler *errh)
-{
-    Vector<String> results;
-    if (String gsub_table = otf.table("GSUB")) {
-	OpenType::Gsub gsub(gsub_table, errh);
-	collect_feature_descriptions(gsub.script_list(), gsub.feature_list(), results, errh);
-    }
-    if (String gpos_table = otf.table("GPOS")) {
-	OpenType::Gpos gpos(gpos_table, errh);
-	collect_feature_descriptions(gpos.script_list(), gpos.feature_list(), results, errh);
-    }
-
-    if (results.size()) {
-	std::sort(results.begin(), results.end());
-	String *unique_result = std::unique(results.begin(), results.end());
-	for (String *sp = results.begin(); sp < unique_result; sp++)
-	    printf("%s\n", sp->c_str());
-    }
-}
-
 int
 main(int argc, char **argv)
 {
@@ -1318,8 +1231,6 @@ main(int argc, char **argv)
     const char *input_file = 0;
     const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
     bool literal_encoding = false;
-    bool query_scripts = false;
-    bool query_features = false;
     Vector<String> ligkern;
     Vector<String> unicoding;
     String codingscheme;
@@ -1475,11 +1386,11 @@ main(int argc, char **argv)
 	    break;
 	    
 	  case QUERY_FEATURES_OPT:
-	    query_features = true;
+	    usage_error(errh, "run 'otfinfo --query-features' instead");
 	    break;
 
 	  case QUERY_SCRIPTS_OPT:
-	    query_scripts = true;
+	    usage_error(errh, "run 'otfinfo --query-scripts' instead");
 	    break;
 	    
 	  case QUIET_OPT:
@@ -1563,15 +1474,6 @@ particular purpose.\n");
     }
     if (interesting_features.size())
 	std::sort(interesting_features.begin(), interesting_features.end());
-
-    // read scripts or features
-    if (query_scripts) {
-	do_query_scripts(otf, &cerrh);
-	exit(errh->nerrors() > 0);
-    } else if (query_features) {
-	do_query_features(otf, &cerrh);
-	exit(errh->nerrors() > 0);
-    }
 
     // read glyphlist
     if (String s = read_file(glyphlist_file, errh, true))
