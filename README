@@ -33,8 +33,18 @@ substitutions, and ligatures as far as it is able.  You can say which
 OpenType features should be activated.  See the manual page
 'otftotfm/otftotfm.1' for more information.
 
+   T1dotlessj reads a Type 1 font, then creates a new Type 1 font whose
+only character is a dotless "j" matching the input font's design.  See the
+manual page 't1dotlessj/t1dotlessj.1' for more information.
+
+   T1lint checks Type 1 fonts for correctness.  It tests most of the
+requirements listed in Adobe Systems' Black Book ("Adobe Type 1 Font
+Format"), and some others.  See the manual page 't1lint/t1lint.1' for more
+information.
+
    The final program is preliminary: t1testpage creates a PostScript test
-page for a given font file.
+page for a given font file.  See the manual page 't1testpage/t1testpage.1'
+for more information.
 
    Please write me with problems, patches, and suggestions at the address
 below.
