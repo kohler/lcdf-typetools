@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.2   8.May.2004
+
+* otftotfm: 't1dotlessj' errors don't prevent 'psfonts.map' from being
+  updated.  Reported by Stephen Moye.
+
+* t1dotlessj: Report different kinds of errors with different exit statuses.
+
+
 Version 2.1   5.Apr.2004
 
 * otftotfm: Warn if no encoding specified.  Requested by Zsolt Kiraly.
