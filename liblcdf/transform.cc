@@ -21,28 +21,9 @@ Transform::Transform(double m0, double m1, double m2,
     _m[5] = m5;
 }
 
-Point
-Transform::transform(const Point &p) const
-{
-    Point q;
-    q.x = p.x*_m[0] + p.y*_m[1] + _m[2];
-    q.y = p.x*_m[3] + p.y*_m[4] + _m[5];
-    return q;
-}
-
-Transform
-Transform::transformed(const Transform &t) const
-{
-    return Transform(_m[0] * t._m[0] + _m[1] * t._m[3],
-		     _m[0] * t._m[1] + _m[1] * t._m[4],
-		     _m[0] * t._m[2] + _m[1] * t._m[5] + _m[2],
-		     _m[3] * t._m[0] + _m[4] * t._m[3],
-		     _m[3] * t._m[1] + _m[4] * t._m[4],
-		     _m[3] * t._m[2] + _m[4] * t._m[5] + _m[5]);
-}
 
 void
-Transform::scale(double x, double y)
+Transform::add_scale(double x, double y)
 {
     _m[0] *= x;
     _m[1] *= y;
@@ -51,7 +32,7 @@ Transform::scale(double x, double y)
 }
 
 void
-Transform::rotate(double r)
+Transform::add_rotate(double r)
 {
     double c = cos(r);
     double s = sin(r);
@@ -66,8 +47,52 @@ Transform::rotate(double r)
 }
 
 void
-Transform::translate(double x, double y)
+Transform::add_translate(double x, double y)
 {
     _m[2] += _m[0]*x + _m[1]*y;
     _m[5] += _m[3]*x + _m[4]*y;
+}
+
+Transform
+Transform::transform(const Transform &t) const
+{
+    return Transform(_m[0] * t._m[0] + _m[1] * t._m[3],
+		     _m[0] * t._m[1] + _m[1] * t._m[4],
+		     _m[0] * t._m[2] + _m[1] * t._m[5] + _m[2],
+		     _m[3] * t._m[0] + _m[4] * t._m[3],
+		     _m[3] * t._m[1] + _m[4] * t._m[4],
+		     _m[3] * t._m[2] + _m[4] * t._m[5] + _m[5]);
+}
+
+
+Point &
+operator*=(Point &p, const Transform &t)
+{
+    double x = p.x;
+    p.x = x*t._m[0] + p.y*t._m[1] + t._m[2];
+    p.y = x*t._m[3] + p.y*t._m[4] + t._m[5];
+    return p;
+}
+
+Point
+operator*(const Point &p, const Transform &t)
+{
+    return Point(p.x*t._m[0] + p.y*t._m[1] + t._m[2],
+		 p.x*t._m[3] + p.y*t._m[4] + t._m[5]);
+}
+
+Bezier &
+operator*=(Bezier &b, const Transform &t)
+{
+    b.mpoint(0) *= t;
+    b.mpoint(1) *= t;
+    b.mpoint(2) *= t;
+    b.mpoint(3) *= t;
+    return b;
+}
+
+Bezier
+operator*(const Bezier &b, const Transform &t)
+{
+    return Bezier(b.point(0) * t, b.point(1) * t, b.point(2) * t, b.point(3) * t);
 }

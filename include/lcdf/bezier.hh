@@ -1,7 +1,7 @@
 // -*- related-file-name: "../../liblcdf/bezier.cc" -*-
 #ifndef LCDF_BEZIER_HH
 #define LCDF_BEZIER_HH
-#include <lcdf/transform.hh>
+#include <lcdf/point.hh>
 #include <lcdf/vector.hh>
 #include <cstring>
 
@@ -10,11 +10,11 @@ class Bezier { public:
     Bezier()				: _bb(-1) { }
     Bezier(Point p[4]);
     Bezier(const Point &, const Point &, const Point &, const Point &);
-    Bezier(const Bezier &, const Transform &);
   
     const Point *points() const		{ return _p; }
     const Point &point(int i) const	{ assert(i>=0&&i<4); return _p[i]; }
-    void set_point(int i, const Point &p) { assert(i>=0&&i<4);_p[i]=p;_bb=-1; }
+    Point &mpoint(int i)		{ assert(i>=0&&i<4); _bb = -1; return _p[i]; }
+    void set_point(int i, const Point &p) { mpoint(i) = p; }
 
     Point eval(double) const;
     bool is_flat(double) const;
@@ -35,7 +35,6 @@ class Bezier { public:
 
     void segmentize(Vector<Point> &) const;
     void segmentize(Vector<Point> &, bool) const;
-    void segmentize(Vector<Point> &, const Transform &) const;
   
     static void fit(const Vector<Point> &, double, Vector<Bezier> &);
     
@@ -66,16 +65,6 @@ Bezier::Bezier(const Point &p0, const Point &p1, const Point &p2, const Point &p
     _p[1] = p1;
     _p[2] = p2;
     _p[3] = p3;
-    _bb = -1;
-}
-
-inline
-Bezier::Bezier(const Bezier &b, const Transform &t)
-{
-    _p[0] = b._p[0] * t;
-    _p[1] = b._p[1] * t;
-    _p[2] = b._p[2] * t;
-    _p[3] = b._p[3] * t;
     _bb = -1;
 }
 
@@ -142,19 +131,6 @@ inline void
 Bezier::segmentize(Vector<Point> &v) const
 {
     segmentize(v, v.size() == 0 || v.back() != _p[0]);
-}
-
-inline void
-Bezier::segmentize(Vector<Point> &v, const Transform &t) const
-{
-    Bezier b(*this, t);
-    b.segmentize(v, v.size() == 0 || v.back() != b._p[0]);
-}
-
-inline Bezier
-operator*(const Bezier &b, const Transform &t)
-{
-    return Bezier(b, t);
 }
 
 #endif

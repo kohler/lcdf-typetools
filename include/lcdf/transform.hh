@@ -1,7 +1,7 @@
 // -*- related-file-name: "../../liblcdf/transform.cc" -*-
 #ifndef LCDF_TRANSFORM_HH
 #define LCDF_TRANSFORM_HH
-#include <lcdf/point.hh>
+#include <lcdf/bezier.hh>
 #include <cassert>
 
 class Transform { public:
@@ -11,25 +11,29 @@ class Transform { public:
 
     double value(int i) const		{ assert(i>=0&&i<6); return _m[i]; }
   
-    void scale(double, double);
-    void scale(const Point &p)			{ scale(p.x, p.y); }
-    void scale(double d)			{ scale(d, d); }
-    void rotate(double);
-    void translate(double, double);
-    void translate(const Point &p)		{ translate(p.x, p.y); }
-  
-    inline Transform scaled(double, double) const;
-    Transform scaled(const Point &p) const	{ return scaled(p.x, p.y); }
-    Transform scaled(double d) const		{ return scaled(d, d); }
-    Transform rotated(double) const;
-    Transform translated(double, double) const;
-    Transform translated(const Point &p) const;
+    void add_scale(double, double);
+    void add_scale(const Point &p)		{ add_scale(p.x, p.y); }
+    void add_scale(double d)			{ add_scale(d, d); }
+    void add_rotate(double);
+    void add_translate(double, double);
+    void add_translate(const Point &p)		{ add_translate(p.x, p.y); }
 
-    Point transform(const Point &p) const;
-    Transform transformed(const Transform &) const;
+    inline Transform scale(double, double) const;
+    Transform scale(const Point &p) const	{ return scale(p.x, p.y); }
+    Transform scale(double d) const		{ return scale(d, d); }
+    Transform rotate(double) const;
+    Transform translate(double, double) const;
+    Transform translate(const Point &p) const;
+    Transform transform(const Transform &) const;
 
     // Transform operator+(Transform, const Point &);
-    // Point operator*(const Point &, const Transform &);
+    // Transform &operator+=(Transform &, const Point &);
+    // Transform operator*(Transform, const Transform &);
+    // Transform &operator*=(Transform &, const Transform &);
+    friend Point operator*(const Point &, const Transform &);
+    friend Point &operator*=(Point &, const Transform &);
+    friend Bezier operator*(const Bezier &, const Transform &);
+    friend Bezier &operator*=(Bezier &, const Transform &);
 
   private:
     
@@ -39,52 +43,64 @@ class Transform { public:
 
 
 inline Transform
-Transform::scaled(double x, double y) const
+Transform::scale(double x, double y) const
 {
     Transform t(*this);
-    t.scale(x, y);
+    t.add_scale(x, y);
     return t;
 }
 
 inline Transform
-Transform::rotated(double r) const
+Transform::rotate(double r) const
 {
     Transform t(*this);
-    t.rotate(r);
+    t.add_rotate(r);
     return t;
 }
 
 inline Transform
-Transform::translated(double x, double y) const
+Transform::translate(double x, double y) const
 {
     Transform t(*this);
-    t.translate(x, y);
+    t.add_translate(x, y);
     return t;
 }
 
 inline Transform
-Transform::translated(const Point &p) const
+Transform::translate(const Point &p) const
 {
-    return translated(p.x, p.y);
+    return translate(p.x, p.y);
+}
+
+
+inline Transform &
+operator+=(Transform &t, const Point &p)
+{
+    t.add_translate(p);
+    return t;
 }
 
 inline Transform
 operator+(Transform t, const Point &p)
 {
-    t.translate(p);
-    return t;
-}
-
-inline Point
-operator*(const Point &p, const Transform &t)
-{
-    return t.transform(p);
+    return t += p;
 }
 
 inline Transform
-operator*(const Transform &t1, const Transform &t2)
+operator*(const Transform &t, const Transform &tt)
 {
-    return t1.transformed(t2);
+    return t.transform(tt);
 }
+
+inline Transform &
+operator*=(Transform &t, const Transform &tt)
+{
+    t = t.transform(tt);
+    return t;
+}
+
+
+Point &operator*=(Point &, const Transform &);
+Point &operator*=(Point &, const Transform &);
 
 #endif
