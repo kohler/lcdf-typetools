@@ -41,19 +41,38 @@ AfmParser::trim_end()
 void
 AfmParser::static_initialize()
 {
-    if (name_enders[(int)'('])
+    if (name_enders[(uint8_t)'('])
 	return;
-    name_enders[(int)' '] = name_enders[(int)'\t'] = name_enders[(int)'\r']
-	= name_enders[(int)'\f'] = name_enders[(int)'\v']
-	= name_enders[(int)'\n'] = name_enders[(int)'\0']
-	= name_enders[(int)'['] = name_enders[(int)']']	= name_enders[(int)'/']
-	= name_enders[(int)'('] = name_enders[(int)')']	= name_enders[(int)';']
-	= true;
-  
-    for (int c = '0'; c <= '9'; c++)
-	xvalue[c] = c - '0';
-    for (int c = 'A'; c <= 'F'; c++)
-	xvalue[c] = xvalue[c - 'A' + 'a'] = c - 'A' + 10;
+    name_enders[(uint8_t)' '] = name_enders[(uint8_t)'\t']
+	= name_enders[(uint8_t)'\r'] = name_enders[(uint8_t)'\f']
+	= name_enders[(uint8_t)'\v'] = name_enders[(uint8_t)'\n']
+	= name_enders[(uint8_t)'\0'] = name_enders[(uint8_t)'[']
+	= name_enders[(uint8_t)']'] = name_enders[(uint8_t)'/']
+	= name_enders[(uint8_t)'('] = name_enders[(uint8_t)')']
+	= name_enders[(uint8_t)';'] = true;
+
+    xvalue[(uint8_t)'0'] = 0;
+    xvalue[(uint8_t)'1'] = 1;
+    xvalue[(uint8_t)'2'] = 2;
+    xvalue[(uint8_t)'3'] = 3;
+    xvalue[(uint8_t)'4'] = 4;
+    xvalue[(uint8_t)'5'] = 5;
+    xvalue[(uint8_t)'6'] = 6;
+    xvalue[(uint8_t)'7'] = 7;
+    xvalue[(uint8_t)'8'] = 8;
+    xvalue[(uint8_t)'9'] = 9;
+    xvalue[(uint8_t)'a'] = 10;
+    xvalue[(uint8_t)'b'] = 11;
+    xvalue[(uint8_t)'c'] = 12;
+    xvalue[(uint8_t)'d'] = 13;
+    xvalue[(uint8_t)'e'] = 14;
+    xvalue[(uint8_t)'f'] = 15;
+    xvalue[(uint8_t)'A'] = 10;
+    xvalue[(uint8_t)'B'] = 11;
+    xvalue[(uint8_t)'C'] = 12;
+    xvalue[(uint8_t)'D'] = 13;
+    xvalue[(uint8_t)'E'] = 14;
+    xvalue[(uint8_t)'F'] = 15;
 }
 
 
