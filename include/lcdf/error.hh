@@ -82,4 +82,24 @@ class PinnedErrorHandler : public ErrorHandler {
   
 };
 
+
+class ContextErrorHandler : public ErrorHandler {
+  
+  String _context;
+  ErrorHandler *_errh;
+  String _indent;
+  
+ public:
+  
+  ContextErrorHandler(const String &context, ErrorHandler *,
+		      const String &indent = "  ");
+  
+  int nwarnings() const			{ return _errh->nwarnings(); }
+  int nerrors() const			{ return _errh->nerrors(); }
+  
+  int verror(Seriousness, const String &, const char *, va_list);
+  void vmessage(Seriousness, const String &);
+  
+};
+
 #endif
