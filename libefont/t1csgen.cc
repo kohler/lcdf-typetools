@@ -42,7 +42,7 @@ void
 Type1CharstringGen::clear()
 {
     _ncs.clear();
-    _true_x = _true_y = _false_x = _false_y = 0;
+    _true = _false = Point(0, 0);
 }
 
 void
@@ -50,18 +50,18 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 {
     switch (kind) {
       case 'x':
-	_true_x += float_val;
-	float_val = _true_x - _false_x;
+	_true.x += float_val;
+	float_val = _true.x - _false.x;
 	break;
       case 'y':
-	_true_y += float_val;
-	float_val = _true_y - _false_y;
+	_true.y += float_val;
+	float_val = _true.y - _false.y;
 	break;
       case 'X':
-	_true_x = float_val;
+	_true.x = float_val;
 	break;
       case 'Y':
-	_true_y = float_val;
+	_true.y = float_val;
 	break;
     }
     
@@ -101,16 +101,16 @@ Type1CharstringGen::gen_number(double float_val, int kind)
     float_val = (double)big_val / _precision;
     switch (kind) {
       case 'x':
-	_false_x += float_val;
+	_false.x += float_val;
 	break;
       case 'y':
-	_false_y += float_val;
+	_false.y += float_val;
 	break;
       case 'X':
-	_false_x = float_val;
+	_false.x = float_val;
 	break;
       case 'Y':
-	_false_y = float_val;
+	_false.y = float_val;
 	break;
     }
 }
@@ -136,6 +136,36 @@ Type1CharstringGen::gen_stack(CharstringInterp &interp, int for_cmd)
     for (; i < interp.size(); i++)
 	gen_number(interp.at(i));
     interp.clear();
+}
+
+void
+Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
+{
+    double dx = p.x - _false.x;
+    double dy = p.y - _false.y;
+    int big_dx = (int)floor(dx * _f_precision + 0.5);
+    int big_dy = (int)floor(dy * _f_precision + 0.5);
+
+    if (big_dx == 0 && big_dy == 0)
+	/* do nothing */;
+    else {
+	if (closepath)
+	    gen_command(Charstring::cClosepath);
+	if (big_dx == 0) {
+	    gen_number(dx, 'x');
+	    gen_command(Charstring::cHmoveto);
+	} else if (big_dy == 0) {
+	    gen_number(dy, 'y');
+	    gen_command(Charstring::cVmoveto);
+	} else {
+	    gen_number(dx, 'x');
+	    gen_number(dy, 'y');
+	    gen_command(Charstring::cRmoveto);
+	}
+    }
+
+    _true.x = p.x;
+    _true.y = p.y;
 }
 
 void

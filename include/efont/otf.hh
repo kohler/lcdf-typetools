@@ -96,6 +96,7 @@ class FeatureList { public:
     Tag feature_tag(int) const;
     void filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
+    int lookups(const Vector<int> &required_fids, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(const ScriptList &, Tag script, Tag langsys, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
     

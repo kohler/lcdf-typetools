@@ -19,8 +19,8 @@ class Type1CharstringGen { public:
 
     void append_charstring(const String &);
 
-    double current_point_x(bool real) const { return (real ? _true_x : _false_x); }
-    double current_point_y(bool real) const { return (real ? _true_y : _false_y); }
+    const Point &current_point(bool real) const { return (real ? _true : _false); }
+    void gen_moveto(const Point &, bool closepath);
 
     Type1Charstring *output();
     void output(Type1Charstring &);
@@ -33,10 +33,8 @@ class Type1CharstringGen { public:
     int _precision;
     double _f_precision;
     
-    double _true_x;
-    double _true_y;
-    double _false_x;
-    double _false_y;
+    Point _true;
+    Point _false;
   
 };
 

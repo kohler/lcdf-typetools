@@ -180,7 +180,6 @@ GposPair::unparse(Vector<Positioning> &v) const
 		Position p1(format1, _d.subtable(offset)); 
 		Position p2(format2, _d.subtable(offset + f2_pos));
 		if (p1 || p2) {
-		    //fprintf(stderr, "%d %d  %s %s\nCOVERAGE (%s)\nCLASS1DEF (%s)\nCLASS2DEF (%s)\n ", c1, c2, p1.unparse().c_str(), p2.unparse().c_str(), coverage.unparse().c_str(), class1.unparse().c_str(), class2.unparse().c_str());
 		    for (ClassDef::class_iterator c1i = class1.begin(c1, coverage); c1i; c1i++)
 			for (ClassDef::class_iterator c2i = class2.begin(c2); c2i; c2i++)
 			    v.push_back(Positioning(Position(*c1i, p1), Position(*c2i, p2)));

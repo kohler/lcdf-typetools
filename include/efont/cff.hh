@@ -203,8 +203,8 @@ class Cff::Font : public EfontProgram { public:
     int gsubr_bias() const;
 
     int nglyphs() const			{ return _charstrings_index.nitems(); }
-    void glyph_names(Vector<PermString> &) const;
     PermString glyph_name(int) const;
+    void glyph_names(Vector<PermString> &) const;
     Charstring *glyph(int) const;
     Charstring *glyph(PermString) const;
     int glyphid(PermString) const;

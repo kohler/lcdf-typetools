@@ -527,7 +527,7 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
     int format = data[pos];
     if (format == 0) {
 	if (pos + 1 + (nglyphs - 1) * 2 > len)
-	    return errh->error("charset[0] out of range"), -EFAULT;
+	    return errh->error("charset/0 out of range"), -EFAULT;
 	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 2) {
 	    int sid = (p[0] << 8) | p[1];
@@ -540,11 +540,11 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 3) {
 	    if (p + 3 > data + len)
-		return errh->error("charset[1] out of range"), -EFAULT;
+		return errh->error("charset/1 out of range"), -EFAULT;
 	    int sid = (p[0] << 8) | p[1];
 	    int n = p[2];
 	    if (sid + n > max_sid)
-		return errh->error("charset[1] uses bad SID %d", sid + n), -EINVAL;
+		return errh->error("charset/1 uses bad SID %d", sid + n), -EINVAL;
 	    for (int i = 0; i <= n; i++)
 		_sids.push_back(sid + i);
 	}
@@ -553,11 +553,11 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 4) {
 	    if (p + 4 > data + len)
-		return errh->error("charset[2] out of range"), -EFAULT;
+		return errh->error("charset/2 out of range"), -EFAULT;
 	    int sid = (p[0] << 8) | p[1];
 	    int n = (p[2] << 8) | p[3];
 	    if (sid + n > max_sid)
-		return errh->error("charset[2] uses bad SID %d", sid + n), -EINVAL;
+		return errh->error("charset/2 uses bad SID %d", sid + n), -EINVAL;
 	    for (int i = 0; i <= n; i++)
 		_sids.push_back(sid + i);
 	}
