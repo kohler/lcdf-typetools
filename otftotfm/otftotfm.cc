@@ -154,7 +154,7 @@ FontName %s\n",
     Type1Encoding *encoding = cff->type1_encoding();
     for (int i = 0; i < 256; i++) {
 	PermString n = (*encoding)[i];
-	if (n != dot_notdef && (cs = cff->glyph(n))) {
+	if (glyph_map[n] <= 0 && (cs = cff->glyph(n))) {
 	    boundser.run(*cs, bounds, width);
 	    fprintf(f, "C %d ; WX %d ; N %s ; B %d %d %d %d ;\n",
 		    i, width, n.cc(), bounds[0], bounds[1], bounds[2], bounds[3]);
@@ -165,12 +165,11 @@ FontName %s\n",
     Vector<PermString> glyph_names;
     cff->glyph_names(glyph_names);
     for (int i = 0; i < glyph_names.size(); i++)
-	if (glyph_map[glyph_names[i]] <= 0)
-	    if (Charstring *cs = cff->glyph(i)) {
-		boundser.run(*cs, bounds, width);
-		fprintf(f, "C -1 ; WX %d ; N %s ; B %d %d %d %d ;\n",
-			width, glyph_names[i].cc(), bounds[0], bounds[1], bounds[2], bounds[3]);
-	    }
+	if (glyph_map[glyph_names[i]] <= 0 && (cs = cff->glyph(i))) {
+	    boundser.run(*cs, bounds, width);
+	    fprintf(f, "C -1 ; WX %d ; N %s ; B %d %d %d %d ;\n",
+		    width, glyph_names[i].cc(), bounds[0], bounds[1], bounds[2], bounds[3]);
+	}
     
     fprintf(f, "EndCharMetrics\n");
     
