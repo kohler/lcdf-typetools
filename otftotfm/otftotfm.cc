@@ -87,6 +87,9 @@ using namespace Efont;
 #define DEFAULT_LIGKERN_OPT	329
 #define NO_ECOMMAND_OPT		330
 #define LETTER_FEATURE_OPT	331
+#define INCLUDE_SUBS_OPT	332
+#define EXCLUDE_SUBS_OPT	333
+#define CLEAR_SUBS_OPT		334
 
 #define AUTOMATIC_OPT		341
 #define FONT_NAME_OPT		342
@@ -116,6 +119,7 @@ using namespace Efont;
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 #define NO_DOTLESSJ_OPT		(NO_OUTPUT_OPTS + G_DOTLESSJ)
+#define NO_UPDMAP_OPT		(NO_OUTPUT_OPTS + G_UPDMAP)
 
 #define CHAR_OPTTYPE		(Clp_FirstUserType)
 
@@ -125,6 +129,9 @@ static Clp_Option options[] = {
     { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
     { "letter-feature", 0, LETTER_FEATURE_OPT, Clp_ArgString, 0 },
     { "lf", 0, LETTER_FEATURE_OPT, Clp_ArgString, 0 },
+    { "include-substitutions", 0, INCLUDE_SUBS_OPT, Clp_ArgString, 0 },
+    { "exclude-substitutions", 0, EXCLUDE_SUBS_OPT, Clp_ArgString, 0 },
+    { "clear-substitutions", 0, CLEAR_SUBS_OPT, 0, 0 },
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
@@ -153,6 +160,7 @@ static Clp_Option options[] = {
     { "no-encoding", 0, NO_ENCODING_OPT, 0, Clp_OnlyNegated },
     { "no-type1", 0, NO_TYPE1_OPT, 0, Clp_OnlyNegated },
     { "no-dotlessj", 0, NO_DOTLESSJ_OPT, 0, Clp_OnlyNegated },
+    { "no-updmap", 0, NO_UPDMAP_OPT, 0, Clp_OnlyNegated },
     { "map-file", 0, MAP_FILE_OPT, Clp_ArgString, Clp_Negate },
     { "output-encoding", 0, OUTPUT_ENCODING_OPT, Clp_ArgString, Clp_Optional },
         
@@ -220,7 +228,7 @@ static double minimum_kern = 2.0;
 static String out_encoding_file;
 static String out_encoding_name;
 
-int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_DOTLESSJ | G_BINARY;
+int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_DOTLESSJ | G_UPDMAP | G_BINARY;
 
 bool automatic = false;
 bool verbose = false;
@@ -260,12 +268,16 @@ Font feature and transformation options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Activate feature FEAT.\n\
   --lf, --letter-feature=FEAT  Activate feature FEAT for letters.\n\
+      --include-subs=PAT       Substitute only characters matching PAT.\n\
+      --exclude-subs=PAT       Don't substitute characters matching PAT.\n\
+      --clear-subs             Clear included/excluded substitutions.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
   -k, --min-kern=N             Omit kerns with absolute value < N [2.0].\n\
       --design-size=SIZE       Set font design size to SIZE.\n\
-\n\
+\n");
+    printf("\
 Encoding options:\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
@@ -279,7 +291,7 @@ Encoding options:\n\
       --altselector-feature=F  Activate feature F for --altselector-char.\n\
       --include-alternates=PAT Include only alternate characters matching PAT.\n\
       --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
-      --clear-alternates       Clear included/excluded alternates settings.\n\
+      --clear-alternates       Clear included/excluded alternates.\n\
 \n");
     printf("\
 Automatic mode options:\n\
@@ -288,6 +300,7 @@ Automatic mode options:\n\
       --typeface=NAME          Set typeface name for TDS [<font family>].\n\
       --no-type1               Do not generate Type 1 fonts.\n\
       --no-dotlessj            Do not generate dotless-j fonts.\n\
+      --no-updmap              Do not run updmap.\n\
 \n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
@@ -962,9 +975,9 @@ output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
 
     StringAccum command;
     if (vpl)
-	command << "vptovf " << shell_quote(pl_filename) << ' ' << shell_quote(vf_filename) << ' ' << shell_quote(tfm_filename);
+	command << "vptovf " << shell_quote(pl_filename) << ' ' << shell_quote(vf_filename) << ' ' << shell_quote(tfm_filename) << " >&2";
     else
-	command << "pltotf " << shell_quote(pl_filename) << ' ' << shell_quote(tfm_filename);
+	command << "pltotf " << shell_quote(pl_filename) << ' ' << shell_quote(tfm_filename) << " >&2";
     
     int status = mysystem(command.c_str(), errh);
 
@@ -1435,8 +1448,9 @@ main(int argc, char *argv[])
     bool no_ecommand = false, default_ligkern = false;
     String codingscheme;
 
+    GlyphFilter current_substitution_filter;
     GlyphFilter current_alternate_filter;
-    GlyphFilter* current_alternate_filter_ptr = &null_filter;
+    GlyphFilter* current_filter_ptr = &null_filter;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -1468,10 +1482,10 @@ main(int argc, char *argv[])
 	      else if (feature_filters[t])
 		  usage_error(errh, "feature '%s' included twice", t.text().c_str());
 	      else {
-		  if (!current_alternate_filter_ptr)
-		      current_alternate_filter_ptr = new GlyphFilter(current_alternate_filter);
+		  if (!current_filter_ptr)
+		      current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
 		  interesting_features.push_back(t);
-		  feature_filters.insert(t, current_alternate_filter_ptr);
+		  feature_filters.insert(t, current_filter_ptr);
 	      }
 	      break;
 	  }
@@ -1492,6 +1506,29 @@ main(int argc, char *argv[])
 	      break;
 	  }
 
+	  case EXCLUDE_SUBS_OPT:
+	  case INCLUDE_SUBS_OPT: {
+	      const char *s = clp->arg;
+	      while (*s) {
+		  const char *start = s;
+		  while (*s && !isspace(*s))
+		      s++;
+		  if (s > start) {
+		      String str(start, s - start);
+		      current_substitution_filter.add_substitution_filter(str, opt == EXCLUDE_SUBS_OPT, errh);
+		  }
+		  while (isspace(*s))
+		      s++;
+	      }
+	      current_filter_ptr = 0;
+	      break;
+	  }
+
+	  case CLEAR_SUBS_OPT:
+	    current_substitution_filter = null_filter;
+	    current_filter_ptr = 0;
+	    break;
+	    
 	  case ENCODING_OPT:
 	    if (encoding_file)
 		usage_error(errh, "encoding specified twice");
@@ -1558,10 +1595,10 @@ main(int argc, char *argv[])
 	      else if (altselector_feature_filters[t])
 		  usage_error(errh, "altselector feature '%s' included twice", t.text().c_str());
 	      else {
-		  if (!current_alternate_filter_ptr)
-		      current_alternate_filter_ptr = new GlyphFilter(current_alternate_filter);
+		  if (!current_filter_ptr)
+		      current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
 		  altselector_features.push_back(t);
-		  altselector_feature_filters.insert(t, current_alternate_filter_ptr);
+		  altselector_feature_filters.insert(t, current_filter_ptr);
 	      }
 	      break;
 	  }
@@ -1580,13 +1617,13 @@ main(int argc, char *argv[])
 		  while (isspace(*s))
 		      s++;
 	      }
-	      current_alternate_filter_ptr = 0;
+	      current_filter_ptr = 0;
 	      break;
 	  }
 
 	  case CLEAR_ALTERNATES_OPT:
 	    current_alternate_filter = null_filter;
-	    current_alternate_filter_ptr = &null_filter;
+	    current_filter_ptr = 0;
 	    break;
 	    
 	  case UNICODING_OPT:
@@ -1627,6 +1664,7 @@ main(int argc, char *argv[])
 	  case NO_ENCODING_OPT:
 	  case NO_TYPE1_OPT:
 	  case NO_DOTLESSJ_OPT:
+	  case NO_UPDMAP_OPT:
 	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
 	    break;
 

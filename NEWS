@@ -1,5 +1,17 @@
 LCDF Typetools NEWS
 
+Version 2.19
+
+* otftotfm: Update documentation and behavior for newer teTeX
+  installations.
+
+* otftotfm: Output pltotf and vptovf messages to standard error (Achim
+  Blumensath).
+
+* otftotfm: Add --include-subs, --exclude-subs, and --clear-subs options
+  (inspired by Achim Blumensath).
+
+
 Version 2.18   26.Jan.2005
 
 * otftotfm: Fix bug that could cause infinite loops on FreeBSD machines.

@@ -549,38 +549,74 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 
 #if HAVE_KPATHSEA && !WIN32
 	// run 'updmap' if present
-	String updmap_dir = getodir(O_MAP_PARENT, errh);
-	String updmap_file = updmap_dir + "/updmap";
-	if (automatic && access(updmap_file.c_str(), X_OK) >= 0) {
+	String updmap_dir, updmap_file;
+	if (automatic && (output_flags & G_UPDMAP))
+	    updmap_dir = getodir(O_MAP_PARENT, errh);
+	if (updmap_dir && (updmap_file = updmap_dir + "/updmap")
+	    && access(updmap_file.c_str(), X_OK) >= 0) {
 	    // want to run 'updmap' from its directory, can't use system()
 	    if (verbose)
 		errh->message("running %s", updmap_file.c_str());
-	    if (pid_t child = fork()) {
-# if HAVE_WAITPID
-		int status;
-		while (1) {
-		    pid_t answer = waitpid(child, &status, 0);
-		    if (answer >= 0)
-			break;
-		    else if (errno != EINTR)
-			errh->fatal("%s during wait", strerror(errno));
-		}
-		if (!WIFEXITED(status))
-		    errh->warning("%s exited abnormally", updmap_file.c_str());
-		else if (WEXITSTATUS(status) != 0)
-		    errh->warning("%s exited with status %d", updmap_file.c_str(), WEXITSTATUS(status));
-# else
-#  error "need waitpid() support: report this bug to the maintainer"
-# endif
-	    } else {
+	    
+	    pid_t child = fork();
+	    if (child < 0)
+		errh->fatal("%s during fork", strerror(errno));
+	    else if (child == 0) {
+		// change to updmap directory, run it
 		if (chdir(updmap_dir.c_str()) < 0)
 		    errh->fatal("%s: %s during chdir", updmap_dir.c_str(), strerror(errno));
 		if (execl("./updmap", updmap_file.c_str(), (const char*) 0) < 0)
 		    errh->fatal("%s: %s during exec", updmap_file.c_str(), strerror(errno));
 		exit(1);	// should never get here
 	    }
-	} else if (verbose)
+	    
+# if HAVE_WAITPID
+	    // wait for updmap to finish
+	    int status;
+	    while (1) {
+		pid_t answer = waitpid(child, &status, 0);
+		if (answer >= 0)
+		    break;
+		else if (errno != EINTR)
+		    errh->fatal("%s during wait", strerror(errno));
+	    }
+	    if (!WIFEXITED(status))
+		errh->warning("%s exited abnormally", updmap_file.c_str());
+	    else if (WEXITSTATUS(status) != 0)
+		errh->warning("%s exited with status %d", updmap_file.c_str(), WEXITSTATUS(status));
+# else
+#  error "need waitpid() support: report this bug to the maintainer"
+# endif
+	    goto ran_updmap;
+	}
+
+# if HAVE_AUTO_UPDMAP
+	// run system updmap
+	if (output_flags & G_UPDMAP) {
+	    String filename = map_file;
+	    int slash = filename.find_right('\'');
+	    if (slash >= 0)
+		filename = filename.substring(slash + 1);
+	    String command = "updmap --enable Map " + shell_quote(filename);
+	    if (verbose)
+		command += " 1>&2";
+	    else
+		command += " >/dev/null 2>&1";
+	    int retval = mysystem(command.c_str(), errh);
+	    if (retval == 127)
+		errh->warning("could not run '%s'", command.c_str());
+	    else if (retval < 0)
+		errh->warning("could not run '%s': %s", command.c_str(), strerror(errno));
+	    else if (retval != 0)
+		errh->warning("'%s' exited with status %d;\nrun it manually to check for errors", command.c_str(), WEXITSTATUS(retval));
+	    goto ran_updmap;
+	}
+# endif
+	
+	if (verbose)
 	    errh->message("not running updmap");
+
+      ran_updmap: ;
 #endif
     }
 

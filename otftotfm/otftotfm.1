@@ -92,38 +92,22 @@ This requires a TeX installation that follows the TeX Directory Structure
 standard (http://www.tug.org/tds/), such as most Unix TeX installations.
 '
 .PP
-Here's how to set up your account to use automatic mode smoothly.  (These
-instructions were designed for web2c-based TeX installations.)
-'
-.IP 1. 3
-Create a
-.I $HOME/texmf
-directory.
-.IP 2. 3
-Add a
-.I $HOME/texmf/dvips
-subdirectory to hold encodings and map files. 
+Automatic mode should run seamlessly out of the box.
 .B Otftotfm
-will create and modify a file
-.I $HOME/texmf/dvips/lcdftools/lcdftools.map
-containing information about fonts it creates.
-.IP 3. 3
-Tell
-.M dvips 1
-how to find the
-.I lcdftools.map
-file.  The simplest way is to create a file
-.IR $HOME/texmf/dvips/config.ps ,
-containing the single line "p +lcdftools.map".
-You could also add this line to your
-.IR ~/.dvipsrc
-or an existing
-.IR config.ps ,
-or create a script
-.I $HOME/texmf/dvips/updmap
-that does the right thing. 
+will install metrics files, encodings, map files, and Type\~1 fonts into
+.I $HOME/texmf
+or any other writable TEXMF directory, and run
+.M updmap 1
+to update the global lists of installed fonts.  (On older teTeX
+installations, you may first need to copy the system's
+.I updmap.cfg
+file to
+.I $HOME/texmf/web2c
+and run
+.M mktexlsr 1 .)
+'
 .PP
-Now, you can run "\fBotftotfm\fR
+You can then run "\fBotftotfm\fR
 .B \-a
 .IR file .otf
 .IR texname \&"
@@ -149,7 +133,7 @@ VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vpl
 encoding	TEXMF/fonts/enc/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
 	or TEXMF/dvips/\fIvendor\fR/
 PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPStexname\fR.pfb
-psfonts.map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
+font map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
 	or TEXMF/dvips/\fIvendor\fR/
 .TE
 .PP
@@ -177,18 +161,23 @@ PL	PLDESTDIR	\-\-pl\-directory
 VPL	VPLDESTDIR	\-\-vpl\-directory
 encoding	ENCODINGDESTDIR	\-\-encoding\-directory
 PFB font	T1DESTDIR	\-\-type1\-directory
-psfonts.map	\-	\-\-map\-file
+font map	\-	\-\-map\-file
 .TE
 .PP
 .B Otftotfm
 will update the
 .I TEXMF/ls-R
-file when installing files under TEXMF.  After changing a psfonts.map file,
-it also checks for an executable file called
-.IR TEXMF/dvips/updmap ;
-if found, this file is executed from the
+file when installing files under TEXMF, and run the
+.M updmap 1
+program after changing a map file.  However, if an executable file called
+.IR TEXMF/dvips/updmap
+exists, this file is executed (from the
 .I TEXMF/dvips
-directory.
+directory) rather than the global
+.BR updmap .
+This is so you can write a fast, customized version of
+.B updmap
+if desired.
 '
 .SH EXAMPLE
 This section uses MinionPro to show one way to install OpenType fonts for
@@ -340,6 +329,15 @@ small-caps feature to all characters in the encoding; this may result in
 changes to punctuation and numbers as well as letters.  The "\-\-lf smcp"
 option will apply the small-caps feature only to letters, meaning
 characters with the "Letter" Unicode property.
+'
+.Sp
+.TP 5
+.BI \-\-include\-subs " property"
+.TP 5
+.BI \-\-exclude\-subs " property"
+.TP 5
+.BI \-\-clear\-subs
+Substitutions in the following features
 '
 .Sp
 .TP 5
@@ -605,13 +603,7 @@ Set the font vendor name, which is used to locate files within the TDS.
 Defaults to "lcdftools".
 .Sp
 In automatic mode, TeX and friends will generally find required font files
-independently of the vendor you select.  However, you will need to
-explicitly tell
-.M dvips 1
-to include
-.IR vendor .map
-as a psfonts.map file, using a configuration line such as "p
-+\fIvendor\fR.map".
+independently of the vendor you select.
 '
 .Sp
 .TP 5
@@ -634,6 +626,16 @@ Do not use
 .M t1dotlessj 1
 to create a special dotless-j font when the input font doesn't have
 dotless-j.
+'
+.Sp
+.TP 5
+.BI \-\-no\-updmap
+Do not run an
+.M updmap 1
+program.  This can be useful if you're installing a bunch of fonts; it is
+much faster to run
+.B updmap
+once, at the end, than to run it once per font.
 .PD
 '
 '
@@ -641,11 +643,9 @@ dotless-j.
 .PD 0
 .TP 5
 .BI \-n " texname\fR, " \-\-name= texname
-Set the TeX name of the output font, which is used in the
-.M dvips 1
-.I psfonts.map
-line and, in automatic mode, to generate the output filename.  The default
-is derived from the OpenType font's name and the features you selected.
+Set the TeX name of the output font, which is used in font map files and,
+in automatic mode, to generate the output filename.  The default is derived
+from the OpenType font's name and the features you selected.
 '
 .Sp
 .TP 5
@@ -686,9 +686,7 @@ argument is supplied.
 .Sp
 .TP 5
 .BI \-\-no\-map
-Do not generate a
-.I psfonts.map
-line for the font.
+Do not generate a font map line for the font.
 .PD
 '
 '
@@ -721,8 +719,7 @@ above.  All default to ".".
 .BI \-\-map\-file= filename
 Set file in which 
 .B otftotfm
-will write a
-.I psfonts.map
+will write a font map
 line for the font.  The default is the standard output in manual mode, and
 "TEXMF/fonts/map/dvips/\fIvendor\fR/\fIvendor\fR.map" (or
 "TEXMF/dvips/\fIvendor\fR/\fIvendor\fR.map" on older installations) in
