@@ -1,11 +1,12 @@
+// -*- related-file-name: "../include/efont/findmet.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "findmet.hh"
-#include "afmparse.hh"
-#include "afm.hh"
-#include "amfm.hh"
-#include "psres.hh"
+#include <efont/findmet.hh>
+#include <efont/afmparse.hh>
+#include <efont/afm.hh>
+#include <efont/amfm.hh>
+#include <efont/psres.hh>
 #include <cstring>
 #include <cstdlib>
 namespace Efont {

@@ -1,5 +1,6 @@
-#ifndef FINDMET_HH
-#define FINDMET_HH
+// -*- related-file-name: "../../libefont/findmet.cc" -*-
+#ifndef EFONT_FINDMET_HH
+#define EFONT_FINDMET_HH
 #include "hashmap.hh"
 #include "vector.hh"
 #include "permstr.hh"

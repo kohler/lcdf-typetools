@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/t1csgen.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "t1csgen.hh"
+#include <efont/t1csgen.hh>
 #include <cmath>
 namespace Efont {
 

@@ -1,8 +1,9 @@
+// -*- related-file-name: "../include/efont/t1mm.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "t1mm.hh"
-#include "t1interp.hh"
+#include <efont/t1mm.hh>
+#include <efont/t1interp.hh>
 #include "error.hh"
 #include <cstdarg>
 #include <cstdio>

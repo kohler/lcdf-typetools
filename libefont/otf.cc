@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/otf.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "otf.hh"
+#include <efont/otf.hh>
 #include "error.hh"
 #include <cerrno>
 #include <cstdlib>

@@ -1,6 +1,7 @@
-#ifndef LIBEFONT_T1CSGEN_HH
-#define LIBEFONT_T1CSGEN_HH
-#include "t1interp.hh"
+// -*- related-file-name: "../../libefont/t1csgen.cc" -*-
+#ifndef EFONT_T1CSGEN_HH
+#define EFONT_T1CSGEN_HH
+#include <efont/t1interp.hh>
 #include "straccum.hh"
 namespace Efont {
 

@@ -1,5 +1,6 @@
-#ifndef ENCODING_HH
-#define ENCODING_HH
+// -*- related-file-name: "../../libefont/encoding.cc" -*-
+#ifndef EFONT_ENCODING_HH
+#define EFONT_ENCODING_HH
 #include "vector.hh"
 namespace Efont {
 typedef int GlyphIndex;

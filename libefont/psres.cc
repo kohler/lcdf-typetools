@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/psres.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "psres.hh"
+#include <efont/psres.hh>
 #include "slurper.hh"
 /* Get the correct functions for directory searching */ 
 #if HAVE_DIRENT_H

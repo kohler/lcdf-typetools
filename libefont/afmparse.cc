@@ -1,8 +1,9 @@
+// -*- related-file-name: "../include/efont/afmparse.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "afmparse.hh"
-#include "metrics.hh"
+#include <efont/afmparse.hh>
+#include <efont/metrics.hh>
 #include "strtonum.h"
 #include <cstring>
 #include <cstdarg>

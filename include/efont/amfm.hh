@@ -1,8 +1,9 @@
-#ifndef AMFM_HH
-#define AMFM_HH
-#include "metrics.hh"
+// -*- related-file-name: "../../libefont/amfm.cc" -*-
+#ifndef EFONT_AMFM_HH
+#define EFONT_AMFM_HH
+#include <efont/metrics.hh>
+#include <efont/t1mm.hh>
 #include "hashmap.hh"
-#include "t1mm.hh"
 class Slurper;
 class Filename;
 class ErrorHandler;

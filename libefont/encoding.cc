@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/encoding.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "encoding.hh"
+#include <efont/encoding.hh>
 namespace Efont {
 
 void

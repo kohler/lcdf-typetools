@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/t1unparser.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "t1unparser.hh"
+#include <efont/t1unparser.hh>
 namespace Efont {
 
 CharstringUnparser::CharstringUnparser()

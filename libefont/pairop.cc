@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/pairop.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "pairop.hh"
+#include <efont/pairop.hh>
 #include <cstdio>
 namespace Efont {
 

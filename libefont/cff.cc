@@ -1,9 +1,10 @@
+// -*- related-file-name: "../include/efont/cff.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "cff.hh"
+#include <efont/cff.hh>
 #include "error.hh"
-#include "t1item.hh"
+#include <efont/t1item.hh>
 #include "straccum.hh"
 #include <cerrno>
 #include <cstdlib>

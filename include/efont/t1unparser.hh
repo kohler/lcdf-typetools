@@ -1,6 +1,7 @@
-#ifndef T1UNPARSER_HH
-#define T1UNPARSER_HH
-#include "t1interp.hh"
+// -*- related-file-name: "../../libefont/t1unparser.cc" -*-
+#ifndef EFONT_T1UNPARSER_HH
+#define EFONT_T1UNPARSER_HH
+#include <efont/t1interp.hh>
 #include "straccum.hh"
 #include "string.hh"
 namespace Efont {

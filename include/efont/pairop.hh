@@ -1,6 +1,7 @@
+// -*- related-file-name: "../../libefont/pairop.cc" -*-
 #ifndef PAIROP_HH
 #define PAIROP_HH
-#include "encoding.hh" /* get GlyphIndex */
+#include <efont/encoding.hh> /* get GlyphIndex */
 namespace Efont {
 
 enum PairOpDefs {

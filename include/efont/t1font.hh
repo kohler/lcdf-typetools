@@ -1,6 +1,7 @@
-#ifndef T1FONT_HH
-#define T1FONT_HH
-#include "t1cs.hh"
+// -*- related-file-name: "../../libefont/t1font.cc" -*-
+#ifndef EFONT_T1FONT_HH
+#define EFONT_T1FONT_HH
+#include <efont/t1cs.hh>
 #include "hashmap.hh"
 #include "vector.hh"
 #include "permstr.hh"

@@ -1,8 +1,9 @@
+// -*- related-file-name: "../include/efont/t1rw.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "t1rw.hh"
-#include "t1cs.hh"
+#include <efont/t1rw.hh>
+#include <efont/t1cs.hh>
 #include "straccum.hh"
 #include <cstdlib>
 #include <cctype>

@@ -1,6 +1,6 @@
-#ifndef AFMW_HH
-#define AFMW_HH
-#include "afm.hh"
+#ifndef EFONT_AFMW_HH
+#define EFONT_AFMW_HH
+#include <efont/afm.hh>
 #include <cstdio>
 namespace Efont {
 

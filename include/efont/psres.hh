@@ -1,5 +1,6 @@
-#ifndef PSRES_HH
-#define PSRES_HH
+// -*- related-file-name: "../../libefont/psres.cc" -*-
+#ifndef EFONT_PSRES_HH
+#define EFONT_PSRES_HH
 #include "vector.hh"
 #include "hashmap.hh"
 #include "string.hh"

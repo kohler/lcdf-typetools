@@ -1,12 +1,13 @@
+// -*- related-file-name: "../include/efont/amfm.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "amfm.hh"
-#include "afm.hh"
-#include "afmparse.hh"
+#include <efont/amfm.hh>
+#include <efont/afm.hh>
+#include <efont/afmparse.hh>
 #include "error.hh"
-#include "findmet.hh"
-#include "t1cs.hh"
+#include <efont/findmet.hh>
+#include <efont/t1cs.hh>
 #include <cstdarg>
 #include <cstdlib>
 #include <cctype>

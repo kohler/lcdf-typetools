@@ -1,10 +1,11 @@
-#ifndef METRICS_HH
-#define METRICS_HH
+// -*- related-file-name: "../../libefont/metrics.cc" -*-
+#ifndef EFONT_METRICS_HH
+#define EFONT_METRICS_HH
 #include "permstr.hh"
 #include "vector.hh"
 #include "hashmap.hh"
-#include "encoding.hh"
-#include "pairop.hh"
+#include <efont/encoding.hh>
+#include <efont/pairop.hh>
 namespace Efont {
 class MetricsXt;
 

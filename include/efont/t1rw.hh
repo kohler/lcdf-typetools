@@ -1,5 +1,6 @@
-#ifndef T1RW_HH
-#define T1RW_HH
+// -*- related-file-name: "../../libefont/t1rw.cc" -*-
+#ifndef EFONT_T1RW_HH
+#define EFONT_T1RW_HH
 #include <cstdio>
 #include "string.hh"
 #include "straccum.hh"

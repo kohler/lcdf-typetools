@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/metrics.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "metrics.hh"
+#include <efont/metrics.hh>
 
 
 Metrics::Metrics()

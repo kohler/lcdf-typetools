@@ -1,6 +1,7 @@
+// -*- related-file-name: "../../libefont/otf.cc" -*-
 #ifndef EFONT_OTF_HH
 #define EFONT_OTF_HH
-#include "t1cs.hh"			/* for uintXX_t definitions */
+#include <efont/t1cs.hh>		/* for uintXX_t definitions */
 class ErrorHandler;
 namespace Efont {
 

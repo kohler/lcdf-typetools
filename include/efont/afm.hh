@@ -1,6 +1,7 @@
+// -*- related-file-name: "../../libefont/afm.cc" -*-
 #ifndef EFONT_AFM_HH
 #define EFONT_AFM_HH
-#include "metrics.hh"
+#include <efont/metrics.hh>
 class Slurper;
 class Filename;
 class ErrorHandler;
@@ -8,7 +9,7 @@ namespace Efont {
 class AfmParser;
 
 struct AfmMetricsXt: public MetricsXt {
-  
+
     Vector<PermString> opening_comments;
     PermString notice;
     PermString encoding_scheme;

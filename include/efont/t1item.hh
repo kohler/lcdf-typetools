@@ -1,6 +1,7 @@
-#ifndef T1ITEM_HH
-#define T1ITEM_HH
-#include "t1cs.hh"
+// -*- related-file-name: "../../libefont/t1item.cc" -*-
+#ifndef EFONT_T1ITEM_HH
+#define EFONT_T1ITEM_HH
+#include <efont/t1cs.hh>
 #include "vector.hh"
 #include "permstr.hh"
 #include "straccum.hh"

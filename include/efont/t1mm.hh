@@ -1,8 +1,9 @@
-#ifndef T1MM_HH
-#define T1MM_HH
+// -*- related-file-name: "../../libefont/t1mm.cc" -*-
+#ifndef EFONT_T1MM_HH
+#define EFONT_T1MM_HH
 #include "vector.hh"
 #include "permstr.hh"
-#include "t1cs.hh"
+#include <efont/t1cs.hh>
 class ErrorHandler;
 namespace Efont {
 class Type1Font;

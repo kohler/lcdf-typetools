@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/efont/afmw.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "afmw.hh"
+#include <efont/afmw.hh>
 namespace Efont {
 
 AfmWriter::AfmWriter(Metrics *m, FILE *f)
