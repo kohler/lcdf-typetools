@@ -7,8 +7,8 @@ man_MANS = otftotfm.1
 otftotfm_SOURCES = \
 	automatic.cc automatic.hh \
 	dvipsencoding.cc dvipsencoding.hh \
-	gsubencoding.cc gsubencoding.hh \
 	md5.c md5.h \
+	metrics.cc metrics.hh \
 	otftotfm.cc \
 	secondary.cc secondary.hh \
 	util.cc util.hh

@@ -20,7 +20,7 @@ class GsubEncoding { public:
     typedef Efont::OpenType::Positioning Positioning;
 
     GsubEncoding(int nglyphs);
-    // default destructor
+    ~GsubEncoding();
 
     Glyph boundary_glyph() const		{ return _boundary_glyph; }
     Glyph emptyslot_glyph() const		{ return _emptyslot_glyph; }
@@ -48,8 +48,9 @@ class GsubEncoding { public:
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &, const Vector<PermString> &glyph_names, ErrorHandler *);
 
-    int add_twoligature(int code1, int code2, int outcode);
-    int add_threeligature(int code1, int code2, int code3, int outcode);
+    struct Ligature;
+    Ligature *add_twoligature(int code1, int code2, int outcode);
+    Ligature *add_threeligature(int code1, int code2, int code3, int outcode);
     void add_kern(int left, int right, int amount);
     void add_single_positioning(int code, int pdx, int pdy, int adx);
     enum { CODE_ALL = 0x7FFFFFFF };
@@ -80,16 +81,44 @@ class GsubEncoding { public:
 	Vector<int> in;
 	int out;
 	int skip;
-	int next;			// not usually valid
+	Ligature *next;
+	Ligature *prev;
+	Ligature *next_glyph;	// not usually valid
+
 	bool live() const throw ();
 	bool killed() const throw ()	{ return in[0] < 0; }
 	void kill()			{ in[0] = -1; }
 	String unparse(const GsubEncoding *) const;
-	static inline bool deadp(const Ligature &); // true iff !live()
-	static inline bool killedp(const Ligature &); // true iff kill()ed
+	static inline bool deadp(const Ligature *); // true iff !live()
+	static inline bool killedp(const Ligature *); // true iff kill()ed
     };
-    Vector<Ligature> _ligatures;
 
+    class lig_iterator;
+    
+    class lig_const_iterator { public:
+	lig_const_iterator(const GsubEncoding *);
+	operator const Ligature *() const	{ return _lig; }
+	const Ligature &operator*() const	{ return *_lig; }
+	const Ligature *operator->() const	{ return _lig; }
+	operator bool() const			{ return _lig != 0; }
+	void operator++(int);
+      private:
+	const GsubEncoding *_gse;
+	const Ligature *_lig;
+	int _code;
+	friend class lig_iterator;
+    };
+    
+    class lig_iterator : public lig_const_iterator { public:
+	lig_iterator(GsubEncoding *gse)	: lig_const_iterator(gse) { }
+	operator Ligature *() const	{ return const_cast<Ligature *>(_lig); }
+	Ligature &operator*() const	{ return const_cast<Ligature &>(*_lig); }
+	Ligature *operator->() const	{ return const_cast<Ligature *>(_lig); }
+	void kill();
+    };
+    
+    Vector<Ligature *> _ligatures;
+    
     Vector<Setting> _fakes;
     Vector<int> _fake_ptrs;
     Vector<PermString> _fake_names;
@@ -109,12 +138,20 @@ class GsubEncoding { public:
     };
     Vector<Vfpos> _vfpos;
 
+    inline lig_iterator lig_begin()	{ return lig_iterator(this); }
+    inline lig_const_iterator lig_begin() const { return lig_const_iterator(this); }
+    
+    inline Ligature *new_lig(int code1);
+    inline void kill_lig(Ligature *);
+    void change_lig_in0(Ligature *, int new_in0);
+    void check_lig() const;
+    
     int hard_encoding(Glyph) const;
     inline void assign_emap(Glyph, int);
     void add_single_context_substitution(int, int, int, bool is_right);
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(Vector<int> &);
-    int find_in_place_twoligature(int, int, Vector<int> &, bool add_fake);
+    int find_in_place_twoligature(int, int, Vector<Ligature *> &, bool add_fake);
     int ligature_score(const Ligature &, Vector<int> &scores) const;
     const Ligature *find_ligature_for(int code) const;
     String unparse_glyph(Glyph, const Vector<PermString> *) const;
@@ -123,6 +160,9 @@ class GsubEncoding { public:
     friend bool operator<(const Ligature &, const Ligature &);
     friend bool operator<(const Kern &, const Kern &);
     friend bool operator<(const Vfpos &, const Vfpos &);
+
+    GsubEncoding(const GsubEncoding &);	// does not exist
+    GsubEncoding &operator=(const GsubEncoding &); // does not exist
     
 };
 

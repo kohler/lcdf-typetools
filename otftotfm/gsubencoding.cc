@@ -21,6 +21,8 @@
 #include <algorithm>
 #include <lcdf/straccum.hh>
 
+/* Store only two-ligatures. */
+
 String
 GsubEncoding::Ligature::unparse(const GsubEncoding *gse) const
 {
@@ -43,16 +45,106 @@ GsubEncoding::Ligature::live() const throw ()
 }
 
 inline bool
-GsubEncoding::Ligature::deadp(const Ligature &l)
+GsubEncoding::Ligature::deadp(const Ligature *l)
 {
-    return !l.live();
+    return !l->live();
 }
 
 inline bool
-GsubEncoding::Ligature::killedp(const Ligature &l)
+GsubEncoding::Ligature::killedp(const Ligature *l)
 {
-    return l.in[0] < 0;
+    return l->in[0] < 0;
 }
+
+
+inline GsubEncoding::Ligature *
+GsubEncoding::new_lig(int code1)
+{
+    Ligature *l = new Ligature;
+    l->prev = 0;
+    l->next = _ligatures[code1];
+    if (l->next)
+	l->next->prev = l;
+    l->in.push_back(code1);
+    _ligatures[code1] = l;
+    return l;
+}
+
+inline void
+GsubEncoding::kill_lig(Ligature *l)
+{
+    if (l->prev)
+	l->prev->next = l->next;
+    else
+	_ligatures[l->in[0]] = l->next;
+    if (l->next)
+	l->next->prev = l->prev;
+    delete l;
+    memset(l, 253, sizeof(Ligature));
+}
+
+void
+GsubEncoding::change_lig_in0(Ligature *l, int new_in0)
+{
+    if (l->prev)
+	l->prev->next = l->next;
+    else
+	_ligatures[l->in[0]] = l->next;
+    if (l->next)
+	l->next->prev = l->prev;
+    l->in[0] = new_in0;
+    l->next = _ligatures[new_in0];
+    l->prev = 0;
+    if (l->next)
+	l->next->prev = l;
+    _ligatures[new_in0] = l;
+}
+
+void
+GsubEncoding::check_lig() const
+{
+    assert(_ligatures.size() == _encoding.size());
+    for (lig_const_iterator l = lig_begin(); l; l++) {
+	assert(l->in.size() > 0);
+	for (int i = 0; i < l->in.size(); i++)
+	    assert(l->in[i] >= 0 && l->in[i] < _encoding.size());
+	assert(l->out >= 0 && l->out < _encoding.size());
+    }
+}
+
+GsubEncoding::lig_const_iterator::lig_const_iterator(const GsubEncoding *gse)
+    : _gse(gse), _lig(0), _code(-1)
+{
+    (*this)++;
+}
+
+void
+GsubEncoding::lig_const_iterator::operator++(int)
+{
+    if (_lig && _lig->next)
+	_lig = _lig->next;
+    else {
+	_lig = 0;
+	int esize = _gse->_encoding.size();
+	while (!_lig && ++_code < esize)
+	    _lig = _gse->_ligatures[_code];
+    }
+}
+
+void
+GsubEncoding::lig_iterator::kill()
+{
+    Ligature *tokill = operator->();
+    assert(tokill);
+    if (tokill->prev)
+	_lig = tokill->prev;
+    else {
+	_code = tokill->in[0];
+	_lig = 0;
+    }
+    const_cast<GsubEncoding *>(_gse)->kill_lig(tokill);
+}
+
 
 
 GsubEncoding::GsubEncoding(int nglyphs)
@@ -60,7 +152,14 @@ GsubEncoding::GsubEncoding(int nglyphs)
       _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1)
 {
     _encoding.assign(256, 0);
+    _ligatures.assign(256, 0);
     _fake_ptrs.push_back(0);
+}
+
+GsubEncoding::~GsubEncoding()
+{
+    for (lig_iterator l = lig_begin(); l; l++)
+	l.kill();
 }
 
 const char *
@@ -99,6 +198,10 @@ GsubEncoding::add_fake(PermString name, const Vector<Setting> &v)
     return FIRST_FAKE + _fake_names.size() - 1;
 }
 
+
+
+
+
 int
 GsubEncoding::pair_fake_code(int code1, int code2)
 {
@@ -113,6 +216,7 @@ GsubEncoding::pair_fake_code(int code1, int code2)
 	    return force_encoding(fnum + FIRST_FAKE);
 
     _encoding.push_back(add_fake(permprintf("fake_%s_%s", glyph_name(_encoding[code1]).c_str(), glyph_name(_encoding[code2]).c_str()), v));
+    _ligatures.push_back(0);
     return _encoding.size() - 1;
 }
 
@@ -194,6 +298,7 @@ GsubEncoding::force_encoding(Glyph g)
 	return e;
     else {
 	_encoding.push_back(g);
+	_ligatures.push_back(0);
 	assign_emap(g, _encoding.size() - 1);
 	return _encoding.size() - 1;
     }
@@ -203,8 +308,10 @@ void
 GsubEncoding::encode(int code, Glyph g)
 {
     assert(code >= 0 && g >= 0);
-    if (code >= _encoding.size())
+    if (code >= _encoding.size()) {
 	_encoding.resize(code + 1, 0);
+	_ligatures.resize(code + 1, 0);
+    }
     _encoding[code] = g;
     assign_emap(g, code);
 }
@@ -306,17 +413,17 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
 	} else if (s.is_ligature()) {
 	    Vector<Glyph> in;
 	    s.in_glyphs(in);
-	    Ligature l;
-	    // XXX multi encoded glyphs?
+	    // XXX multiply-encoded glyphs?
+	    int c1 = -1, c2 = -1;
 	    for (int i = 0; i < in.size(); i++) {
 		int e = encoding(in[i]);
 		if (e < 0 || e >= changed.size() || changed[e] == CH_ALL)
 		    goto ligature_fail;
-		l.in.push_back(e);
+		if (c2 >= 0)
+		    c1 = pair_code(c1, c2);
+		c2 = e;
 	    }
-	    l.out = force_encoding(s.out_glyph());
-	    l.skip = 1;
-	    _ligatures.push_back(l);
+	    add_twoligature(c1, c2, force_encoding(s.out_glyph()));
 	  ligature_fail:
 	    success++;
 
@@ -397,22 +504,22 @@ GsubEncoding::apply(const Vector<Positioning> &pv)
 }
 
 int
-GsubEncoding::find_in_place_twoligature(int a, int b, Vector<int> &v, bool add_fake)
+GsubEncoding::find_in_place_twoligature(int a, int b, Vector<Ligature *> &v, bool add_fake)
 {
     if (a < 0 || b < 0 || a >= _encoding.size() || b >= _encoding.size())
 	return -1;
     
-    for (int m = v[a]; m >= 0; m = _ligatures[m].next)
-	if (_ligatures[m].in[1] == b)
-	    return _ligatures[m].out;
+    for (Ligature *m = v[a]; m; m = m->next_glyph)
+	if (m->in[1] == b)
+	    return m->out;
 
     // possibly add a fake ligature
     if (add_fake) {
 	int c = pair_fake_code(a, b);
-	int l = add_twoligature(a, b, c);
-	v.push_back(-1);	// no ligatures start with this character
-	_ligatures[l].skip = 0;
-	_ligatures[l].next = v[a];
+	Ligature *l = add_twoligature(a, b, c);
+	v.push_back(0);		// no ligatures start with this character
+	l->skip = 0;
+	l->next_glyph = v[a];
 	v[a] = l;
 	return c;
     }
@@ -425,66 +532,61 @@ GsubEncoding::simplify_ligatures(bool add_fake)
 {
     // 5.Jul.2003: remove n^2 algorithms
 #ifndef NDEBUG
-    for (Ligature *l = _ligatures.begin(); l < _ligatures.end(); l++)
+    for (lig_iterator l = lig_begin(); l; l++)
 	assert(l->live());
 #endif
     
     // find characters that begin true ligatures
-    Vector<int> v(_encoding.size(), 0);
-    for (Vector<Ligature>::iterator l = _ligatures.begin(); l < _ligatures.end(); l++)
+    Vector<Ligature *> v(_encoding.size(), 0);
+    for (lig_iterator l = lig_begin(); l; l++)
 	if (_encoding[l->out] < FIRST_FAKE)
-	    v[l->in[0]] = 1;
+	    v[l->in[0]] = l;
 
     // a ligature must be skipped iff it produces such a character
-    for (Vector<Ligature>::iterator l = _ligatures.begin(); l < _ligatures.end(); l++)
+    for (lig_iterator l = lig_begin(); l; l++)
 	if (_encoding[l->out] < FIRST_FAKE && !v[l->out])
 	    l->skip = 0;
 
     // develop a list of in-place ligatures
     // v maps char C -> first in-place ligature beginning with C
-    // rest of ligatures beginning with C linked through _ligature[i].next
-    v.assign(_encoding.size(), -1);
-    for (Vector<Ligature>::iterator l = _ligatures.begin(); l < _ligatures.end(); l++)
+    // rest of ligatures beginning with C linked through _ligature[i].next_glyph
+    v.assign(_encoding.size(), 0);
+    for (lig_iterator l = lig_begin(); l; l++)
 	if (l->in.size() == 2 && _encoding[l->out] < FIRST_FAKE && l->skip == 0) {
-	    l->next = v[l->in[0]];
-	    v[l->in[0]] = (l - _ligatures.begin());
+	    l->next_glyph = v[l->in[0]];
+	    v[l->in[0]] = l;
 	}
 
     // actually simplify
-    // note: cannot use Ligature::iterator, since find_in_place_twoligature
-    // might create a fake ligature, messing up our pointers!
-    for (int li = 0; li < _ligatures.size(); li++)
-	while (_ligatures[li].in.size() > 2 && !_ligatures[li].killed()) {
-	    int l2 = find_in_place_twoligature(_ligatures[li].in[0], _ligatures[li].in[1], v, add_fake);
-	    Ligature &l = _ligatures[li];
-	    l.in[0] = l2;	// might be < 0
-	    memmove(&l.in[1], &l.in[2], (l.in.size() - 2) * sizeof(Glyph));
-	    l.in.pop_back();
+    for (lig_iterator l = lig_begin(); l; l++)
+	while (l->in.size() > 2) {
+	    int c = find_in_place_twoligature(l->in[0], l->in[1], v, add_fake);
+	    if (c < 0) {
+		l.kill();
+		break;
+	    }
+	    change_lig_in0(l, c);
+	    memmove(&l->in[1], &l->in[2], (l->in.size() - 2) * sizeof(Glyph));
+	    l->in.pop_back();
 	}
 
     // remove redundant ligatures
     // v maps char C -> first ligature beginning with C
-    // rest of ligatures beginning with C linked through _ligature[i].next
-    v.assign(_encoding.size(), -1);
-    for (Vector<Ligature>::iterator l = _ligatures.begin(); l < _ligatures.end(); l++) {
-	if (l->killed())
-	    goto killed;
-	for (int m = v[l->in[0]]; m >= 0; m = _ligatures[m].next) {
-	    const Ligature &ll = _ligatures[m];
-	    if (l->in.size() >= ll.in.size()
-		&& memcmp(&ll.in[0], &l->in[0], ll.in.size() * sizeof(Glyph)) == 0) {
-		l->kill();
+    // rest of ligatures beginning with C linked through _ligature[i].next_glyph
+    v.assign(_encoding.size(), 0);
+    for (lig_iterator l = lig_begin(); l; l++) {
+	for (const Ligature *ll = v[l->in[0]]; ll; ll = ll->next_glyph)
+	    if (l->in.size() >= ll->in.size()
+		&& memcmp(&ll->in[0], &l->in[0], ll->in.size() * sizeof(Glyph)) == 0) {
+		l.kill();
 		goto killed;
 	    }
-	}
-	l->next = v[l->in[0]];
-	v[l->in[0]] = (l - _ligatures.begin());
+	l->next_glyph = v[l->in[0]];
+	v[l->in[0]] = l;
       killed: ;
     }
 
-    // remove anything we've killed
-    Vector<Ligature>::iterator endpoint = std::remove_if(_ligatures.begin(), _ligatures.end(), Ligature::killedp);
-    _ligatures.resize(endpoint - _ligatures.begin());
+    check_lig();
 }
 
 void
@@ -574,8 +676,8 @@ GsubEncoding::reassign_codes(Vector<int> &reassignment)
     }
     
     // reassign code points in ligature_data vector
-    for (int i = 0; i < _ligatures.size(); i++)
-	reassign_ligature(_ligatures[i], reassignment);
+    for (lig_iterator l = lig_begin(); l; l++)
+	reassign_ligature(*l, reassignment);
 
     // reassign code points in kern vector
     for (int i = 0; i < _kerns.size(); i++) {
@@ -594,9 +696,10 @@ GsubEncoding::reassign_codes(Vector<int> &reassignment)
 void
 GsubEncoding::cut_encoding(int size)
 {
-    if (_encoding.size() <= size)
+    if (_encoding.size() <= size) {
 	_encoding.resize(size, 0);
-    else {
+	_ligatures.resize(size, 0);
+    } else {
 	// reassign codes
 	Vector<int> reassignment(_encoding.size() + 1, -1);
 	for (int i = -1; i < size; i++)
@@ -607,9 +710,12 @@ GsubEncoding::cut_encoding(int size)
 
 	// shrink encoding for real
 	_encoding.resize(size, 0);
+	_ligatures.resize(size, 0);
 
 	// finally, clean up dead ligatures and fakes
 	clean_encoding();
+	
+	check_lig();
     }
 }
 
@@ -642,7 +748,7 @@ GsubEncoding::ligature_score(const Ligature &l, Vector<int> &scores) const
 	
 	// may need to calculate this character's score
 	if (scores[e] == NOCHAR_SCORE)
-	    for (Vector<Ligature>::const_iterator ll = _ligatures.begin(); ll < _ligatures.end(); ll++)
+	    for (lig_const_iterator ll = lig_begin(); ll; ll++)
 		if (ll->live() && ll->out == e) {
 		    int ss = ligature_score(*ll, scores);
 		    fprintf(stderr, "--%s %d\n", ll->unparse(this).c_str(), ss);
@@ -675,17 +781,18 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 {
     if (_encoding.size() <= size) {
 	_encoding.resize(size, 0);
+	_ligatures.resize(size, 0);
 	return;
     }
 
 #ifndef NDEBUG
-    for (Ligature *l = _ligatures.begin(); l < _ligatures.end(); l++)
+    for (lig_iterator l = lig_begin(); l; l++)
 	assert(l->live());
 #endif
     
     // prepare for ligature importance scoring by sorting _ligatures array
     // topologically
-    std::sort(_ligatures.begin(), _ligatures.end());
+    //    std::sort(_ligatures.begin(), _ligatures.end()); XXXX
     
     // get a hold of Unicode values (for ligature importance scoring)
     Vector<uint32_t> unicodes = dvipsenc.unicodes();
@@ -701,7 +808,7 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
     for (int i = unicodes.size(); i < size; i++)
 	scores[i] = OTHER_SCORE;
     // then score ligatures
-    for (Vector<Ligature>::const_iterator l = _ligatures.begin(); l < _ligatures.end(); l++) {
+    for (lig_const_iterator l = lig_begin(); l; l++) {
 	int s = 0;
 	for (int i = 0; i < l->in.size(); i++)
 	    s += scores[l->in[i]];
@@ -755,7 +862,7 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 		&& _fakes[fbegin+1].op == Setting::KERN
 		&& _fakes[fbegin+2].op == Setting::SHOW) {
 		int lcontext = _fakes[fbegin].x, rcontext = _fakes[fbegin+2].x;
-		for (Ligature *l = _ligatures.begin(); l < _ligatures.end(); l++)
+		for (lig_iterator l = lig_begin(); l; l++)
 		    if (l->live() && l->out == slot->value
 			&& (l->in.size() != 2
 			    || (l->in[0] != lcontext && l->in[1] != rcontext)))
@@ -822,6 +929,7 @@ font, so I've ignored those listed above.)", sa.c_str());
 
     // shrink encoding for real
     _encoding.resize(new_size, 0);
+    _ligatures.resize(new_size, 0);
 
     // replace emptyslot_glyph() with 0
     for (int i = 0; i < new_size; i++)
@@ -830,38 +938,37 @@ font, so I've ignored those listed above.)", sa.c_str());
 
     // finally, clean up dead ligatures and fakes
     clean_encoding();
+
+    check_lig();
 }
 
 void
 GsubEncoding::clean_encoding()
 {
-    Vector<Ligature>::iterator endpoint = std::remove_if(_ligatures.begin(), _ligatures.end(), Ligature::deadp);
-    _ligatures.resize(endpoint - _ligatures.begin());
+    for (lig_iterator l = lig_begin(); l; l++)
+	if (!l->live())
+	    l.kill();
 }
 
-int
+GsubEncoding::Ligature *
 GsubEncoding::add_twoligature(int code1, int code2, int outcode)
 {
-    Ligature l;
-    l.in.push_back(code1);
-    l.in.push_back(code2);
-    l.out = outcode;
-    l.skip = 0;
-    _ligatures.push_back(l);
-    return _ligatures.size() - 1;
+    Ligature *l = new_lig(code1);
+    l->in.push_back(code2);
+    l->out = outcode;
+    l->skip = 0;
+    return l;
 }
 
-int
+GsubEncoding::Ligature *
 GsubEncoding::add_threeligature(int code1, int code2, int code3, int outcode)
 {
-    Ligature l;
-    l.in.push_back(code1);
-    l.in.push_back(code2);
-    l.in.push_back(code3);
-    l.out = outcode;
-    l.skip = 0;
-    _ligatures.push_back(l);
-    return _ligatures.size() - 1;
+    Ligature *l = new_lig(code1);
+    l->in.push_back(code2);
+    l->in.push_back(code3);
+    l->out = outcode;
+    l->skip = 0;
+    return l;
 }
 
 void
@@ -888,7 +995,7 @@ GsubEncoding::add_single_positioning(int code, int pdx, int pdy, int adx)
 const GsubEncoding::Ligature *
 GsubEncoding::find_ligature_for(int code) const
 {
-    for (Vector<Ligature>::const_iterator l = _ligatures.begin(); l < _ligatures.end(); l++)
+    for (lig_const_iterator l = lig_begin(); l; l++)
 	if (l->live() && l->out == code)
 	    return l;
     return 0;
@@ -897,13 +1004,11 @@ GsubEncoding::find_ligature_for(int code) const
 void
 GsubEncoding::remove_ligatures(int code1, int code2)
 {
-    for (int i = 0; i < _ligatures.size(); i++) {
-	Ligature &l = _ligatures[i];
-	if (l.in.size() == 2
-	    && (code1 == CODE_ALL || l.in[0] == code1)
-	    && (code2 == CODE_ALL || l.in[1] == code2))
-	    l.in[0] = -1;
-    }
+    for (lig_iterator l = lig_begin(); l; l++)
+	if (l->in.size() == 2
+	    && (code1 == CODE_ALL || l->in[0] == code1)
+	    && (code2 == CODE_ALL || l->in[1] == code2))
+	    l.kill();
 }
 
 void
@@ -918,12 +1023,10 @@ GsubEncoding::remove_kerns(int code1, int code2)
 void
 GsubEncoding::reencode_right_ligkern(int old_code, int new_code)
 {
-    for (int i = 0; i < _ligatures.size(); i++) {
-	Ligature &l = _ligatures[i];
-	for (int j = 1; j < l.in.size(); j++)
-	    if (l.in[j] == old_code)
-		l.in[j] = new_code;
-    }
+    for (lig_iterator l = lig_begin(); l; l++)
+	for (int j = 1; j < l->in.size(); j++)
+	    if (l->in[j] == old_code)
+		l->in[j] = new_code;
     for (int i = 0; i < _kerns.size(); i++) {
 	Kern &k = _kerns[i];
 	if (k.right == old_code)
@@ -937,7 +1040,7 @@ GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, 
     code2.clear();
     outcode.clear();
     context.clear();
-    for (const Ligature *l = _ligatures.begin(); l < _ligatures.end(); l++)
+    for (lig_const_iterator l = lig_begin(); l; l++)
 	if (l->in.size() == 2 && l->in[0] == code1 && l->in[1] >= 0 && l->out >= 0) {
 	    code2.push_back(l->in[1]);
 	    if (l->out >= _first_context_code) {
@@ -1025,7 +1128,7 @@ GsubEncoding::unparse(const Vector<PermString> *gns) const
     for (int c = 0; c < _encoding.size(); c++)
 	if (Glyph g = _encoding[c]) {
 	    fprintf(stderr, "%4x: %s\n", c, unparse_glyph(g, gns).c_str());
-	    for (const Ligature *l = _ligatures.begin(); l < _ligatures.end(); l++)
+	    for (lig_const_iterator l = lig_begin(); l; l++)
 		if (l->in[0] == c && l->live()) {
 		    fprintf(stderr, "\t[");
 		    for (int j = 1; j < l->in.size(); j++)

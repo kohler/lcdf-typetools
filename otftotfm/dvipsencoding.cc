@@ -15,7 +15,7 @@
 # include <config.h>
 #endif
 #include "dvipsencoding.hh"
-#include "gsubencoding.hh"
+#include "metrics.hh"
 #include "secondary.hh"
 #include <lcdf/error.hh>
 #include <cstring>
@@ -509,16 +509,16 @@ DvipsEncoding::bad_codepoint(int code)
 }
 
 static inline Efont::OpenType::Glyph
-map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const GsubEncoding &gse)
+map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const Metrics &m)
 {
     if (uni == U_EMPTYSLOT)
-	return gse.emptyslot_glyph();
+	return m.emptyslot_glyph();
     else
 	return cmap.map_uni(uni);
 }
 
 void
-DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary)
+DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary)
 {
     for (int i = 0; i < _e.size(); i++)
 	if (_e[i] != dot_notdef) {
@@ -528,19 +528,19 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 	    int m = _unicoding_map[_e[i]];
 	    if (m >= 0) {
 		for (; _unicoding[m] >= 0 && !gid; m++)
-		    gid = map_uni(_unicoding[m], cmap, gsub_encoding);
+		    gid = map_uni(_unicoding[m], cmap, metrics);
 	    } else {
 		// otherwise, try to map this glyph name to Unicode
 		bool more;
 		if ((m = glyphname_unicode(_e[i], &more)) >= 0)
-		    gid = map_uni(m, cmap, gsub_encoding);
+		    gid = map_uni(m, cmap, metrics);
 		// might be multiple possibilities
 		if (!gid && more) {
 		    String gn = _e[i];
 		    do {
 			gn += String("/");
 			if ((m = glyphname_unicode(gn, &more)) >= 0)
-			    gid = map_uni(m, cmap, gsub_encoding);
+			    gid = map_uni(m, cmap, metrics);
 		    } while (!gid && more);
 		}
 		// if that didn't work, try the glyph name
@@ -548,33 +548,34 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 		    gid = font->glyphid(_e[i]);
 		// as a last resort, try adding it with secondary
 		if (gid <= 0 && secondary
-		    && (m = glyphname_unicode(_e[i])) >= 0)
-		    gid = secondary->encode_uni(_e[i], m, *this, gsub_encoding);
+		    && (m = glyphname_unicode(_e[i])) >= 0
+		    && secondary->encode_uni(i, _e[i], m, *this, metrics))
+		    continue;
 		// map unknown glyphs to 0
 		if (gid < 0)
 		    gid = 0;
 	    }
 
-	    gsub_encoding.encode(i, gid);
+	    metrics.encode(i, gid);
 	    if (gid == 0)
 		bad_codepoint(i);
 	}
-    gsub_encoding.set_coding_scheme(_coding_scheme);
+    metrics.set_coding_scheme(_coding_scheme);
 }
 
 void
-DvipsEncoding::make_literal_gsub_encoding(GsubEncoding &gsub_encoding, Efont::Cff::Font *font)
+DvipsEncoding::make_literal_metrics(Metrics &metrics, Efont::Cff::Font *font)
 {
     for (int i = 0; i < _e.size(); i++)
 	if (_e[i] != dot_notdef) {
 	    Efont::OpenType::Glyph gid = font->glyphid(_e[i]);
 	    if (gid < 0)
 		gid = 0;
-	    gsub_encoding.encode(i, gid);
+	    metrics.encode(i, gid);
 	    if (gid == 0)
 		bad_codepoint(i);
 	}
-    gsub_encoding.set_coding_scheme(_coding_scheme);
+    metrics.set_coding_scheme(_coding_scheme);
 }
 
 const Vector<uint32_t> &
@@ -605,21 +606,21 @@ DvipsEncoding::encoding_of_unicode(uint32_t uni) const
 }
 
 void
-DvipsEncoding::apply_ligkern_lig(GsubEncoding &gsub_encoding, ErrorHandler *errh) const
+DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const
 {
-    assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);
+    assert((int)J_ALL == (int)Metrics::CODE_ALL);
     for (int i = 0; i < _lig.size(); i++) {
 	const Ligature &l = _lig[i];
 	if (l.c1 < 0 || l.c2 < 0 || l.join < 0 || l.join == J_NOKERN)
 	    /* nada */;
 	else if (l.join == J_NOLIG || l.join == J_NOLIGKERN)
-	    gsub_encoding.remove_ligatures(l.c1, l.c2);
+	    metrics.remove_ligatures(l.c1, l.c2);
 	else if (l.join == J_LIG)
-	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d);
+	    metrics.add_ligature(l.c1, l.c2, l.d);
 	else if (l.join == J_LIGC)
-	    gsub_encoding.add_twoligature(l.c1, l.c2, gsub_encoding.pair_fake_code(l.d, l.c2));
+	    metrics.add_ligature(l.c1, l.c2, metrics.pair_code(l.d, l.c2));
 	else if (l.join == J_CLIG)
-	    gsub_encoding.add_twoligature(l.c1, l.c2, gsub_encoding.pair_fake_code(l.c1, l.d));
+	    metrics.add_ligature(l.c1, l.c2, metrics.pair_code(l.c1, l.d));
 	else {
 	    static int complex_join_warning = 0;
 	    if (!complex_join_warning) {
@@ -631,13 +632,13 @@ DvipsEncoding::apply_ligkern_lig(GsubEncoding &gsub_encoding, ErrorHandler *errh
 }
 
 void
-DvipsEncoding::apply_ligkern_kern(GsubEncoding &gsub_encoding, ErrorHandler *) const
+DvipsEncoding::apply_ligkern_kern(Metrics &metrics, ErrorHandler *) const
 {
-    assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);
+    assert((int)J_ALL == (int)Metrics::CODE_ALL);
     for (int i = 0; i < _lig.size(); i++) {
 	const Ligature &l = _lig[i];
 	if (l.c1 >= 0 && l.c2 >= 0
 	    && (l.join == J_NOKERN || l.join == J_NOLIGKERN))
-	    gsub_encoding.remove_kerns(l.c1, l.c2);
+	    metrics.remove_kerns(l.c1, l.c2);
     }
 }

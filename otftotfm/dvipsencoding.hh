@@ -3,7 +3,7 @@
 #include <efont/otfcmap.hh>
 #include <efont/cff.hh>
 #include <lcdf/hashmap.hh>
-class GsubEncoding;
+class Metrics;
 class Secondary;
 
 class DvipsEncoding { public:
@@ -34,11 +34,11 @@ class DvipsEncoding { public:
     int parse_unicoding(const String &unicoding_text, ErrorHandler *);
 
     // also modifies 'this':
-    void make_literal_gsub_encoding(GsubEncoding &, Efont::Cff::Font *);
-    void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary * = 0);
+    void make_literal_metrics(Metrics &, Efont::Cff::Font *);
+    void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary * = 0);
     
-    void apply_ligkern_lig(GsubEncoding &, ErrorHandler *) const;
-    void apply_ligkern_kern(GsubEncoding &, ErrorHandler *) const;
+    void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
+    void apply_ligkern_kern(Metrics &, ErrorHandler *) const;
     
     enum { J_BAD = -1,
 	   J_LIG = 0, J_CLIG = 1, J_CLIG_S = 2, J_LIGC = 3,

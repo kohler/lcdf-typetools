@@ -13,7 +13,7 @@
 
 #include <config.h>
 #include "secondary.hh"
-#include "gsubencoding.hh"
+#include "metrics.hh"
 #include "dvipsencoding.hh"
 #include <efont/t1bounds.hh>
 #include <cstdarg>
@@ -29,14 +29,15 @@ Secondary::~Secondary()
 {
 }
 
-Secondary::Glyph
-Secondary::encode_uni(PermString name, uint32_t uni, const DvipsEncoding &dvipsenc, GsubEncoding &gse)
+bool
+Secondary::encode_uni(int code, PermString name, uint32_t uni, const DvipsEncoding &dvipsenc, Metrics &m)
 {
     Vector<Setting> v;
-    if (setting(uni, v, dvipsenc))
-	return gse.add_fake(name, v);
-    else if (_next)
-	return _next->encode_uni(name, uni, dvipsenc, gse);
+    if (setting(uni, v, dvipsenc)) {
+	m.encode_virtual(code, name, v);
+	return true;
+    } else if (_next)
+	return _next->encode_uni(code, name, uni, dvipsenc, m);
     else
 	return false;
 }
