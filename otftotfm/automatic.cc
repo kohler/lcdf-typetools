@@ -36,6 +36,7 @@
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
+#include <algorithm>
 
 #ifdef WIN32
 # define mkdir(dir, access) mkdir(dir)
@@ -58,13 +59,13 @@ static const struct {
     const char *envvar;
     const char *texdir;
 } odir_info[] = {
-    { "encoding", "ENCODINGDESTDIR", "dvips/@" },
+    { "encoding", "ENCODINGDESTDIR", "#fonts/enc/dvips/@#dvips/@" },
     { "TFM", "TFMDESTDIR", "fonts/tfm/%" },
     { "PL", "PLDESTDIR", "fonts/pl/%" },
     { "VF", "VFDESTDIR", "fonts/vf/%" },
     { "VPL", "VPLDESTDIR", "fonts/vpl/%" },
     { "Type 1", "T1DESTDIR", "fonts/type1/%" },
-    { "DVIPS map", "DVIPS directory", "dvips/@" },
+    { "DVIPS map", "DVIPS directory", "#fonts/map/dvips/@#dvips/@" },
     { "DVIPS updmap", "DVIPS directory", "dvips" }
 };
 
@@ -73,22 +74,29 @@ static String odir_kpathsea[NUMODIR];
 
 static bool writable_texdir_tried = false;
 static String writable_texdir;	// always ends with directory separator
+static int tds_encfonts = -1;
 
 static bool mktexupd_tried = false;
 static String mktexupd;
 
 static String
-kpsei_string(char *x)
+kpsei_string(char* x)
 {
     String s(x);
-    free((void *)x);
+    free((void*)x);
     return s;
 }
 
 static void
 find_writable_texdir(ErrorHandler *errh, const char *)
 {
-    String actual_path = kpsei_string(kpsei_path_expand("$TEXMF"));
+    const char* path_type = "VARTEXMF";
+    String actual_path = kpsei_string(kpsei_path_expand("$VARTEXMF"));
+    if (!actual_path) {
+	path_type = "TEXMF";
+	actual_path = kpsei_string(kpsei_path_expand("$TEXMF"));
+    }
+    
     String path = actual_path;
     while (path && !writable_texdir) {
 	int colon = path.find_left(kpsei_env_sep_char);
@@ -96,14 +104,15 @@ find_writable_texdir(ErrorHandler *errh, const char *)
 	path = path.substring(colon < 0 ? path.length() : colon + 1);
 	if (access(texdir.c_str(), W_OK) >= 0)
 	    writable_texdir = texdir;
-    }
+    }   
     if (writable_texdir && writable_texdir.back() != '/')
 	writable_texdir += "/";
+    
     if (!writable_texdir) {
-	errh->warning("no writable directory found in $TEXMF");
-	errh->message("(You probably need to set your TEXMF environment variable; see the\n\
-manual for more information. The current TEXMF path is\n\
-'%s'.)", actual_path.c_str());
+	errh->warning("no writable directory found in $%s", path_type);
+	errh->message("(You probably need to set your %s environment variable; see\n\
+the manual for more information. The current %s path is\n\
+'%s'.)", path_type, path_type, actual_path.c_str());
     }
     writable_texdir_tried = true;
 }
@@ -151,7 +160,23 @@ getodir(int o, ErrorHandler *errh)
 	find_writable_texdir(errh, odir_info[o].name);
 
     if (!odir[o] && automatic && writable_texdir) {
-	String dir = writable_texdir + odir_info[o].texdir;
+	String suffix = odir_info[o].texdir;
+	
+	// May need to behave differently on TDS 1.1 rather than TDS 1.0. 
+	if (suffix[0] == '#') {
+	    // check type of TDS
+	    if (tds_encfonts < 0) {
+		char* encfonts = kpsei_var_value("ENCFONTS");
+		tds_encfonts = encfonts != 0;
+		free((void*) encfonts);
+	    }
+	    if (tds_encfonts == 0)
+		suffix = suffix.substring(std::find(suffix.begin() + 1, suffix.end(), '#'), suffix.end());
+	    else
+		suffix = suffix.substring(suffix.begin() + 1, std::find(suffix.begin() + 1, suffix.end(), '#'));
+	}
+	
+	String dir = writable_texdir + suffix;
 
 	if (dir.back() == '%')
 	    dir = dir.substring(0, -1) + get_vendor() + "/" + get_typeface();
@@ -519,8 +544,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	// run 'updmap' if present
 	String updmap_dir = getodir(O_MAP_PARENT, errh);
 	String updmap_file = updmap_dir + "/updmap";
-	if (automatic && file_in_kpathsea_odir(O_MAP_PARENT, map_file)
-	    && access(updmap_file.c_str(), X_OK) >= 0) {
+	if (automatic && access(updmap_file.c_str(), X_OK) >= 0) {
 	    // want to run 'updmap' from its directory, can't use system()
 	    if (verbose)
 		errh->message("running %s", updmap_file.c_str());
@@ -538,12 +562,14 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		    errh->warning("%s exited abnormally", updmap_file.c_str());
 		else if (WEXITSTATUS(status) != 0)
 		    errh->warning("%s exited with status %d", updmap_file.c_str(), WEXITSTATUS(status));
+# else
+#  error "need waitpid() support: report this bug to the maintainer"
 # endif
 	    } else {
 		if (chdir(updmap_dir.c_str()) < 0)
 		    errh->fatal("%s: %s during chdir", updmap_dir.c_str(), strerror(errno));
-		if (execl("updmap", 0) < 0)
-		    errh->fatal("updmap: %s during exec", strerror(errno));
+		if (execl("./updmap", updmap_file.c_str(), 0) < 0)
+		    errh->fatal("%s: %s during exec", updmap_file.c_str(), strerror(errno));
 		exit(1);	// should never get here
 	    }
 	} else if (verbose)

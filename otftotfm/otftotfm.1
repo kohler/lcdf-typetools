@@ -136,8 +136,8 @@ DIAGNOSTICS section if you have problems with these instructions.
 .PP
 In automatic mode,
 .B otftotfm
-searches your $TEXMF path for a writable directory, then installs files
-under that directory tree as follows:
+searches your $VARTEXMF or $TEXMF path for a writable directory, then
+installs files under that directory tree as follows:
 '
 .TS
 l	l	l	.
@@ -146,9 +146,11 @@ TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[--base].tfm
 VF	TEXMF/fonts/vf/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vf
 PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[--base].pl
 VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vpl
-encoding	TEXMF/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
+encoding	TEXMF/fonts/enc/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
+	or TEXMF/dvips/\fIvendor\fR/
 PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPStexname\fR.pfb
-psfonts.map	TEXMF/dvips/\fIvendor\fR/	\fIvendor\fR.map
+psfonts.map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
+	or TEXMF/dvips/\fIvendor\fR/
 .TE
 .PP
 "TEXMF" stands for the writable $TEXMF directory.  \fITexname\fR is the
@@ -689,7 +691,9 @@ Set file in which
 will write a
 .I psfonts.map
 line for the font.  The default is the standard output in manual mode, and
-"TEXMF/dvips/\fIvendor\fR.map" elsewhere.
+"TEXMF/fonts/map/dvips/\fIvendor\fR/\fIvendor\fR.map" (or
+"TEXMF/dvips/\fIvendor\fR/\fIvendor\fR.map" on older installations) in
+automatic mode.
 .PD
 '
 '
@@ -1131,7 +1135,8 @@ Replaces the zero character with a slashed zero.  Supported.
 no writable directory found in $TEXMF
 '
 .B Otftotfm
-could not find a writable directory in your $TEXMF path.  Did you create a
+could not find a writable directory in your $VARTEXMF or $TEXMF path.  Did
+you create a
 .I $HOME/texmf
 directory?  If so, run the command "kpsewhich --expand-path='$TEXMF'" to
 verify that directory is not being found.  You may need to set your TEXMF
