@@ -102,7 +102,7 @@ General options:\n\
   -b, --pfb                    Output PFB font. This is the default.\n\
   -o, --output=FILE            Write output to FILE.\n\
   -p, --precision=N            Set precision to N (larger means more precise).\n\
-      --subrs=N                Output font has at most N subroutines.\n\
+      --subrs=N                Limit output font to at most N subroutines.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\

@@ -631,7 +631,7 @@ bool
 Type1SubrRemover::run(int lower_to)
 {
   if (lower_to < _save_count - _nonexist_count) {
-    _errh->warning("%s requires at least %d Subrs",
+    _errh->warning("reducing %s to minimum number of subroutines (%d)",
 		   _font->font_name().cc(), _save_count - _nonexist_count);
     lower_to = _save_count - _nonexist_count;
   }
