@@ -8,8 +8,6 @@
 #include "error.hh"
 #include <string.h>
 
-extern int chunk_count, chunk_len;
-
 Type1Font::Type1Font(Type1Reader &reader)
   : _cached_defs(false), _glyph_map(-1), _encoding(0),
     _cached_mmspace(0), _mmspace(0)
@@ -68,7 +66,7 @@ Type1Font::Type1Font(Type1Reader &reader)
       continue;
     }
    charstring_definer_fail:
-
+    
     // check for ENCODING
     if (!_encoding && strncmp(x, "/Encoding ", 10) == 0) {
       read_encoding(reader, x + 10);
@@ -92,7 +90,7 @@ Type1Font::Type1Font(Type1Reader &reader)
       continue;
     }
    definition_fail:
-
+    
     // check for /SUBRS or /CHARSTRINGS
     if (x[0] == '/' && (strncmp(x, "/Subrs", 6) == 0
 			|| strncmp(x, "/CharStrings", 12) == 0)) {
@@ -278,10 +276,10 @@ void
 Type1Font::cache_defs() const
 {
   Type1Definition *t1d;
-
+  
   t1d = dict("FontName");
   if (t1d) t1d->value_name(_font_name);
-
+  
   _cached_defs = true;
 }
 
