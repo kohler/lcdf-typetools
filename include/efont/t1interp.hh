@@ -66,23 +66,23 @@ class CharstringInterp { public:
     virtual bool type1_command(int);
     virtual bool type2_command(int, const uint8_t *, int *);
 
-    virtual void act_sidebearing(int, const Point &);
-    virtual void act_width(int, const Point &);
-    virtual void act_default_width(int);
-    virtual void act_nominal_width_delta(int, double);
-    virtual void act_seac(int, double, double, double, int, int);
+    virtual void act_sidebearing(int cmd, const Point &lsb);
+    virtual void act_width(int cmd, const Point &width);
+    virtual void act_default_width(int cmd);
+    virtual void act_nominal_width_delta(int cmd, double delta);
+    virtual void act_seac(int cmd, double asb, double adx, double ady, int bchar, int achar);
 
-    virtual void act_line(int, const Point &, const Point &);
-    virtual void act_curve(int, const Point &, const Point &, const Point &, const Point &);
-    virtual void act_closepath(int);
+    virtual void act_line(int cmd, const Point &p0, const Point &p1);
+    virtual void act_curve(int cmd, const Point &p0, const Point &p1, const Point &p2, const Point &p3);
+    virtual void act_closepath(int cmd);
 
-    virtual void act_flex(int, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, double);
+    virtual void act_flex(int cmd, const Point &p0, const Point &p1, const Point &p2, const Point &p3_4, const Point &p5, const Point &p6, const Point &p7, double flex_depth);
 
-    virtual void act_hstem(int, double, double);
-    virtual void act_vstem(int, double, double);
-    virtual void act_hstem3(int, double, double, double, double, double, double);
-    virtual void act_vstem3(int, double, double, double, double, double, double);
-    virtual void act_hintmask(int, const uint8_t *, int);
+    virtual void act_hstem(int cmd, double y, double dy);
+    virtual void act_vstem(int cmd, double x, double dx);
+    virtual void act_hstem3(int cmd, double y0, double dy0, double y1, double dy1, double y2, double dy2);
+    virtual void act_vstem3(int cmd, double x0, double dx0, double x1, double dx1, double x2, double dx2);
+    virtual void act_hintmask(int cmd, const uint8_t *data, int nhints);
 
     typedef Charstring CS;
     
