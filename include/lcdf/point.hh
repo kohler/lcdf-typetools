@@ -1,6 +1,7 @@
 #ifndef POINT_HH
 #define POINT_HH
 #include <math.h>
+class Transform;
 
 struct Point {
   
@@ -17,11 +18,16 @@ struct Point {
   double magnitude() const;
   static double distance(const Point &, const Point &);
   static double dot(const Point &, const Point &);
+  static Point midpoint(const Point &, const Point &);
   
   double angle() const;
   
   Point rotated(double) const;
   Point normal() const;
+  Point transformed(const Transform &) const;
+
+  bool on_line(const Point &, const Point &, double) const;
+  bool on_segment(const Point &, const Point &, double) const;
   
   Point &operator+=(const Point &);
   Point &operator-=(const Point &);
@@ -111,7 +117,7 @@ operator==(const Point &a, const Point &b)
 inline bool
 operator!=(const Point &a, const Point &b)
 {
-  return a.x != b.x && a.y != b.y;
+  return a.x != b.x || a.y != b.y;
 }
 
 inline Point
