@@ -122,6 +122,7 @@ class Type1Charstring : public Charstring { public:
   
     const unsigned char *data() const;
     int length() const				{ return _s.length(); }
+    const String &data_string() const;
   
     void assign(const String &);
     void prepend(const Type1Charstring &);
@@ -221,6 +222,20 @@ Type1Charstring::data() const
     if (_key >= 0)
 	decrypt();
     return reinterpret_cast<const unsigned char *>(_s.data());
+}
+
+inline const String &
+Type1Charstring::data_string() const
+{
+    if (_key >= 0)
+	decrypt();
+    return _s;
+}
+
+inline bool
+operator==(const Type1Charstring &a, const Type1Charstring &b)
+{
+    return a.data_string() == b.data_string();
 }
 
 
