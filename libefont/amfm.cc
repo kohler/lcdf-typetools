@@ -7,11 +7,11 @@
 #include "error.hh"
 #include "findmet.hh"
 #include "t1cs.hh"
-#include <stdarg.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdlib>
+#include <cctype>
+#include <cassert>
+#include <cstring>
 
 AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
   : _finder(finder),

@@ -3,7 +3,7 @@
 #endif
 #include "t1cs.hh"
 #include "t1interp.hh"
-#include <string.h>
+#include <cstring>
 
 Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
 {

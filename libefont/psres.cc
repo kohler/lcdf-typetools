@@ -20,7 +20,7 @@
 #  include <ndir.h>
 # endif
 #endif
-#include <string.h>
+#include <cstring>
 
 static String::Initializer initializer;
 static String empty_string;

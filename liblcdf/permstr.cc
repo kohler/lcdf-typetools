@@ -2,9 +2,9 @@
 # include <config.h>
 #endif
 #include "permstr.hh"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 
 PermString::Initializer::Initializer()

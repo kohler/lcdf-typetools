@@ -2,9 +2,9 @@
 #define ERROR_HH
 #include "string.hh"
 #ifndef __KERNEL__
-# include <stdio.h>
+# include <cstdio>
 #endif
-#include <stdarg.h>
+#include <cstdarg>
 
 class ErrorHandler {
   

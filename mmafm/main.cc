@@ -9,12 +9,12 @@
 #include "amfm.hh"
 #include "error.hh"
 #include "clp.h"
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <math.h>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
+#include <cmath>
 #ifdef HAVE_CTIME
-# include <time.h>
+# include <ctime>
 #endif
 
 #define WEIGHT_OPT	300

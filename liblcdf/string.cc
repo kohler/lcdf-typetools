@@ -5,10 +5,10 @@
 #ifdef __KERNEL__
 # include "straccum.hh"
 #else
-# include <stdio.h>
-# include <string.h>
+# include <cstdio>
+# include <cstring>
 #endif
-#include <assert.h>
+#include <cassert>
 
 String::Memo *String::null_memo = 0;
 String::Memo *String::permanent_memo = 0;

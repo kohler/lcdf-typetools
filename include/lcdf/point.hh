@@ -1,6 +1,6 @@
 #ifndef POINT_HH
 #define POINT_HH
-#include <math.h>
+#include <cmath>
 class Transform;
 
 struct Point {

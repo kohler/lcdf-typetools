@@ -1,7 +1,7 @@
 #ifndef FILENAME_HH
 #define FILENAME_HH
 #include "permstr.hh"
-#include <stdio.h>
+#include <cstdio>
 
 class Filename {
   

@@ -1,7 +1,7 @@
 #ifndef TRANSFORM_HH
 #define TRANSFORM_HH
 #include "point.hh"
-#include <assert.h>
+#include <cassert>
 
 class Transform {
 

@@ -7,7 +7,7 @@
 # include <config.h>
 #endif
 #include "straccum.hh"
-#include <stdio.h>
+#include <cstdio>
 
 bool
 StringAccum::grow(int want)

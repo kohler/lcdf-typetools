@@ -3,10 +3,10 @@
 #endif
 #include "error.hh"
 #include "straccum.hh"
-#include <assert.h>
-#include <ctype.h>
+#include <cassert>
+#include <cctype>
 #ifndef __KERNEL__
-# include <stdio.h>
+# include <cstdio>
 #endif
 
 void

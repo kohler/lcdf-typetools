@@ -1,7 +1,7 @@
 #ifndef AFMW_HH
 #define AFMW_HH
 #include "afm.hh"
-#include <stdio.h>
+#include <cstdio>
 
 class AfmWriter {
 

@@ -1,8 +1,8 @@
 #ifndef VECTOR_HH
 #define VECTOR_HH
-#include <assert.h>
-#include <stdlib.h>
-#ifdef HAVE_NEW
+#include <cassert>
+#include <cstdlib>
+#ifdef HAVE_NEW_HDR
 # include <new>
 #elif defined(HAVE_NEW_H)
 # include <new.h>

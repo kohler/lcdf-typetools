@@ -6,8 +6,8 @@
 #include "t1interp.hh"
 #include "t1font.hh"
 #include "strtonum.h"
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 #include <sys/stat.h>
 #include <unistd.h>
 #ifdef BROKEN_STRTOD

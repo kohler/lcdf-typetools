@@ -4,10 +4,10 @@
 #include "afmparse.hh"
 #include "metrics.hh"
 #include "strtonum.h"
-#include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdarg>
+#include <cctype>
+#include <cstdlib>
 #ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif

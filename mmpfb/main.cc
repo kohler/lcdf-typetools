@@ -8,14 +8,14 @@
 #include "t1rewrit.hh"
 #include "clp.h"
 #include "error.hh"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <cstdarg>
+#include <cctype>
+#include <cerrno>
 #ifdef HAVE_CTIME
-# include <time.h>
+# include <ctime>
 #endif
 
 #define WEIGHT_OPT	300

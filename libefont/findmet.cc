@@ -6,8 +6,8 @@
 #include "afm.hh"
 #include "amfm.hh"
 #include "psres.hh"
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 
 MetricsFinder::~MetricsFinder()

@@ -1,8 +1,8 @@
 #ifndef PERMSTR_HH
 #define PERMSTR_HH
-#include <assert.h>
-#include <stddef.h>
-#include <stdarg.h>
+#include <cassert>
+#include <cstddef>
+#include <cstdarg>
 
 class PermString { struct Doodad;
 

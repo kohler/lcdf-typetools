@@ -2,7 +2,7 @@
 #define AFMPARSE_HH
 #include "slurper.hh"
 #include "permstr.hh"
-#include <stdarg.h>
+#include <cstdarg>
 
 class AfmParser {
   

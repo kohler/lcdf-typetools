@@ -2,7 +2,7 @@
 # include <config.h>
 #endif
 #include "pairop.hh"
-#include <stdio.h>
+#include <cstdio>
 
 
 PairProgram::PairProgram(const PairProgram &o)

@@ -2,7 +2,7 @@
 #define SLURPER_HH
 #include "landmark.hh"
 #include "filename.hh"
-#include <stdio.h>
+#include <cstdio>
 
 class Slurper { public:
 

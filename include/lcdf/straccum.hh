@@ -1,8 +1,8 @@
 #ifndef STRACCUM_HH
 #define STRACCUM_HH
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdlib>
+#include <cassert>
+#include <cstring>
 #ifdef HAVE_PERMSTRING
 # include "permstr.hh"
 #endif

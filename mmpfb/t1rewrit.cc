@@ -5,8 +5,8 @@
 #include "t1item.hh"
 #include "error.hh"
 #include "straccum.hh"
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 
 static bool itc_complained = false;
 static ErrorHandler *itc_errh;

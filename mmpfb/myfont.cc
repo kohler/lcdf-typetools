@@ -8,9 +8,9 @@
 #include "t1mm.hh"
 #include "error.hh"
 #include "straccum.hh"
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstring>
+#include <cstdio>
+#include <cmath>
 
 MyFont::MyFont(Type1Reader &reader)
   : Type1Font(reader)

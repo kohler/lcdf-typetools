@@ -4,8 +4,8 @@
 #include "afm.hh"
 #include "afmparse.hh"
 #include "error.hh"
-#include <ctype.h>
-#include <assert.h>
+#include <cctype>
+#include <cassert>
 
 AfmReader::AfmReader(AfmParser &parser, Metrics *afm, AfmMetricsXt *afm_xt,
 		     ErrorHandler *errh)

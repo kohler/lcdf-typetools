@@ -6,9 +6,9 @@
 #include "t1rw.hh"
 #include "t1mm.hh"
 #include "error.hh"
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
+#include <cstring>
+#include <cstdlib>
+#include <cctype>
 
 static PermString::Initializer initializer;
 static PermString lenIV_str = "lenIV";

@@ -1,7 +1,6 @@
 #ifndef MYFONT_HH
 #define MYFONT_HH
 #include "t1font.hh"
-#include <stdio.h>
 class Type1MMSpace;
 class ErrorHandler;
 

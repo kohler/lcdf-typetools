@@ -1,6 +1,6 @@
 #ifndef T1RW_HH
 #define T1RW_HH
-#include <stdio.h>
+#include <cstdio>
 #include "permstr.hh"
 #include "straccum.hh"
 

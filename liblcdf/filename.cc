@@ -3,9 +3,9 @@
 #endif
 #include "filename.hh"
 #include "landmark.hh"
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
 #ifndef PATHNAME_SEPARATOR

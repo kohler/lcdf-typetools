@@ -4,9 +4,9 @@
 #include "t1rw.hh"
 #include "t1cs.hh"
 #include "straccum.hh"
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+#include <cstdlib>
+#include <cctype>
+#include <cstring>
 
 unsigned char Type1Reader::xvalue_store[257];
 unsigned char *Type1Reader::xvalue = &Type1Reader::xvalue_store[1];

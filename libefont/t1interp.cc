@@ -2,9 +2,9 @@
 # include <config.h>
 #endif
 #include "t1interp.hh"
-#include <stdio.h>
-#include <stdlib.h>
-//#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+//#include <cmath>
 
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 
