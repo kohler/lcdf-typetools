@@ -1,9 +1,13 @@
 LCDF Typetools NEWS
 
-Version 2.20
+Version 2.20   9.Feb.2005
 
 * otftotfm: Add '--space-factor' and '--math-spacing' options, based on
   patches from Achim Blumensath.
+
+* otftotfm: Improve handling of explicit --ligkern ligatures: they override
+  default ligatures, and any characters mentioned are shoehorned into the
+  encoding.  Catalyzed by Michael Zedler.
 
 
 Version 2.19   4.Feb.2005
