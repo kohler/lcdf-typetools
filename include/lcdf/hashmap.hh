@@ -98,7 +98,7 @@ class HashMap<K, V>::const_iterator { public:
 template <class K, class V>
 class HashMap<K, V>::iterator : public HashMap<K, V>::const_iterator { public:
     
-    V &value()				{ return _hm->_e[_pos].value; }
+    V &value() const			{ return _hm->_e[_pos].value; }
 
   private:
     iterator(const HashMap<K, V> *hm, int pos) : const_iterator(hm, pos) { }
