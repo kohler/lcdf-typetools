@@ -276,13 +276,14 @@ Type1Font::ok() const
 void
 Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
 {
-    while (*first_line == ' ') first_line++;
+    while (isspace(*first_line))
+	first_line++;
     if (strncmp(first_line, "StandardEncoding", 16) == 0) {
 	_encoding = Type1Encoding::standard_encoding();
 	add_item(_encoding);
 	return;
     }
-  
+
     _encoding = new Type1Encoding;
     add_item(_encoding);
   
@@ -291,23 +292,24 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     while (reader.next_line(accum)) {
     
 	// check for NULL STRING
-	if (!accum.length()) continue;
+	if (!accum.length())
+	    continue;
 	accum.append('\0');		// ensure we don't run off the string
 	char *pos = accum.data();
     
 	// skip to first `dup' token
 	if (!got_any) {
-	    pos = strstr(pos, "dup");
-	    if (!pos) {
-		accum.clear();
-		continue;
+	    if (!(pos = strstr(pos, "dup"))) {
+		pos = accum.data();
+		goto check_done;
 	    }
 	}
     
 	// parse as many `dup INDEX */CHARNAME put' as there are in the line
 	while (1) {
 	    // skip spaces, look for `dup '
-	    while (isspace(pos[0])) pos++;
+	    while (isspace(pos[0]))
+		pos++;
 	    if (pos[0] != 'd' || pos[1] != 'u' || pos[2] != 'p' || !isspace(pos[3]))
 		break;
       
@@ -337,7 +339,9 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
 	    add_item(new Type1CopyItem(String(pos)));
     
 	// check for end of encoding section
-	if (strstr(pos, "readonly") != 0 || strstr(pos, "def") != 0)
+      check_done:
+	if ((strstr(pos, "readonly") != 0 || strstr(pos, "def") != 0)
+	    && (got_any || strstr(pos, "for") == 0))
 	    return;
     
 	accum.clear();
