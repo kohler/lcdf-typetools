@@ -63,8 +63,6 @@ Type1CharstringGen::clear()
 void
 Type1CharstringGen::gen_number(double float_val, int kind)
 {
-    _state = S_GEN;
-    
     switch (kind) {
       case 'x':
 	_true.x += float_val;
@@ -139,8 +137,13 @@ Type1CharstringGen::gen_command(int command)
     if (command >= Charstring::cEscapeDelta) {
 	_ncs.append((char)Charstring::cEscape);
 	_ncs.append((char)(command - Charstring::cEscapeDelta));
-    } else
+	if (command != Charstring::cSbw)
+	    _state = S_GEN;
+    } else {
 	_ncs.append((char)command);
+	if (command > Charstring::cVmoveto && command != Charstring::cHsbw)
+	    _state = S_GEN;
+    }
 }
 
 void
