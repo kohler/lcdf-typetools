@@ -36,7 +36,7 @@ class StringAccum {
   
   char *reserve(int);
   void forward(int f)			{ _len += f; assert(_len <= _cap); }
-  char *extend(int);
+  inline char *extend(int);
 
   void push(unsigned char);
   void push(char);

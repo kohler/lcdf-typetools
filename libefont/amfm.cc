@@ -294,7 +294,7 @@ AmfmReader::lerror(const char *format, ...) const
 }
 
 void
-AmfmReader::no_match_warning(const char *context = 0) const
+AmfmReader::no_match_warning(const char *context) const
 {
   // keyword() will fail (and a warning won't get printed) only if the string
   // is all whitespace, which the spec allows

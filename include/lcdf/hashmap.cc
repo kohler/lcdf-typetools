@@ -12,26 +12,26 @@
 
 template <class K, class V>
 HashMap<K, V>::HashMap()
-  : _size(0), _capacity(0), _n(0), _e(0)
+    : _size(0), _capacity(0), _n(0), _e(0), _default_v()
 {
-  increase();
+    increase();
 }
 
 template <class K, class V>
 HashMap<K, V>::HashMap(const V &def)
-  : _size(0), _capacity(0), _n(0), _e(0), _default_v(def)
+    : _size(0), _capacity(0), _n(0), _e(0), _default_v(def)
 {
-  increase();
+    increase();
 }
 
 
 template <class K, class V>
 HashMap<K, V>::HashMap(const HashMap<K, V> &m)
-  : _size(m._size), _capacity(m._capacity), _n(m._n),
-    _e(new Element[m._size]), _default_v(m._default_v)
+    : _size(m._size), _capacity(m._capacity), _n(m._n),
+      _e(new Element[m._size]), _default_v(m._default_v)
 {
-  for (int i = 0; i < _size; i++)
-    _e[i] = m._e[i];
+    for (int i = 0; i < _size; i++)
+	_e[i] = m._e[i];
 }
 
 
@@ -61,8 +61,8 @@ template <class K, class V>
 inline int
 HashMap<K, V>::bucket(K key) const
 {
-  int i =  (key.hashcode() >> 2) & (_size - 1);
-  int j = ((key.hashcode() >> 6) & (_size - 1)) | 1;
+  int i =  (hashcode(key) >> 2) & (_size - 1);
+  int j = ((hashcode(key) >> 6) & (_size - 1)) | 1;
   
   while (_e[i].k && !(_e[i].k == key))
     i = (i + j) & (_size - 1);

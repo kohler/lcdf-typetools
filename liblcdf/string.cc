@@ -258,17 +258,17 @@ String::substring(int left, int len) const
 }
 
 int
-String::hashcode() const
+hashcode(const String &s)
 {
-  if (!_length)
+  if (!s._length)
     return 0;
-  else if (_length == 1)
-    return _data[0] | (_data[0] << 8);
-  else if (_length < 4)
-    return _data[0] + (_data[1] << 3) + (_length << 12);
+  else if (s._length == 1)
+    return s._data[0] | (s._data[0] << 8);
+  else if (s._length < 4)
+    return s._data[0] + (s._data[1] << 3) + (s._length << 12);
   else
-    return *((const int *)_data) + (_length << 12)
-      + (_data[_length-1] << 15);
+    return *((const int *)s._data) + (s._length << 12)
+      + (s._data[s._length-1] << 15);
 }
 
 bool

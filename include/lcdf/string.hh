@@ -49,8 +49,6 @@ class String { public:
   
   char operator[](int e) const		{ return _data[e]; }
   
-  int hashcode() const;
-  
   bool equals(const char *, int) const;
   // bool operator==(const String &, const String &);
   // bool operator==(const String &, const char *);
@@ -116,6 +114,7 @@ class String { public:
   static String *null_string_p;
 
   friend class String::Initializer;
+  friend int hashcode(const String &);
 
 };
 
@@ -364,5 +363,7 @@ operator+(PermString p1, PermString p2)
 }
 
 #endif
+
+int hashcode(const String &);
 
 #endif

@@ -19,10 +19,11 @@ Type1Font::Type1Font(Type1Reader &reader)
     _cached_mmspace(0), _mmspace(0),
     _synthetic_item(0)
 {
-  _dict = new HashMap<PermString, Type1Definition *>[dLast]((Type1Definition *)0);
+  _dict = new HashMap<PermString, Type1Definition *>[dLast];
   for (int i = 0; i < dLast; i++) {
     _index[i] = -1;
     _dict_deltas[i] = 0;
+    _dict[i].set_default_value((Type1Definition *)0);
   }
   
   Dict cur_dict = dF;

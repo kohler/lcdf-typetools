@@ -84,7 +84,7 @@ class Type1Font: public Type1Program {
   Type1Item *item(int i) const		{ return _items[i]; }
   void set_item(int i, Type1Item *it)	{ _items[i] = it; }
   
-  bool is_mm() const			{ return mmspace() != 0;}
+  bool is_mm() const;
   
   int nsubrs() const			{ return _subrs.size(); }
   Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
@@ -148,6 +148,12 @@ Type1Font::mmspace() const
 {
   if (!_cached_mmspace) create_mmspace();
   return _mmspace;
+}
+
+inline bool
+Type1Font::is_mm() const
+{
+  return mmspace() != 0;
 }
 
 #endif

@@ -96,7 +96,7 @@ AfmReader::y_width_warning() const
 }
 
 void
-AfmReader::no_match_warning(const char *context = 0) const
+AfmReader::no_match_warning(const char *context) const
 {
   // keyword() will fail (and a warning won't get printed) only if the string
   // is all whitespace, which the spec allows

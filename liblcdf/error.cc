@@ -297,7 +297,7 @@ ErrorHandler::verror(Seriousness seriousness, const String &where,
        
        unsigned long num;
        if (width_flag == 'q') {
-	 assert(0 ? "can't pass %q to ErrorHandler" : 0);
+	 assert(((void)"can't pass %q to ErrorHandler", 0));
 	 num = 0;
        } else if (width_flag == 'h') {
 	 num = (unsigned short)va_arg(val, int);
@@ -385,7 +385,7 @@ ErrorHandler::verror(Seriousness seriousness, const String &where,
      }
      
      default:
-      assert(0 ? "Bad % in error" : 0);
+      assert(((void)"Bad % in error", 0));
       break;
       
     }

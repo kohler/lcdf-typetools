@@ -8,7 +8,7 @@ static const int DefChunkCap	= 2048;
 static const int WorthMoving	= 256;
 
 
-Slurper::Slurper(const Filename &filename, FILE *f = 0)
+Slurper::Slurper(const Filename &filename, FILE *f)
   : _filename(filename), _lineno(0),
     _data(new unsigned char[DefChunkCap]), _cap(DefChunkCap),
     _pos(0), _len(0), _line(0), _line_len(0),

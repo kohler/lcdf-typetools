@@ -233,13 +233,12 @@ vpermprintf(const char *s, va_list val)
       s = pct;
     }
     
-    bool zeroflag = 0;
     int iflag = -1;
     while (1)
       switch (*++s) {
 	
        case '0':
-	zeroflag = 1;
+	/* zeroflag = 1; */
 	break;
 	
        case '1': case '2': case '3': case '4': case '5':

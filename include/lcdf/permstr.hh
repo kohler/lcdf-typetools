@@ -25,8 +25,6 @@ class PermString { struct Doodad;
   friend bool operator==(PermString, PermString);
   friend bool operator!=(PermString, PermString);
   
-  int hashcode() const			{ return (int)_rep; }
-  
   const char *cc() const		{ return _rep; }
   operator const char *() const		{ return _rep; }
   
@@ -90,6 +88,12 @@ inline bool
 operator!=(const char *a, PermString b)
 {
   return !(b == a);
+}
+
+inline int
+hashcode(PermString s)
+{
+    return (int)(s.cc());
 }
 
 #endif

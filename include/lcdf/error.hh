@@ -13,7 +13,7 @@ class ErrorHandler {
   enum Seriousness { Message, Warning, Error, Fatal };
   
   ErrorHandler()			{ }
-  ErrorHandler(ErrorHandler *errh)	{ }
+  ErrorHandler(ErrorHandler *)		{ }
   virtual ~ErrorHandler()		{ }
   static void static_initialize(ErrorHandler *);
   static void static_cleanup();

@@ -141,8 +141,8 @@ Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
 }
 
 Type1Definition *
-Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
-		      bool force_definition = false)
+Type1Definition::make(StringAccum &accum, Type1Reader *reader,
+		      bool force_definition)
 {
   char *s = accum.data();
   while (isspace(*s))
@@ -421,7 +421,7 @@ Type1Definition::set_num(double n)
 }
 
 void
-Type1Definition::set_name(PermString str, bool name = true)
+Type1Definition::set_name(PermString str, bool name)
 {
   StringAccum sa;
   if (name) sa << '/';
@@ -441,7 +441,7 @@ accum_numvec(StringAccum &sa, const NumVector &nv, bool executable)
 }
 
 void
-Type1Definition::set_numvec(const NumVector &nv, bool executable = false)
+Type1Definition::set_numvec(const NumVector &nv, bool executable)
 {
   StringAccum sa;
   accum_numvec(sa, nv, executable);
@@ -478,8 +478,7 @@ Type1Definition::set_normalize(const Vector<NumVector> &vin,
 }
 
 void
-Type1Definition::set_namevec(const Vector<PermString> &v,
-			     bool executable = true)
+Type1Definition::set_namevec(const Vector<PermString> &v, bool executable)
 {
   StringAccum sa;
   sa << '[';
@@ -546,18 +545,21 @@ static const char *standard_encoding_defs[] = {
 
 
 Type1Encoding::Type1Encoding()
-  : _v(new PermString[256](dot_notdef)), _copy_of(0)
+    : _v(new PermString[256]), _copy_of(0)
 {
+    for (int i = 0; i < 256; i++)
+	_v[i] = dot_notdef;
 }
 
 Type1Encoding::Type1Encoding(Type1Encoding *copy_of)
-  : _v(copy_of->_v), _copy_of(copy_of)
+    : _v(copy_of->_v), _copy_of(copy_of)
 {
 }
 
 Type1Encoding::~Type1Encoding()
 {
-  if (!_copy_of) delete[] _v;
+    if (!_copy_of)
+	delete[] _v;
 }
 
 
