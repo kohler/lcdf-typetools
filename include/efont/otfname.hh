@@ -21,17 +21,32 @@ class Name { public:
 		  N_DESIGNER_URL = 12, N_LICENSE_DESCRIPTION = 13,
 		  N_LICENSE_URL = 14 };
     enum Platform { P_UNICODE = 0, P_MACINTOSH = 1, P_MICROSOFT = 3 };
+    enum { HEADER_SIZE = 6, NAMEREC_SIZE = 12 };
+    
+    typedef uint8_t namerecord_t[NAMEREC_SIZE];
+    typedef const namerecord_t *const_iterator;
 
+    inline static int nameid(const namerecord_t &);
+    inline static int platform(const namerecord_t &);
+    inline static int encoding(const namerecord_t &);
+    inline static int language(const namerecord_t &);
+    
+    inline const_iterator begin() const;
+    inline const_iterator end() const;
+    String name(const_iterator) const;
+    
     struct PlatformPred {
-	inline PlatformPred(int platform = -1, int encoding = -1, int language = -1);
-	inline bool operator()(int platform, int encoding, int language) const;
+	inline PlatformPred(int nameid, int platform = -1, int encoding = -1, int language = -1);
+	inline bool operator()(const namerecord_t &) const;
       private:
-	int _platform, _encoding, _language;
+	int _nameid, _platform, _encoding, _language;
     };
     
     struct EnglishPlatformPred {
-	EnglishPlatformPred()		{ }
-	inline bool operator()(int platform, int encoding, int language) const;
+	EnglishPlatformPred(int nameid)	: _nameid(nameid) { }
+	inline bool operator()(const namerecord_t &) const;
+      private:
+	int _nameid;
     };
 
     template <typename PlatformPredicate> String find(int nameid, PlatformPredicate) const;
@@ -41,59 +56,81 @@ class Name { public:
     String _str;
     int _error;
 
-    enum { HEADER_SIZE = 6, NAMEREC_SIZE = 12 };
-    
     int parse_header(ErrorHandler *);
     
 };
 
-inline
-Name::PlatformPred::PlatformPred(int p, int e, int l)
-    : _platform(p), _encoding(e), _language(l)
+
+#define USHORT_AT(d)		(ntohs(*reinterpret_cast<const uint16_t *>(d)))
+
+inline int
+Name::nameid(const namerecord_t &nr)
 {
+    return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr) + 6);
 }
 
-inline bool
-Name::PlatformPred::operator()(int p, int e, int l) const
+inline int
+Name::platform(const namerecord_t &nr)
 {
-    return (_platform < 0 || _platform == p)
-	&& (_encoding < 0 || _encoding == e)
-	&& (_language < 0 || _language == l);
+    return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr));
 }
 
-inline bool
-Name::EnglishPlatformPred::operator()(int p, int e, int l) const
+inline int
+Name::encoding(const namerecord_t &nr)
 {
-    return (p == P_MACINTOSH && e == 0 && l == 0)
-	|| (p == P_MICROSOFT && e == 1 && l == 0x409);
+    return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr) + 2);
 }
 
-
-#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
-
-template <typename P>
-String
-Name::find(int nameid, P predicate) const
+inline int
+Name::language(const namerecord_t &nr)
 {
-    if (error() < 0)
-	return String();
-    const uint8_t *data = _str.udata();
-    int count = USHORT_AT(data + 2);
-    int stringOffset = USHORT_AT(data + 4);
-    data += HEADER_SIZE;
-    for (int i = 0; i < count; i++, data += NAMEREC_SIZE) {
-	if (nameid == USHORT_AT(data + 6)
-	    && predicate(USHORT_AT(data), USHORT_AT(data + 2), USHORT_AT(data + 4))) {
-	    int length = USHORT_AT(data + 8);
-	    int offset = USHORT_AT(data + 10);
-	    if (stringOffset + offset + length <= _str.length())
-		return _str.substring(stringOffset + offset, length);
-	}
-    }
-    return String();
+    return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr) + 4);
+}
+
+inline Name::const_iterator
+Name::begin() const
+{
+    return reinterpret_cast<const_iterator>(_str.udata() + HEADER_SIZE);
+}
+
+inline Name::const_iterator
+Name::end() const
+{
+    if (_error >= 0) {
+	int count = USHORT_AT(_str.data() + 2);
+	return reinterpret_cast<const_iterator>(_str.udata() + HEADER_SIZE + NAMEREC_SIZE * count);
+    } else
+	return reinterpret_cast<const_iterator>(_str.udata() + HEADER_SIZE);
 }
 
 #undef USHORT_AT
+
+
+inline
+Name::PlatformPred::PlatformPred(int nid, int p, int e, int l)
+    : _nameid(nid), _platform(p), _encoding(e), _language(l)
+{
+}
+
+inline bool
+Name::PlatformPred::operator()(const namerecord_t &i) const
+{
+    return (_nameid == nameid(i))
+	&& (_platform < 0 || _platform == platform(i))
+	&& (_encoding < 0 || _encoding == encoding(i))
+	&& (_language < 0 || _language == language(i));
+}
+
+inline bool
+Name::EnglishPlatformPred::operator()(const namerecord_t &i) const
+{
+    if (_nameid == nameid(i)) {
+	int p = platform(i), e = encoding(i), l = language(i);
+	return (p == P_MACINTOSH && e == 0 && l == 0)
+	    || (p == P_MICROSOFT && e == 1 && l == 0x409);
+    } else
+	return false;
+}
 
 }}
 #endif

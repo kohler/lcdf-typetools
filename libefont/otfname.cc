@@ -51,4 +51,17 @@ Name::parse_header(ErrorHandler *errh)
     return 0;
 }
 
+String
+Name::name(const_iterator i) const
+{
+    if (i < end()) {
+	int stringOffset = USHORT_AT(_str.data() + 4);
+	int length = USHORT_AT(reinterpret_cast<const uint8_t *>(i) + 8);
+	int offset = USHORT_AT(reinterpret_cast<const uint8_t *>(i) + 10);
+	if (stringOffset + offset + length <= _str.length())
+	    return _str.substring(stringOffset + offset, length);
+    }
+    return String();
+}
+
 }}
