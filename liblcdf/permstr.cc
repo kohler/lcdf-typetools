@@ -164,6 +164,13 @@ PermString::PermString(const char *s, int length)
 }
 
 
+PermString::PermString(char c)
+{
+  unsigned char u = (unsigned char)c;
+  _rep = one_char_doodad[u].data;
+}
+
+
 void
 PermString::static_initialize()
 {
@@ -343,5 +350,34 @@ permprintf(const char *s, ...)
   va_start(val, s);
   PermString p = vpermprintf(s, val);
   va_end(val);
+  return p;
+}
+
+
+PermString
+permcat(PermString p1, PermString p2)
+{
+  unsigned l1 = p1.length();
+  unsigned l2 = p2.length();
+  char *s = new char[l1 + l2];
+  memcpy(s, p1.cc(), l1);
+  memcpy(s + l1, p2.cc(), l2);
+  PermString p(s, l1 + l2);
+  delete[] s;
+  return p;
+}
+
+PermString
+permcat(PermString p1, PermString p2, PermString p3)
+{
+  unsigned l1 = p1.length();
+  unsigned l2 = p2.length();
+  unsigned l3 = p3.length();
+  char *s = new char[l1 + l2 + l3];
+  memcpy(s, p1.cc(), l1);
+  memcpy(s + l1, p2.cc(), l2);
+  memcpy(s + l1 + l2, p3.cc(), l3);
+  PermString p(s, l1 + l2 + l3);
+  delete[] s;
   return p;
 }

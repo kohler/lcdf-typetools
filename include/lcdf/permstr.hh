@@ -30,6 +30,7 @@ class PermString {
   
   PermString()				: _rep(0) { }
   PermString(int i)			: _rep(0) { if (i) assert(0); }
+  explicit PermString(char c);
   PermString(const char *);
   PermString(const char *, int);
   
@@ -49,6 +50,8 @@ class PermString {
   
   friend PermString permprintf(const char *, ...);
   friend PermString vpermprintf(const char *, va_list);
+  friend PermString permcat(PermString, PermString);
+  friend PermString permcat(PermString, PermString, PermString);
   
   // Declare a PermString::Initializer in any file in which you declare
   // static global PermStrings.

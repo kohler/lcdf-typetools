@@ -27,6 +27,7 @@ class Slurper {
   
   void grow_buffer();
   int more_data();
+  char *get_line_at(unsigned);
   
  public:
   
@@ -42,8 +43,11 @@ class Slurper {
   const Filename &filename() const	{ return _filename; }
   char *peek_line();
   char *next_line();
+  char *append_line(char *);
   void save_line()			{ _saved_line = true; }
-  unsigned length() const		{ return _line_len; }
+
+  char *cur_line() const		{ return (char *)_line; }
+  unsigned cur_line_length() const	{ return _line_len; }
   
 };
 

@@ -15,7 +15,7 @@ class Filename {
   
  public:
   
-  Filename() : _dir("."), _name(0), _path("."), _actual(0) { }
+  Filename() : _dir("."), _name(0), _path(0), _actual(0) { }
   Filename(PermString);
   Filename(PermString dir, PermString name);
   Filename(FILE *, PermString fake_name);

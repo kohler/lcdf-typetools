@@ -175,24 +175,31 @@ PinnedErrorHandler::verror(Kind kind, const Landmark &landmark, const char *s,
 
 
 /*****
- * NullErrorHandler
+ * SilentErrorHandler
  **/
 
-class NullErrorHandler: public ErrorHandler {
-
+class SilentErrorHandler: public ErrorHandler {
+  
  public:
   
-  NullErrorHandler()						{ }
-
-  void verror(Kind, const Landmark &, const char *, va_list)	{ }
-
+  SilentErrorHandler()						{ }
+  
+  void verror(Kind, const Landmark &, const char *, va_list);
+  
 };
 
 
-ErrorHandler *
-ErrorHandler::null_handler()
+void
+SilentErrorHandler::verror(Kind kind, const Landmark &, const char *, va_list)
 {
-  static ErrorHandler *errh = new NullErrorHandler;
-  return errh;
+  if (kind == FatalKind)
+    exit(1);
 }
 
+ErrorHandler *
+ErrorHandler::silent_handler()
+{
+  static ErrorHandler *errh = 0;
+  if (!errh) errh = new SilentErrorHandler;
+  return errh;
+}

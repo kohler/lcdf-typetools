@@ -70,26 +70,9 @@ Slurper::more_data()
   return amount;
 }
 
-
 char *
-Slurper::peek_line()
+Slurper::get_line_at(unsigned pos)
 {
-  next_line();
-  _saved_line = true;
-  return (char *)_line;
-}
-
-
-char *
-Slurper::next_line()
-{
-  if (_saved_line || _at_eof) {
-    _saved_line = false;
-    return (char *)_line;
-  }
-  
-  unsigned pos = _pos;
-
   while (1) {
     for (; pos < _len; pos++)
       if (_data[pos] == '\n' || _data[pos] == '\r')
@@ -101,19 +84,15 @@ Slurper::next_line()
     bool got_more_data = more_data() != 0;
     pos = _pos + offset;
     if (!got_more_data) {
-      if (_pos < _len)		// last line in file doesn't end in \n
-	goto line_ends_at_pos;
-      else {			// no more lines in file
-	_at_eof = true;
-	return 0;
-      }
+      _at_eof = true;
+      goto line_ends_at_pos;
     }
   }
   
  line_ends_at_pos:
   
   // PRECONDITION: the line starts at _pos and ends at pos.
-  int next_pos;
+  unsigned next_pos;
   
   // Find beginning of next line. 3 cases:
   // 1. line ends in \r\n	-> _pos = pos + 2;
@@ -125,6 +104,8 @@ Slurper::next_line()
     // ensure we have enough space for terminating null
     if (pos == _cap) grow_buffer();
     next_pos = pos;
+    // if already at EOF, don't increment the line number
+    if (pos == _pos) _lineno--;
     
   } else if (_data[pos] == '\n')
     next_pos = pos + 1;
@@ -152,4 +133,49 @@ Slurper::next_line()
   _pos = next_pos;
   _lineno++;  
   return (char *)_line;
+}
+
+char *
+Slurper::next_line()
+{
+  if (_saved_line) {
+    _saved_line = false;
+    return (char *)_line;
+  }
+  get_line_at(_pos);
+  if (_line_len == 0 && _at_eof)
+    _line = 0;
+  return (char *)_line;
+}
+
+char *
+Slurper::peek_line()
+{
+  next_line();
+  _saved_line = true;
+  return (char *)_line;
+}
+
+char *
+Slurper::append_line(char *c_start_at)
+{
+  unsigned char *start_at = (unsigned char *)c_start_at;
+  if (start_at < _line || start_at >= _line + _line_len)
+    return 0;
+  
+  unsigned delta = (_data + _pos) - start_at;
+  if (delta == 0) {
+    // should never happen, but do nothing anyway
+  } else if (_len - _pos > _line_len) {
+    memmove(_line + delta, _line, _line_len);
+    _line += delta;
+  } else {
+    memmove(_data + _pos - delta, _data + _pos, _len - _pos);
+    _pos -= delta;
+    _len -= delta;
+  }
+  
+  unsigned append_at = _pos;
+  _pos = _line - _data;
+  return get_line_at(append_at);
 }

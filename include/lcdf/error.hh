@@ -15,7 +15,7 @@ class ErrorHandler {
   ErrorHandler()			{ }
   virtual ~ErrorHandler()		{ }
   
-  static ErrorHandler *null_handler();
+  static ErrorHandler *silent_handler();
   
   virtual void verror(Kind, const Landmark &, const char *, va_list);
   
