@@ -219,7 +219,7 @@ particular purpose. That's right: you're on your own!\n");
   
  done:
   Type1MMSpace *mmspace = amfm->mmspace();
-  Vector<double> design = mmspace->design_vector();
+  Vector<double> design = mmspace->default_design_vector();
   for (int i = 0; i < values.count(); i++)
     if (ax_names[i])
       mmspace->set_design(design, ax_names[i], values[i], &errh);
@@ -227,7 +227,7 @@ particular purpose. That's right: you're on your own!\n");
       mmspace->set_design(design, ax_nums[i], values[i], &errh);
   
   Vector<double> weight;
-  if (!mmspace->weight_vector(design, weight, &errh))
+  if (!mmspace->design_to_weight(design, weight, &errh))
     errh.fatal("can't create weight vector");
   
   Metrics *m = amfm->interpolate(design, weight, &errh);

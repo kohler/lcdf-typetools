@@ -265,7 +265,7 @@ particular purpose. That's right: you're on your own!\n");
     exit(0);
   }
   
-  Vector<double> design = mmspace->design_vector();
+  Vector<double> design = mmspace->default_design_vector();
   for (int i = 0; i < values.count(); i++)
     if (ax_names[i])
       mmspace->set_design(design, ax_names[i], values[i], &errh);

@@ -32,13 +32,13 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   t1d = dict("NormDesignVector");
   if (t1d) {
     NumVector norm_design;
-    if (mmspace->norm_design_vector(design, norm_design))
+    if (mmspace->design_to_norm_design(design, norm_design))
       t1d->set_numvec(norm_design);
     else
       t1d->kill();
   }
   
-  if (!mmspace->weight_vector(design, _weight_vector, errh))
+  if (!mmspace->design_to_weight(design, _weight_vector, errh))
     return false;
   t1d = dict("WeightVector");
   if (t1d) t1d->set_numvec(_weight_vector);
@@ -159,13 +159,18 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   if (def) def->kill();
   def = p_dict("CDV");
   if (def) def->kill();
+  def = dict("BlendDesignPositions");
+  if (def) def->kill();
+  def = dict("BlendDesignMap");
+  if (def) def->kill();
 }
 
 
 void
 MyFont::interpolate_charstrings()
 {
-  Type1MMRemover rewriter(this, &_weight_vector);
+  set_weight_vector(&_weight_vector);
+  Type1MMRemover rewriter(this, _nmasters);
   for (int i = 0; i < subr_count(); i++)
     if (subr(i))
       rewriter.rewrite(*subr(i));
