@@ -10,11 +10,11 @@
 
 PermString::Initializer::Initializer()
 {
-  static int initialized = 0;
-  if (!initialized) {
-    PermString::static_initialize();
-    initialized = 1;
-  }
+    static int initialized = 0;
+    if (!initialized) {
+	PermString::static_initialize();
+	initialized = 1;
+    }
 }
 
 static PermString::Initializer initializer;
@@ -83,111 +83,111 @@ static int scatter[] = {        /* map characters to random values */
 
 PermString::PermString(const char *s)
 {
-  register unsigned char *m = (unsigned char *)s;
-  register unsigned char *mm;
-  int len;
-  
-  if (m == 0) {
-    _rep = 0;
-    return;
-  } else if (m[0] == 0) {
-    _rep = zero_char_doodad.data;
-    return;
-  } else if (m[1] == 0) {
-    _rep = one_char_doodad[m[0]].data;
-    return;
-  }
-  
-  unsigned int hash;
-  for (hash = 0, len = 0, mm = m; *mm; mm++, len++)
-    hash = (hash << 1) + scatter[*mm];
-  hash &= (NHASH - 1);
-  
-  Doodad *buck;
-  for (buck = buckets[hash]; buck; buck = buck->next)
-    if (len == buck->length && memcmp(s, buck->data, len) == 0) {
-      _rep = buck->data;
-      return;
+    register const unsigned char *m = (const unsigned char *)s;
+    register const unsigned char *mm;
+    int len;
+
+    if (m == 0) {
+	_rep = 0;
+	return;
+    } else if (m[0] == 0) {
+	_rep = zero_char_doodad.data;
+	return;
+    } else if (m[1] == 0) {
+	_rep = one_char_doodad[m[0]].data;
+	return;
     }
-  
-  // CANNOT USE new because the structure has variable size.
-  buck = (Doodad *)malloc(sizeof(Doodad) + len - 1);
-  buck->next = buckets[hash];
-  buckets[hash] = buck;
-  buck->length = len;
-  strcpy(buck->data, s);
-  
-  _rep = buck->data;
+
+    unsigned int hash;
+    for (hash = 0, len = 0, mm = m; *mm; mm++, len++)
+	hash = (hash << 1) + scatter[*mm];
+    hash &= (NHASH - 1);
+
+    Doodad *buck;
+    for (buck = buckets[hash]; buck; buck = buck->next)
+	if (len == buck->length && memcmp(s, buck->data, len) == 0) {
+	    _rep = buck->data;
+	    return;
+	}
+
+    // CANNOT USE new because the structure has variable size.
+    buck = (Doodad *)malloc(sizeof(Doodad) + len - 1);
+    buck->next = buckets[hash];
+    buckets[hash] = buck;
+    buck->length = len;
+    strcpy(buck->data, s);
+
+    _rep = buck->data;
 }
 
 
 PermString::PermString(const char *s, int length)
 {
-  register unsigned char *m = (unsigned char *)s;
-  register unsigned char *mm;
-  
-  if (length == 0) {
-    _rep = zero_char_doodad.data;
-    return;
-  } else if (length == 1) {
-    _rep = one_char_doodad[m[0]].data;
-    return;
-  }
-  
-  unsigned int hash;
-  int l;
-  for (hash = 0, l = length, mm = m; l; mm++, l--)
-    hash = (hash << 1) + scatter[*mm];
-  hash &= (NHASH - 1);
-  
-  Doodad *buck;
-  for (buck = buckets[hash]; buck; buck = buck->next)
-    if (length == buck->length && memcmp(s, buck->data, length) == 0) {
-      _rep = buck->data;
-      return;
+    register unsigned char *m = (unsigned char *)s;
+    register unsigned char *mm;
+
+    if (length == 0) {
+	_rep = zero_char_doodad.data;
+	return;
+    } else if (length == 1) {
+	_rep = one_char_doodad[m[0]].data;
+	return;
     }
-  
-  // CANNOT USE new because the structure has variable size.
-  buck = (Doodad *)malloc(sizeof(Doodad) + length - 1);
-  buck->next = buckets[hash];
-  buckets[hash] = buck;
-  buck->length = length;
-  memcpy(buck->data, s, length);
-  buck->data[length] = 0;
-  
-  _rep = buck->data;
+
+    unsigned int hash;
+    int l;
+    for (hash = 0, l = length, mm = m; l; mm++, l--)
+	hash = (hash << 1) + scatter[*mm];
+    hash &= (NHASH - 1);
+
+    Doodad *buck;
+    for (buck = buckets[hash]; buck; buck = buck->next)
+	if (length == buck->length && memcmp(s, buck->data, length) == 0) {
+	    _rep = buck->data;
+	    return;
+	}
+
+    // CANNOT USE new because the structure has variable size.
+    buck = (Doodad *)malloc(sizeof(Doodad) + length - 1);
+    buck->next = buckets[hash];
+    buckets[hash] = buck;
+    buck->length = length;
+    memcpy(buck->data, s, length);
+    buck->data[length] = 0;
+    
+    _rep = buck->data;
 }
 
 
 PermString::PermString(char c)
 {
-  unsigned char u = (unsigned char)c;
-  _rep = one_char_doodad[u].data;
+    unsigned char u = (unsigned char)c;
+    _rep = one_char_doodad[u].data;
 }
 
 
 void
 PermString::static_initialize()
 {
-  zero_char_doodad.next = 0;
-  zero_char_doodad.length = 0;
-  zero_char_doodad.data[0] = 0;
-  for (int i = 0; i < 256; i++) {
-    one_char_doodad[i].next = 0;
-    one_char_doodad[i].length = 1;
-    one_char_doodad[i].data[0] = i;
-    one_char_doodad[i].data[1] = 0;
-  }
+    zero_char_doodad.next = 0;
+    zero_char_doodad.length = 0;
+    zero_char_doodad.data[0] = 0;
+    for (int i = 0; i < 256; i++) {
+	one_char_doodad[i].next = 0;
+	one_char_doodad[i].length = 1;
+	one_char_doodad[i].data[0] = i;
+	one_char_doodad[i].data[1] = 0;
+    }
 }
 
 
 bool
 operator==(PermString a, const char *b)
 {
-  if (!a || !b)
-    return !a && !b;
-  int l = strlen(b);
-  return a.length() == l && memcmp(a.cc(), b, l) == 0;
+    if (!a || !b)
+	return !a && !b;
+    int l = strlen(b);
+    return a.length() == l && memcmp(a.cc(), b, l) == 0;
 }
 
 
@@ -199,187 +199,187 @@ static char *psc = (char *)malloc(pscap);
 static void
 append(const char *s, int len)
 {
-  if (pspos + len >= pscap) {
-    pscap *= 2;
-    psc = (char *)realloc(psc, pscap);
-  }
-  memcpy(psc + pspos, s, len);
-  pspos += len;
+    if (pspos + len >= pscap) {
+	pscap *= 2;
+	psc = (char *)realloc(psc, pscap);
+    }
+    memcpy(psc + pspos, s, len);
+    pspos += len;
 }
-
 
 inline static void
 extend(int len)
 {
-  while (pspos + len >= pscap) {
-    pscap *= 2;
-    psc = (char *)realloc(psc, pscap);
-  }
+    while (pspos + len >= pscap) {
+	pscap *= 2;
+	psc = (char *)realloc(psc, pscap);
+    }
 }
-
 
 PermString
 vpermprintf(const char *s, va_list val)
 {
-  pspos = 0;
-  while (1) {
-    
-    const char *pct = strchr(s, '%');
-    if (!pct) {
-      if (*s) append(s, strlen(s));
-      break;
-    }
-    if (pct != s) {
-      append(s, pct - s);
-      s = pct;
-    }
-    
-    int iflag = -1;
-    while (1)
-      switch (*++s) {
-	
-       case '0':
-	/* zeroflag = 1; */
-	break;
-	
-       case '1': case '2': case '3': case '4': case '5':
-       case '6': case '7': case '8': case '9':
-	if (iflag != -1) assert(0 && "Too many decimal flags in permprintf");
-	iflag = 0;
-	while (*s >= '0' && *s <= '9') {
-	  iflag = iflag * 10 + *s - '0';
-	  s++;
+    pspos = 0;
+    while (1) {
+
+	const char *pct = strchr(s, '%');
+	if (!pct) {
+	    if (*s) append(s, strlen(s));
+	    break;
 	}
-	break;
+	if (pct != s) {
+	    append(s, pct - s);
+	    s = pct;
+	}
+
+	int iflag = -1;
+	while (1)
+	    switch (*++s) {
 	
-       case '*': {
-	 if (iflag != -1) assert(0 && "iflag given");
-	 iflag = va_arg(val, int);
-	 break;
-       }
-       
-       case 's': {
-	 const char *x = va_arg(val, const char *);
-	 if (x) {
-	   if (iflag < 0)
-	     append(x, strlen(x));
-	   else
-	     append(x, iflag);
-	 }
-	 goto pctdone;
-       }
-       
-       case 'c': {
-	 char c = (char)(va_arg(val, int) & 0xFF);
-	 append(&c, 1);
-	 goto pctdone;
-       }
-       
-       case 'p': {
-	 PermString::Capsule x = va_arg(val, PermString::Capsule);
-	 PermString px;
-	 if (x)
-	   px = PermString::decapsule(x);
-	 if (px) {
-	   if (iflag < 0)
-	     append(px, px.length());
-	   else {
-	     assert(iflag <= px.length());
-	     append(px, iflag);
-	   }
-	 }
-	 goto pctdone;
-       }
-       
-       case 'd': {
-	 // FIXME FIXME rewrite for sense
-	 int x = va_arg(val, int);
-	 if (pspos == pscap) extend(1);
-	 
-	 // FIXME -2^31
-	 unsigned int ux = x;
-	 if (x < 0) {
-	   psc[pspos++] = '-';
-	   ux = -x;
-	 }
-	 
-	 int numdigits = 0;
-	 for (unsigned digcountx = ux; digcountx > 9; digcountx /= 10)
-	   numdigits++;
-	 
-	 extend(numdigits + 1);
-	 int digit = numdigits;
-	 do {
-	   psc[pspos + digit] = (ux % 10) + '0';
-	   ux /= 10;
-	   digit--;
-	 } while (ux);
-	 pspos += numdigits + 1;
-	 
-	 goto pctdone;
-       }
-       
-       case 'g': {
-	 // FIXME FIXME rewrite for sense
-	 double x = va_arg(val, double);
-	 char buffer[1000];
-	 int len;
-	 sprintf(buffer, "%.10g%n", x, &len);
-	 extend(len);
-	 strcpy(psc + pspos, buffer);
-	 pspos += len;
-	 goto pctdone;
-       }
-       
-       default:
-	assert(0 && "Bad % in permprintf");
-	goto pctdone;
+	      case '0':
+		/* zeroflag = 1; */
+		break;
 	
-      }
+	      case '1': case '2': case '3': case '4': case '5':
+	      case '6': case '7': case '8': case '9':
+		if (iflag != -1)
+		    assert(0 && "Too many decimal flags in permprintf");
+		iflag = 0;
+		while (*s >= '0' && *s <= '9') {
+		    iflag = iflag * 10 + *s - '0';
+		    s++;
+		}
+		break;
+	
+	      case '*': {
+		  if (iflag != -1)
+		      assert(0 && "iflag given");
+		  iflag = va_arg(val, int);
+		  break;
+	      }
+       
+	      case 's': {
+		  const char *x = va_arg(val, const char *);
+		  if (x) {
+		      if (iflag < 0)
+			  append(x, strlen(x));
+		      else
+			  append(x, iflag);
+		  }
+		  goto pctdone;
+	      }
+       
+	      case 'c': {
+		  char c = (char)(va_arg(val, int) & 0xFF);
+		  append(&c, 1);
+		  goto pctdone;
+	      }
+       
+	      case 'p': {
+		  PermString::Capsule x = va_arg(val, PermString::Capsule);
+		  PermString px;
+		  if (x)
+		      px = PermString::decapsule(x);
+		  if (px) {
+		      if (iflag < 0)
+			  append(px, px.length());
+		      else {
+			  assert(iflag <= px.length());
+			  append(px, iflag);
+		      }
+		  }
+		  goto pctdone;
+	      }
+       
+	      case 'd': {
+		  // FIXME FIXME rewrite for sense
+		  int x = va_arg(val, int);
+		  if (pspos == pscap) extend(1);
+		  
+		  // FIXME -2^31
+		  unsigned int ux = x;
+		  if (x < 0) {
+		      psc[pspos++] = '-';
+		      ux = -x;
+		  }
+	 
+		  int numdigits = 0;
+		  for (unsigned digcountx = ux; digcountx > 9; digcountx /= 10)
+		      numdigits++;
+	 
+		  extend(numdigits + 1);
+		  int digit = numdigits;
+		  do {
+		      psc[pspos + digit] = (ux % 10) + '0';
+		      ux /= 10;
+		      digit--;
+		  } while (ux);
+		  pspos += numdigits + 1;
+		  
+		  goto pctdone;
+	      }
+       
+	      case 'g': {
+		  // FIXME FIXME rewrite for sense
+		  double x = va_arg(val, double);
+		  char buffer[1000];
+		  int len;
+		  sprintf(buffer, "%.10g%n", x, &len);
+		  extend(len);
+		  strcpy(psc + pspos, buffer);
+		  pspos += len;
+		  goto pctdone;
+	      }
+       
+	      default:
+		assert(0 && "Bad % in permprintf");
+		goto pctdone;
+	
+	    }
     
-   pctdone:
-    s++;
-  }
+      pctdone:
+	s++;
+    }
   
-  return PermString(psc, pspos);
+    return PermString(psc, pspos);
 }
 
 
 PermString
 permprintf(const char *s, ...)
 {
-  va_list val;
-  va_start(val, s);
-  PermString p = vpermprintf(s, val);
-  va_end(val);
-  return p;
+    va_list val;
+    va_start(val, s);
+    PermString p = vpermprintf(s, val);
+    va_end(val);
+    return p;
 }
 
 
 PermString
 permcat(PermString p1, PermString p2)
 {
-  unsigned l1 = p1.length();
-  unsigned l2 = p2.length();
-  char *s = new char[l1 + l2];
-  memcpy(s, p1.cc(), l1);
-  memcpy(s + l1, p2.cc(), l2);
-  PermString p(s, l1 + l2);
-  delete[] s;
-  return p;
+    unsigned l1 = p1.length();
+    unsigned l2 = p2.length();
+    char *s = new char[l1 + l2];
+    memcpy(s, p1.cc(), l1);
+    memcpy(s + l1, p2.cc(), l2);
+    PermString p(s, l1 + l2);
+    delete[] s;
+    return p;
 }
 
 PermString
 permcat(PermString p1, PermString p2, PermString p3)
 {
-  unsigned l1 = p1.length();
-  unsigned l2 = p2.length();
-  unsigned l3 = p3.length();
-  char *s = new char[l1 + l2 + l3];
-  memcpy(s, p1.cc(), l1);
-  memcpy(s + l1, p2.cc(), l2);
-  memcpy(s + l1 + l2, p3.cc(), l3);
-  PermString p(s, l1 + l2 + l3);
-  delete[] s;
-  return p;
+    unsigned l1 = p1.length();
+    unsigned l2 = p2.length();
+    unsigned l3 = p3.length();
+    char *s = new char[l1 + l2 + l3];
+    memcpy(s, p1.cc(), l1);
+    memcpy(s + l1, p2.cc(), l2);
+    memcpy(s + l1 + l2, p3.cc(), l3);
+    PermString p(s, l1 + l2 + l3);
+    delete[] s;
+    return p;
 }

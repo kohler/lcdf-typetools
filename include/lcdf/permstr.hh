@@ -12,20 +12,20 @@ class PermString { struct Doodad; public:
     // static global PermStrings.
     struct Initializer { Initializer(); };
   
-    PermString()				: _rep(0) { }
+    PermString()			: _rep(0) { }
     PermString(int i)			: _rep(0) { assert(!i); }
     explicit PermString(char c);
     PermString(const char *);
     PermString(const char *, int);
   
-    operator bool() const			{ return _rep != 0; }
+    operator bool() const		{ return _rep != 0; }
     int length() const			{ return doodad()->length; }
   
     friend bool operator==(PermString, PermString);
     friend bool operator!=(PermString, PermString);
   
     const char *cc() const		{ return _rep; }
-    operator const char *() const		{ return _rep; }
+    operator const char *() const	{ return _rep; }
   
     Capsule capsule() const		{ return doodad(); }
     static PermString decapsule(Capsule c) { return PermString(c); }
@@ -45,8 +45,8 @@ class PermString { struct Doodad; public:
   
     char *_rep;
   
-    PermString(Doodad *d)			: _rep(d->data) { }
-    Doodad *doodad() const { return (Doodad *)(_rep - offsetof(Doodad, data)); }
+    PermString(Doodad *d)		: _rep(d->data) { }
+    Doodad *doodad() const { return (Doodad*)(_rep - offsetof(Doodad, data)); }
   
     friend class PermString::Initializer;
     static void static_initialize();
