@@ -14,6 +14,7 @@ class Landmark {
  public:
   
   Landmark()				: _file(0), _line(~0U) { }
+  explicit Landmark(PermString f)	: _file(f), _line(~0U) { }
   Landmark(PermString f, unsigned l)	: _file(f), _line(l) { }
   
   operator bool() const			{ return _file; }
@@ -22,12 +23,18 @@ class Landmark {
   PermString file() const		{ return _file; }
   unsigned line() const			{ return _line; }
   
-  Landmark next_line() const		{ return Landmark(_file, _line + 1); }
+  Landmark next_line() const;
   
   void print(FILE *) const;
   
 };
 
 Landmark operator+(const Landmark &, int);
+
+inline Landmark
+Landmark::next_line() const
+{
+  return *this + 1;
+}
 
 #endif
