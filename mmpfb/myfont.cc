@@ -8,9 +8,9 @@
 #include <efont/t1mm.hh>
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
-#include <cstring>
-#include <cstdio>
-#include <cmath>
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
 using namespace Efont;
 
 MyFont::MyFont(Type1Reader &reader)
@@ -77,8 +77,8 @@ MyFont::set_design_vector(MultipleMasterSpace *mmspace, const Vector<double> &de
     // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
     // components are unknown.
     if (!KNOWN(design[0])) {
-	errh->error("must specify %s's %s coordinate", font_name().cc(),
-		    mmspace->axis_type(0).cc());
+	errh->error("must specify %s's %s coordinate", font_name().c_str(),
+		    mmspace->axis_type(0).c_str());
 	return false;
     }
   
@@ -99,7 +99,7 @@ MyFont::set_design_vector(MultipleMasterSpace *mmspace, const Vector<double> &de
 	    sa << '_' << design[a];
 	// Multiple masters require an underscore AFTER the font name
 	sa << '_';
-	t1d->set_name(sa.cc());
+	t1d->set_name(sa.c_str());
 	uncache_defs();		// remove cached font name
     }
 
@@ -114,7 +114,7 @@ MyFont::set_design_vector(MultipleMasterSpace *mmspace, const Vector<double> &de
 	    if (label)
 		sa << ' ' << label;
 	}
-	t1d->set_string(sa.cc());
+	t1d->set_string(sa.c_str());
     }
     
     // save UniqueID, then kill its definition
@@ -161,7 +161,7 @@ MyFont::interpolate_dict_int(PermString name, Dict the_dict, ErrorHandler *errh)
 	    val += blend[m] * _weight_vector[m];
 	int ival = (int)floor(val + 0.50001);
 	if (fabs(val - ival) >= 0.001)
-	    errh->warning("interpolated %s should be an integer (it is %g)", name.cc(), val);
+	    errh->warning("interpolated %s should be an integer (it is %g)", name.c_str(), val);
 	def->set_num(ival);
 	kill_def(blend_def, the_dict + dBlend);
     }
@@ -264,12 +264,12 @@ MyFont::interpolate_dicts(bool force_integer, ErrorHandler *errh)
       PermString name = i.key();
       if (i.value() && name != "Private" && name != "FontInfo"
 	  && name != "ConvertDesignVector" && name != "NormalizeDesignVector")
-	  errh->warning("didn't interpolate %s in Blend", name.cc());
+	  errh->warning("didn't interpolate %s in Blend", name.c_str());
   }
 
   for (DictHashMap::const_iterator i = dict_begin(dBlendPrivate); i; i++)
       if (i.value() && i.key() != "Erode")
-	  errh->warning("didn't interpolate %s in BlendPrivate", i.key().cc());
+	  errh->warning("didn't interpolate %s in BlendPrivate", i.key().c_str());
   
   kill_def(p_dict("NDV"), dPrivate);
   kill_def(p_dict("CDV"), dPrivate);

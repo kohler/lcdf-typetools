@@ -6,8 +6,8 @@
 #include <efont/t1csgen.hh>
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
-#include <cstdio>
-#include <cmath>
+#include <stdio.h>
+#include <math.h>
 
 using namespace Efont;
 
@@ -640,13 +640,13 @@ Type1MMRemover::subr_expander(int subrno)
 }
 
 extern "C" {
-    static int
-    sort_permstring_compare(const void *v1, const void *v2)
-    {
-	const PermString *s1 = (const PermString *)v1;
-	const PermString *s2 = (const PermString *)v2;
-	return strcmp(s1->cc(), s2->cc());
-    }
+static int CDECL
+sort_permstring_compare(const void *v1, const void *v2)
+{
+    const PermString *s1 = (const PermString *)v1;
+    const PermString *s2 = (const PermString *)v2;
+    return strcmp(s1->c_str(), s2->c_str());
+}
 }
 
 void
@@ -717,12 +717,12 @@ Type1MMRemover::run()
 	    PermString n = bad_glyphs[i];
 	    bool comma = (i < bad_glyphs.size() - 1);
 	    if (sa.length() && sa.length() + 1 + n.length() + comma > 70) {
-		_errh->message("  %s", sa.cc());
+		_errh->message("  %s", sa.c_str());
 		sa.clear();
 	    }
 	    sa << (sa.length() ? " " : "") << n << (comma ? "," : "");
 	}
-	_errh->message("  %s", sa.cc());
+	_errh->message("  %s", sa.c_str());
     }
 }
 
@@ -863,7 +863,7 @@ Type1SubrRemover::~Type1SubrRemover()
 static Vector<int> *sort_keys;
 
 extern "C" {
-static int
+static int CDECL
 sort_permute_compare(const void *v1, const void *v2)
 {
     const int *i1 = (const int *)v1;
@@ -879,7 +879,7 @@ Type1SubrRemover::run(int lower_to)
 	lower_to = _nsubrs;
     if (lower_to < _save_count) {
 	_errh->warning("reducing %s to minimum number of subroutines (%d)",
-		       _font->font_name().cc(), _save_count - _nonexist_count);
+		       _font->font_name().c_str(), _save_count - _nonexist_count);
 	lower_to = _save_count;
     }
     int to_remove = _nsubrs - _nonexist_count - lower_to;

@@ -3,7 +3,7 @@
 #endif
 #include "t1minimize.hh"
 #include <efont/t1item.hh>
-#include <cstdio>
+#include <stdio.h>
 
 using namespace Efont;
 

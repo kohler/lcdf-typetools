@@ -9,12 +9,12 @@
 #include <efont/amfm.hh>
 #include <lcdf/error.hh>
 #include <lcdf/clp.h>
-#include <cstdio>
-#include <cstring>
-#include <cerrno>
-#include <cmath>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <math.h>
 #ifdef HAVE_CTIME
-# include <ctime>
+# include <time.h>
 #endif
 
 #define WEIGHT_OPT	300
@@ -333,7 +333,7 @@ particular purpose.\n");
 #if MMAFM_RUN_MMPFB
   if (!mmspace->check_intermediate()) {
     char *buf = new char[amfm->font_name().length() + 30];
-    sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().cc());
+    sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().c_str());
     
     FILE *f = popen(buf, "r");
     if (f) {
@@ -359,7 +359,7 @@ particular purpose.\n");
     if (!mmspace->check_intermediate()) {
       errh->message("(I can't interpolate font programs with intermediate masters on my own.");
 #if MMAFM_RUN_MMPFB
-      errh->message("I tried to run `mmpfb --amcp-info %s', but it didn't work.", amfm->font_name().cc());
+      errh->message("I tried to run `mmpfb --amcp-info %s', but it didn't work.", amfm->font_name().c_str());
       errh->message("Maybe your PSRESOURCEPATH environment variable is not set?");
 #endif
       errh->fatal("See the manual page for more information.)");
@@ -373,8 +373,8 @@ particular purpose.\n");
   // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
   // components are unknown.
   if (!KNOWN(design[0]))
-    errh->fatal("must specify %s's %s coordinate", amfm->font_name().cc(),
-		mmspace->axis_type(0).cc());
+    errh->fatal("must specify %s's %s coordinate", amfm->font_name().c_str(),
+		mmspace->axis_type(0).c_str());
   
   Metrics *m = amfm->interpolate(design, weight, errh);
   if (m) {

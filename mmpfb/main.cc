@@ -9,14 +9,14 @@
 #include "t1minimize.hh"
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-#include <cstdarg>
-#include <cctype>
-#include <cerrno>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <errno.h>
 #ifdef HAVE_CTIME
-# include <ctime>
+# include <time.h>
 #endif
 
 #define WEIGHT_OPT	300
@@ -203,7 +203,7 @@ print_conversion_program(FILE *f, const Type1Charstring &cs, PermString name)
 	    int l = cs.length() - i;
 	    if (l > 32)
 		l = 32;
-	    fprintf(f, "%s <", name.cc());
+	    fprintf(f, "%s <", name.c_str());
 	    for (int j = 0; j < l; j++)
 		fprintf(f, "%02X", data[j]);
 	    fprintf(f, ">\n");
@@ -221,7 +221,7 @@ print_amcp_info(MultipleMasterSpace *mmspace, FILE *f)
   const Type1Charstring &cdv = mmspace->cdv();
   if (!ndv && !cdv)
     fprintf(stderr, "%s does not have conversion programs.\n",
-	    mmspace->font_name().cc());
+	    mmspace->font_name().c_str());
   else {
     fprintf(f, "StartConversionPrograms %d %d\n", ndv.length(),
 	    cdv.length());
@@ -385,7 +385,7 @@ particular purpose.\n");
   for (int i = 0; i < mmspace->naxes(); i++)
     if (!KNOWN(design[i]) && KNOWN(default_design[i])) {
       errh->warning("using default value %g for %s's %s", default_design[i],
-		    font->font_name().cc(), mmspace->axis_type(i).cc());
+		    font->font_name().c_str(), mmspace->axis_type(i).c_str());
       design[i] = default_design[i];
     }
   
