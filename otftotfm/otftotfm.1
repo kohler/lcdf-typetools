@@ -255,6 +255,19 @@ increases by
 .IR amt ,
 with half the space distributed to each sidebearing. Boundary-character
 kerns are added to maintain alignment at the ends of lines.
+'
+.Sp
+.TP 5
+.BI \-\-design\-size= size
+Set the output font's design size to
+.IR size ,
+a value in TeX points. This value is mostly just documentation, since LaTeX
+essentially ignores fonts' design sizes, but plain TeX may occasionally use
+the design size to decide how large a font should be. (Loading a font in
+TeX "at" a particular size effectively ignores the design size; loading a
+font plain or "scaled" by a given factor uses the design size.) The default
+is taken from the input font's optical size feature, or 10pt if it has no
+such feature.
 .PD
 '
 '

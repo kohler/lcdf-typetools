@@ -70,6 +70,7 @@ using namespace Efont;
 #define CODINGSCHEME_OPT	319
 #define UNICODING_OPT		320
 #define BOUNDARY_CHAR_OPT	321
+#define DESIGN_SIZE_OPT		322
 
 #define AUTOMATIC_OPT		331
 #define FONT_NAME_OPT		332
@@ -115,6 +116,7 @@ Clp_Option options[] = {
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
     { "boundary-char", 0, BOUNDARY_CHAR_OPT, Clp_ArgInt, 0 },
+    { "design-size", 0, DESIGN_SIZE_OPT, Clp_ArgDouble, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -168,6 +170,7 @@ static String encoding_file;
 static double extend;
 static double slant;
 static int letterspace;
+static double design_size;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -213,6 +216,7 @@ Font feature and transformation options:\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
+      --design-size=SIZE       Set font design size to SIZE.\n\
 \n\
 Encoding options:\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
@@ -474,7 +478,8 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
     } else if (out_encoding_name)
 	fprintf(f, "(CODINGSCHEME %.39s)\n", out_encoding_name.c_str());
 
-    double design_size = get_design_size(otf);
+    if (design_size <= 0)
+	design_size = get_design_size(otf);
     fprintf(f, "(DESIGNSIZE R %.1f)\n"
 	    "(DESIGNUNITS R %d.0)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
@@ -1339,6 +1344,14 @@ main(int argc, char *argv[])
 	    if (letterspace)
 		usage_error(errh, "letterspacing value specified twice");
 	    letterspace = clp->val.i;
+	    break;
+
+	  case DESIGN_SIZE_OPT:
+	    if (design_size > 0)
+		usage_error(errh, "design size value specified twice");
+	    else if (clp->val.d <= 0)
+		usage_error(errh, "design size must be > 0");
+	    design_size = clp->val.d;
 	    break;
 
 	  case LIGKERN_OPT:
