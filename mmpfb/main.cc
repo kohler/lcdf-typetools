@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <errno.h>
+#ifdef NO_STRERROR_DECL
+extern "C" char *strerror(int);
+#endif
 
 #define WEIGHT_OPT	300
 #define WIDTH_OPT	301
@@ -92,11 +96,23 @@ Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 
 
 void
-do_file(FILE *f)
+do_file(const char *filename)
 {
+  FILE *f;
+  if (strcmp(filename, "-") == 0) {
+    f = stdin;
+    filename = "<stdin>";
+  } else
+    f = fopen(filename, "rb");
+
+  if (!f)
+    errh.fatal("%s: %s", filename, strerror(errno));
+  
   Type1Reader *reader;
   int c = getc(f);
   ungetc(c, f);
+  if (c == EOF)
+    errh.fatal("%s: empty file", filename);
   if (c == 128)
     reader = new Type1PfbReader(f);
   else
@@ -107,7 +123,7 @@ do_file(FILE *f)
   
   mmspace = font->create_mmspace(&errh);
   if (!mmspace)
-    errh.fatal("not a multiple master font");
+    errh.fatal("%s: not a multiple master font", filename);
 }
 
 static void
@@ -238,22 +254,13 @@ particular purpose.\n");
       break;
       
      case Clp_NotOption:
-      if (strcmp(clp->arg, "-") == 0)
-	do_file(stdin);
-      else {
-	FILE *f = fopen(clp->arg, "rb");
-	if (f)
-	  do_file(f);
-	else
-	  errh.fatal("can't open `%s' for reading", clp->arg);
-      }
+      do_file(clp->arg);
       break;
       
      case Clp_Done:
-      if (argc == 1) goto short_usage;
-      if (!font) do_file(stdin);
+      if (!font) do_file("-");
       goto done;
-
+      
      short_usage:
      case Clp_BadOption:
       short_usage();
