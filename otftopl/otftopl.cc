@@ -578,11 +578,10 @@ do_file(const OpenType::Font &otf, const char *outfn,
 	fclose(f);
 
     // print DVIPS map line
-    FILE *map_file = stderr;
-    if (encoding_name)
-	fprintf(map_file, "%s %s \"%s ReEncodeFont\" <[%s\n",
-		encoded_font_name.c_str(), font.font_name().c_str(),
-		encoding_name.c_str(), encoding_file.c_str());
+    if (!stdout_used)
+	printf("%s %s \"%s ReEncodeFont\" <[%s\n",
+	       encoded_font_name.c_str(), font.font_name().c_str(),
+	       encoding_name.c_str(), encoding_file.c_str());
 }
 
 static void
