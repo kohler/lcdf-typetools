@@ -169,8 +169,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
 void
 MyFont::interpolate_charstrings()
 {
-  set_weight_vector(&_weight_vector);
-  Type1MMRemover rewriter(this, _nmasters);
+  Type1MMRemover rewriter(this, &_weight_vector);
   for (int i = 0; i < subr_count(); i++)
     if (subr(i))
       rewriter.rewrite(*subr(i));
