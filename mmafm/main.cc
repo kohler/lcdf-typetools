@@ -29,6 +29,7 @@
 #define HELP_OPT	309
 #define OUTPUT_OPT	310
 #define PRECISION_OPT	311
+#define KERN_PREC_OPT	312
 
 Clp_Option options[] = {
   { "1", '1', N1_OPT, Clp_ArgDouble, 0 },
@@ -41,6 +42,7 @@ Clp_Option options[] = {
   { "style", 0, STYLE_OPT, Clp_ArgDouble, 0 },
   { "wt", 0, WEIGHT_OPT, Clp_ArgDouble, 0 },
   { "wd", 0, WIDTH_OPT, Clp_ArgDouble, 0 },
+  { "kern-precision", 'k', KERN_PREC_OPT, Clp_ArgDouble, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "precision", 'p', PRECISION_OPT, Clp_ArgInt, 0 },
   { "version", 0, VERSION_OPT, 0, 0 },
@@ -113,6 +115,17 @@ apply_precision(Metrics *m, int precision)
 
   for (int i = 0; i < m->kv_count(); i++)
     pround(m->kv(i), multiplier, divider);
+}
+
+static void
+apply_kern_precision(Metrics *m, double kern_precision)
+{
+  if (kern_precision <= 0)
+    return;
+
+  for (int i = 0; i < m->kv_count(); i++)
+    if (fabs(m->kv(i)) < kern_precision)
+      m->kv(i) = 0;
 }
 
 
@@ -212,6 +225,7 @@ Interpolation settings:\n\
       --style=N                 Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N    Set first (second, third, fourth) axis to N.\n\
   -p, --precision=N             Allow N digits of fraction (default 3).\n\
+  -k, --kern-precision=N        Remove kerns smaller than N (default 5).\n\
 \n\
 Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 }
@@ -236,6 +250,7 @@ main(int argc, char **argv)
   char *output_name = "<stdout>";
   FILE *output_file = 0;
   int precision = 3;
+  double kern_precision = 2.0;
   while (1) {
     int opt = Clp_Next(clp);
     switch (opt) {
@@ -265,6 +280,10 @@ main(int argc, char **argv)
 
      case PRECISION_OPT:
       precision = clp->val.i;
+      break;
+      
+     case KERN_PREC_OPT:
+      kern_precision = clp->val.d;
       break;
       
      case OUTPUT_OPT:
@@ -383,6 +402,8 @@ particular purpose.\n");
     // round numbers if necessary
     if (precision >= 0)
       apply_precision(m, precision);
+    if (kern_precision > 0)
+      apply_kern_precision(m, kern_precision);
     
     // write the output file
     if (!output_file) output_file = stdout;
