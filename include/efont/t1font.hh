@@ -32,8 +32,6 @@ class Type1Font: public Type1Program {
     dPrivate = 1,	dP = 1,
     dBlend = 2,		dB = 2,
     dBlendPrivate = 3,	dBP = 3,
-    dSubr = 4,
-    dGlyph = 5,
     dLast
   };
   

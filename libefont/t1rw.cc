@@ -47,11 +47,6 @@ Type1Reader::set_charstring_definer(PermString x)
 }
 
 void
-Type1Reader::charstring_section(bool)
-{
-}
-
-void
 Type1Reader::switch_eexec(bool on)
 {
   if (on) start_eexec();
@@ -126,7 +121,7 @@ Type1Reader::start_eexec()
      _ungot. The problem is I forgot start_eexec() was such a function! */
   int c = _ungot < 0 ? get_base() : _ungot;
   _ungot = -1;
-
+  
   /* Strictly speaking, I should look for whitespace even in binary sections
      of PFB fonts; but it turns out some PFBs would be unreadable with that
      pedantic rule. */
@@ -143,7 +138,7 @@ Type1Reader::start_eexec()
     if (!isxdigit(c))
       _binary_eexec = true;
   }
-
+  
   _r = t1R_ee;
   if (_binary_eexec)
     for (int i = 0; i < 4; i++)

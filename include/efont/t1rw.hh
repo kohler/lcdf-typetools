@@ -51,7 +51,6 @@ class Type1Reader {
   virtual int more_data(unsigned char *, int) = 0;
   virtual bool preserve_whitespace() const { return false; }
   
-  virtual void charstring_section(bool issubr);
   virtual void switch_eexec(bool);
   virtual void set_charstring_definer(PermString);
   

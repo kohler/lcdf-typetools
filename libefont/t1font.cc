@@ -92,24 +92,6 @@ Type1Font::Type1Font(Type1Reader &reader)
     }
    definition_fail:
     
-    // check for /SUBRS or /CHARSTRINGS
-    if (x[0] == '/' && (strncmp(x, "/Subrs", 6) == 0
-			|| strncmp(x, "/CharStrings", 12) == 0)) {
-      Type1Definition *fdi = Type1Definition::make(accum, &reader, true);
-      _dict[dP].insert(fdi->name(), fdi);
-      // add 1 because we don't want to move the initial line too!
-      if (fdi->name() == "Subrs") {
-	_index[dSubr] = _items.count() + 1;
-	reader.charstring_section(true);
-      } else {
-	_index[dGlyph] = _items.count() + 1;
-	reader.charstring_section(false);
-      }
-      _items.append(fdi);
-      accum.clear();
-      continue;
-    }
-    
     // check for ZEROS special case
     if (eexec_state == 2) {
       // In eexec_state 2 (right after turning off eexec), the opening part
