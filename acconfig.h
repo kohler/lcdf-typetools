@@ -15,6 +15,9 @@
 #define HAVE_PERMSTRING 1
 #define HAVE_STRING 1
 
+/* Define if <new> exists and works. */
+#undef HAVE_NEW_HDR
+
 @TOP@
 @BOTTOM@
 

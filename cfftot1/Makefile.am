@@ -1,12 +1,12 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = t1testpage
+bin_PROGRAMS = cfftot1
 man_MANS = 
 
-t1testpage_SOURCES = t1testpage.cc \
+cfftot1_SOURCES = cfftot1.cc \
 	templatei.cc
 
-t1testpage_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
+cfftot1_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
 
 INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/libefont

@@ -10,8 +10,8 @@
 #define CHECK_STACK_CP(numargs)	do { CHECK_STACK(numargs); if (!_cp_exists) return error(errCurrentPoint, cmd); } while (0)
 
 
-CharstringChecker::CharstringChecker(Type1Program *program, Vector<double> *weight)
-  : Type1Interp(program, weight), _errh(0)
+CharstringChecker::CharstringChecker(EfontProgram *program, Vector<double> *weight)
+  : CharstringInterp(program, weight), _errh(0)
 {
 }
 
@@ -19,7 +19,7 @@ CharstringChecker::CharstringChecker(Type1Program *program, Vector<double> *weig
 void
 CharstringChecker::init()
 {
-  Type1Interp::init();
+  CharstringInterp::init();
   _started = false;
   _flex = false;
   _hstem = _hstem3 = _vstem = _vstem3 = false;
@@ -94,7 +94,7 @@ CharstringChecker::check_stem3(const char *cmd_name)
 }
 
 void
-CharstringChecker::moveto(double, double, bool cp_exists = true)
+CharstringChecker::moveto(double, double, bool cp_exists)
 {
   _cp_exists = cp_exists;
 }
@@ -126,13 +126,15 @@ static char *error_strings[] = {
   "charstring bad vector operation in `%s'",
   "charstring bad value in `%s'",
   "charstring bad subroutine number %d",
-  "charstring bad glyph",
+  "charstring bad glyph `\\%03o'",
   "charstring no current point in `%s'",
   "charstring flex error",
   "charstring multiple master error in `%s'",
   "charstring open stroke",
   "charstring late sidebearing command `%s'",
   "charstring bad other subroutine %d",
+  "charstring ordering error at `%s'",
+  "charstring hintmask error"
 };
 
 bool
@@ -141,10 +143,9 @@ CharstringChecker::error(int which, int data)
   int nerror_messages = sizeof(error_strings) / sizeof(*error_strings);
   if (which > 0 && which < nerror_messages) {
     const char *error = error_strings[which];
-    if (strstr(error, "%s") != 0) {
-      String u = Type1Unparser::unparse_command(data);
-      _errh->error(error, u.cc());
-    } else
+    if (strstr(error, "%s") != 0)
+      _errh->error(error, CS::command_name(data).cc());
+    else
       _errh->error(error, data);
   }
   return false;
@@ -250,21 +251,21 @@ CharstringChecker::callothersubr()
 #define DEBUG(s)
 
 bool
-CharstringChecker::command(int cmd)
+CharstringChecker::type1_command(int cmd)
 {
-  if (cmd == cCallsubr)
+  if (cmd == CS::cCallsubr)
     return callsubr_command();
-  else if (cmd == cCallothersubr) {
+  else if (cmd == CS::cCallothersubr) {
     CHECK_STACK(2);
     return callothersubr();
-  } else if (cmd == cReturn) {
+  } else if (cmd == CS::cReturn) {
     return false;
-  } else if (cmd == cPop) {
-    return arith_command(cPop);
+  } else if (cmd == CS::cPop) {
+    return arith_command(cmd);
   }
 
   
-  if (cmd != cHsbw && cmd != cSbw) {
+  if (cmd != CS::cHsbw && cmd != CS::cSbw) {
     if (!_started)
       _errh->warning("first command not `hsbw' or `sbw'");
   } else {
@@ -275,78 +276,78 @@ CharstringChecker::command(int cmd)
   
   switch (cmd) {
     
-   case cHsbw:
+   case CS::cHsbw:
     CHECK_STACK(2);
     moveto(at(0), 0, false);
     clear();
     break;
     
-   case cSbw:
+   case CS::cSbw:
     CHECK_STACK(4);
     moveto(at(0), at(1), false);
     clear();
     break;
     
-   case cClosepath:
+   case CS::cClosepath:
     _cp_exists = false;
     clear();
     break;
     
-   case cHlineto:
+   case CS::cHlineto:
     CHECK_STACK_CP(1);
     rlineto(at(0), 0);
     clear();
     break;
     
-   case cHmoveto:
+   case CS::cHmoveto:
     CHECK_STACK(1);
     rmoveto(at(0), 0);
     clear();
     break;
     
-   case cHvcurveto:
+   case CS::cHvcurveto:
     CHECK_STACK_CP(4);
     rrcurveto(at(0), 0, at(1), at(2), 0, at(3));
     clear();
     break;
     
-   case cRlineto:
+   case CS::cRlineto:
     CHECK_STACK_CP(2);
     rlineto(at(0), at(1));
     clear();
     break;
     
-   case cRmoveto:
+   case CS::cRmoveto:
     CHECK_STACK(2);
     rmoveto(at(0), at(1));
     clear();
     break;
     
-   case cRrcurveto:
+   case CS::cRrcurveto:
     CHECK_STACK_CP(6);
     rrcurveto(at(0), at(1), at(2), at(3), at(4), at(5));
     clear();
     break;
     
-   case cVhcurveto:
+   case CS::cVhcurveto:
     CHECK_STACK_CP(4);
     rrcurveto(0, at(0), at(1), at(2), at(3), 0);
     clear();
     break;
     
-   case cVlineto:
+   case CS::cVlineto:
     CHECK_STACK_CP(1);
     rlineto(0, at(0));
     clear();
     break;
     
-   case cVmoveto:
+   case CS::cVmoveto:
     CHECK_STACK(1);
     rmoveto(0, at(0));
     clear();
     break;
     
-   case cHstem:
+   case CS::cHstem:
     CHECK_STACK(2);
     if (_hstem3 && !_hstem)
       _errh->error("charstring has both `hstem' and `hstem3'");
@@ -355,7 +356,7 @@ CharstringChecker::command(int cmd)
     clear();
     break;
     
-   case cVstem:
+   case CS::cVstem:
     CHECK_STACK(2);
     if (_vstem3 && !_vstem)
       _errh->error("charstring has both `vstem' and `vstem3'");
@@ -364,14 +365,14 @@ CharstringChecker::command(int cmd)
     clear();
     break;
     
-   case cEndchar:
+   case CS::cEndchar:
     set_done();
     return false;
     
-   case cDotsection:
+   case CS::cDotsection:
     break;
     
-   case cVstem3:
+   case CS::cVstem3:
     CHECK_STACK(6);
     if (_vstem && !_vstem3)
       _errh->error("charstring has both `vstem' and `vstem3'");
@@ -384,7 +385,7 @@ CharstringChecker::command(int cmd)
     clear();
     break;
     
-   case cHstem3:
+   case CS::cHstem3:
     CHECK_STACK(6);
     if (_hstem && !_hstem3)
       _errh->error("charstring has both `hstem' and `hstem3'");
@@ -397,7 +398,7 @@ CharstringChecker::command(int cmd)
     clear();
     break;
     
-   case cSeac: {
+   case CS::cSeac: {
      CHECK_STACK(5);
 #if 0
      double asb = at(0);
@@ -434,17 +435,17 @@ CharstringChecker::command(int cmd)
      return false;
    }
     
-   case cSetcurrentpoint:
+   case CS::cSetcurrentpoint:
     CHECK_STACK(2);
     _cp = point(at(0), at(1));
     _cp_exists = true;
     clear();
     break;
     
-   case cPut:
-   case cGet:
-   case cStore:
-   case cLoad:
+   case CS::cPut:
+   case CS::cGet:
+   case CS::cStore:
+   case CS::cLoad:
     return vector_command(cmd);
     
    default:
@@ -456,11 +457,11 @@ CharstringChecker::command(int cmd)
 }
 
 bool
-CharstringChecker::check(Type1Charstring &t1cs, ErrorHandler *errh)
+CharstringChecker::check(Charstring &cs, ErrorHandler *errh)
 {
   _errh = errh;
   int old_errors = errh->nerrors();
   init();
-  t1cs.run(*this);
+  cs.run(*this);
   return errh->nerrors() == old_errors;
 }

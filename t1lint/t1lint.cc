@@ -322,7 +322,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     check_blues(font, &cerrh);
     check_stems(font, &cerrh);
     
-    Type1MMSpace *mmspace = font->create_mmspace(&cerrh);
+    EfontMMSpace *mmspace = font->create_mmspace(&cerrh);
     Vector<double> *weight_vector = 0;
     if (mmspace) {
       weight_vector = new Vector<double>;
@@ -332,10 +332,9 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     CharstringChecker cc(font, weight_vector);
     
     for (int i = 0; i < gc; i++) {
-      Type1Subr *t1s = font->glyph(i);
       ContextErrorHandler derrh
-	(&cerrh, String("While interpreting `") + t1s->name() + "':");
-      cc.check(t1s->t1cs(), &derrh);
+	(&cerrh, String("While interpreting `") + font->glyph_name(i) + "':");
+      cc.check(*font->glyph(i), &derrh);
     }
     
     delete weight_vector;
