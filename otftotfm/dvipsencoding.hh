@@ -23,6 +23,7 @@ class DvipsEncoding { public:
 
     // also modifies 'this':
     void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::Cff::Font * = 0);
+    void apply_ligkern(GsubEncoding &, ErrorHandler *);
     
   private:
 

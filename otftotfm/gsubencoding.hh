@@ -26,6 +26,10 @@ class GsubEncoding { public:
     void simplify_ligatures(bool add_fake);
     void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names);
 
+    void add_twoligature(int code1, int code2, int outcode);
+    enum { CODE_ALL = 0x7FFFFFFF };
+    void remove_kerns(int code1, int code2);
+
     int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const;
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
     
@@ -47,8 +51,8 @@ class GsubEncoding { public:
     Vector<Ligature> _fake_ligatures;
 
     struct Kern {
-	Glyph left;
-	Glyph right;
+	int left;
+	int right;
 	int amount;
     };
     Vector<Kern> _kerns;

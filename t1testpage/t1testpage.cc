@@ -44,7 +44,7 @@ usage_error(ErrorHandler *errh, char *error_message, ...)
     if (!error_message)
 	errh->message("Usage: %s [OPTION]... FONT", program_name);
     else
-	errh->verror(ErrorHandler::Error, String(), error_message, val);
+	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
     errh->message("Type %s --help for more information.", program_name);
     exit(1);
 }

@@ -15,7 +15,7 @@ read_file(String filename, ErrorHandler *errh, bool warning)
 	filename = "<stdin>";
 	f = stdin;
     } else if (!(f = fopen(filename.c_str(), "r"))) {
-	errh->vmessage((warning ? errh->Warning : errh->Error), filename + ": " + String(strerror(errno)));
+	errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, strerror(errno));
 	return String();
     }
     
@@ -25,7 +25,7 @@ read_file(String filename, ErrorHandler *errh, bool warning)
 	    int amt = fread(x, 1, 8192, f);
 	    sa.forward(amt);
 	} else {
-	    errh->vmessage((warning ? errh->Warning : errh->Error), filename + ": Out of memory!");
+	    errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, "Out of memory!");
 	    break;
 	}
     }

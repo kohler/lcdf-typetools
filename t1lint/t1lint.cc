@@ -43,7 +43,7 @@ usage_error(ErrorHandler *errh, char *error_message, ...)
   if (!error_message)
     errh->message("Usage: %s [OPTION]... FONT", program_name);
   else
-    errh->verror(ErrorHandler::Error, String(), error_message, val);
+    errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
   errh->message("Type %s --help for more information.", program_name);
   exit(1);
 }
@@ -319,7 +319,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   Type1Font *font = new Type1Font(*reader);
   
   if (font) {
-    PinnedErrorHandler cerrh(errh, filename);
+    LandmarkErrorHandler cerrh(errh, filename);
     
     check_blues(font, &cerrh);
     check_stems(font, &cerrh);

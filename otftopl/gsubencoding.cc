@@ -259,6 +259,25 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
     _encoding.resize(size, 0);
 }
 
+void
+GsubEncoding::add_twoligature(int code1, int code2, int outcode)
+{
+    Ligature l;
+    l.in.push_back(code1);
+    l.in.push_back(code2);
+    l.out = outcode;
+    l.skip = 0;
+    _ligatures.push_back(l);
+}
+
+void
+GsubEncoding::remove_kerns(int code1, int code2)
+{
+    for (int i = 0; i < _kerns.size(); i++)
+	if ((code1 == CODE_ALL || _kerns[i].left == code1)
+	    && (code2 == CODE_ALL || _kerns[i].right == code2))
+	    _kerns[i].left = -1;
+}
 
 int
 GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const

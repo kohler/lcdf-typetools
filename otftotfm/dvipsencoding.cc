@@ -416,4 +416,26 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 	}
 }
 
+void
+DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh)
+{
+    assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);
+    for (int i = 0; i < _lig.size(); i++) {
+	const Ligature &l = _lig[i];
+	if (l.c1 < 0 || l.c2 < 0 || l.join < 0)
+	    /* nada */;
+	else if (l.join == J_NOKERN)
+	    gsub_encoding.remove_kerns(l.c1, l.c2);
+	else if (l.join == 0)
+	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d);
+	else {
+	    static int complex_join_warning = 0;
+	    if (!complex_join_warning) {
+		errh->warning("complex LIGKERN ligature removed (I only support '=:' ligatures)");
+		complex_join_warning = 1;
+	    }
+	}
+    }
+}
+
 #include <lcdf/vector.cc>

@@ -51,6 +51,7 @@ static const char *program_name;
 static PermString::Initializer initializer;
 static PermString dot_notdef(".notdef");
 static Vector<Efont::OpenType::Tag> interesting_features;
+static Vector<int> interesting_features_used;
 
 
 void
@@ -61,7 +62,7 @@ usage_error(ErrorHandler *errh, char *error_message, ...)
     if (!error_message)
 	errh->message("Usage: %s [OPTION]... FONT", program_name);
     else
-	errh->verror(ErrorHandler::Error, String(), error_message, val);
+	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
     errh->message("Type %s --help for more information.", program_name);
     exit(1);
 }
@@ -143,7 +144,7 @@ FontName %s\n",
 
     CharstringBounds boundser(cff);
     int bounds[4], width;
-    Charstring *cs;
+    Charstring *cs = 0;
     
     Type1Encoding *encoding = cff->type1_encoding();
     for (int i = 0; i < 256; i++) {
@@ -201,7 +202,7 @@ output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     if (cff->dict_value(Efont::Cff::oItalicAngle, 0, &val) && val)
 	fprintf(f, "   (SLANT R %g)\n", -tan(val * 3.1415926535 / 180.0));
 
-    if (OpenType::Glyph g = cmap.map_uni(0x0020)) {
+    if (OpenType::Glyph g = cmap.map_uni(' ')) {
 	Charstring *cs = cff->glyph(g);
 	boundser.run(*cs, bounds, width);
 	fprintf(f, "   (SPACE D %d)\n", width);
@@ -212,11 +213,17 @@ output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	    fprintf(f, "   (STRETCH D %d)\n   (SHRINK D %d)\n   (EXTRASPACE D %d)\n", width/2, width/3, width/6);
     }
 
-    if (OpenType::Glyph g = cmap.map_uni(0x0078)) {
-	Charstring *cs = cff->glyph(g);
-	boundser.run(*cs, bounds, width);
-	fprintf(f, "   (XHEIGHT D %d)\n", bounds[3]);
-    }
+    int xheight = 1000;
+    static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
+    for (const int *x = xheight_unis; *x; x++)
+	if (OpenType::Glyph g = cmap.map_uni(*x)) {
+	    Charstring *cs = cff->glyph(g);
+	    boundser.run(*cs, bounds, width);
+	    if (bounds[3] < xheight)
+		xheight = bounds[3];
+	}
+    if (xheight < 1000)
+	fprintf(f, "   (XHEIGHT D %d)\n", xheight);
     
     fprintf(f, "   (QUAD D 1000)\n"
 	    "   )\n"
@@ -287,6 +294,20 @@ output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 }
 
 static void
+touch_features(int required_fid, const Vector<int> &fids, const OpenType::FeatureList &flist)
+{
+    for (int i = -1; i < fids.size(); i++) {
+	int fid = (i < 0 ? required_fid : fids[i]);
+	if (fid >= 0) {
+	    OpenType::Tag tag = flist.feature_tag(fid);
+	    for (int j = 0; j < interesting_features.size(); j++)
+		if (interesting_features[j] == tag)
+		    interesting_features_used[j] = 1;
+	}
+    }
+}
+
+static void
 do_file(const char *infn, const char *outfn,
 	PsresDatabase *, const DvipsEncoding &dvipsenc_in, ErrorHandler *errh)
 {
@@ -313,7 +334,7 @@ do_file(const char *infn, const char *outfn,
     if (f != stdin)
 	fclose(f);
 
-    PinnedErrorHandler cerrh(errh, infn);
+    LandmarkErrorHandler cerrh(errh, infn);
     OpenType::Font otf(sa.take_string(), &cerrh);
     if (!otf.ok())
 	return;
@@ -335,24 +356,6 @@ do_file(const char *infn, const char *outfn,
 	    dvipsenc.encode(i, (*t1e)[i]);
     }
     
-    // get OpenType tables
-    OpenType::Gsub gsub(otf.table("GSUB"), &cerrh);
-    OpenType::Gpos gpos(otf.table("GPOS"), &cerrh);
-
-    // get the list of available features for our script
-    // XXX multiple scripts?
-    Vector<int> fids;
-    int required_fid;
-    gsub.script_list().features("latn", 0U, required_fid, fids, &cerrh);
-
-    // print out available feature tags
-    const OpenType::FeatureList &flist = gpos.feature_list();
-    if (required_fid >= 0)
-	fprintf(stderr, "<%s>! ", flist.feature_tag(required_fid).text().cc());
-    for (int i = 0; i < fids.size(); i++)
-	fprintf(stderr, "%s ", flist.feature_tag(fids[i]).text().cc());
-    fprintf(stderr, "\n");
-
     // initialize encoding
     GsubEncoding encoding;
     OpenType::Cmap cmap(otf.table("cmap"), &cerrh);
@@ -363,8 +366,20 @@ do_file(const char *infn, const char *outfn,
     Vector<PermString> glyph_names;
     font.glyph_names(glyph_names);
 
-    // get lookups for GSUB
+    // get OpenType tables
+    OpenType::Gsub gsub(otf.table("GSUB"), &cerrh);
+    OpenType::Gpos gpos(otf.table("GPOS"), &cerrh);
+
+    // feature variables
+    Vector<int> fids;
+    int required_fid;
     Vector<int> lookups;
+    interesting_features_used.assign(interesting_features.size(), 0);
+    
+    // apply activated GSUB features
+    // XXX multiple scripts?
+    gsub.script_list().features("latn", 0U, required_fid, fids, &cerrh);
+    touch_features(required_fid, fids, gsub.feature_list());
     gsub.feature_list().lookups(required_fid, fids, interesting_features, lookups, errh);
     Vector<OpenType::Substitution> subs;
     for (int i = 0; i < lookups.size(); i++) {
@@ -378,7 +393,9 @@ do_file(const char *infn, const char *outfn,
     encoding.simplify_ligatures(false);
     encoding.shrink_encoding(256, dvipsenc_in, glyph_names);
     
-    // get lookups for GPOS
+    // apply activated GPOS features
+    gpos.script_list().features("latn", 0U, required_fid, fids, &cerrh);
+    touch_features(required_fid, fids, gpos.feature_list());
     gpos.feature_list().lookups(required_fid, fids, interesting_features, lookups, errh);
     Vector<OpenType::Positioning> poss;
     for (int i = 0; i < lookups.size(); i++) {
@@ -389,6 +406,15 @@ do_file(const char *infn, const char *outfn,
     }
 
     //encoding.unparse(&glyph_names);
+    dvipsenc.apply_ligkern(encoding, &cerrh);
+
+    // report unused features if any
+    sa.clear();
+    for (int i = 0; i < interesting_features.size(); i++)
+	if (!interesting_features_used[i])
+	    sa << (sa ? " " : "") << interesting_features[i].text();
+    if (sa)
+	cerrh.warning("The following features you requested were not supported by this font:\n   %s", sa.c_str());
 
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;

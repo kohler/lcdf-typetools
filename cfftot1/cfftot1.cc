@@ -53,7 +53,7 @@ usage_error(ErrorHandler *errh, char *error_message, ...)
     if (!error_message)
 	errh->message("Usage: %s [OPTION]... FONT", program_name);
     else
-	errh->verror(ErrorHandler::Error, String(), error_message, val);
+	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
     errh->message("Type %s --help for more information.", program_name);
     exit(1);
 }
@@ -122,7 +122,7 @@ do_file(const char *infn, const char *outfn,
 	if (f != stdin)
 	    fclose(f);
 
-	PinnedErrorHandler cerrh(errh, infn);
+	LandmarkErrorHandler cerrh(errh, infn);
 	String data = sa.take_string();
 	if (c == 'O')
 	    data = Efont::OpenType::Font(data, &cerrh).table("CFF");
