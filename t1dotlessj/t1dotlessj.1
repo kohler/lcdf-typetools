@@ -69,6 +69,25 @@ Print usage information and exit.
 Print the version number and some short non-warranty information and exit.
 .PD
 '
+.SH "RETURN VALUES"
+.B T1dotlessj
+exits with one of the following values:
+.TP 5
+0
+A dotless-j font was successfully generated.
+.TP 5
+1
+The font already contained a dotless-j character.
+.TP 5
+2
+The font's "j" character had no dot to remove.
+.TP 5
+3
+The font had no "j" character.
+.TP 5
+>3
+An error occurred.
+'
 .SH "SEE ALSO"
 .LP
 .I "Adobe Type 1 Font Format"

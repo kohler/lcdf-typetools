@@ -37,6 +37,10 @@
 # include <io.h>
 #endif
 
+// also see otftotfm/automatic.cc
+enum { EXIT_NORMAL = 0, EXIT_DOTLESSJ_EXISTS = 1, EXIT_J_NODOT = 2,
+       EXIT_NO_J = 3, EXIT_ERROR = 4 };
+
 using namespace Efont;
 
 #define VERSION_OPT	301
@@ -180,7 +184,7 @@ Sectioner::undot(PermString font_name, ErrorHandler *errh)
     //    fprintf(stderr, "%d  %s\n", s - _sections.begin(), CharstringUnparser::unparse(Type1Charstring(*s)).c_str());
 
     if (_sections.size() < 3)
-	errh->fatal("%s: no dot to remove", font_name.c_str());
+	errh->fatal(EXIT_J_NODOT, "%s: 'j' is already dotless", font_name.c_str());
     
     int topmost = -1;
     for (int i = 0; i < _sections.size() - 1; i++)
@@ -191,7 +195,7 @@ Sectioner::undot(PermString font_name, ErrorHandler *errh)
     for (int i = 0; i < _sections.size() - 1; i++)
 	if (_bounds[i*4 + 1] < _bounds[topmost*4 + 1])
 	    goto found_below;
-    errh->fatal("%s: no dot to remove", font_name.c_str());
+    errh->fatal(EXIT_J_NODOT, "%s: 'j' is already dotless", font_name.c_str());
 
   found_below:
     _sections[topmost] = String();
@@ -233,13 +237,13 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     }
   
     if (!f)
-	errh->fatal("%s: %s", filename, strerror(errno));
+	errh->fatal(EXIT_ERROR, "%s: %s", filename, strerror(errno));
   
     Type1Reader *reader;
     int c = getc(f);
     ungetc(c, f);
     if (c == EOF)
-	errh->fatal("%s: empty file", filename);
+	errh->fatal(EXIT_ERROR, "%s: empty file", filename);
     if (c == 128)
 	reader = new Type1PFBReader(f);
     else
@@ -247,7 +251,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   
     Type1Font *font = new Type1Font(*reader);
     if (!font->ok())
-	errh->fatal("%s: no glyphs in font", filename);
+	errh->fatal(EXIT_ERROR, "%s: no glyphs in font", filename);
 
     delete reader;
     return font;
@@ -300,7 +304,7 @@ main(int argc, char *argv[])
 	    if (strcmp(clp->arg, "-") == 0)
 		outputf = stdout;
 	    else if (!(outputf = fopen(clp->arg, "wb")))
-		errh->fatal("%s: %s", clp->arg, strerror(errno));
+		errh->fatal(EXIT_ERROR, "%s: %s", clp->arg, strerror(errno));
 	    break;
 	       
 	  case VERSION_OPT:
@@ -346,18 +350,18 @@ particular purpose.\n");
 
     // check for existing dotlessj
     if (font->glyph("dotlessj"))
-	errh->fatal("%s: already has a 'dotlessj' glyph", font->font_name().c_str());
+	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a 'dotlessj' glyph", font->font_name().c_str());
     else if (font->glyph("uni0237"))
-	errh->fatal("%s: already has a dotlessj glyph at 'uni0237'", font->font_name().c_str());
+	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at 'uni0237'", font->font_name().c_str());
     else if (private_use_dotlessj && font->glyph(private_use_dotlessj))
-	errh->fatal("%s: already has a dotlessj glyph at '%s'", font->font_name().c_str(), private_use_dotlessj);
+	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at '%s'", font->font_name().c_str(), private_use_dotlessj);
 
     // check for j
     Type1Charstring *j_cs = font->glyph("j");
     if (!j_cs)
 	j_cs = font->glyph("uni006A");
     if (!j_cs)
-	errh->fatal("%s: has no 'j' glyph to make dotless", font->font_name().c_str());
+	errh->fatal(EXIT_NO_J, "%s: has no 'j' glyph to make dotless", font->font_name().c_str());
 
     // make new font
     String actual_font_name = (font_name ? String(font_name) : font->font_name() + String("LCDFJ"));
@@ -402,5 +406,5 @@ particular purpose.\n");
 	dotless_font->write(w);
     }
     
-    return (errh->nerrors() == 0 ? 0 : 1);
+    return (errh->nerrors() == 0 ? EXIT_NORMAL : EXIT_ERROR);
 }
