@@ -4325,6 +4325,8 @@ circleminus;2296
 coproduct;2A3F
 diamond;2662;2666
 diamondmath;22C4
+# 0237 is the proposed allocation for dotless j
+dotlessj;0237;F6BE
 emptyset;2205;F638
 epsilon1;03F5
 equivasymptotic;224D
