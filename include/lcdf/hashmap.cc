@@ -1,4 +1,5 @@
-#include "hashmap.hh"
+// -*- related-file-name: "../include/lcdf/hashmap.hh" -*-
+#include <lcdf/hashmap.hh>
 
 // 		k1 == k2  (must exist)
 //		K::K()

@@ -1,3 +1,4 @@
+// -*- related-file-name: "../include/lcdf/vector.hh" -*-
 /*
  * vector.{cc,hh} -- simple array template class
  * Eddie Kohler
@@ -15,7 +16,7 @@
  * legally binding.
  */
 
-#include "vector.hh"
+#include <lcdf/vector.hh>
 
 template <class T>
 Vector<T>::Vector(const Vector<T> &o)
