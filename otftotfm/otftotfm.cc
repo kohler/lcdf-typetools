@@ -535,7 +535,7 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
     // figure out font dimensions
     Transform font_xform;
     if (extend)
-	font_xform.scale(1, extend);
+	font_xform.scale(extend, 1);
     if (slant)
 	font_xform.shear(slant);
     int bounds[4], width;
@@ -547,7 +547,7 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 
     OpenType::Cmap cmap(otf.table("cmap"));
     
-    if (char_bounds(bounds, width, cff, cmap, ' ')) {
+    if (char_bounds(bounds, width, cff, cmap, ' ', font_xform)) {
 	// advance space width by letterspacing
 	width += letterspace;
 	fprint_real(f, "   (SPACE", width, du);
@@ -567,7 +567,7 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
     int xheight = 1000;
     static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
     for (const int *x = xheight_unis; *x; x++)
-	if (char_bounds(bounds, width, cff, cmap, 'x') && bounds[3] < xheight)
+	if (char_bounds(bounds, width, cff, cmap, 'x', font_xform) && bounds[3] < xheight)
 	    xheight = bounds[3];
     if (xheight < 1000)
 	fprint_real(f, "   (XHEIGHT", xheight, du);

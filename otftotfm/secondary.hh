@@ -4,6 +4,7 @@
 #include <efont/cff.hh>
 class DvipsEncoding;
 class Metrics;
+class Transform;
 struct Setting;
 
 class Secondary { public:
@@ -29,6 +30,6 @@ class T1Secondary : public Secondary { public:
 
 bool char_bounds(int bounds[4], int &width,
 		 const Efont::Cff::Font *, const Efont::OpenType::Cmap &,
-		 uint32_t uni);
+		 uint32_t uni, const Transform &);
 
 #endif

@@ -54,10 +54,10 @@ T1Secondary::T1Secondary(const Efont::Cff::Font *cff, const Efont::OpenType::Cma
     
     static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
     for (const int *x = xheight_unis; *x; x++)
-	if (char_bounds(bounds, width, cff, cmap, *x) && bounds[3] < _xheight)
+	if (char_bounds(bounds, width, cff, cmap, *x, Transform()) && bounds[3] < _xheight)
 	    _xheight = bounds[3];
 
-    if (char_bounds(bounds, width, cff, cmap, ' '))
+    if (char_bounds(bounds, width, cff, cmap, ' ', Transform()))
 	_spacewidth = width;
 }
 
@@ -145,10 +145,10 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 bool
 char_bounds(int bounds[4], int &width,
 	    const Efont::Cff::Font *cff, const Efont::OpenType::Cmap &cmap,
-	    uint32_t uni)
+	    uint32_t uni, const Transform &transform)
 {
     if (Efont::OpenType::Glyph g = cmap.map_uni(uni))
-	return Efont::CharstringBounds::bounds(cff->glyph_context(g), bounds, width);
+	return Efont::CharstringBounds::bounds(transform, cff->glyph_context(g), bounds, width);
     else
 	return false;
 }

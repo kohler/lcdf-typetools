@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.87   22.Dec.2003
+
+* otftotfm: Fix --extend bug reported by Ulrich Dirr (the expansion factor
+  was formerly applied to character heights and depths, not widths).
+
+
 Version 1.86   19.Dec.2003
 
 * otftotfm: Change where "--base" is added to support pdftex: If the font
