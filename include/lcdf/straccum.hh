@@ -42,7 +42,7 @@ class StringAccum { public:
     inline void append(char);
     inline void append(unsigned char);
     inline void append(const char *, int);
-    inline void append(const char *, const char *);
+    inline void append(const char *begin, const char *end);
     inline void append(const unsigned char *, int);
 
     // word joining
@@ -160,18 +160,18 @@ StringAccum::append(const char *s, int len)
 }
 
 inline void
+StringAccum::append(const unsigned char *s, int len)
+{
+    append(reinterpret_cast<const char *>(s), len);
+}
+
+inline void
 StringAccum::append(const char *begin, const char *end)
 {
     if (begin < end)
 	safe_append(begin, end - begin);
     else if (begin == String::out_of_memory_data())
 	make_out_of_memory();
-}
-
-inline void
-StringAccum::append(const unsigned char *s, int len)
-{
-    append(reinterpret_cast<const char *>(s), len);
 }
 
 inline unsigned char *
