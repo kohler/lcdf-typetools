@@ -125,128 +125,122 @@ AfmParser::vis(const char *formatsigned, va_list valist)
 		goto matchchar;
 	
 	      case 'b':
-	      case 's':
-		  {
-		      int len;
+	      case 's': {
+		  int len;
 	   
-		      if (fplus)
-			  len = strlen((char *)str);
-		      else if (fslash) {
-			  for (len = 0; !name_enders[ str[len] ]; len++)
-			      ;
-			  if (len == 0)
-			      FAIL("should be a string");
-		      } else {
-			  for (len = 0; !isspace(str[len]) && str[len]; len++)
-			      ;
-			  if (len == 0)
-			      FAIL("should be a string");
-		      }
-	   
-		      PermString s = PermString((char *)str, len);
-		      str += len;
-	   
-		      // Now we have the string. What to do with it? Depends on format.
-		      if (*format == 'b') {
-	     
-			  bool *bstore = va_arg(valist, bool *);
-			  if (s == "true") {
-			      if (bstore) *bstore = 1;
-			  } else if (s == "false") {
-			      if (bstore) *bstore = 0;
-			  } else
-			      FAIL("should be `true' or `false'");
-	     
-		      } else {
-			  PermString *sstore = va_arg(valist, PermString *);
-			  if (sstore) *sstore = s;
-		      }
-		      break;
+		  if (fplus)
+		      len = strlen((char *)str);
+		  else if (fslash) {
+		      for (len = 0; !name_enders[ str[len] ]; len++)
+			  ;
+		      if (len == 0)
+			  FAIL("should be a string");
+		  } else {
+		      for (len = 0; !isspace(str[len]) && str[len]; len++)
+			  ;
+		      if (len == 0)
+			  FAIL("should be a string");
 		  }
-	 
-	      case '(':
-		  {
-		      if (*str++ != '(') FAIL("should be a parenthesized string");
-		      unsigned char *last = str;
-		      int paren_level = 0;
-		      while (*last && paren_level >= 0) {
-			  if (*last == '(') paren_level++;
-			  if (*last == ')') paren_level--;
-			  last++;
-		      }
-		      if (paren_level >= 0) FAIL("had unbalanced parentheses");
 	   
+		  PermString s = PermString((char *)str, len);
+		  str += len;
+	   
+		  // Now we have the string. What to do with it? Depends on format.
+		  if (*format == 'b') {
+	     
+		      bool *bstore = va_arg(valist, bool *);
+		      if (s == "true") {
+			  if (bstore) *bstore = 1;
+		      } else if (s == "false") {
+			  if (bstore) *bstore = 0;
+		      } else
+			  FAIL("should be `true' or `false'");
+	     
+		  } else {
 		      PermString *sstore = va_arg(valist, PermString *);
-		      if (sstore) *sstore = PermString((char *)str, last - str - 1);
-		      str = last;
-		      break;
+		      if (sstore) *sstore = s;
 		  }
+		  break;
+	      }
+	 
+	      case '(': {
+		  if (*str++ != '(') FAIL("should be a parenthesized string");
+		  unsigned char *last = str;
+		  int paren_level = 0;
+		  while (*last && paren_level >= 0) {
+		      if (*last == '(') paren_level++;
+		      if (*last == ')') paren_level--;
+		      last++;
+		  }
+		  if (paren_level >= 0) FAIL("had unbalanced parentheses");
+	   
+		  PermString *sstore = va_arg(valist, PermString *);
+		  if (sstore) *sstore = PermString((char *)str, last - str - 1);
+		  str = last;
+		  break;
+	      }
 	 
 	      case 'd':
-	      case 'i':
-		  {
-		      unsigned char *new_str;
-		      int v = strtol((char *)str, (char **)&new_str, 10);
-		      if (new_str == str) FAIL("should be an integer");
+	      case 'i': {
+		  unsigned char *new_str;
+		  int v = strtol((char *)str, (char **)&new_str, 10);
+		  if (new_str == str) FAIL("should be an integer");
 	   
-		      str = new_str;
-		      int *istore = va_arg(valist, int *);
-		      if (istore) *istore = v;
-		      break;
-		  }
+		  str = new_str;
+		  int *istore = va_arg(valist, int *);
+		  if (istore) *istore = v;
+		  break;
+	      }
        
-	      case 'x':
-		  {
-		      unsigned char *new_str;
-		      int v = strtol((char *)str, (char **)&new_str, 16);
-		      if (new_str == str) FAIL("should be a hex integer");
+	      case 'x': {
+		  unsigned char *new_str;
+		  int v = strtol((char *)str, (char **)&new_str, 16);
+		  if (new_str == str) FAIL("should be a hex integer");
 	   
-		      str = new_str;
-		      int *istore = va_arg(valist, int *);
-		      if (istore) *istore = v;
-		      break;
-		  }
+		  str = new_str;
+		  int *istore = va_arg(valist, int *);
+		  if (istore) *istore = v;
+		  break;
+	      }
 	 
 	      case 'e':
 	      case 'f':
-	      case 'g':
-		  {
-		      unsigned char *new_str;
-		      double v = strtonumber((char *)str, (char **)&new_str);
-		      if (v < MinKnowndouble) v = MinKnowndouble;
-		      if (new_str == str) FAIL("should be a real number");
+	      case 'g': {
+		  unsigned char *new_str;
+		  double v = strtonumber((char *)str, (char **)&new_str);
+		  if (v < MinKnowndouble) v = MinKnowndouble;
+		  if (new_str == str) FAIL("should be a real number");
 	   
-		      str = new_str;
-		      double *dstore = va_arg(valist, double *);
-		      if (dstore) *dstore = v;
-		      break;
-		  }
+		  str = new_str;
+		  double *dstore = va_arg(valist, double *);
+		  if (dstore) *dstore = v;
+		  break;
+	      }
 	 
-	      case '<':
-		  {
-		      unsigned char *endbrack =
-			  (unsigned char *)strchr((char *)str, '>');
-		      if (!endbrack) FAIL("should be hex values in <angle brackets>");
-		      int n = endbrack - str;
-		      String s = String::garbage_string(n/2 + 1);
-		      unsigned char *data = s.mutable_udata();
+	      case '<': {
+		  unsigned char *endbrack =
+		      (unsigned char *)strchr((char *)str, '>');
+		  int n = (endbrack ? endbrack - (str + 1) : 0);
+		  if (!endbrack || n % 2 != 0)
+		      FAIL("should be hex values in <angle brackets>");
+		  String s = String::garbage_string(n/2);
+		  unsigned char *data = s.mutable_udata();
 	   
-		      str++;
-		      n = 0;
-		      while (*str != '>') {
-			  if (isxdigit(str[0]) && isxdigit(str[1])) {
-			      data[n++] = xvalue[str[0]] * 16 + xvalue[str[1]];
-			      str += 2;
-			  } else
-			      FAIL("had non-hex digits in the angle brackets");
-		      }
-		      str++;
-	   
-		      if (String *datastore = va_arg(valist, String *))
-			  *datastore = s;
-		      break;
+		  str++;
+		  while (*str != '>') {
+		      if (isxdigit(str[0]) && isxdigit(str[1])) {
+			  *data++ = xvalue[str[0]] * 16 + xvalue[str[1]];
+			  str += 2;
+		      } else
+			  FAIL("had non-hex digits in the angle brackets");
 		  }
-	 
+		  str++;
+	   
+		  if (String *datastore = va_arg(valist, String *))
+		      *datastore = s;
+		  break;
+	      }
+
 	      default:
 		assert(0 && "internal error: bad %");
 		FAIL("");

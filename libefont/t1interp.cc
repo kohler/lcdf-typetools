@@ -175,14 +175,14 @@ CharstringInterp::blend_command()
     const int cmd = CS::cBlend;
     CHECK_STACK(1);
     int nargs = (int)pop();
-  
+
     Vector<double> *weight = weight_vector();
-    if (!weight)
+    if (!weight || !weight->size())
 	return error(errVector, cmd);
   
     int nmasters = weight->size();
     CHECK_STACK(nargs * nmasters);
-  
+ 
     int base = _sp - nargs * nmasters;
     int off = base + nargs;
     for (int j = 0; j < nargs; j++) {
@@ -190,7 +190,7 @@ CharstringInterp::blend_command()
 	for (int i = 1; i < nmasters; i++, off++)
 	    val += weight->at_u(i) * _s[off];
     }
-  
+ 
     pop(nargs * (nmasters - 1));
     return true;
 }
