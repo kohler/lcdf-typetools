@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include <efont/t1unparser.hh>
 
 #ifndef static_assert
@@ -450,6 +451,36 @@ Cff::font_offset(PermString name, int &offset, int &length) const
     return -ENOENT;
 }
 
+Cff::FontParent *
+Cff::font(PermString font_name, ErrorHandler *errh)
+{
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+
+    if (!ok())
+	return errh->error("invalid CFF"), (FontParent *) 0;
+
+    // search for a font named 'font_name'
+    for (int i = 0; i < _name_index.size(); i++)
+	if (_name_index[i] && (!font_name || font_name == _name_index[i])) {
+	    int td_offset = _top_dict_index[i] - _data;
+	    int td_length = _top_dict_index[i + 1] - _top_dict_index[i];
+	    Dict top_dict(this, td_offset, td_length, errh, "Top DICT");
+	    if (!top_dict.ok())
+		return 0;
+	    else if (top_dict.has_first(oROS))
+		return new Cff::CIDFont(this, _name_index[i], top_dict, errh);
+	    else
+		return new Cff::Font(this, _name_index[i], top_dict, errh);
+	}
+
+    if (!font_name)
+	errh->error("no fonts in CFF");
+    else
+	errh->error("font '%s' not found", font_name.c_str());
+    return 0;
+}
+
 static inline int
 subr_bias(int charstring_type, int nsubrs)
 {
@@ -587,6 +618,73 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, int max_sid, ErrorHand
     _sids.resize(nglyphs);
     _gids.resize(actual_max_sid + 1, -1);
     return 0;
+}
+
+
+/*****
+ * Cff::FDSelect
+ **/
+
+void
+Cff::FDSelect::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
+{
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+    if (_my_fds)
+	delete[] _fds;
+    _fds = 0;
+    _my_fds = false;
+    _nglyphs = nglyphs;
+    _error = parse(cff, pos, nglyphs, errh);
+}
+
+Cff::FDSelect::~FDSelect()
+{
+    if (_my_fds)
+	delete[] _fds;
+}
+
+int
+Cff::FDSelect::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
+{
+    const uint8_t *data = cff->data();
+    int len = cff->length();
+    
+    if (pos + 1 > len)
+	return errh->error("FDSelect position out of range"), -EFAULT;
+
+    int format = data[pos];
+    if (format == 0) {
+	if (pos + 1 + nglyphs > len)
+	    return errh->error("FDSelect [format 0] out of range"), -EFAULT;
+	_fds = data + pos + 1;
+	_my_fds = false;
+	return 0;
+	
+    } else if (format == 3) {
+	int nranges = (data[pos+1] << 8) | data[pos+2];
+	if (pos + 3 + 3*nranges + 2 > len)
+	    return errh->error("FDSelect [format 3] out of range"), -EFAULT;
+
+	const uint8_t *p = data + pos + 3;
+	int last_glyph = (p[3*nranges] << 8) | p[3*nranges + 1];
+	if (p[0] || p[1] || last_glyph != nglyphs)
+	    return errh->error("FDSelect [format 3] bad values"), -EINVAL;
+	
+	_fds = new uint8_t[nglyphs];
+	_my_fds = true;
+	int curglyph = 0;
+	for (; curglyph < nglyphs; p += 3) {
+	    int nextglyph = (p[3] << 8) | p[4];
+	    if (nextglyph > nglyphs || nextglyph < curglyph)
+		return errh->error("FDSelect [format 3] sorting error"), -EINVAL;
+	    memset(const_cast<uint8_t *>(_fds + curglyph), p[2], nextglyph - curglyph);
+	    curglyph = nextglyph;
+	}
+	return 0;
+	
+    } else
+	return errh->error("unknown charset format %d", format), -EINVAL;
 }
 
 
@@ -989,54 +1087,84 @@ Cff::Dict::unparse(ErrorHandler *errh, const char *dict_name) const
 
 
 /*****
+ * CffFontParent
+ **/
+
+static int
+handle_private(Cff *cff, const Cff::Dict &top_dict, Cff::Dict &private_dict,
+	       double &default_width_x, double &nominal_width_x,
+	       Cff::IndexIterator &subrs_index, Vector<Charstring *> &subrs_cs,
+	       ErrorHandler *errh)
+{
+    Vector<double> private_info;
+    top_dict.value(Cff::oPrivate, private_info);
+    int private_offset = (int) private_info[1];
+    private_dict.assign(cff, private_offset, (int) private_info[0], errh, "Private DICT");
+    if (private_dict.error() < 0)
+	return private_dict.error();
+    else if (private_dict.check(true, errh, "Private DICT") < 0)
+	return -EINVAL;
+    //private_dict.unparse(errh, "Private DICT");
+
+    private_dict.value(Cff::oDefaultWidthX, 0, &default_width_x);
+    private_dict.value(Cff::oNominalWidthX, 0, &nominal_width_x);
+    if (private_dict.has(Cff::oSubrs)) {
+	int subrs_offset;
+	private_dict.value(Cff::oSubrs, 0, &subrs_offset);
+	subrs_index = Cff::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
+	if (subrs_index.error() < 0)
+	    return subrs_index.error();
+    }
+    subrs_cs.assign(subrs_index.nitems(), 0);
+    return 0;
+}
+	       
+
+Cff::FontParent::FontParent(Cff *cff)
+    : _cff(cff), _error(-1)
+{
+}
+
+Charstring *
+Cff::FontParent::charstring(const IndexIterator &iiter, int which) const
+{
+    const uint8_t *s1 = iiter[which];
+    int slen = iiter[which + 1] - s1;
+    String cs = _cff->data_string().substring(s1 - _cff->data(), slen);
+    if (slen == 0)
+	return 0;
+    else if (_charstring_type == 1)
+	return new Type1Charstring(cs);
+    else
+	return new Type2Charstring(cs);
+}
+
+Charstring *
+Cff::FontParent::gsubr(int i) const
+{
+    return _cff->gsubr(i);
+}
+
+int
+Cff::FontParent::gsubr_bias() const
+{
+    return Efont::subr_bias(2, ngsubrs_x());
+}
+
+
+/*****
  * CffFont
  **/
 
-Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
-    : _cff(cff), _font_name(font_name), _t1encoding(0)
+Cff::Font::Font(Cff *cff, PermString font_name, const Dict &top_dict, ErrorHandler *errh)
+    : ChildFont(cff, 0, 2, top_dict, errh), _font_name(font_name),
+      _t1encoding(0)
 {
-    if (!errh)
-	errh = ErrorHandler::silent_handler();
+    assert(!_top_dict.has_first(oROS));
+    if (_error < 0)
+	return;
 
-    if (!cff->ok()) {
-	errh->error("invalid CFF");
-	_error = -EINVAL;
-	return;
-    }
-    
-    // check for a CFF file that contains exactly one font
-    _error = -ENOENT;
-    for (int i = 0; !_font_name && i < cff->nfonts(); i++)
-	if (cff->font_name(i))
-	    _font_name = cff->font_name(i);
-
-    // find top DICT
-    int td_offset, td_length;
-    if (cff->font_offset(_font_name, td_offset, td_length) < 0) {
-	errh->error("no font '%s'", _font_name.c_str());
-	return;
-    }
-
-    // parse top DICT
-    _top_dict.assign(cff, td_offset, td_length, errh, "Top DICT");
-    if ((_error = _top_dict.error()) < 0)
-	return;
-    _error = -EINVAL;
-    if (_top_dict.check(false, errh, "Top DICT") < 0)
-	return;
-    else if (!_top_dict.has(oCharStrings)) {
-	errh->error("font has no CharStrings dictionary");
-	return;
-    }
-    //_top_dict.unparse(errh, "Top DICT");
-
-    // extract offsets and information from TOP DICT
-    _top_dict.value(oCharstringType, 2, &_charstring_type);
-    if (_charstring_type != 1 && _charstring_type != 2) {
-	errh->error("unknown CharString type %d", _charstring_type);
-	return;
-    }
-    
+    // extract CharStrings
     int charstrings_offset;
     _top_dict.value(oCharStrings, 0, &charstrings_offset);
     _charstrings_index = Cff::IndexIterator(cff->data(), charstrings_offset, cff->length(), errh, "CharStrings INDEX");
@@ -1048,7 +1176,7 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
 
     int charset;
     _top_dict.value(oCharset, 0, &charset);
-    _charset.assign(cff, charset, _charstrings_index.nitems(), (cid() ? -1 : cff->max_sid()), errh);
+    _charset.assign(cff, charset, _charstrings_index.nitems(), cff->max_sid(), errh);
     if (_charset.error() < 0) {
 	_error = _charset.error();
 	return;
@@ -1059,36 +1187,6 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
     if (parse_encoding(Encoding, errh) < 0)
 	return;
 
-    // extract information from Private DICT
-    if (_top_dict.has(oPrivate)) {
-	Vector<double> private_info;
-	_top_dict.value(oPrivate, private_info);
-	int private_offset = (int) private_info[1];
-	_private_dict.assign(cff, private_offset, (int) private_info[0], errh, "Private DICT");
-	if ((_error = _private_dict.error()) < 0)
-	    return;
-	_error = -EINVAL;
-	if (_private_dict.check(true, errh, "Private DICT") < 0)
-	    return;
-	//_private_dict.unparse(errh, "Private DICT");
-
-	_private_dict.value(oDefaultWidthX, 0, &_default_width_x);
-	_private_dict.value(oNominalWidthX, 0, &_nominal_width_x);
-	if (_private_dict.has(oSubrs)) {
-	    int subrs_offset;
-	    _private_dict.value(oSubrs, 0, &subrs_offset);
-	    _subrs_index = Cff::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
-	    if ((_error = _subrs_index.error()) < 0)
-		return;
-	}
-	_subrs_cs.assign(nsubrs(), 0);
-    }
-
-    if (cid()) {
-	errh->error("CID-keyed fonts not yet supported");
-	return;
-    }
-
     // success!
     _error = 0;
 }
@@ -1097,8 +1195,6 @@ Cff::Font::~Font()
 {
     for (int i = 0; i < _charstrings_cs.size(); i++)
 	delete _charstrings_cs[i];
-    for (int i = 0; i < _subrs_cs.size(); i++)
-	delete _subrs_cs[i];
     delete _t1encoding;
 }
 
@@ -1189,20 +1285,6 @@ Cff::Font::assign_standard_encoding(const int *standard_encoding)
     return 0;
 }
 
-Charstring *
-Cff::Font::charstring(const IndexIterator &iiter, int which) const
-{
-    const uint8_t *s1 = iiter[which];
-    int slen = iiter[which + 1] - s1;
-    String cs = _cff->data_string().substring(s1 - _cff->data(), slen);
-    if (slen == 0)
-	return 0;
-    else if (_charstring_type == 1)
-	return new Type1Charstring(cs);
-    else
-	return new Type2Charstring(cs);
-}
-
 void
 Cff::Font::font_matrix(double matrix[6]) const
 {
@@ -1213,35 +1295,6 @@ Cff::Font::font_matrix(double matrix[6]) const
 	matrix[0] = matrix[3] = 0.001;
 	matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
     }
-}
-
-Charstring *
-Cff::Font::subr(int i) const
-{
-    i += Efont::subr_bias(_charstring_type, nsubrs_x());
-    if (i < 0 || i >= nsubrs_x())
-	return 0;
-    if (!_subrs_cs[i])
-	_subrs_cs[i] = charstring(_subrs_index, i);
-    return _subrs_cs[i];
-}
-
-int
-Cff::Font::subr_bias() const
-{
-    return Efont::subr_bias(_charstring_type, nsubrs_x());
-}
-
-Charstring *
-Cff::Font::gsubr(int i) const
-{
-    return _cff->gsubr(i);
-}
-
-int
-Cff::Font::gsubr_bias() const
-{
-    return Efont::subr_bias(2, ngsubrs_x());
 }
 
 PermString
@@ -1310,12 +1363,6 @@ Cff::Font::type1_encoding_copy() const
     return e;
 }
 
-double
-Cff::Font::global_width_x(bool is_nominal) const
-{
-    return (is_nominal ? _nominal_width_x : _default_width_x);
-}
-
 bool
 Cff::Font::dict_has(DictOperator op) const
 {
@@ -1331,6 +1378,229 @@ Cff::Font::dict_string(DictOperator op) const
 	return _cff->sid_string((int) vec[0]);
     else
 	return String();
+}
+
+
+/*****
+ * Cff::CIDFont
+ **/
+
+Cff::CIDFont::CIDFont(Cff *cff, PermString font_name, const Dict &top_dict, ErrorHandler *errh)
+    : FontParent(cff), _font_name(font_name), _top_dict(top_dict)
+{
+    assert(_top_dict.has_first(oROS));
+    
+    // parse top DICT
+    _error = -EINVAL;
+    if (_top_dict.check(false, errh, "Top DICT") < 0)
+	return;
+    else if (!_top_dict.has(oCharStrings)) {
+	errh->error("font has no CharStrings dictionary");
+	return;
+    }
+    //_top_dict.unparse(errh, "Top DICT");
+
+    // extract offsets and information from TOP DICT
+    _top_dict.value(oCharstringType, 2, &_charstring_type);
+    if (_charstring_type != 1 && _charstring_type != 2) {
+	errh->error("unknown CharString type %d", _charstring_type);
+	return;
+    }
+    
+    int charstrings_offset;
+    _top_dict.value(oCharStrings, 0, &charstrings_offset);
+    _charstrings_index = Cff::IndexIterator(cff->data(), charstrings_offset, cff->length(), errh, "CharStrings INDEX");
+    if (_charstrings_index.error() < 0) {
+	_error = _charstrings_index.error();
+	return;
+    }
+    _charstrings_cs.assign(_charstrings_index.nitems(), 0);
+
+    int charset;
+    _top_dict.value(oCharset, 0, &charset);
+    _charset.assign(cff, charset, _charstrings_index.nitems(), -1, errh);
+    if (_charset.error() < 0) {
+	_error = _charset.error();
+	return;
+    }
+
+    // extract information about child fonts
+    int fdarray_offset;
+    if (!_top_dict.value(oFDArray, 0, &fdarray_offset)) {
+	errh->error("CID-keyed font missing FDArray");
+	return;
+    }
+    IndexIterator fdarray_index(cff->data(), fdarray_offset, cff->length(), errh, "FDArray INDEX");
+    for (; fdarray_index; fdarray_index++) {
+	Dict d(cff, fdarray_index[0] - cff->data(), fdarray_index[1] - fdarray_index[0], errh, "Top DICT");
+	if (!d.ok() || d.check(false, errh, "Top DICT") < 0) {
+	    _error = d.error();
+	    return;
+	}
+	_child_fonts.push_back(new ChildFont(cff, this, _charstring_type, d, errh));
+	if (!_child_fonts.back()->ok())
+	    return;
+    }
+
+    int fdselect_offset;
+    if (!_top_dict.value(oFDSelect, 0, &fdselect_offset)) {
+	errh->error("CID-keyed font missing FDSelect");
+	return;
+    }
+    _fdselect.assign(cff, fdselect_offset, _charstrings_cs.size(), errh);
+    if (_fdselect.error() < 0)
+	return;
+
+    // success!
+    _error = 0;
+    set_parent_program(true);
+}
+
+Cff::CIDFont::~CIDFont()
+{
+    for (int i = 0; i < _charstrings_cs.size(); i++)
+	delete _charstrings_cs[i];
+    for (int i = 0; i < _child_fonts.size(); i++)
+	delete _child_fonts[i];
+}
+
+void
+Cff::CIDFont::font_matrix(double matrix[6]) const
+{
+    // XXX
+    matrix[0] = matrix[3] = 0.001;
+    matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
+}
+
+const CharstringProgram *
+Cff::CIDFont::child_program(int gid) const
+{
+    int fd = _fdselect.gid_to_fd(gid);
+    if (fd >= 0 && fd < _child_fonts.size())
+	return _child_fonts.at_u(fd);
+    else
+	return 0;
+}
+
+PermString
+Cff::CIDFont::glyph_name(int gid) const
+{
+    if (gid >= 0 && gid < nglyphs())
+	return permprintf("#%d", _charset.gid_to_sid(gid));
+    else
+	return PermString();
+}
+
+void
+Cff::CIDFont::glyph_names(Vector<PermString> &gnames) const
+{
+    gnames.resize(nglyphs());
+    for (int i = 0; i < nglyphs(); i++)
+	gnames[i] = permprintf("#%d", _charset.gid_to_sid(i));
+}
+
+Charstring *
+Cff::CIDFont::glyph(int gid) const
+{
+    if (gid < 0 || gid >= nglyphs())
+	return 0;
+    if (!_charstrings_cs[gid])
+	_charstrings_cs[gid] = charstring(_charstrings_index, gid);
+    return _charstrings_cs[gid];
+}
+
+int
+Cff::CIDFont::glyphid(PermString name) const
+{
+    if (name.length() <= 1 || name[0] != '#' || !isdigit(name[1]))
+	return -1;
+    char *endptr;
+    long cid = strtol(name.c_str() + 1, &endptr, 10);
+    if (*endptr != 0)
+	return -1;
+    return _charset.sid_to_gid(cid);
+}
+
+Charstring *
+Cff::CIDFont::glyph(PermString name) const
+{
+    return CIDFont::glyph(CIDFont::glyphid(name));
+}
+
+
+/*****
+ * ChildFont
+ **/
+
+Cff::ChildFont::ChildFont(Cff *cff, Cff::CIDFont *parent, int charstring_type, const Dict &top_dict, ErrorHandler *errh)
+    : FontParent(cff), _parent(parent), _top_dict(top_dict)
+{
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+
+    if (!cff->ok() || !_top_dict.ok()) {
+	errh->error("invalid CFF");
+	_error = -EINVAL;
+	return;
+    }
+
+    // extract offsets and information from TOP DICT
+    _top_dict.value(oCharstringType, charstring_type, &_charstring_type);
+    if (_charstring_type != 1 && _charstring_type != 2) {
+	errh->error("unknown CharString type %d", _charstring_type);
+	return;
+    }
+    
+    // extract information from Private DICT
+    if (_top_dict.has(oPrivate)
+	&& (_error = handle_private(cff, _top_dict, _private_dict, _default_width_x, _nominal_width_x, _subrs_index, _subrs_cs, errh)) < 0)
+	return;
+
+    // success!
+    _error = 0;
+}
+
+Cff::ChildFont::~ChildFont()
+{
+    for (int i = 0; i < _subrs_cs.size(); i++)
+	delete _subrs_cs[i];
+}
+
+Charstring *
+Cff::ChildFont::charstring(const IndexIterator &iiter, int which) const
+{
+    const uint8_t *s1 = iiter[which];
+    int slen = iiter[which + 1] - s1;
+    String cs = _cff->data_string().substring(s1 - _cff->data(), slen);
+    if (slen == 0)
+	return 0;
+    else if (_charstring_type == 1)
+	return new Type1Charstring(cs);
+    else
+	return new Type2Charstring(cs);
+}
+
+Charstring *
+Cff::ChildFont::subr(int i) const
+{
+    i += Efont::subr_bias(_charstring_type, nsubrs_x());
+    if (i < 0 || i >= nsubrs_x())
+	return 0;
+    if (!_subrs_cs[i])
+	_subrs_cs[i] = charstring(_subrs_index, i);
+    return _subrs_cs[i];
+}
+
+int
+Cff::ChildFont::subr_bias() const
+{
+    return Efont::subr_bias(_charstring_type, nsubrs_x());
+}
+
+double
+Cff::ChildFont::global_width_x(bool is_nominal) const
+{
+    return (is_nominal ? _nominal_width_x : _default_width_x);
 }
 
 }

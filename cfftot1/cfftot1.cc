@@ -135,8 +135,12 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 	String data = sa.take_string();
 	if (c == 'O')
 	    data = Efont::OpenType::Font(data, &cerrh).table("CFF");
-	
-	font = new Cff::Font(new Cff(data, &cerrh), name, &cerrh);
+
+	Cff *cff = new Cff(data, &cerrh);
+	Cff::FontParent *fp = cff->font(name, &cerrh);
+	if (errh->nerrors() == 0
+	    && !(font = dynamic_cast<Cff::Font *>(fp)))
+	    errh->fatal("%s: CID-keyed fonts not supported", infn);
     } else
 	errh->fatal("%s: not a CFF or OpenType/CFF font", infn);
 

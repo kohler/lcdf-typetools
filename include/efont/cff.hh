@@ -9,6 +9,15 @@ class Type1Encoding;
 
 class Cff { public:
 
+    class Dict;
+    class IndexIterator;
+    class Charset;
+    class FDSelect;
+    class FontParent;
+    class Font;
+    class CIDFont;
+    class ChildFont;
+
     Cff(const String &, ErrorHandler * = 0);
     ~Cff();
 
@@ -21,8 +30,7 @@ class Cff { public:
 
     int nfonts() const			{ return _name_index.size(); }
     PermString font_name(int i) const	{ return _name_index[i]; }
-    int font_offset(int, int &, int &) const;
-    int font_offset(PermString, int &, int &) const;
+    FontParent *font(PermString = PermString(), ErrorHandler * = 0);
 
     enum { NSTANDARD_STRINGS = 391, MAX_SID = 64999 };
     int max_sid() const			{ return NSTANDARD_STRINGS - 1 + _strings.size(); }
@@ -60,11 +68,6 @@ class Cff { public:
 	tArray, tArray2, tArray3, tArray4, tArray5, tArray6, tPrivateType,
 	tTypeMask = 0x7F, tPrivate = 0x80, tP = tPrivate
     };
-
-    class Dict;
-    class IndexIterator;
-    class Charset;
-    class Font;
 
     static const char * const operator_names[];
     static const int operator_types[];
@@ -119,6 +122,8 @@ class Cff { public:
     Vector<Charstring *> _gsubrs_cs;
 
     int parse_header(ErrorHandler *);
+    int font_offset(int, int &, int &) const;
+    int font_offset(PermString, int &, int &) const;
 
     enum { HEADER_SIZE = 4 };
     
@@ -180,30 +185,155 @@ class Cff::Charset { public:
     
 };
 
+class Cff::FDSelect { public:
 
-class Cff::Font : public CharstringProgram { public:
+    FDSelect()				: _fds(0), _my_fds(false), _nglyphs(0), _error(-1) { }
+    ~FDSelect();
+    void assign(const Cff *, int pos, int nglyphs, ErrorHandler * = 0);
 
-    Font(Cff *, PermString = PermString(), ErrorHandler * = 0);
-    ~Font();
+    int error() const			{ return _error; }
+    
+    int nglyphs() const			{ return _nglyphs; }
+    int gid_to_fd(int gid) const;
+    
+  private:
+
+    const uint8_t *_fds;
+    bool _my_fds;
+    int _nglyphs;
+    int _error;
+
+    FDSelect(const FDSelect &);
+    FDSelect &operator=(const FDSelect &);
+    int parse(const Cff *, int pos, int nglyphs, ErrorHandler *);
+    
+};
+
+
+class Cff::FontParent : public CharstringProgram { public:
+
+    FontParent(Cff *);
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
 
+    int ngsubrs_x() const		{ return _cff->ngsubrs(); }
+    int ngsubrs() const			{ return ngsubrs_x(); }
+    Charstring *gsubr(int) const;
+    int gsubr_bias() const;
+
+  private:
+
+    Cff *_cff;
+    int _charstring_type;
+    int _error;
+
+    FontParent(const FontParent &);
+    FontParent &operator=(const FontParent &);
+    
+    Charstring *charstring(const IndexIterator &, int) const;
+    
+    friend class Cff::Font;
+    friend class Cff::CIDFont;
+    friend class Cff::ChildFont;
+
+};
+
+class Cff::CIDFont : public Cff::FontParent { public:
+
+    CIDFont(Cff *, PermString, const Dict &, ErrorHandler *);
+    ~CIDFont();
+
     PermString font_name() const	{ return _font_name; }
     void font_matrix(double[6]) const;
+
+    int nglyphs() const			{ return _charstrings_index.nitems(); }
+    PermString glyph_name(int) const;
+    void glyph_names(Vector<PermString> &) const;
+    Charstring *glyph(int) const;
+    Charstring *glyph(PermString) const;
+    int glyphid(PermString) const;
+    const CharstringProgram *child_program(int) const;
+
+    bool dict_has(DictOperator) const;
+    String dict_string(DictOperator) const;
+    bool dict_value(DictOperator, double, double *) const;
+    bool dict_value(DictOperator, Vector<double> &) const;
+    
+  private:
+
+    PermString _font_name;
+
+    Dict _top_dict;
+    Dict _private_dict;
+
+    Cff::Charset _charset;
+
+    IndexIterator _charstrings_index;
+    mutable Vector<Charstring *> _charstrings_cs;
+
+    Vector<ChildFont *> _child_fonts;
+    Cff::FDSelect _fdselect;
+
+    const Dict &dict_of(DictOperator) const;
+    
+};
+
+class Cff::ChildFont : public Cff::FontParent { public:
+
+    ChildFont(Cff *, Cff::CIDFont *, int charstring_type, const Dict &, ErrorHandler * = 0);
+    ~ChildFont();
+
+    bool ok() const			{ return _error >= 0; }
+    int error() const			{ return _error; }
+
+    PermString font_name() const	{ return _parent->font_name(); }
+    void font_matrix(double m[6]) const	{ _parent->font_matrix(m); }
     
     inline bool cid() const;
     
     int nsubrs_x() const		{ return _subrs_index.nitems(); }
-    int ngsubrs_x() const		{ return _cff->ngsubrs(); }
-    
     int nsubrs() const			{ return nsubrs_x(); }
     Charstring *subr(int) const;
     int subr_bias() const;
+
+    int nglyphs() const			{ return _parent->nglyphs(); }
+    PermString glyph_name(int gi) const	{ return _parent->glyph_name(gi); }
+    void glyph_names(Vector<PermString> &v) const { _parent->glyph_names(v); }
+    Charstring *glyph(int gi) const	{ return _parent->glyph(gi); }
+    Charstring *glyph(PermString n) const { return _parent->glyph(n); }
+
+    double global_width_x(bool) const;
     
-    int ngsubrs() const			{ return ngsubrs_x(); }
-    Charstring *gsubr(int) const;
-    int gsubr_bias() const;
+  private:
+
+    Cff::CIDFont *_parent;
+
+    Dict _top_dict;
+    Dict _private_dict;
+
+    IndexIterator _subrs_index;
+    mutable Vector<Charstring *> _subrs_cs;
+
+    double _default_width_x;
+    double _nominal_width_x;
+
+    ChildFont(const ChildFont &); // does not exist
+    ChildFont &operator=(const ChildFont &); // does not exist
+
+    Charstring *charstring(const IndexIterator &, int) const;
+
+    friend class Cff::Font;
+    
+};
+
+class Cff::Font : public Cff::ChildFont { public:
+
+    Font(Cff *, PermString, const Dict &, ErrorHandler *);
+    ~Font();
+
+    PermString font_name() const	{ return _font_name; }
+    void font_matrix(double[6]) const;
 
     int nglyphs() const			{ return _charstrings_index.nitems(); }
     PermString glyph_name(int) const;
@@ -219,38 +349,22 @@ class Cff::Font : public CharstringProgram { public:
     String dict_string(DictOperator) const;
     bool dict_value(DictOperator, double, double *) const;
     bool dict_value(DictOperator, Vector<double> &) const;
-
-    double global_width_x(bool) const;
     
   private:
 
-    Cff *_cff;
     PermString _font_name;
-    int _charstring_type;
-
-    Dict _top_dict;
-    Dict _private_dict;
 
     Cff::Charset _charset;
 
     IndexIterator _charstrings_index;
     mutable Vector<Charstring *> _charstrings_cs;
 
-    IndexIterator _subrs_index;
-    mutable Vector<Charstring *> _subrs_cs;
-
     int _encoding_pos;
     int _encoding[256];
     mutable Type1Encoding *_t1encoding;
 
-    double _default_width_x;
-    double _nominal_width_x;
-
-    int _error;
-
     int parse_encoding(int pos, ErrorHandler *);
     int assign_standard_encoding(const int *standard_encoding);
-    Charstring *charstring(const IndexIterator &, int) const;
 
     const Dict &dict_of(DictOperator) const;
     
@@ -306,16 +420,19 @@ Cff::Charset::sid_to_gid(int sid) const
 	return -1;
 }
 
+inline int
+Cff::FDSelect::gid_to_fd(int gid) const
+{
+    if (gid >= 0 && gid < _nglyphs)
+	return _fds[gid];
+    else
+	return -1;
+}
+
 inline bool
 Cff::Dict::has_first(DictOperator op) const
 {
     return _operators.size() && _operators[0] == op;
-}
-
-inline bool
-Cff::Font::cid() const
-{
-    return _top_dict.has_first(oROS);
 }
 
 inline const Cff::Dict &

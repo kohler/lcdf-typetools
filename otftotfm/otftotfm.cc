@@ -1022,18 +1022,23 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     if (!cff.ok())
 	return;
 
-    Cff::Font font(&cff, PermString(), errh);
-    if (!font.ok())
+    Cff::FontParent *fp = cff.font(PermString(), errh);
+    if (!fp || !fp->ok())
 	return;
+    Cff::Font *font = dynamic_cast<Cff::Font *>(fp);
+    if (!font) {
+	errh->error("CID-keyed fonts not supported");
+	return;
+    }
 
     // save glyph names
     Vector<PermString> glyph_names;
-    font.glyph_names(glyph_names);
+    font->glyph_names(glyph_names);
     OpenType::debug_glyph_names = glyph_names;
 
     // set typeface name from font family name
     {
-	String typeface = font.dict_string(Cff::oFamilyName);
+	String typeface = font->dict_string(Cff::oFamilyName);
 
 	// make it reasonable for the shell
 	StringAccum sa;
@@ -1046,14 +1051,14 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
     // initialize encoding
     DvipsEncoding dvipsenc(dvipsenc_in); // make copy
-    Metrics encoding(font.nglyphs());
+    Metrics encoding(font->nglyphs());
     OpenType::Cmap cmap(otf.table("cmap"), errh);
     assert(cmap.ok());
     if (dvipsenc_literal)
-	dvipsenc.make_literal_metrics(encoding, &font);
+	dvipsenc.make_literal_metrics(encoding, font);
     else {
-	T1Secondary secondary(&font, cmap);
-	dvipsenc.make_metrics(encoding, cmap, &font, &secondary);
+	T1Secondary secondary(font, cmap);
+	dvipsenc.make_metrics(encoding, cmap, font, &secondary);
     }
     // encode boundary glyph at 256
     encoding.encode(256, encoding.boundary_glyph());
@@ -1158,7 +1163,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     // figure out our FONTNAME
     if (!font_name) {
 	// derive font name from OpenType font name
-	font_name = font.font_name();
+	font_name = font->font_name();
 	if (encoding_file) {
 	    int slash = encoding_file.find_right('/') + 1;
 	    int dot = encoding_file.find_right('.');
@@ -1210,10 +1215,10 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (output_flags & G_BINARY) {
 	    String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
 	    String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
-	    write_tfm(otf, &font, encoding, dvipsenc.boundary_char(), glyph_names, tfm, vf, errh);
+	    write_tfm(otf, font, encoding, dvipsenc.boundary_char(), glyph_names, tfm, vf, errh);
 	} else {
 	    String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
-	    output_pl(otf, &font, encoding, dvipsenc.boundary_char(), glyph_names, true, outfile, errh);
+	    output_pl(otf, font, encoding, dvipsenc.boundary_char(), glyph_names, true, outfile, errh);
 	    update_odir(O_VPL, outfile, errh);
 	}
 	encoding.make_base(257);
@@ -1224,23 +1229,23 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	/* do nothing */;
     else if (output_flags & G_BINARY) {
 	String tfm = getodir(O_TFM, errh) + "/" + font_name + metrics_suffix + ".tfm";
-	write_tfm(otf, &font, encoding, dvipsenc.boundary_char(), glyph_names, tfm, String(), errh);
+	write_tfm(otf, font, encoding, dvipsenc.boundary_char(), glyph_names, tfm, String(), errh);
     } else {
 	String outfile = getodir(O_PL, errh) + "/" + font_name + metrics_suffix + ".pl";
-	output_pl(otf, &font, encoding, dvipsenc.boundary_char(), glyph_names, false, outfile, errh);
+	output_pl(otf, font, encoding, dvipsenc.boundary_char(), glyph_names, false, outfile, errh);
 	update_odir(O_PL, outfile, errh);
     }
 
     // print DVIPS map line
     if (errh->nerrors() == 0 && (output_flags & G_PSFONTSMAP)) {
 	StringAccum sa;
-	sa << font_name << metrics_suffix << ' ' << font.font_name() << " \"";
+	sa << font_name << metrics_suffix << ' ' << font->font_name() << " \"";
 	if (extend)
 	    sa << extend << " ExtendFont ";
 	if (slant)
 	    sa << slant << " SlantFont ";
 	sa << out_encoding_name << " ReEncodeFont\" <[" << pathname_filename(out_encoding_file);
-	if (String fn = installed_type1(input_filename, font.font_name(), (output_flags & G_TYPE1), errh))
+	if (String fn = installed_type1(input_filename, font->font_name(), (output_flags & G_TYPE1), errh))
 	    sa << " <" << pathname_filename(fn);
 	else
 	    sa << " <<" << pathname_filename(input_filename);
@@ -1250,6 +1255,8 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (metrics_suffix)
 	    update_autofont_map(font_name, "", errh);
     }
+
+    delete font;
 }
 
 
@@ -1544,13 +1551,14 @@ particular purpose.\n");
     } else {
 	// use encoding from font
 	Cff cff(otf.table("CFF"), &bail_errh);
-	Cff::Font font(&cff, PermString(), &bail_errh);
-	assert(cff.ok() && font.ok());
-	if (Type1Encoding *t1e = font.type1_encoding()) {
+	Cff::FontParent *font = cff.font(PermString(), &bail_errh);
+	assert(cff.ok() && font->ok());
+	if (Type1Encoding *t1e = font->type1_encoding()) {
 	    for (int i = 0; i < 256; i++)
 		dvipsenc.encode(i, (*t1e)[i]);
 	} else
 	    errh->fatal("font has no encoding, specify one explicitly");
+	delete font;
     }
 
     // apply command-line ligkern commands and coding scheme
