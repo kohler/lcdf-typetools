@@ -235,7 +235,8 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
       scan++;
       char *name_pos = scan;
       while (scan[0] != ' ' && scan[0]) scan++;
-      if (scan[0] != ' ' || scan[1] != 'p' || scan[2] != 'u' || scan[3] != 't')
+      while (scan[0] == ' ') scan++;
+      if (scan[0] != 'p' || scan[1] != 'u' || scan[2] != 't')
 	break;
       
       _encoding->put(char_value, PermString(name_pos, scan - name_pos));
