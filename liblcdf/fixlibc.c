@@ -42,7 +42,7 @@ strerror(int errno)
 #endif
 
 #ifdef BROKEN_STRTOD
-/* On NeXTSTEP, Melissa O'Neill <oneill@cs.sfu.ca> reports that strtod and
+/* On NeXTSTEP, Melissa O'Neill <oneill@cs.sfu.ca> reports that strtod
    consumes whitespace after its argument, which makes mminstance (among other
    programs) not work. This wrapper gets rid of that whitespace again.
    (Originally, we suspected strtol too, but it seems to work, at least in
