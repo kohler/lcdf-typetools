@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 1.51   2.Sep.2003
+
+* otftotfm: Generated TFM and PL files have DESIGNSIZE set to the font's
+  actual design size, as read from the 'size' feature. Requested by
+  Johannes Kuester.
+
+
 Version 1.50   26.Aug.2003
 
 * Minor compilation fix; problem reported by Nelson H.F. Beebe.
