@@ -107,7 +107,7 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   int uniqueid;
   t1d = dict("UniqueID");
   bool have_uniqueid = (t1d && t1d->value_int(uniqueid));
-  kill_def(t1d, dFont);
+  kill_def(t1d, dFont);  
   
   // prepare XUID
   t1d = dict("XUID");
@@ -131,6 +131,27 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   }
   
   return true;
+}
+
+void
+MyFont::interpolate_dict_int(PermString name, ErrorHandler *errh,
+			     Dict the_dict = dPrivate)
+{
+  Type1Definition *def = dict(the_dict, name);
+  Type1Definition *blend_def = dict(the_dict + dBlend, name);
+  NumVector blend;
+  
+  if (def && blend_def && blend_def->value_numvec(blend)) {
+    int n = _nmasters;
+    double val = 0;
+    for (int m = 0; m < n; m++)
+      val += blend[m] * _weight_vector[m];
+    int ival = (int)(val + 0.49);
+    if (fabs(val - ival) >= 0.001)
+      errh->warning("interpolated %s should be an integer (it is %g)", name.cc(), val);
+    def->set_num(ival);
+    kill_def(blend_def, the_dict + dBlend);
+  }
 }
 
 void
@@ -202,6 +223,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   
   interpolate_dict_num("BlueScale");
   interpolate_dict_num("BlueShift");
+  interpolate_dict_int("BlueFuzz", errh);
   
   {
     Type1Definition *def = p_dict("ForceBold");
