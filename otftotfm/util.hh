@@ -13,4 +13,8 @@ String pathname_filename(const String &);
 int mysystem(const char *command, ErrorHandler *);
 bool parse_unicode_number(const char*, const char*, int require_prefix, uint32_t& result);
 
+#ifdef WIN32
+#define WEXITSTATUS(es) (es)
+#endif
+
 #endif

@@ -16,7 +16,7 @@ namespace Efont {
 
 class CharstringProgram;
 class CharstringInterp;
-class CharstringContext;
+struct CharstringContext;
 class MultipleMasterSpace;
 class Type1Encoding;
 
@@ -184,7 +184,7 @@ struct CharstringContext {
 
     CharstringContext(const CharstringProgram *program_, const Charstring *cs_) : program(program_), cs(cs_) { }
 
-    operator bool() const			{ return cs; }
+    operator bool() const			{ return cs != 0; }
     
     const CharstringProgram *program;
     const Charstring *cs;

@@ -14,6 +14,9 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#ifdef WIN32
+# define _USE_MATH_DEFINES
+#endif
 #include "glyphfilter.hh"
 #include <lcdf/error.hh>
 #include <ctype.h>

@@ -44,7 +44,7 @@ class HintReplacementDetector : public CharstringInterp { public:
     HintReplacementDetector(Type1Font *, int);
     HintReplacementDetector(Type1Font *, const Vector<double> &, int);
 
-    bool is_hint_replacement(int i) const { return _hint_replacements[i]; }
+    bool is_hint_replacement(int i) const { return _hint_replacements[i] != 0; }
     int call_count(int i) const		{ return _call_counts[i]; }
 
     bool type1_command(int);

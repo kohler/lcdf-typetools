@@ -14,6 +14,9 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#ifdef WIN32
+# define _USE_MATH_DEFINES
+#endif
 #include <efont/psres.hh>
 #include <efont/t1rw.hh>
 #include <efont/t1font.hh>
@@ -314,6 +317,7 @@ Other options:\n\
 Report bugs to <kohler@icir.org>.\n");
 }
 
+#ifndef WIN32
 extern "C" {
 static void
 sigchld_handler(int s)
@@ -344,6 +348,7 @@ handle_sigchld()
     signal(sigchld, sigchld_handler);
 #endif
 }
+#endif
 
 
 // MAIN
@@ -1112,7 +1117,7 @@ static String otf_filename;
 static void
 main_dvips_map(const String &ps_name, StringAccum &sa, ErrorHandler *errh)
 {
-    if (String fn = installed_type1(otf_filename, ps_name, (output_flags & G_TYPE1), errh))
+    if (String fn = installed_type1(otf_filename, ps_name, (output_flags & G_TYPE1) != 0, errh))
 	sa << "<" << pathname_filename(fn);
     else
 	sa << "<<" << pathname_filename(otf_filename);
@@ -1386,7 +1391,9 @@ clp_parse_char(Clp_Parser *clp, const char *arg, int complain, void *)
 int
 main(int argc, char *argv[])
 {
+#ifndef WIN32
     handle_sigchld();
+#endif
     String::static_initialize();
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
@@ -1647,7 +1654,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case NOCREATE_OPT:
-	    no_create = clp->negated;
+	    no_create = (clp->negated != 0);
 	    break;
 
 	  case FORCE_OPT:

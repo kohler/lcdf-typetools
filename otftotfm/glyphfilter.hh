@@ -8,7 +8,7 @@ class GlyphFilter { public:
 
     GlyphFilter()			: _sorted(true) { }
 
-    operator bool() const		{ return _patterns.size(); }
+    operator bool() const		{ return _patterns.size() != 0; }
 
     inline bool allow_substitution(Efont::OpenType::Glyph glyph, const Vector<PermString>& glyph_names, uint32_t unicode) const;
     inline bool allow_alternate(Efont::OpenType::Glyph glyph, const Vector<PermString>& glyph_names, uint32_t unicode) const;

@@ -1113,7 +1113,7 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
     for (int want_encoded = 0; want_encoded < 2; want_encoded++) 
 	for (Code c = 0; c < size; c++)
 	    if (_encoding[c].base_code < 0
-		&& dvipsenc.encoded(c) == (bool)want_encoded)
+		&& dvipsenc.encoded(c) == (want_encoded != 0))
 		empty_codes.push_back(c);
 
     /* Then, loop over the unencoded characters, assigning them codes. */

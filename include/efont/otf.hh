@@ -359,7 +359,7 @@ inline bool GlyphSet::covers(Glyph g) const
     if ((unsigned)g > MAXGLYPH)
 	return false;
     else if (const uint32_t* u = _v[g >> SHIFT])
-	return u[(g & MASK) >> 5] & (1 << (g & 0x1F));
+	return (u[(g & MASK) >> 5] & (1 << (g & 0x1F))) != 0;
     else
 	return false;
 }

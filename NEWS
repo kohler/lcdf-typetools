@@ -1,8 +1,10 @@
 LCDF Typetools NEWS
 
-Version 2.15   18.Sep.2004
+Version 2.15   21.Sep.2004
 
 * AIX compile fixes.  Reported by Vladimir Volovich.
+
+* Include RPM .spec file, provided by C.M. Connelly.
 
 
 Version 2.14   16.Sep.2004
