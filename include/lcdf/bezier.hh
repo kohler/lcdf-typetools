@@ -8,8 +8,8 @@
 class Bezier { public:
   
     Bezier()				: _bb(-1) { }
-    Bezier(Point p[4]) throw ();
-    Bezier(const Point &, const Point &, const Point &, const Point &) throw ();
+    inline Bezier(Point p[4]) throw ();
+    inline Bezier(const Point &, const Point &, const Point &, const Point &) throw ();
   
     const Point *points() const		{ return _p; }
     const Point &point(int i) const	{ assert(i>=0&&i<4); return _p[i]; }
@@ -21,19 +21,19 @@ class Bezier { public:
     bool in_bb(const Point &, double) const throw ();
     bool hit(const Point &, double) const throw ();
 
-    double bb_left() const throw ();
-    double bb_right() const throw ();
-    double bb_top() const throw ();
-    double bb_bottom() const throw ();
+    inline double bb_left() const throw ();
+    inline double bb_right() const throw ();
+    inline double bb_top() const throw ();
+    inline double bb_bottom() const throw ();
 
-    double bb_left_x() const throw ();
-    double bb_right_x() const throw ();
-    double bb_top_x() const throw ();
-    double bb_bottom_x() const throw ();
+    inline double bb_left_x() const throw ();
+    inline double bb_right_x() const throw ();
+    inline double bb_top_x() const throw ();
+    inline double bb_bottom_x() const throw ();
     
     void halve(Bezier &, Bezier &) const throw ();
 
-    void segmentize(Vector<Point> &) const;
+    inline void segmentize(Vector<Point> &) const;
     void segmentize(Vector<Point> &, bool) const;
   
     static void fit(const Vector<Point> &, double, Vector<Bezier> &);
@@ -44,7 +44,7 @@ class Bezier { public:
     mutable int _bb;
 
     void make_bb() const throw ();
-    void ensure_bb() const throw ();
+    inline void ensure_bb() const throw ();
   
     double hit_recurse(const Point &, double, double, double, double, double) const throw ();
 

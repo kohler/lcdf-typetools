@@ -93,7 +93,7 @@ operator!=(const char *a, PermString b)
 inline unsigned
 hashcode(PermString s)
 {
-    return (unsigned)(s.cc());
+    return (uintptr_t)(s.cc());
 }
 
 #endif

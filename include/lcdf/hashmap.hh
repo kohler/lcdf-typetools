@@ -31,9 +31,9 @@ class HashMap { public:
     int capacity() const		{ return _capacity; }
     void set_default_value(const V &v)	{ _default_value = v; }
 
-    const V &find(const K &) const;
-    V *findp(const K &) const;
-    const V &operator[](const K &k) const;
+    inline const V &find(const K &) const;
+    inline V *findp(const K &) const;
+    inline const V &operator[](const K &k) const;
     V &find_force(const K &);
 
     bool insert(const K &, const V &);
@@ -66,17 +66,18 @@ class HashMap { public:
     V _default_value;
 
     void increase(int);
-    void check_capacity();
+    inline void check_capacity();
     int bucket(const K &) const;
 
-    friend class const_iterator;
-    friend class iterator;
+    friend class _HashMap_const_iterator<K, V>;
+    friend class _HashMap_iterator<K, V>;
 
 };
 
 template <class K, class V>
 class _HashMap_const_iterator { public:
     typedef _HashMap_const_iterator const_iterator;
+    typedef typename HashMap<K, V>::Pair Pair;
     
     operator bool() const		{ return _pos < _hm->_capacity; }
     
@@ -85,11 +86,10 @@ class _HashMap_const_iterator { public:
     
     const K &key() const		{ return _hm->_e[_pos].key; }
     const V &value() const		{ return _hm->_e[_pos].value; }
-    typedef typename HashMap<K, V>::Pair Pair;
     const Pair &pair() const		{ return _hm->_e[_pos]; }
 
-    bool operator==(const const_iterator &) const;
-    bool operator!=(const const_iterator &) const;
+    inline bool operator==(const const_iterator &) const;
+    inline bool operator!=(const const_iterator &) const;
 
   private:
     const HashMap<K, V> *_hm;

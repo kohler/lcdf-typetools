@@ -39,8 +39,8 @@ class Vector { public:
     T &back()				{ return at(_n - 1); }
     T &at_u(int i)			{ return _l[i]; }
   
-    void push_back(const T &);
-    void pop_back();
+    inline void push_back(const T &);
+    inline void pop_back();
   
     void clear()			{ shrink(0); }
     bool reserve(int);
@@ -109,8 +109,8 @@ class Vector<void *> { public:
     void *&back()			{ return at(_n - 1); }
     void *&at_u(int i)			{ return _l[i]; }
   
-    void push_back(void *);
-    void pop_back();
+    inline void push_back(void *);
+    inline void pop_back();
   
     void clear()			{ _n = 0; }
     bool reserve(int);

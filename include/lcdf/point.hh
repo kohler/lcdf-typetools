@@ -14,28 +14,28 @@ struct Point {
     Point(const Point &p, double dx, double dy) : x(p.x + dx), y(p.y + dy) { }
     // ~Point()				use compiler default
 
-    double squared_length() const throw ();
-    double length() const throw ();
-    double magnitude() const throw ();
-    static double distance(const Point &, const Point &) throw ();
-    static double dot(const Point &, const Point &) throw ();
+    inline double squared_length() const throw ();
+    inline double length() const throw ();
+    inline double magnitude() const throw ();
+    static inline double distance(const Point &, const Point &) throw ();
+    static inline double dot(const Point &, const Point &) throw ();
     static Point midpoint(const Point &, const Point &) throw ();
 
-    double angle() const throw ();
+    inline double angle() const throw ();
 
     void shift(double dx, double dy)	{ x += dx; y += dy; }
     
-    Point shifted(double dx, double dy) const throw ();
+    inline Point shifted(double dx, double dy) const throw ();
     Point rotated(double) const throw ();
-    Point normal() const throw ();
+    inline Point normal() const throw ();
 
     bool on_line(const Point &, const Point &, double) const throw ();
     bool on_segment(const Point &, const Point &, double) const throw ();
 
-    Point &operator+=(const Point &) throw ();
-    Point &operator-=(const Point &) throw ();
-    Point &operator*=(double) throw ();
-    Point &operator/=(double) throw ();
+    inline Point &operator+=(const Point &) throw ();
+    inline Point &operator-=(const Point &) throw ();
+    inline Point &operator*=(double) throw ();
+    inline Point &operator/=(double) throw ();
 
     // Point operator+(Point, const Point &);
     // Point operator-(Point, const Point &);

@@ -21,8 +21,8 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #ifndef PATHNAME_SEPARATOR
 # define PATHNAME_SEPARATOR '/'
 #endif
