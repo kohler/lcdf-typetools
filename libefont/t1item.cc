@@ -7,6 +7,7 @@
 #include "t1item.hh"
 #include "t1rw.hh"
 #include "t1interp.hh"
+#include "strtonum.h"
 #include <ctype.h>
 #include <string.h>
 #ifdef BROKEN_STRTOARITH
@@ -182,20 +183,6 @@ Type1Definition::value_int(int &i) const
   return (*s == 0);
 }
 
-
-static double
-strtonumber(const char *f, char **endf)
-{
-  int v = strtol((char *)f, endf, 10);
-  if (**endf == '.')
-    return v + strtod(*endf, endf);
-  else if (**endf == 'E' || **endf == 'e')
-    return strtod(f, endf);
-  else
-    return v;
-}
-
-
 bool
 Type1Definition::value_num(double &d) const
 {
@@ -203,7 +190,6 @@ Type1Definition::value_num(double &d) const
   d = strtonumber(_val, &s);
   return (*s == 0);
 }
-
 
 bool
 Type1Definition::value_name(PermString &str) const
@@ -238,6 +224,12 @@ strtonumvec(const char *f, char **endf, NumVector &v)
   }
 }
 
+bool
+Type1Definition::value_numvec(NumVector &v) const
+{
+  return strtonumvec(_val, 0, v);
+}
+
 
 static bool
 strtonumvec_vec(char *f, char **endf, Vector<NumVector> &v)
@@ -261,14 +253,6 @@ strtonumvec_vec(char *f, char **endf, Vector<NumVector> &v)
     }
   }
 }
-
-
-bool
-Type1Definition::value_numvec(NumVector &v) const
-{
-  return strtonumvec(_val, 0, v);
-}
-
 
 bool
 Type1Definition::value_numvec_vec(Vector<NumVector> &v) const
