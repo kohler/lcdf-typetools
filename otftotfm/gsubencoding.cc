@@ -240,15 +240,6 @@ assign_bitvec(int *&bitvec, int e, int n)
 	return false;
 }
 
-static bool
-in_bitvec(const int *bitvec, int e, int n)
-{
-    if (e >= 0 && e < n && bitvec)
-	return (bitvec[e >> 5] & (1 << (e & 0x1F))) != 0;
-    else
-	return false;
-}
-
 int
 GsubEncoding::apply(const Vector<Positioning> &pv)
 {
