@@ -2,7 +2,8 @@
 #ifndef EFONT_OTFDATA_HH
 #define EFONT_OTFDATA_HH
 #include <lcdf/string.hh>
-#include <efont/t1cs.hh>		/* for integer types */
+#include <lcdf/vector.hh>
+#include <lcdf/inttypes.h>
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
