@@ -1,6 +1,6 @@
 LCDF Typetools NEWS
 
-Version 0.19
+Version 0.19   30.Jul.2003
 
 * otftotfm: Add support for 'emptyslot' UNICODINGs. Requested by Marco
   Kuhlmann.

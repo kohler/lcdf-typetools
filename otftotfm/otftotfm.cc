@@ -994,7 +994,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		    subs[j].add_outer_left(bg);
 	    }
 
-	    //for (int i = 0; i < subs.size(); i++) fprintf(stderr, "%s\n", subs[i].unparse().c_str());
+	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%s\n", subs[subno].unparse().c_str());
 	    
 	    int nunderstood = encoding.apply(subs, !dvipsenc_literal);
 
