@@ -28,7 +28,8 @@ itc_complain()
 
 class HintReplacementDetector : public CharstringInterp { public:
 
-    HintReplacementDetector(Type1Font *, Vector<double> *, int);
+    HintReplacementDetector(Type1Font *, int);
+    HintReplacementDetector(Type1Font *, const Vector<double> &, int);
 
     bool is_hint_replacement(int i) const	{ return _hint_replacements[i]; }
     int call_count(int i) const		{ return _call_counts[i]; }
@@ -47,7 +48,14 @@ class HintReplacementDetector : public CharstringInterp { public:
 
 };
 
-HintReplacementDetector::HintReplacementDetector(Type1Font *f, Vector<double> *wv, int b)
+HintReplacementDetector::HintReplacementDetector(Type1Font *f, int b)
+    : CharstringInterp(f),
+      _hint_replacements(f->nsubrs(), 0), _call_counts(f->nsubrs(), 0),
+      _count_calls_below(b)
+{
+}
+
+HintReplacementDetector::HintReplacementDetector(Type1Font *f, const Vector<double> &wv, int b)
     : CharstringInterp(f, wv),
       _hint_replacements(f->nsubrs(), 0), _call_counts(f->nsubrs(), 0),
       _count_calls_below(b)
@@ -245,8 +253,8 @@ Type1OneMMRemover::run_subr(Type1Charstring *cs)
 bool
 Type1OneMMRemover::itc_command(int command, int on_stack)
 {
-    Vector<double> *weight = weight_vector();
-    assert(weight);
+    const Vector<double> &weight = weight_vector();
+    assert(weight.size());
     Vector<double> *scratch = scratch_vector();
     Type1CharstringGen *gen =
 	(_in_prefix ? &_prefix_gen : (_in_subr ? &_main_gen : 0));
@@ -258,8 +266,8 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	  if (on_stack != 1)
 	      return false;
 	  int offset = (int)at(base);
-	  for (int i = 0; i < weight->size(); i++)
-	      vec(scratch, offset+i) = weight->at_u(i);
+	  for (int i = 0; i < weight.size(); i++)
+	      vec(scratch, offset+i) = weight.at_u(i);
 	  // save load command, so we expand its effects into the scratch
 	  // vector
 	  if (gen) {
@@ -562,7 +570,7 @@ Type1BadCallRemover::run(Type1Charstring &cs)
  * Type1MMRemover
  **/
 
-Type1MMRemover::Type1MMRemover(Type1Font *font, Vector<double> *wv,
+Type1MMRemover::Type1MMRemover(Type1Font *font, const Vector<double> &wv,
 			       int precision, ErrorHandler *errh)
     : _font(font), _weight_vector(wv), _precision(precision),
       _nsubrs(font->nsubrs()),
@@ -742,7 +750,7 @@ class SubrExpander : public CharstringInterp { public:
 };
 
 SubrExpander::SubrExpander(Type1Font *font)
-    : CharstringInterp(font, 0), _gen(0), _renumbering(0)
+    : CharstringInterp(font), _gen(0), _renumbering(0)
 {
 }
 
@@ -821,7 +829,7 @@ Type1SubrRemover::Type1SubrRemover(Type1Font *font, ErrorHandler *errh)
       _save_count(0), _nonexist_count(0), _errh(errh)
 {
     // find subroutines needed for hint replacement
-    HintReplacementDetector hr(font, 0, 2);
+    HintReplacementDetector hr(font, 2);
     for (int i = 0; i < _font->nglyphs(); i++) {
 	Type1Subr *g = _font->glyph_x(i);
 	if (g)

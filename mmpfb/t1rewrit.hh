@@ -4,35 +4,35 @@
 #include <efont/t1font.hh>
 #include <lcdf/straccum.hh>
 
-class Type1MMRemover {
+class Type1MMRemover { public:
   
-  Efont::Type1Font *_font;
-  Vector<double> *_weight_vector;
-  int _precision;
+    Type1MMRemover(Efont::Type1Font *, const Vector<double> &weight_vec, int, ErrorHandler *);
+    ~Type1MMRemover();
   
-  int _nsubrs;
-  Vector<int> _subr_done;
-  Vector<Efont::Type1Charstring *> _subr_prefix;
-  Vector<int> _must_expand_subr;
-  Vector<int> _hint_replacement_subr;
-  bool _expand_all_subrs;
+    Efont::EfontProgram *program() const	{ return _font; }
+    const Vector<double> &weight_vector() const { return _weight_vector; }
+    int nmasters() const		{ return _weight_vector.size(); }
+    int precision() const			{ return _precision; }
+  
+    Efont::Type1Charstring *subr_prefix(int);
+    Efont::Type1Charstring *subr_expander(int);
+  
+    void run();
+  
+  private:
+  
+    Efont::Type1Font *_font;
+    Vector<double> _weight_vector;
+    int _precision;
+  
+    int _nsubrs;
+    Vector<int> _subr_done;
+    Vector<Efont::Type1Charstring *> _subr_prefix;
+    Vector<int> _must_expand_subr;
+    Vector<int> _hint_replacement_subr;
+    bool _expand_all_subrs;
  
-  ErrorHandler *_errh;
-  
- public:
-  
-  Type1MMRemover(Efont::Type1Font *, Vector<double> *, int, ErrorHandler *);
-  ~Type1MMRemover();
-  
-  Efont::EfontProgram *program() const	{ return _font; }
-  Vector<double> *weight_vector() const	{ return _weight_vector; }
-  int nmasters() const			{ return _weight_vector->size(); }
-  int precision() const			{ return _precision; }
-  
-  Efont::Type1Charstring *subr_prefix(int);
-  Efont::Type1Charstring *subr_expander(int);
-  
-  void run();
+    ErrorHandler *_errh;
   
 };
 

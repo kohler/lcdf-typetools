@@ -1,16 +1,15 @@
 #ifndef MYFONT_HH
 #define MYFONT_HH
 #include <efont/t1font.hh>
-class Efont::EfontMMSpace;
+class Efont::MultipleMasterSpace;
 class ErrorHandler;
 
-class MyFont: public Efont::Type1Font { public:
+class MyFont : public Efont::Type1Font { public:
   
     MyFont(Efont::Type1Reader &);
     ~MyFont();
   
-    bool set_design_vector(Efont::EfontMMSpace *, const Vector<double> &,
-			   ErrorHandler * = 0);
+    bool set_design_vector(Efont::MultipleMasterSpace *, const Vector<double> &, ErrorHandler * = 0);
   
     void interpolate_dicts(ErrorHandler * = 0);
     void interpolate_charstrings(int precision, ErrorHandler * = 0);

@@ -52,8 +52,7 @@ MyFont::kill_def(Type1Definition *t1d, int whichd)
 }
 
 bool
-MyFont::set_design_vector(EfontMMSpace *mmspace, const Vector<double> &design,
-			  ErrorHandler *errh)
+MyFont::set_design_vector(MultipleMasterSpace *mmspace, const Vector<double> &design, ErrorHandler *errh)
 {
     Type1Definition *t1d = dict("DesignVector");
     if (t1d) {
@@ -286,6 +285,6 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
 void
 MyFont::interpolate_charstrings(int precision, ErrorHandler *errh)
 {
-    Type1MMRemover remover(this, &_weight_vector, precision, errh);
+    Type1MMRemover remover(this, _weight_vector, precision, errh);
     remover.run();
 }

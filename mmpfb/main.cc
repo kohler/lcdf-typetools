@@ -66,7 +66,7 @@ using namespace Efont;
 static const char *program_name;
 static ErrorHandler *errh;
 static MyFont *font;
-static EfontMMSpace *mmspace;
+static MultipleMasterSpace *mmspace;
 
 static Vector<PermString> ax_names;
 static Vector<int> ax_nums;
@@ -216,7 +216,7 @@ print_conversion_program(FILE *f, const Type1Charstring &cs, PermString name)
 
 
 static void
-print_amcp_info(EfontMMSpace *mmspace, FILE *f)
+print_amcp_info(MultipleMasterSpace *mmspace, FILE *f)
 {
   const Type1Charstring &ndv = mmspace->ndv();
   const Type1Charstring &cdv = mmspace->cdv();
