@@ -31,6 +31,14 @@ class HashMap { public:
     int capacity() const		{ return _capacity; }
     void set_default_value(const V &v)	{ _default_value = v; }
 
+    typedef _HashMap_const_iterator<K, V> const_iterator;
+    typedef _HashMap_iterator<K, V> iterator;
+
+    inline const_iterator begin() const;
+    inline iterator begin();
+    inline const_iterator end() const;
+    inline iterator end();
+
     inline const V &find(const K &) const;
     inline V *findp(const K &) const;
     inline const V &operator[](const K &k) const;
@@ -38,13 +46,6 @@ class HashMap { public:
 
     bool insert(const K &, const V &);
     void clear();
-
-    typedef _HashMap_const_iterator<K, V> const_iterator;
-    const_iterator begin() const	{ return const_iterator(this, 0); }
-    const_iterator end() const		{ return const_iterator(this, _capacity); }
-    typedef _HashMap_iterator<K, V> iterator;
-    iterator begin()			{ return iterator(this, 0); }
-    iterator end()			{ return iterator(this, _capacity); }
 
     HashMap<K, V> &operator=(const HashMap<K, V> &);
     void swap(HashMap<K, V> &);
@@ -147,6 +148,34 @@ HashMap<K, V>::findp(const K &key) const
 {
     int i = bucket(key);
     return _e[i].key ? &_e[i].value : 0;
+}
+
+template <class K, class V>
+inline _HashMap_const_iterator<K, V>
+HashMap<K, V>::begin() const
+{
+    return const_iterator(this, 0);
+}
+
+template <class K, class V>
+inline _HashMap_const_iterator<K, V>
+HashMap<K, V>::end() const
+{
+    return const_iterator(this, _capacity);
+}
+
+template <class K, class V>
+inline _HashMap_iterator<K, V>
+HashMap<K, V>::begin()
+{
+    return iterator(this, 0);
+}
+
+template <class K, class V>
+inline _HashMap_iterator<K, V>
+HashMap<K, V>::end()
+{
+    return iterator(this, _capacity);
 }
 
 template <class K, class V>
