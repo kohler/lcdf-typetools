@@ -81,7 +81,7 @@ usage_error(char *error_message, ...)
   if (!error_message)
     errh->message("Usage: %s [OPTION]... FONT", program_name);
   else
-    errh->verror(ErrorHandler::Error, String(), error_message, val);
+    errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
   errh->message("Type %s --help for more information.", program_name);
   exit(1);
 }
@@ -90,7 +90,7 @@ void
 usage()
 {
   printf("\
-`Mmpfb' creates a single-master PostScript Type 1 font by interpolating a\n\
+'Mmpfb' creates a single-master PostScript Type 1 font by interpolating a\n\
 multiple master font at a point you specify. The resulting font does not\n\
 contain multiple master extensions. It is written to the standard output.\n\
 \n\
@@ -245,9 +245,8 @@ main(int argc, char **argv)
   int precision = 5;
   int subr_count = -1;
   FILE *outfile = 0;
-  ErrorHandler *default_errh =
-    new PinnedErrorHandler(new FileErrorHandler(stderr), "mmpfb");
-  errh = default_errh;
+  ::errh =
+      ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
   
   while (1) {
     int opt = Clp_Next(clp);
@@ -314,7 +313,7 @@ main(int argc, char **argv)
       
      case QUIET_OPT:
       if (clp->negated)
-	errh = default_errh;
+	errh = ErrorHandler::default_handler();
       else
 	errh = ErrorHandler::silent_handler();
       break;
@@ -325,7 +324,8 @@ main(int argc, char **argv)
 	outfile = stdout;
       else {
 	outfile = fopen(clp->arg, "wb");
-	if (!outfile) errh->fatal("can't open `%s' for writing", clp->arg);
+	if (!outfile)
+	    errh->fatal("%s: %s", clp->arg, strerror(errno));
       }
       break;
       

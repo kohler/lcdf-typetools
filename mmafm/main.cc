@@ -197,7 +197,7 @@ usage_error(char *error_message, ...)
   if (!error_message)
     errh->message("Usage: %s [OPTION | FONT]...", program_name);
   else
-    errh->verror(ErrorHandler::Error, String(), error_message, val);
+    errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
   errh->message("Type %s --help for more information.", program_name);
   exit(1);
 }
@@ -206,7 +206,7 @@ static void
 usage()
 {
   printf("\
-`Mmafm' creates an AFM font metrics file for a multiple master font by\n\
+'Mmafm' creates an AFM font metrics file for a multiple master font by\n\
 interpolating at a point you specify and writes it to the standard output.\n\
 \n\
 Usage: %s [OPTION | FONT]...\n\
@@ -247,7 +247,7 @@ main(int argc, char **argv)
     Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
   program_name = Clp_ProgramName(clp);
 
-  errh = new FileErrorHandler(stderr);
+  errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
   
   char *output_name = "<stdout>";
   FILE *output_file = 0;
@@ -295,7 +295,8 @@ main(int argc, char **argv)
 	output_name = "<stdout>";
       } else {
 	output_file = fopen(clp->arg, "wb");
-	if (!output_file) errh->fatal("can't open `%s' for writing", clp->arg);
+	if (!output_file)
+	    errh->fatal("%s: %s", clp->arg, strerror(errno));
       }
       break;
       
