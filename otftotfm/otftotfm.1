@@ -587,20 +587,17 @@ removes all kerns with "a" as the left-hand character, and
 .fi
 removes all kerns.
 .PP
-Otftotfm also supports extended syntax for inhibiting ligatures. This
-command:
+Otftotfm also supports extended syntax for inhibiting ligatures via
+LIGKERNX commands. This:
 .nf
-  % LIGKERN \fIglyph1\fR {L} \fIglyph2\fR ;
+  % LIGKERNX \fIglyph1\fR {L} \fIglyph2\fR ;
 .fi
 inhibits any ligature between
 .I glyph1
 and
 .IR glyph2 .
 "{K}", like "{}", inhibits kerns only, and "{LK}" and "{KL}" inhibit both
-ligatures and kerns. Otftotfm parses "% LIGKERNX" comments as well as "%
-LIGKERN" comments; it's probably better to put the extended commands in
-LIGKERNX blocks, since that avoids confusing
-.M afm2tfm 1 .
+ligatures and kerns.
 .PP
 As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
 commands, separated by spaced semicolons.
@@ -612,7 +609,7 @@ and
 command line arguments let you add virtual UNICODING and LIGKERN comments
 to an encoding.
 .PP
-Finally,  CODINGSCHEME command specifies a default
+Finally, the CODINGSCHEME command specifies a default
 .B --coding-scheme
 for the encoding; for example:
 .nf
