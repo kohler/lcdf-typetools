@@ -186,6 +186,7 @@ class EfontProgram { public:
     virtual ~EfontProgram()				{ }
 
     virtual PermString font_name() const		{ return PermString();}
+    virtual void font_matrix(double[6]) const;
     
     virtual int nsubrs() const				{ return 0; }
     virtual Charstring *subr(int) const			{ return 0; }
@@ -195,9 +196,9 @@ class EfontProgram { public:
     virtual Charstring *gsubr(int) const		{ return 0; }
     virtual int gsubr_bias() const			{ return 0; }
 
-    virtual int nxsubrs(bool g) const;
-    virtual Charstring *xsubr(bool g, int) const;
-    virtual int xsubr_bias(bool g) const;
+    int nxsubrs(bool g) const;
+    Charstring *xsubr(bool g, int) const;
+    int xsubr_bias(bool g) const;
     
     virtual int nglyphs() const				{ return 0; }
     virtual PermString glyph_name(int) const		{ return PermString();}
@@ -283,7 +284,6 @@ Type2Charstring::data() const
 {
     return reinterpret_cast<const uint8_t *>(_s.data());
 }
-
 
 inline int
 EfontProgram::nxsubrs(bool g) const

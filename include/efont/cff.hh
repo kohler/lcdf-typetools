@@ -189,6 +189,7 @@ class EfontCFF::Font : public EfontProgram { public:
     int error() const			{ return _error; }
 
     PermString font_name() const	{ return _font_name; }
+    void font_matrix(double[6]) const;
     
     int nsubrs_x() const		{ return _subrs_index.nitems(); }
     int ngsubrs_x() const		{ return _cff->ngsubrs(); }

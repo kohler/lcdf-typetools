@@ -26,6 +26,7 @@ class Type1Font : public EfontProgram { public:
     bool ok() const;
   
     PermString font_name() const;
+    void font_matrix(double[6]) const;
   
     int nitems() const			{ return _items.size(); }
     Type1Item *item(int i) const	{ return _items[i]; }

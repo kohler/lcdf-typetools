@@ -267,6 +267,13 @@ Type2Charstring::run(CharstringInterp &interp) const
 
 
 void
+EfontProgram::font_matrix(double matrix[6]) const
+{
+    matrix[0] = matrix[4] = 0.001;
+    matrix[1] = matrix[2] = matrix[3] = matrix[5] = 0;
+}
+
+void
 EfontProgram::glyph_names(Vector<PermString> &gnames) const
 {
     int n = nglyphs();

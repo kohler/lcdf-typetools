@@ -21,7 +21,8 @@ Metrics *
 AfmReader::read(Slurper &slurp, ErrorHandler *errh)
 {
     AfmParser p(slurp);
-    if (!p.ok()) return 0;
+    if (!p.ok())
+	return 0;
   
     Metrics *afm = new Metrics;
     AfmMetricsXt *afm_xt = new AfmMetricsXt;
