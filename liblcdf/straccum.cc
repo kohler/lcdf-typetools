@@ -23,6 +23,20 @@
 #include <cstdarg>
 #include <cstdio>
 
+StringAccum::StringAccum(const char *s)
+    : _s(0), _len(0), _cap(0)
+{
+    *this << s;
+}
+
+#ifdef HAVE_STRING
+StringAccum::StringAccum(const String &s)
+    : _s(0), _len(0), _cap(0)
+{
+    *this << s;
+}
+#endif
+
 void
 StringAccum::make_out_of_memory()
 {

@@ -12,9 +12,13 @@
 
 class StringAccum { public:
   
-  StringAccum()				: _s(0), _len(0), _cap(0) { }
-  explicit StringAccum(int);
-  ~StringAccum()			{ if (_cap >= 0) delete[] _s; }
+    StringAccum()			: _s(0), _len(0), _cap(0) { }
+    explicit StringAccum(int);
+    explicit StringAccum(const char *);
+#ifdef HAVE_STRING
+    explicit StringAccum(const String &);
+#endif
+    ~StringAccum()			{ if (_cap >= 0) delete[] _s; }
 
   char *data() const			{ return (char *)_s; }
   int length() const			{ return _len; }
