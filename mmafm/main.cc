@@ -115,11 +115,16 @@ read_file(char *fn, MetricsFinder *finder)
 
 
 static void
-short_usage()
+usage_error(char *error_message, ...)
 {
-  fprintf(stderr, "Usage: %s [OPTION | FONT]...\n\
-Type %s --help for more information.\n",
-	  program_name, program_name);
+  va_list val;
+  va_start(val, error_message);
+  if (!error_message)
+    errh.message("Usage: %s [OPTION | FONT]...", program_name);
+  else
+    errh.verror(ErrorHandler::ErrorKind, Landmark(), error_message, val);
+  errh.message("Type %s --help for more information.", program_name);
+  exit(1);
 }
 
 static void
@@ -225,12 +230,11 @@ particular purpose.\n");
       break;
       
      case Clp_Done:
-      if (!amfm) read_file("-", finder);
+      if (!amfm) usage_error("missing font argument");
       goto done;
       
      case Clp_BadOption:
-      short_usage();
-      exit(1);
+      usage_error(0);
       break;
       
     }
