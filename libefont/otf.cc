@@ -11,12 +11,12 @@
 #define static_assert(c) switch (c) case 0: case (c):
 #endif
 
-#define USHORT_AT(d)		(((d)[0] << 8) | (d)[1])
-#define ULONG_AT(d)		(((d)[0] << 24) | ((d)[1] << 16) | ((d)[2] << 8) | (d)[3])
+#define USHORT_AT(d)		((uint16_t)(((d)[0] << 8) | (d)[1]))
+#define ULONG_AT(d)		((uint32_t)(((d)[0] << 24) | ((d)[1] << 16) | ((d)[2] << 8) | (d)[3]))
 
 
 EfontOTF::EfontOTF(const String &s, ErrorHandler *errh)
-    : _data_string(s), _data(reinterpret_cast<const unsigned char *>(_data_string.data())), _len(_data_string.length())
+    : _data_string(s), _data(reinterpret_cast<const uint8_t *>(_data_string.data())), _len(_data_string.length())
 {
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
@@ -50,12 +50,12 @@ EfontOTF::parse_header(ErrorHandler *errh)
     // ULONG	checksum
     // ULONG	offset
     // ULONG	length
-    unsigned last_tag = ULONG_AT("    ");
+    uint32_t last_tag = ULONG_AT("    ");
     for (int i = 0; i < ntables; i++) {
 	int loc = HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
-	unsigned tag = ULONG_AT(_data + loc);
-	unsigned offset = ULONG_AT(_data + loc + 8);
-	unsigned length = ULONG_AT(_data + loc + 12);
+	uint32_t tag = ULONG_AT(_data + loc);
+	uint32_t offset = ULONG_AT(_data + loc + 8);
+	uint32_t length = ULONG_AT(_data + loc + 12);
 	if (tag <= last_tag)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (unsigned) _len)
@@ -72,7 +72,7 @@ EfontOTF::table(const char *name) const
     if (error() < 0)
 	return String();
     
-    unsigned tag = 0;
+    uint32_t tag = 0;
     for (int i = 0; i < 4; i++)
 	tag = (tag << 8) | (*name ? *name++ : ' ');
 
@@ -80,8 +80,8 @@ EfontOTF::table(const char *name) const
     int r = USHORT_AT(_data + 4);
     while (l <= r) {
 	int m = (l + r) / 2;
-	const unsigned char *entry = _data + HEADER_SIZE + m * TABLE_DIR_ENTRY_SIZE;
-	unsigned m_tag = ULONG_AT(entry);
+	const uint8_t *entry = _data + HEADER_SIZE + m * TABLE_DIR_ENTRY_SIZE;
+	uint32_t m_tag = ULONG_AT(entry);
 	if (tag == m_tag)
 	    return _data_string.substring(ULONG_AT(entry + 8), ULONG_AT(entry + 12));
 	else if (tag < m_tag)

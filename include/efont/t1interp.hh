@@ -18,6 +18,9 @@ class CharstringInterp { public:
 
     int error() const				{ return _error; }
     int error_data() const			{ return _error_data; }
+    static String error_string(int error, int error_data);
+    String error_string() const;
+    
     bool done() const				{ return _done; }
     void set_done()				{ _done = true; }
 
@@ -58,7 +61,7 @@ class CharstringInterp { public:
     
     virtual bool callothersubr_command(int, int);
     virtual bool type1_command(int);
-    virtual bool type2_command(int, const unsigned char *, int *);
+    virtual bool type2_command(int, const uint8_t *, int *);
 
     virtual void char_sidebearing(int, double, double);
     virtual void char_width(int, double, double);
@@ -77,33 +80,35 @@ class CharstringInterp { public:
     virtual void char_vstem(int, double, double);
     virtual void char_hstem3(int, double, double, double, double, double, double);
     virtual void char_vstem3(int, double, double, double, double, double, double);
-    virtual void char_hintmask(int, const unsigned char *, int);
+    virtual void char_hintmask(int, const uint8_t *, int);
 
     typedef Charstring CS;
     
     enum Errors {
 	errOK		= 0,
-	errInternal	= 1,
-	errRunoff	= 2,
-	errUnimplemented = 3,
-	errOverflow	= 4,
-	errUnderflow	= 5,
-	errVector	= 6,
-	errValue	= 7,
-	errSubr		= 8,
-	errGlyph	= 9,
-	errCurrentPoint	= 10,
-	errFlex		= 11,
-	errMultipleMaster = 12,
-	errOpenStroke	= 13,
-	errLateSidebearing = 14,
-	errOthersubr	= 15,
-	errOrdering	= 16,
-	errHintmask	= 17,
-	errLastError	= 17
+	errInternal	= -1,
+	errRunoff	= -2,
+	errUnimplemented = -3,
+	errOverflow	= -4,
+	errUnderflow	= -5,
+	errVector	= -6,
+	errValue	= -7,
+	errSubr		= -8,
+	errGlyph	= -9,
+	errCurrentPoint	= -10,
+	errFlex		= -11,
+	errMultipleMaster = -12,
+	errOpenStroke	= -13,
+	errLateSidebearing = -14,
+	errOthersubr	= -15,
+	errOrdering	= -16,
+	errHintmask	= -17,
+	errSubrDepth	= -18,
+	errLastError	= -18
     };
 
-    enum { STACK_SIZE = 48, PS_STACK_SIZE = 24, SCRATCH_SIZE = 32 };
+    enum { STACK_SIZE = 48, PS_STACK_SIZE = 24, MAX_SUBR_DEPTH = 10,
+	   SCRATCH_SIZE = 32 };
     
   private:
   
@@ -115,6 +120,8 @@ class CharstringInterp { public:
     int _sp;
     double _ps_s[PS_STACK_SIZE];
     int _ps_sp;
+
+    int _subr_depth;
 
     Vector<double> *_weight_vector;
     Vector<double> _scratch_vector;
@@ -138,6 +145,12 @@ class CharstringInterp { public:
 
 };
 
+
+inline String
+CharstringInterp::error_string() const
+{
+    return error_string(_error, _error_data);
+}
 
 inline void
 CharstringInterp::push(double d)

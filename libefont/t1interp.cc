@@ -10,7 +10,34 @@
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STATE()		do { if (_t2state < T2_PATH) return error(errOrdering, cmd); } while (0)
 
+#ifndef static_assert
+# define static_assert(c)	switch (c) case 0: case (c):
+#endif
+
+static const char * const error_formats[] = {
+    "charstring OK",				// errOK
+    "charstring internal error in '%C'",	// errInternal
+    "charstring commands past end",		// errRunoff
+    "charstring command '%C' unimplemented",	// errUnimplemented
+    "charstring stack overflow",		// errOverflow
+    "charstring stack underflow in '%C'",	// errUnderflow
+    "charstring bad vector operation in '%C'",	// errVector
+    "charstring bad value in '%C'",		// errValue
+    "charstring bad subroutine number %d",	// errSubr
+    "charstring bad glyph number '%d'",		// errGlyph
+    "charstring no current point in '%C'",	// errCurrentPoint
+    "charstring flex error",			// errFlex
+    "charstring multiple master error in '%C'",	// errMultipleMaster
+    "charstring open stroke",			// errOpenStroke
+    "charstring late sidebearing command `%C'",	// errLateSidebearing
+    "charstring bad othersubr number %d",	// errOthersubr
+    "charstring ordering constraints violated at '%C'",	// errOrdering
+    "charstring inappropriate hintmask",	// errHintmask
+    "charstring subrs nested too deep at '%d'"	// errSubrDepth
+};
+
 double CharstringInterp::double_for_error;
+
 
 CharstringInterp::CharstringInterp(const EfontProgram *prog, Vector<double> *weight)
     : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
@@ -29,6 +56,7 @@ CharstringInterp::init()
     _lsbx = _lsby = 0;
     _t2state = T2_INITIAL;
     _t2nhints = 0;
+    _subr_depth = 0;
 }
 
 bool
@@ -37,6 +65,24 @@ CharstringInterp::error(int err, int error_data)
     _error = err;
     _error_data = error_data;
     return false;
+}
+
+String
+CharstringInterp::error_string(int error, int error_data)
+{
+    static_assert(-errLastError == (sizeof(error_formats) / sizeof(error_formats[0])) - 1);
+    if (error >= 0)
+	return error_formats[0];
+    else if (error < errLastError)
+	return "charstring unknown error number " + String(error);
+    String format = error_formats[-error];
+    int percent = format.find_left('%');
+    if (percent >= 0 && format[percent + 1] == 'C')
+	return format.substring(0, percent) + Charstring::command_name(error_data) + format.substring(percent + 2);
+    else if (percent >= 0 && format[percent + 1] == 'd')
+	return format.substring(0, percent) + String(error_data) + format.substring(percent + 2);
+    else
+	return format;
 }
 
 bool
@@ -322,8 +368,13 @@ CharstringInterp::callsubr_command()
     if (!subr_cs)
 	return error(errSubr, which);
 
+    if (_subr_depth >= MAX_SUBR_DEPTH)
+	return error(errSubrDepth, which);
+    _subr_depth++;
+
     subr_cs->run(*this);
 
+    _subr_depth--;
     if (_error != errOK)
 	return false;
     return !done();
@@ -340,8 +391,13 @@ CharstringInterp::callgsubr_command()
     if (!subr_cs)
 	return error(errSubr, which);
 
+    if (_subr_depth >= MAX_SUBR_DEPTH)
+	return error(errSubrDepth, which);
+    _subr_depth++;
+
     subr_cs->run(*this);
 
+    _subr_depth--;
     if (_error != errOK)
 	return false;
     return !done();
@@ -689,7 +745,7 @@ CharstringInterp::type2_handle_width(int cmd, bool have_width)
 }
 
 bool
-CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
+CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 {
     int bottom = 0;
 
@@ -1132,7 +1188,7 @@ CharstringInterp::char_vstem3(int cmd, double x0, double dx0, double x1, double 
 }
 
 void
-CharstringInterp::char_hintmask(int, const unsigned char *, int)
+CharstringInterp::char_hintmask(int, const uint8_t *, int)
 {
     /* do nothing */
 }

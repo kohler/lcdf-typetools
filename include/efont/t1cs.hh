@@ -3,6 +3,19 @@
 #include "permstr.hh"
 #include "string.hh"
 #include "vector.hh"
+
+// Define known-width integer types
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#elif defined(HAVE_SYS_TYPES_H)
+# include <sys/types.h>
+# ifdef HAVE_U_INT_TYPES
+typedef u_int8_t uint8_t;
+typedef u_int16_t uint16_t;
+typedef u_int32_t uint32_t;
+# endif
+#endif
+
 class CharstringInterp;
 class EfontMMSpace;
 class Type1Encoding;
@@ -120,7 +133,7 @@ class Type1Charstring : public Charstring { public:
     Type1Charstring(const Type1Charstring &);
     ~Type1Charstring()				{ }
   
-    const unsigned char *data() const;
+    const uint8_t *data() const;
     int length() const				{ return _s.length(); }
     
     const String &data_string() const;
@@ -150,8 +163,8 @@ class Type2Charstring : public Charstring { public:
     Type2Charstring(const String &);
     Type2Charstring(const Type2Charstring &);
     ~Type2Charstring()				{ }
-  
-    const unsigned char *data() const;
+    
+    const uint8_t *data() const;
     int length() const				{ return _s.length(); }
     
     bool run(CharstringInterp &) const;
@@ -222,12 +235,12 @@ Type1Charstring::assign(const String &s)
     _key = -1;
 }
 
-inline const unsigned char *
+inline const uint8_t *
 Type1Charstring::data() const
 {
     if (_key >= 0)
 	decrypt();
-    return reinterpret_cast<const unsigned char *>(_s.data());
+    return reinterpret_cast<const uint8_t *>(_s.data());
 }
 
 inline const String &
@@ -259,10 +272,10 @@ Type2Charstring::Type2Charstring(const String &s)
 {
 }
 
-inline const unsigned char *
+inline const uint8_t *
 Type2Charstring::data() const
 {
-    return reinterpret_cast<const unsigned char *>(_s.data());
+    return reinterpret_cast<const uint8_t *>(_s.data());
 }
 
 #endif

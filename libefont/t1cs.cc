@@ -78,9 +78,9 @@ Type1Charstring::decrypt() const
 {
     if (_key >= 0) {
 	int r = _key;
-	unsigned char *d = reinterpret_cast<unsigned char*>(_s.mutable_data());
+	uint8_t *d = reinterpret_cast<uint8_t *>(_s.mutable_data());
 	for (int i = 0; i < _s.length(); i++, d++) {
-	    unsigned char encrypted = *d;
+	    uint8_t encrypted = *d;
 	    *d = encrypted ^ (r >> 8);
 	    r = ((encrypted + r) * t1C1 + t1C2) & 0xFFFF;
 	}
@@ -91,7 +91,7 @@ Type1Charstring::decrypt() const
 bool
 Type1Charstring::run(CharstringInterp &interp) const
 {
-    const unsigned char *data = Type1Charstring::data();
+    const uint8_t *data = Type1Charstring::data();
     int left = _s.length();
 
     while (left > 0) {
@@ -111,9 +111,7 @@ Type1Charstring::run(CharstringInterp &interp) const
 	    } else if (*data == cShortint) { // short integer
 		if (left < 3)
 		    goto runoff_error;
-		int val = (data[1] << 8) | data[2];
-		if (val & (1L << 15))
-		    val |= ~0xFFFF;
+		int16_t val = (data[1] << 8) | data[2];
 		more = interp.number(val);
 		ahead = 3;
 	    } else {
@@ -138,9 +136,7 @@ Type1Charstring::run(CharstringInterp &interp) const
 	} else {					// 255: push huge number
 	    if (left < 5)
 		goto runoff_error;
-	    long val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
-	    if (val & (1L << 31))
-		val |= ~0xFFFFFFFFL;
+	    int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
 	    more = interp.number(val);
 	    ahead = 5;
 	}
@@ -182,7 +178,7 @@ Type2Charstring::Type2Charstring(const Type2Charstring &t2cs)
 bool
 Type2Charstring::run(CharstringInterp &interp) const
 {
-    const unsigned char *data = Type2Charstring::data();
+    const uint8_t *data = Type2Charstring::data();
     int left = _s.length();
   
     while (left > 0) {
@@ -202,9 +198,7 @@ Type2Charstring::run(CharstringInterp &interp) const
 	    } else if (*data == cShortint) { // short integer
 		if (left < 3)
 		    goto runoff_error;
-		int val = (data[1] << 8) | data[2];
-		if (val & (1L << 15))
-		    val |= ~0xFFFF;
+		int16_t val = (data[1] << 8) | data[2];
 		more = interp.number(val);
 		ahead = 3;
 	    } else if (*data == cHintmask || *data == cCntrmask) {
@@ -233,9 +227,7 @@ Type2Charstring::run(CharstringInterp &interp) const
 	} else {					// 255: push huge number
 	    if (left < 5)
 		goto runoff_error;
-	    long val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
-	    if (val & (1L << 31))
-		val |= ~0xFFFFFFFFL;
+	    int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
 	    more = interp.number(val / 65536.);
 	    ahead = 5;
 	}

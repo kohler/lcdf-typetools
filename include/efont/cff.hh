@@ -14,7 +14,7 @@ class EfontCFF { public:
     int error() const			{ return _error; }
 
     const String &data_string() const	{ return _data_string; }
-    const unsigned char *data() const	{ return _data; }
+    const uint8_t *data() const		{ return _data; }
     int length() const			{ return _len; }
     
     int nfonts() const			{ return _name_index.size(); }
@@ -71,7 +71,7 @@ class EfontCFF { public:
     class EfontCFF::IndexIterator { public:
 
 	IndexIterator()		: _offset(0), _last_offset(0), _offsize(-1) { }
-	IndexIterator(const unsigned char *, int, int, ErrorHandler * = 0, const char *index_name = "INDEX");
+	IndexIterator(const uint8_t *, int, int, ErrorHandler * = 0, const char *index_name = "INDEX");
 
 	int error() const	{ return (_offsize < 0 ? _offsize : 0); }
     
@@ -79,28 +79,28 @@ class EfontCFF { public:
 	operator bool() const	{ return live(); }
 	int nitems() const;
 
-	const unsigned char *operator*() const;
-	const unsigned char *operator[](int) const;
-	const unsigned char *index_end() const;
+	const uint8_t *operator*() const;
+	const uint8_t *operator[](int) const;
+	const uint8_t *index_end() const;
 
 	void operator++()	{ _offset += _offsize; }
 	void operator++(int)	{ ++(*this); }
 	
       private:
     
-	const unsigned char *_contents;
-	const unsigned char *_offset;
-	const unsigned char *_last_offset;
+	const uint8_t *_contents;
+	const uint8_t *_offset;
+	const uint8_t *_last_offset;
 	int _offsize;
 
-	unsigned offset_at(const unsigned char *) const;
+	uint32_t offset_at(const uint8_t *) const;
     
     };
     
   private:
 
     String _data_string;
-    const unsigned char *_data;
+    const uint8_t *_data;
     int _len;
 
     int _error;
@@ -250,8 +250,8 @@ class EfontCFF::Font : public EfontProgram { public:
 };
 
 
-inline unsigned
-EfontCFF::IndexIterator::offset_at(const unsigned char *x) const
+inline uint32_t
+EfontCFF::IndexIterator::offset_at(const uint8_t *x) const
 {
     switch (_offsize) {
       case 0:
@@ -267,14 +267,14 @@ EfontCFF::IndexIterator::offset_at(const unsigned char *x) const
     }
 }
 
-inline const unsigned char *
+inline const uint8_t *
 EfontCFF::IndexIterator::operator*() const
 {
     assert(live());
     return _contents + offset_at(_offset);
 }
 
-inline const unsigned char *
+inline const uint8_t *
 EfontCFF::IndexIterator::operator[](int which) const
 {
     assert(live() && _offset + which * _offsize <= _last_offset);

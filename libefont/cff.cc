@@ -262,7 +262,7 @@ static const int expert_subset_charset[] = {
 
 
 EfontCFF::EfontCFF(const String &s, ErrorHandler *errh)
-    : _data_string(s), _data(reinterpret_cast<const unsigned char *>(_data_string.data())), _len(_data_string.length()),
+    : _data_string(s), _data(reinterpret_cast<const uint8_t *>(_data_string.data())), _len(_data_string.length()),
       _strings_map(-2)
 {
     static_assert((sizeof(standard_strings) / sizeof(standard_strings[0])) == NSTANDARD_STRINGS);
@@ -303,8 +303,8 @@ EfontCFF::parse_header(ErrorHandler *errh)
 	return niter.error();
     _name_index.clear();
     for (; niter; niter++) {
-	const unsigned char *d0 = niter[0];
-	const unsigned char *d1 = niter[1];
+	const uint8_t *d0 = niter[0];
+	const uint8_t *d1 = niter[1];
 	if (d0 == d1 || d0[0] == 0)
 	    _name_index.push_back(PermString());
 	else
@@ -449,7 +449,7 @@ EfontCFF::gsubr(int i)
     if (i < 0 || i >= ngsubrs())
 	return 0;
     if (!_gsubrs_cs[i]) {
-	const unsigned char *s1 = _gsubrs_index[i];
+	const uint8_t *s1 = _gsubrs_index[i];
 	int slen = _gsubrs_index[i + 1] - s1;
 	String cs = data_string().substring(s1 - data(), slen);
 	if (slen == 0)
@@ -512,7 +512,7 @@ EfontCFF::Charset::assign(const int *data, int size, int nglyphs)
 int
 EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
-    const unsigned char *data = cff->data();
+    const uint8_t *data = cff->data();
     int len = cff->length();
     int max_sid = cff->max_sid();
     
@@ -525,7 +525,7 @@ EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler
     if (format == 0) {
 	if (pos + 1 + (nglyphs - 1) * 2 > len)
 	    return errh->error("charset[0] out of range"), -EFAULT;
-	const unsigned char *p = data + pos + 1;
+	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 2) {
 	    int sid = (p[0] << 8) | p[1];
 	    if (sid > max_sid)
@@ -534,7 +534,7 @@ EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler
 	}
 	
     } else if (format == 1) {
-	const unsigned char *p = data + pos + 1;
+	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 3) {
 	    if (p + 3 > data + len)
 		return errh->error("charset[1] out of range"), -EFAULT;
@@ -547,7 +547,7 @@ EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler
 	}
 
     } else if (format == 2) {
-	const unsigned char *p = data + pos + 1;
+	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 4) {
 	    if (p + 4 > data + len)
 		return errh->error("charset[2] out of range"), -EFAULT;
@@ -571,7 +571,7 @@ EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler
  * EfontCFF::IndexIterator
  **/
 
-EfontCFF::IndexIterator::IndexIterator(const unsigned char *data, int pos, int len, ErrorHandler *errh, const char *index_name)
+EfontCFF::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, ErrorHandler *errh, const char *index_name)
     : _contents(0), _offset(0), _last_offset(0)
 {
     if (!errh)
@@ -604,10 +604,10 @@ EfontCFF::IndexIterator::IndexIterator(const unsigned char *data, int pos, int l
     }
 
     // check items in offset array
-    unsigned max_doff_allowed = len - (pos + 2 + (nitems + 1) * _offsize);
-    unsigned last_doff = 1;
-    for (const unsigned char *o = _offset; o <= _last_offset; o += _offsize) {
-	unsigned doff = offset_at(o);
+    uint32_t max_doff_allowed = len - (pos + 2 + (nitems + 1) * _offsize);
+    uint32_t last_doff = 1;
+    for (const uint8_t *o = _offset; o <= _last_offset; o += _offsize) {
+	uint32_t doff = offset_at(o);
 	if (doff > max_doff_allowed || doff < last_doff) {
 	    errh->error("%s: garbled elements", index_name);
 	    break;
@@ -616,7 +616,7 @@ EfontCFF::IndexIterator::IndexIterator(const unsigned char *data, int pos, int l
     }
 }
 
-const unsigned char *
+const uint8_t *
 EfontCFF::IndexIterator::index_end() const
 {
     if (_offsize <= 0)
@@ -662,8 +662,8 @@ EfontCFF::Dict::assign(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh,
     if (!errh)
 	errh = ErrorHandler::silent_handler();
     
-    const unsigned char *data = cff->data() + pos;
-    const unsigned char *end_data = data + dict_len;
+    const uint8_t *data = cff->data() + pos;
+    const uint8_t *end_data = data + dict_len;
     
     _pointers.push_back(0);
     while (data < end_data)
@@ -810,7 +810,7 @@ EfontCFF::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name
     for (int i = 0; i < _operators.size(); i++) {
 	int arity = _pointers[i+1] - _pointers[i];
 	double num = (arity == 0 ? 0 : _operands[_pointers[i]]);
-	double truncnum = trunc(num);
+	double truncnum = floor(num);
 	int op = _operators[i];
 	int type = (op > oLastOperator ? tNone : operator_types[op]);
 
@@ -1078,7 +1078,7 @@ EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
 	return assign_standard_encoding(expert_encoding);
 
     // otherwise, a custom encoding
-    const unsigned char *data = _cff->data();
+    const uint8_t *data = _cff->data();
     int len = _cff->length();
     if (pos + 1 > len)
 	return errh->error("Encoding position out of range"), -EFAULT;
@@ -1091,7 +1091,7 @@ EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
 	endpos = pos + 2 + data[pos + 1];
 	if (endpos > len)
 	    return errh->error("Encoding[0] out of range"), -EFAULT;
-	const unsigned char *p = data + pos + 2;
+	const uint8_t *p = data + pos + 2;
 	int n = data[pos + 1];
 	for (; g < n; g++, p++) {
 	    int e = p[0];
@@ -1104,7 +1104,7 @@ EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
 	endpos = pos + 2 + data[pos + 1] * 2;
 	if (endpos > len)
 	    return errh->error("Encoding[1] out of range"), -EFAULT;
-	const unsigned char *p = data + pos + 2;
+	const uint8_t *p = data + pos + 2;
 	int n = data[pos + 1];
 	for (int i = 0; i < n; i++, p += 2) {
 	    int first = p[0];
@@ -1126,7 +1126,7 @@ EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
     if (supplemented) {
 	if (endpos + data[endpos] * 3 > len)
 	    return -EINVAL;
-	const unsigned char *p = data + endpos + 1;
+	const uint8_t *p = data + endpos + 1;
 	int n = data[endpos];
 	for (int i = 0; i < n; i++, p += 3) {
 	    int e = p[0];
@@ -1154,7 +1154,7 @@ EfontCFF::Font::assign_standard_encoding(const int *standard_encoding)
 Charstring *
 EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 {
-    const unsigned char *s1 = iiter[which];
+    const uint8_t *s1 = iiter[which];
     int slen = iiter[which + 1] - s1;
     String cs = _cff->data_string().substring(s1 - _cff->data(), slen);
     if (slen == 0)
