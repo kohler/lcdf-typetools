@@ -23,6 +23,8 @@ class CharstringBounds : public CharstringInterp { public:
     void act_width(int, const Point &);
     void act_line(int, const Point &, const Point &);
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
+
+    bool run(const Charstring &, int bounds[4], int &width);
     
   private:
 

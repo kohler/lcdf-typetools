@@ -73,4 +73,22 @@ CharstringBounds::act_curve(int, const Point &p0, const Point &p1, const Point &
     }
 }
 
+bool
+CharstringBounds::run(const Charstring &cs, int bounds[4], int &width)
+{
+    init();
+    cs.run(*this);
+    if (!KNOWN(_lb.x))
+	bounds[0] = bounds[1] = bounds[2] = bounds[3] = 0;
+    else {
+	bounds[0] = (int) floor(_lb.x);
+	bounds[1] = (int) floor(_lb.y);
+	bounds[2] = (int) ceil(_rt.x);
+	bounds[3] = (int) ceil(_rt.y);
+    }
+    width = (int) ceil(_width.x);
+    
+    return error() >= 0;
+}
+
 }
