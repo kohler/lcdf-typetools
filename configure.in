@@ -11,16 +11,36 @@ if test -n "$GCC" ; then CC="$CC -W -Wall" ; CXX="$CXX -W -Wall" ; fi
 
 AC_PROG_RANLIB
 
+
 dnl
 dnl directory searching
 dnl
 
 AC_HEADER_DIRENT
 
+
 dnl
-dnl strerror, working strto[dl], strtoul, time
+dnl <new> and/or <new.h>
 dnl
 
+AC_LANG_CPLUSPLUS
+AC_CACHE_CHECK(whether <new> works, ac_cv_good_new_hdr,
+AC_TRY_LINK([#include <new>], [
+  int a;
+  int *b = new(&a) int;
+  return 0;
+], ac_cv_good_new_hdr=yes, ac_cv_good_new_hdr=no))
+if test "$ac_cv_good_new_hdr" = yes; then
+   AC_DEFINE(HAVE_NEW_HDR)
+fi
+AC_CHECK_HEADERS(new.h)
+
+
+dnl
+dnl strerror, working strtod, strtoul, time
+dnl
+
+AC_LANG_C
 FIXLIBC_O=''
 AC_CHECK_FUNC(strerror, AC_DEFINE(HAVE_STRERROR), FIXLIBC_O='fixlibc.o')
 
@@ -42,21 +62,39 @@ AC_CHECK_FUNCS(strtoul ctime)
 
 AC_SUBST(FIXLIBC_O)
 
+
 dnl
-dnl new.h
+dnl integer types
 dnl
 
-AC_LANG_CPLUSPLUS
-AC_CACHE_CHECK(whether <new> works, ac_cv_good_new_hdr,
-AC_TRY_LINK([#include <new>], [
-  int a;
-  int *b = new(&a) int;
-  return 0;
-], ac_cv_good_new_hdr=yes, ac_cv_good_new_hdr=no))
-if test "$ac_cv_good_new_hdr" = yes; then
-   AC_DEFINE(HAVE_NEW_HDR)
+AC_CHECK_HEADERS(inttypes.h, have_inttypes_h=yes, have_inttypes_h=no)
+AC_CHECK_HEADERS(sys/types.h, have_sys_types_h=yes, have_sys_types_h=no)
+
+if test $have_inttypes_h = no -a $have_sys_types_h = yes; then
+    AC_CACHE_CHECK(for uintXX_t typedefs, ac_cv_uint_t,
+    [AC_EGREP_HEADER(dnl
+changequote(<<,>>)<<(^|[^a-zA-Z_0-9])uint32_t[^a-zA-Z_0-9]>>changequote([,]),
+    sys/types.h, ac_cv_uint_t=yes, ac_cv_uint_t=no)])
 fi
-AC_CHECK_HEADERS(new.h)
+if test $have_inttypes_h = no -a $have_sys_types_h = yes -a "$ac_cv_uint_t" = no; then
+    AC_CACHE_CHECK(for u_intXX_t typedefs, ac_cv_uint_t,
+    [AC_EGREP_HEADER(dnl
+changequote(<<,>>)<<(^|[^a-zA-Z_0-9])u_int32_t[^a-zA-Z_0-9]>>changequote([,]),
+    sys/types.h, ac_cv_u_int_t=yes, ac_cv_u_int_t=no)])
+fi
+if test $have_inttypes_h = yes -o "$ac_cv_uint_t" = yes; then
+    :
+elif test "$ac_cv_u_int_t" = yes; then
+    AC_DEFINE(HAVE_U_INT_TYPES)
+else
+    AC_MSG_ERROR([
+=========================================
+
+Neither uint32_t nor u_int32_t defined by <inttypes.h> or <sys/types.h>!
+
+=========================================])
+fi
+
 
 dnl
 dnl Output

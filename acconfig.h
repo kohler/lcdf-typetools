@@ -18,6 +18,9 @@
 /* Define if <new> exists and works. */
 #undef HAVE_NEW_HDR
 
+/* Define if you have u_intXX_t types but not uintXX_t types. */
+#undef HAVE_U_INT_TYPES
+
 @TOP@
 @BOTTOM@
 
@@ -30,9 +33,8 @@ extern "C" {
 char *strerror(int errno);
 #endif
 
-/* Prototype good_strtod and good_strtol if we need them. */
-#ifdef BROKEN_STRTOARITH
-long good_strtol(const char *nptr, char **endptr, int base);
+/* Prototype good_strtod if we need it. */
+#ifdef BROKEN_STRTOD
 double good_strtod(const char *nptr, char **endptr);
 #endif
 
