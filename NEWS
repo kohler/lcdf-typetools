@@ -3,7 +3,8 @@ LCDF Typetools NEWS
 Version 0.16
 
 * otftotfm: When there isn't enough encoding space for all new glyphs,
-  prefer shorter ligatures made out of regular letters.
+  prefer shorter ligatures made out of regular letters -- for instance,
+  prefer f_j to f_f_j, and T_h to f_iacute. Requested by Bruce D'Arcus.
 
 * otftotfm: Add '--ligkern' and '--unicoding' options.
 

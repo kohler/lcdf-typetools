@@ -18,6 +18,7 @@ class DvipsEncoding { public:
     const String &filename() const		{ return _filename; }
     int boundary_char() const			{ return _boundary_char; }
     const String &coding_scheme() const		{ return _coding_scheme; }
+    void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
@@ -28,6 +29,7 @@ class DvipsEncoding { public:
     
     int parse(String filename, ErrorHandler *);
     int parse_ligkern(const String &ligkern_text, ErrorHandler *);
+    int parse_unicoding(const String &unicoding_text, ErrorHandler *);
 
     // also modifies 'this':
     void make_literal_gsub_encoding(GsubEncoding &, Efont::Cff::Font *);

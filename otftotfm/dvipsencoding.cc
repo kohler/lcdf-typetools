@@ -448,6 +448,10 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 	    _coding_scheme = token.substring(p, pp - p);
 	    if (_coding_scheme.length() > 39)
 		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");
+	    if (_coding_scheme.find_left('(') >= 0 || _coding_scheme.find_left(')') >= 0) {
+		lerrh.lerror(landmark(filename, line), "CODINGSCHEME cannot contain parentheses");
+		_coding_scheme = String();
+	    }
 	}
 
     return 0;
@@ -457,6 +461,12 @@ int
 DvipsEncoding::parse_ligkern(const String &ligkern_text, ErrorHandler *errh)
 {
     return parse_words(ligkern_text, &DvipsEncoding::parse_ligkern_words, errh);
+}
+
+int
+DvipsEncoding::parse_unicoding(const String &unicoding_text, ErrorHandler *errh)
+{
+    return parse_words(unicoding_text, &DvipsEncoding::parse_unicoding_words, errh);
 }
 
 void

@@ -170,7 +170,7 @@ file when installing files under TEXMF.
 .SH OPTIONS
 With long options, you need type only as many characters as will make the
 option unique.
-.SS Font feature options
+.SS Font feature and transformation options
 .PD 0
 .TP 5
 .BI \-s " script\fR[.\fIlang\fR], " \-\-script= "script\fR[.\fIlang\fR]"
@@ -203,36 +203,6 @@ Defaults to any features required by the selected scripts.
 '
 .Sp
 .TP 5
-.BI \-e " encoding\fR, " \-\-encoding= encoding
-Selects the
-.M dvips 1
-encoding used as a starting point. Otftotfm will search for
-.IR encoding [.enc]
-the same way that
-.B dvips
-would, so you may not need to give a full pathname. Defaults to the font's
-encoding. See ENCODINGS, below, for more information on how otftotfm uses
-encodings.
-'
-.Sp
-.TP 5
-.BI \-\-literal\-encoding= encoding
-Selects the
-.M dvips 1
-encoding used for the font. No glyph substitutions will be permitted, so
-the output encoding will equal the input encoding (and otftotfm will not
-generate an output encoding).
-'
-.Sp
-.TP 5
-.BI \-\-ligkern= command
-Executes the specified LIGKERN
-.IR command .
-See ENCODINGS, below, for more information on LIGKERN syntax. For example,
-say "\fB\-\-ligkern\fR 'T {L} h'" to suppress any T_h ligature in the font.
-'
-.Sp
-.TP 5
 .BI \-E " amt\fR, " \-\-extend= amt
 Widen, or extend, the font by a factor of
 .IR amt .
@@ -261,6 +231,69 @@ increases by
 .IR amt ,
 with half the space distributed to each sidebearing. Boundary-character
 kerns are added to maintain alignment at the ends of lines.
+.PD
+'
+'
+.SS Encoding options
+'
+.PD 0
+.TP 5
+.BI \-e " encoding\fR, " \-\-encoding= encoding
+Selects the
+.M dvips 1
+encoding used as a starting point. Otftotfm will search for
+.IR encoding [.enc]
+the same way that
+.B dvips
+would, so you may not need to give a full pathname. Defaults to the font's
+encoding. See ENCODINGS, below, for more information on how otftotfm uses
+encodings.
+'
+.Sp
+.TP 5
+.BI \-\-literal\-encoding= encoding
+Selects the
+.M dvips 1
+encoding used for the font. No glyph substitutions will be permitted, so
+the output encoding will equal the input encoding (and otftotfm will not
+generate an output encoding).
+'
+.Sp
+.TP 5
+.BI \-\-ligkern= command
+Executes the specified LIGKERN
+.IR command
+in addition to any in the encoding. See ENCODINGS, below, for more
+information on LIGKERN syntax. For example, "\fB\-\-ligkern\fR 'T {L} h'"
+suppresses any T_h ligature in the font. You can supply multiple
+.B \-\-ligkern
+options.
+'
+.Sp
+.TP 5
+.BI \-\-unicoding= command
+Executes the specified UNICODING
+.IR command
+in addition to any in the encoding. See ENCODINGS, below, for more
+information on UNICODINGs. For example, "\fB\-\-unicoding\fR 'pi1 =:
+uni03D6" tells otftotfm to encode "/pi1" as U+03D6 GREEK PI SYMBOL. You can
+supply multiple
+.B \-\-unicoding
+options.
+'
+.Sp
+.TP 5
+.BI \-\-coding\-scheme= scheme
+Sets the font's TFM coding scheme to
+.IR scheme ,
+which must be a string less than 40 characters long containing no
+parentheses. The default is the encoding's PostScript name. Most tools
+ignore the coding scheme, so you probably don't need to worry about this
+command unless you are using fontinst. As a side effect, if you specify a
+coding scheme, the PL output will have DESIGNUNITS set to 1 instead of the
+default of 1000. This won't change the eventual TFM metrics, but fontinst
+seems to prefer DESIGNUNITS 1.
+.TP
 .PD
 '
 '
@@ -428,6 +461,7 @@ Print the version number and some short non-warranty information and exit.
 .PD
 '
 .SH ENCODINGS
+.SS Commands
 .PP
 Otftotfm uses its input encodings by translating glyph names into Unicode
 code points. For example, if an input encoding has "/dotlessi" at position
@@ -447,17 +481,22 @@ are PostScript glyph names. This comment tells otftotfm that the glyph named
 .I glyph 
 translates into the first Unicode value in the
 .I choice
-list that has a character in the font. For example, this:
+list that has a character in the font. For example,
+.nf
+  % UNICODING pi1 =: uni03D6 ;
+.fi
+tells otftotfm that the character "/pi1" encodes as U+03D6 GREEK PI SYMBOL,
+and
 .nf
   % UNICODING Delta =: uni0394 uni2206 ;
 .fi
-tells otftotfm that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
+tells it that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
 U+2206 INCREMENT as an encoding for "/Delta". You can also supply regular
-glyph names, as in:
+glyph names:
 .nf
   % UNICODING Delta =: Deltagreek Delta ;
 .fi
-Otftotfm uses the distributed
+Otftotfm uses Adobe's
 .I glyphlist.txt
 file to translate regular glyph names to Unicode; see
 .IR http://partners.adobe.com/asn/developer/type/unicodegn.html .
@@ -470,17 +509,43 @@ encoding. This is useful to remove optional characters; for instance:
 The f-ligatures will be added back to the encoding, preferably at their
 original locations, if some font feature requires them.
 .LP
-As with LIGKERN comments, you can specify multiple UNICODINGs per line;
-separate them with spaced semicolons.
-.PP
-Glyphs used by ligatures are added to the encoding in any empty spaces,
-using their original locations when possible.
+Each UNICODING line can contain multiple commands, separated by spaced
+semicolons.
 .PP
 Ligatures can be added and kerns inhibited by LIGKERN comments in the
 encoding, as in
 .M afm2tfm 1 .
-Otftotfm also supports extended syntax for inhibiting ligatures.
-This command:
+To add a ligature, use this command form:
+.nf
+  % LIGKERN \fIglyph1\fR \fIglyph2\fR =: \fIresult\fR ;
+.fi
+The "=:" operator indicates a normal ligature, where both the input glyphs
+are removed and replaced by
+.IR result .
+To preserve the left-hand glyph, for an effect like "\fIglyph1\fR
+\fIglyph2\fR =: \fIglyph1\fR \fIresult\fR", use the "|=:" operator instead.
+You can also say "=:|" to preserve the right-hand glyph, and "|=:|" to
+preserve both. The "|=:>", "=:|>", "|=:|>", and "|=:|>>" operators skip
+over one or two of the resulting glyphs before processing more ligatures.
+.PP
+To remove all kerns between two characters, say:
+.nf
+  % LIGKERN \fIglyph1\fR {} \fIglyph2\fR ;
+.fi
+Use a star "*" for one
+.I glyph
+to inhibit all matching kerns. For instance,
+.nf
+  % LIGKERN a {} * ;
+.fi
+removes all kerns with "a" as the left-hand character, and
+.nf
+  % LIGKERN * {} * ;
+.fi
+removes all kerns.
+.PP
+Otftotfm also supports extended syntax for inhibiting ligatures. This
+command:
 .nf
   % LIGKERN \fIglyph1\fR {L} \fIglyph2\fR ;
 .fi
@@ -493,6 +558,29 @@ ligatures and kerns. Otftotfm parses "% LIGKERNX" comments as well as "%
 LIGKERN" comments; it's probably better to put the extended commands in
 LIGKERNX blocks, since that avoids confusing
 .M afm2tfm 1 .
+.PP
+As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
+commands, separated by spaced semicolons.
+.PP
+The
+.B --unicoding
+and
+.B --ligkern
+command line arguments let you add virtual UNICODING and LIGKERN comments
+to an encoding.
+.PP
+Finally,  CODINGSCHEME command specifies a default
+.B --coding-scheme
+for the encoding; for example:
+.nf
+  % CODINGSCHEME EXTENDED TEX FONT ENCODING
+.fi
+.SS New glyphs
+.PP
+New glyphs, such as ligatures and contextual substitutions, are added to
+the encoding in any empty spaces, using their original locations when
+possible. If the encoding doesn't have enough space for all new glyphs,
+shorter ligatures composed of unaccented letters get precedence.
 '
 .SH "OPENTYPE FEATURES"
 .LP

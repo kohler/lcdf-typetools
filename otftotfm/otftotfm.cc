@@ -64,20 +64,22 @@ using namespace Efont;
 #define SLANT_OPT		316
 #define LETTERSPACE_OPT		317
 #define LIGKERN_OPT		318
+#define CODINGSCHEME_OPT	319
+#define UNICODING_OPT		320
 
-#define AUTOMATIC_OPT		321
-#define FONT_NAME_OPT		322
-#define QUIET_OPT		323
-#define GLYPHLIST_OPT		324
-#define VENDOR_OPT		325
-#define TYPEFACE_OPT		326
-#define NOCREATE_OPT		327
-#define VERBOSE_OPT		328
+#define AUTOMATIC_OPT		331
+#define FONT_NAME_OPT		332
+#define QUIET_OPT		333
+#define GLYPHLIST_OPT		334
+#define VENDOR_OPT		335
+#define TYPEFACE_OPT		336
+#define NOCREATE_OPT		337
+#define VERBOSE_OPT		338
 
-#define VIRTUAL_OPT		331
-#define PL_OPT			332
-#define TFM_OPT			333
-#define MAP_FILE_OPT		334
+#define VIRTUAL_OPT		341
+#define PL_OPT			342
+#define TFM_OPT			343
+#define MAP_FILE_OPT		344
 
 enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
        G_PSFONTSMAP = 16,
@@ -106,6 +108,8 @@ Clp_Option options[] = {
     { "letterspacing", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
     { "letterspace", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
+    { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
+    { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -198,15 +202,19 @@ but see '--automatic' and the 'directory' options).\n\
 \n\
 Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\
 \n\
-Font feature options:\n\
+Font feature and transformation options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
-  -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
-      --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
-      --ligkern=COMMAND        Execute a LIGKERN COMMAND on the font.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
+\n\
+Encoding options:\n\
+  -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
+      --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
+      --ligkern=COMMAND        Add a LIGKERN command.\n\
+      --unicoding=COMMAND      Add a UNICODING command.\n\
+      --coding-scheme=SCHEME   Set the output coding scheme.\n\
 \n\
 Automatic mode options:\n\
   -a, --automatic              Install in a TeX Directory Structure.\n\
@@ -1202,6 +1210,8 @@ main(int argc, char **argv)
     bool query_scripts = false;
     bool query_features = false;
     Vector<String> ligkern;
+    Vector<String> unicoding;
+    String codingscheme;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -1270,6 +1280,20 @@ main(int argc, char **argv)
 	    ligkern.push_back(clp->arg);
 	    break;
 	    
+	  case UNICODING_OPT:
+	    unicoding.push_back(clp->arg);
+	    break;
+	    
+	  case CODINGSCHEME_OPT:
+	    if (codingscheme)
+		usage_error(errh, "coding scheme specified twice");
+	    codingscheme = clp->arg;
+	    if (codingscheme.length() > 39)
+		errh->warning("only first 39 characters of coding scheme are significant");
+	    if (codingscheme.find_left('(') >= 0 || codingscheme.find_left(')') >= 0)
+		usage_error(errh, "coding scheme cannot contain parentheses");
+	    break;
+
 	  case AUTOMATIC_OPT:
 	    automatic = !clp->negated;
 	    break;
@@ -1449,10 +1473,15 @@ particular purpose.\n");
 	    errh->fatal("font has no encoding, specify one explicitly");
     }
 
-    // apply ligkern commands
+    // apply command-line ligkern commands and coding scheme
     cerrh.set_landmark("--ligkern command");
     for (int i = 0; i < ligkern.size(); i++)
 	dvipsenc.parse_ligkern(ligkern[i], &cerrh);
+    cerrh.set_landmark("--unicoding command");
+    for (int i = 0; i < unicoding.size(); i++)
+	dvipsenc.parse_unicoding(unicoding[i], &cerrh);
+    if (codingscheme)
+	dvipsenc.set_coding_scheme(codingscheme);
 
     do_file(input_file, otf, dvipsenc, literal_encoding, errh);
     
