@@ -237,6 +237,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   
   kill_def(p_dict("NDV"), dPrivate);
   kill_def(p_dict("CDV"), dPrivate);
+  kill_def(p_dict("UniqueID"), dPrivate);
   kill_def(fi_dict("BlendDesignPositions"), dFontInfo);
   kill_def(fi_dict("BlendDesignMap"), dFontInfo);
   kill_def(fi_dict("BlendAxisTypes"), dFontInfo);
