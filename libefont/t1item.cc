@@ -95,10 +95,9 @@ Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
 	  case 0:
 	    if (!reader) return -1;
 	    pos = s - accum.data();
-	    accum.pop_back();		// remove final 0 byte
-	    accum.append('\n');	// replace with \n
+	    accum.append('\n');	// add \n
 	    if (!reader->next_line(accum)) return -1;
-	    accum.append('\0');	// stick on a 0 byte
+	    accum.cc();		// ensure null termination
 	    s = accum.data() + pos;
 	    break;
 	}
@@ -129,10 +128,9 @@ Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
 	  case 0:
 	    if (!reader) return -1;
 	    pos = s - accum.data();
-	    accum.pop_back();		// remove final 0 byte
-	    accum.append('\n');	// replace with \n
+	    accum.append('\n');	// add \n
 	    if (!reader->next_line(accum)) return -1;
-	    accum.append('\0');	// stick on a 0 byte
+	    accum.cc();		// ensure null termination
 	    s = accum.data() + pos;
 	    break;
 	}
@@ -204,8 +202,7 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader,
 	    return 0;
   
     PermString name(accum.data()+name_start_pos, name_end_pos - name_start_pos);
-    PermString def(s, accum.length() - 1 - (s - accum.data()));
-    // -1 to get rid of trailing \0
+    PermString def(s, accum.length() - (s - accum.data()));
     String value = String(accum.data() + val_pos, val_end_pos - val_pos);
     return new Type1Definition(name, value, def);
 }

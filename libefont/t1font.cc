@@ -198,13 +198,10 @@ Type1Font::read(Type1Reader &reader)
 	}
 
 	// check for MODIFIED FONT
-	if (eexec_state == 1 && strstr(x, "FontDirectory") != 0) {
-	    accum.pop_back();
-	    if (read_synthetic_font(reader, x, accum)) {
-		accum.clear();
-		continue;
-	    }
-	    accum.append('\0');
+	if (eexec_state == 1 && strstr(x, "FontDirectory") != 0
+	    && read_synthetic_font(reader, x, accum)) {
+	    accum.clear();
+	    continue;
 	}
 
 	// check for END-OF-CHARSTRING-GROUP TEXT
@@ -388,7 +385,7 @@ Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
 	if (!reader.next_line(accum))
 	    return false;
 	wrong_accum << accum;
-	accum.append('\0');		// ensure we don't run off the string
+	accum.cc();		// ensure we don't run off the string
 	const char *y = accum.data();
 	if (*y != '/' || strncmp(y + 1, font_name.cc(), font_name.length()) != 0)
 	    return false;
