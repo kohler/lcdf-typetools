@@ -29,6 +29,7 @@ class CharstringBounds : public CharstringInterp { public:
     bool output(int bb[4], int &width, bool use_cur_width = false) const;
 
     static bool bounds(const CharstringContext &, int bounds[4], int &width);
+    static bool bounds(const Transform &, const CharstringContext &, int bounds[4], int &width);
         
   private:
 
