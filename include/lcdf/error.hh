@@ -3,54 +3,14 @@
 #ifdef __GNUG__
 #pragma interface
 #endif
-#include <stdarg.h>
-#include "landmark.hh"
+class Landmark;
 
-class ErrorHandler {
-  
- public:
-  
-  enum Kind { WarningKind, ErrorKind, FatalKind, MessageKind };
-  
-  ErrorHandler()			{ }
-  virtual ~ErrorHandler()		{ }
-  
-  static ErrorHandler *silent_handler();
-  
-  virtual void verror(Kind, const Landmark &, const char *, va_list);
-  
-  void warning(const Landmark &, const char *, ...);
-  void error(const Landmark &, const char *, ...);
-  void fatal(const Landmark &, const char *, ...);
-  
-  void message(const char *, ...);
-  void warning(const char *, ...);
-  void error(const char *, ...);
-  void fatal(const char *, ...);
-  
-};
+void fatal_error(const Landmark &, const char *, ...);
+bool error(const Landmark &, const char *, ...);
+bool warning(const Landmark &, const char *, ...);
+void set_error_context(const char *err = 0);
 
-
-class PinnedErrorHandler: public ErrorHandler {
-  
-  Landmark _landmark;
-  ErrorHandler *_errh;
-  
- public:
-  
-  PinnedErrorHandler(const Landmark &, ErrorHandler *);
-  
-  void verror(Kind, const Landmark &, const char *, va_list);
-  
-};
-
-
-extern const char *program_name;
-
-inline
-PinnedErrorHandler::PinnedErrorHandler(const Landmark &l, ErrorHandler *e)
-  : _landmark(l), _errh(e)
-{
-}
+extern int num_errors;
+extern int num_warnings;
 
 #endif

@@ -1,210 +1,170 @@
+#ifdef __GNUG__
+#pragma implementation "error.hh"
+#endif
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "error.hh"
-#endif
 #include "error.hh"
-#include "straccum.hh"
-#include <assert.h>
+#include "landmark.hh"
+#include "operator.hh"
+#include "expr.hh"
+#include <stdarg.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include <stdio.h>
 
-const char *program_name;
+static bool need_error_context;
+static const char *error_context_msg;
+int num_errors;
+int num_warnings;
 
-
-void
-ErrorHandler::warning(const Landmark &landmark, const char *s, ...)
+static void
+print_error_context(const Landmark &l)
 {
-  va_list val;
-  va_start(val, s);
-  verror(WarningKind, landmark, s, val);
-  va_end(val);
+  if (need_error_context && error_context_msg) {
+    fprintf(stderr, "%s: %s\n", l.file().cc(), error_context_msg);
+    need_error_context = false;
+  }
 }
 
-void
-ErrorHandler::error(const Landmark &landmark, const char *s, ...)
+static void
+verror(const Landmark &l, bool iswarning, const char *errfmt, va_list val)
 {
-  va_list val;
-  va_start(val, s);
-  verror(ErrorKind, landmark, s, val);
-  va_end(val);
-}
+  print_error_context(l);
 
-void
-ErrorHandler::fatal(const Landmark &landmark, const char *s, ...)
-{
-  va_list val;
-  va_start(val, s);
-  verror(FatalKind, landmark, s, val);
-  va_end(val);
-}
-
-
-void
-ErrorHandler::message(const char *s, ...)
-{
-  va_list val;
-  va_start(val, s);
-  verror(MessageKind, Landmark(), s, val);
-  va_end(val);
-}
-
-void
-ErrorHandler::warning(const char *s, ...)
-{
-  va_list val;
-  va_start(val, s);
-  verror(WarningKind, Landmark(), s, val);
-  va_end(val);
-}
-
-void
-ErrorHandler::error(const char *s, ...)
-{
-  va_list val;
-  va_start(val, s);
-  verror(ErrorKind, Landmark(), s, val);
-  va_end(val);
-}
-
-
-void
-ErrorHandler::fatal(const char *s, ...)
-{
-  va_list val;
-  va_start(val, s);
-  verror(FatalKind, Landmark(), s, val);
-  va_end(val);
-}
-
-
-void
-ErrorHandler::verror(Kind kind, const Landmark &landmark,
-		     const char *s, va_list val)
-{
-  StringAccum accum;
+  String s = l;
+  fputs(s.cc(), stderr);
+  if (iswarning) fputs("warning: ", stderr);
   
-  if (kind == MessageKind)
-    /* don't print any identification */;
-  else if (landmark && landmark.has_line())
-    accum << landmark.file() << ":" << landmark.line() << ": ";
-  else if (landmark)
-    accum << landmark.file() << ": ";
-  else if (program_name)
-    accum << program_name << ": ";
-  
-  if (kind == WarningKind)
-    accum << "warning: ";
-  
-  while (1) {
+  while (*errfmt) {
     
-    const char *pct = strchr(s, '%');
-    if (!pct) {
-      if (*s) accum << s;
-      break;
-    }
-    if (pct != s) {
-      memcpy(accum.extend(pct - s), s, pct - s);
-      s = pct;
-    }
+    const char *nx = strchr(errfmt, '%');
+    if (!nx) nx = strchr(errfmt, 0);
+    fwrite(errfmt, nx - errfmt, 1, stderr);
+    errfmt = nx;
+    if (!*errfmt) break;
     
-    switch (*++s) {
+    int dashes = 0;
+    
+   reswitch:
+    switch (*++errfmt) {
       
-     case 's': {
-       const char *x = va_arg(val, const char *);
-       if (!x) x = "(null)";
-       accum << x;
+     case '-':
+      dashes++;
+      goto reswitch;
+      
+     case 'd': {
+       int x = va_arg(val, int);
+       fprintf(stderr, "%d", x);
+       break;
+     }
+       
+     case 'u': {
+       unsigned x = va_arg(val, unsigned);
+       fprintf(stderr, "%u", x);
        break;
      }
      
      case 'c': {
-       int c = va_arg(val, char);
-       if (c == 0)
-	 accum << "\\0";
-       else if (c == '\n')
-	 accum << "\\n";
-       else if (c == '\r')
-	 accum << "\\r";
-       else if (c == '\t')
-	 accum << "\\t";
-       else if (c == '\\')
-	 accum << "\\\\";
-       else if (c >= ' ' && c <= '~')
-	 accum << (char)c;
-       else {
-	 int len;
-	 sprintf(accum.reserve(256), "\\%03d%n", c, &len);
-	 accum.forward(len);
-       }
+       int x = va_arg(val, int) & 0xFF;
+       if (x >= 32 && x <= 126)
+	 fprintf(stderr, "%c", x);
+       else if (x < 32)
+	 fprintf(stderr, "^%c", x+64);
+       else
+	 fprintf(stderr, "\\%03o", x);
        break;
      }
      
-     case 'd':
-      accum << va_arg(val, int);
-      break;
-      
-     case 'u':
-      accum << va_arg(val, unsigned);
-      break;
-      
-     case 'g':
-      accum << va_arg(val, double);
-      break;
+     case 's': {
+       const char *x = va_arg(val, const char *);
+       fputs((x ? x : "(null)"), stderr);
+       break;
+     }
+     
+     case 'p': {
+       void *p = va_arg(val, void *);
+       fprintf(stderr, "%p", p);
+       break;
+     }
+     
+     case 'o': {
+       int op = va_arg(val, int);
+       fputs((op == 0 ? "(null)" : Operator(op).name().cc()), stderr);
+       break;
+     }
+     
+     /*case 'e':
+       {
+	 Expr *e = va_arg(val, Expr *);
+	 if (e)
+	   errwriter << e->unparse();
+	 else
+	   errwriter << "(null)";
+	 break;
+	 } */
        
+     case 'S': {
+       int x = va_arg(val, int);
+       if (x != 1) fprintf(stderr, "s");
+       break;
+     }
+     
+     case '%':
+      fputc('%', stderr);
+      break;
+      
+     case 0:
      default:
-      assert(0 && "Bad % in error");
+      fprintf(stderr, "<BAD %% `%c'>", *errfmt);
+      if (!*errfmt) errfmt--;
       break;
       
     }
     
-    s++;
+    errfmt++;
   }
 
-  accum << '\n' << '\0';
-  fputs(accum.value(), stderr);
-  
-  if (kind == FatalKind)
-    exit(1);
+  fprintf(stderr, "\n");
 }
 
 
 void
-PinnedErrorHandler::verror(Kind kind, const Landmark &landmark, const char *s,
-			   va_list val)
+fatal_error(const Landmark &l, const char *errfmt, ...)
 {
-  if (!landmark)
-    _errh->verror(kind, _landmark, s, val);
-  else
-    _errh->verror(kind, landmark, s, val);
+  va_list val;
+  va_start(val, errfmt);
+  verror(l, false, errfmt, val);
+  va_end(val);
+  exit(1);
 }
 
+bool
+error(const Landmark &l, const char *errfmt, ...)
+{
+  va_list val;
+  va_start(val, errfmt);
+  verror(l, false, errfmt, val);
+  va_end(val);
+  num_errors++;
+  return false;
+}
 
-/*****
- * SilentErrorHandler
- **/
-
-class SilentErrorHandler: public ErrorHandler {
-  
- public:
-  
-  SilentErrorHandler()						{ }
-  
-  void verror(Kind, const Landmark &, const char *, va_list);
-  
-};
-
+bool
+warning(const Landmark &l, const char *errfmt, ...)
+{
+  va_list val;
+  va_start(val, errfmt);
+  verror(l, true, errfmt, val);
+  va_end(val);
+  num_warnings++;
+  return false;
+}
 
 void
-SilentErrorHandler::verror(Kind kind, const Landmark &, const char *, va_list)
+set_error_context(const char *errmsg)
 {
-  if (kind == FatalKind)
-    exit(1);
-}
-
-ErrorHandler *
-ErrorHandler::silent_handler()
-{
-  static ErrorHandler *errh = 0;
-  if (!errh) errh = new SilentErrorHandler;
-  return errh;
+  need_error_context = true;
+  error_context_msg = errmsg;
 }
