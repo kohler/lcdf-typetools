@@ -511,13 +511,14 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     Vector<Setting> settings;
     StringAccum sa;
     Transform start_transform = boundser.transform();
+    
     for (int i = 0; i < 256; i++)
 	if (gse.setting(i, settings)) {
 	    fprintf(f, "(CHARACTER %s%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
 
 	    // unparse settings into DVI commands
 	    sa.clear();
-	    boundser.set_transform(start_transform);
+	    boundser.init(start_transform);
 	    for (int j = 0; j < settings.size(); j++) {
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
@@ -530,6 +531,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		    if (s.y)
 			sa << "      (MOVEUP R " << real_string(s.y, du) << ")\n";
 		} else if (s.op == Setting::RULE && vpl) {
+		    boundser.mark(Point(0, 0));
+		    boundser.mark(Point(s.x, s.y));
 		    boundser.translate(s.x, 0);
 		    sa << "      (SETRULE R " << real_string(s.y, du) << " R " << real_string(s.x, du) << ")\n";
 		}
