@@ -107,6 +107,8 @@ General options:\n\
   -o, --output=FILE            Write output to FILE.\n\
   -p, --precision=N            Set precision to N (larger means more precise).\n\
       --subrs=N                Limit output font to at most N subroutines.\n\
+  -m, --minimize               Replace unusual PostScript in font definition\n\
+                               with well-known code.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
