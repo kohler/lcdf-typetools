@@ -155,16 +155,17 @@ OpenTypeTag::text() const
 const uint8_t *
 OpenTypeTag::table_entry(const uint8_t *table, int n, int entry_size) const
 {
+    assert(((uintptr_t)table & 1) == 0);
     int l = 0;
     int r = n - 1;
     while (l <= r) {
 	int m = (l + r) / 2;
 	const uint8_t *entry = table + m * entry_size;
-	uint32_t m_tag = ULONG_ATX(entry);
-	if (_tag == m_tag)
-	    return entry;
-	else if (_tag < m_tag)
+	uint32_t m_tag = ULONG_AT2(entry);
+	if (_tag < m_tag)
 	    r = m - 1;
+	else if (_tag == m_tag)
+	    return entry;
 	else
 	    l = m + 1;
     }
@@ -178,12 +179,15 @@ OpenTypeTag::table_entry(const uint8_t *table, int n, int entry_size) const
  *                        *
  **************************/
 
-OpenTypeScriptList::OpenTypeScriptList(const String &str, ErrorHandler *errh)
-    : _str(str)
+int
+OpenTypeScriptList::assign(const String &str, ErrorHandler *errh)
 {
+    _str = str;
     _str.align(4);
-    if (check_header(errh ? errh : ErrorHandler::silent_handler()) < 0)
+    int result = check_header(errh ? errh : ErrorHandler::silent_handler());
+    if (result < 0)
 	_str = String();
+    return result;
 }
 
 int
@@ -193,9 +197,9 @@ OpenTypeScriptList::check_header(ErrorHandler *errh)
     // USHORT	scriptCount
     // 6bytes	scriptRecord[]
     int scriptCount;
-    if (_str.length() < 2
+    if (_str.length() < SCRIPTLIST_HEADERSIZE
 	|| (scriptCount = USHORT_AT(_str.udata()),
-	    _str.length() < 2 + scriptCount*SCRIPTREC_SIZE))
+	    _str.length() < SCRIPTLIST_HEADERSIZE + scriptCount*SCRIPT_RECSIZE))
 	return errh->error("OTF ScriptList too short");
 
     // XXX check that scripts are sorted
@@ -209,18 +213,10 @@ OpenTypeScriptList::script_offset(OpenTypeTag script) const
     if (_str.length() == 0)
 	return -1;
     const uint8_t *data = _str.udata();
-    int l = 0, r = USHORT_AT(data) - 1;
-    while (l <= r) {
-	int m = (l + r) >> 1;
-	uint32_t mscript = ULONG_AT2(data + 2 + m*SCRIPTREC_SIZE);
-	if (script == mscript)
-	    return USHORT_AT(data + 6 + m*SCRIPTREC_SIZE);
-	else if (script < mscript)
-	    r = l - 1;
-	else
-	    l = r + 1;
-    }
-    return 0;
+    if (const uint8_t *entry = script.table_entry(data + SCRIPTLIST_HEADERSIZE, USHORT_AT(data), SCRIPT_RECSIZE))
+	return USHORT_AT(entry + 4);
+    else
+	return 0;
 }
 
 int
@@ -237,28 +233,18 @@ OpenTypeScriptList::langsys_offset(OpenTypeTag script, OpenTypeTag langsys, Erro
     // check script bounds
     const uint8_t *data = _str.udata();
     int langSysCount;
-    if (_str.length() < script_off + 4
+    if (_str.length() < script_off + SCRIPT_HEADERSIZE
 	|| (langSysCount = USHORT_AT(data + script_off + 2),
-	    (_str.length() < script_off + 4 + langSysCount*LANGSYSREC_SIZE)))
+	    (_str.length() < script_off + SCRIPT_HEADERSIZE + langSysCount*LANGSYS_RECSIZE)))
 	return (errh ? errh->error("OTF Script table for '%s' out of range", script.text().c_str()) : -1);
     // XXX check that langsys are sorted
 
     // search script table
-    int l = 0, r = langSysCount - 1;
-    data += script_off + 4;
-    while (l <= r) {
-	int m = (l + r) >> 1;
-	uint32_t mlangsys = ULONG_AT2(data + m*LANGSYSREC_SIZE);
-	if (langsys == mlangsys)
-	    return script_off + USHORT_AT(data + 4 + m*LANGSYSREC_SIZE);
-	else if (langsys < mlangsys)
-	    r = l - 1;
-	else
-	    l = r + 1;
-    }
+    if (const uint8_t *entry = langsys.table_entry(data + script_off + SCRIPT_HEADERSIZE, langSysCount, LANGSYS_RECSIZE))
+	return script_off + USHORT_AT(entry + 4);
 
     // return default
-    int defaultLangSys = USHORT_AT(data - 4);
+    int defaultLangSys = USHORT_AT(data + script_off);
     if (defaultLangSys != 0)
 	return script_off + defaultLangSys;
     else
@@ -278,9 +264,9 @@ OpenTypeScriptList::features(OpenTypeTag script, OpenTypeTag langsys, int &requi
     // check langsys bounds
     const uint8_t *data = _str.udata();
     int featureCount;
-    if (_str.length() < offset + 6
+    if (_str.length() < offset + LANGSYS_HEADERSIZE
 	|| (featureCount = USHORT_AT(data + offset + 4),
-	    (_str.length() < offset + 6 + featureCount*2)))
+	    (_str.length() < offset + LANGSYS_HEADERSIZE + featureCount*FEATURE_RECSIZE)))
 	return (errh ? errh->error("OTF LangSys table for '%s/%s' out of range", script.text().c_str(), langsys.text().c_str()) : -1);
 
     // search langsys table
@@ -288,7 +274,7 @@ OpenTypeScriptList::features(OpenTypeTag script, OpenTypeTag langsys, int &requi
     if (f != 0xFFFF)
 	required_fid = f;
     data += offset + 6;
-    for (int i = 0; i < featureCount; i++, data += 2)
+    for (int i = 0; i < featureCount; i++, data += FEATURE_RECSIZE)
 	fids.push_back(USHORT_AT(data));
     
     return 0;
@@ -301,22 +287,41 @@ OpenTypeScriptList::features(OpenTypeTag script, OpenTypeTag langsys, int &requi
  *                        *
  **************************/
 
-OpenTypeFeatureList::OpenTypeFeatureList(const String &str, ErrorHandler *errh)
-    : _str(str)
+int
+OpenTypeFeatureList::assign(const String &str, ErrorHandler *errh)
 {
+    _str = str;
     _str.align(4);
-    if (check_header(errh ? errh : ErrorHandler::silent_handler()) < 0)
-	_str = String();    
+    int result = check_header(errh ? errh : ErrorHandler::silent_handler());
+    if (result < 0)
+	_str = String();
+    return result;
 }
 
 int
 OpenTypeFeatureList::check_header(ErrorHandler *errh)
 {
     int featureCount;
-    if (_str.length() < 2
+    if (_str.length() < FEATURELIST_HEADERSIZE
 	|| (featureCount = USHORT_AT(_str.udata()),
-	    _str.length() < 2 + featureCount*FEATUREREC_SIZE))
+	    _str.length() < FEATURELIST_HEADERSIZE + featureCount*FEATURE_RECSIZE))
 	return errh->error("OTF FeatureList too short");
+    return 0;
+}
+
+int
+OpenTypeFeatureList::feature_tags(const Vector<int> &fids, Vector<OpenTypeTag> &ftags) const
+{
+    ftags.clear();
+    if (_str.length() == 0)
+	return -1;
+    const uint8_t *data = _str.udata();
+    int nfeatures = USHORT_AT(data);
+    for (int i = 0; i < fids.size(); i++)
+	if (fids[i] >= 0 && fids[i] < nfeatures)
+	    ftags.push_back(ULONG_AT2(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE));
+	else
+	    ftags.push_back(OpenTypeTag());
     return 0;
 }
 
@@ -337,7 +342,7 @@ OpenTypeFeatureList::filter_features(Vector<int> &fids, const Vector<OpenTypeTag
 	const uint8_t *data = _str.udata();
 	int nfeatures = USHORT_AT(data);
 	while (i < fids.size() && j < sorted_ftags.size() && fids[i] < nfeatures) {
-	    uint32_t ftag = ULONG_AT2(data + 2 + fids[i]*FEATUREREC_SIZE);
+	    uint32_t ftag = ULONG_AT2(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE);
 	    if (ftag < sorted_ftags[j]) { // not an interesting feature
 		// replace featureID with a large number, remove later
 		fids[i] = 0x7FFFFFFF;
@@ -371,14 +376,14 @@ OpenTypeFeatureList::lookups(const Vector<int> &fids, Vector<int> &results, Erro
 	int fid = fids[i];
 	if (fid < 0 || fid >= nfeatures)
 	    return errh->error("OTF feature ID '%d' out of range", fid);
-	int foff = ULONG_AT2(data + 6 + fid*FEATUREREC_SIZE);
+	int foff = ULONG_AT2(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
 	int lookupCount;
-	if (len < foff + 4
+	if (len < foff + FEATURE_HEADERSIZE
 	    || (lookupCount = USHORT_AT(data + foff + 2),
-		len < foff + 4 + lookupCount*2))
+		len < foff + FEATURE_HEADERSIZE + lookupCount*LOOKUPLIST_RECSIZE))
 	    return errh->error("OTF LookupList for feature ID '%d' too short", fid);
-	const uint8_t *ldata = data + foff + 4;
-	for (int j = 0; j < lookupCount; j++, ldata += 2)
+	const uint8_t *ldata = data + foff + FEATURE_HEADERSIZE;
+	for (int j = 0; j < lookupCount; j++, ldata += LOOKUPLIST_RECSIZE)
 	    results.push_back(USHORT_AT(ldata));
     }
 
@@ -399,6 +404,20 @@ OpenTypeFeatureList::lookups(int required_fid, const Vector<int> &fids, const Ve
     return lookups(fidsx, results, errh);
 }
 
+int
+OpenTypeFeatureList::lookups(const OpenTypeScriptList &script_list, OpenTypeTag script, OpenTypeTag langsys, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
+{
+    int required_fid;
+    Vector<int> fids;
+    int result = script_list.features(script, langsys, required_fid, fids, errh);
+    if (result >= 0) {
+	filter_features(fids, sorted_ftags);
+	if (required_fid >= 0)
+	    fids.push_back(required_fid);
+	result = lookups(fids, results, errh);
+    }
+    return result;
+}
 
 
 /**************************
@@ -406,11 +425,11 @@ OpenTypeFeatureList::lookups(int required_fid, const Vector<int> &fids, const Ve
  *                        *
  **************************/
 
-OpenTypeCoverage::OpenTypeCoverage(const String &str, ErrorHandler *errh)
+OpenTypeCoverage::OpenTypeCoverage(const String &str, ErrorHandler *errh, bool do_check)
     : _str(str)
 {
     _str.align(4);
-    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+    if (do_check && check(errh ? errh : ErrorHandler::silent_handler()) < 0)
 	_str = String();
 }
 
@@ -420,26 +439,48 @@ OpenTypeCoverage::check(ErrorHandler *errh)
     // HEADER FORMAT:
     // USHORT	coverageFormat
     // USHORT	glyphCount
-    int len = _str.length();
     const uint8_t *data = _str.udata();
-    if (len < 4)
+    if (_str.length() < HEADERSIZE)
 	return errh->error("OTF coverage table too small for header");
     int coverageFormat = USHORT_AT(data);
     int count = USHORT_AT(data + 2);
-    
-    if (coverageFormat == 1) {
-	if (len < 4 + 2 * count)
-	    return errh->error("OTF coverage table (format 1) too short");
+
+    int len;
+    switch (coverageFormat) {
+      case T_LIST:
+	len = HEADERSIZE + LIST_RECSIZE * count;
+	if (_str.length() < len)
+	    return errh->error("OTF coverage table too short (format 1)");
 	// XXX don't check sorting
-    } else if (coverageFormat == 2) {
-	if (len < 4 + 12 * count)
-	    return errh->error("OTF coverage table (format 2) too short");
+	break;
+      case T_RANGES:
+	len = HEADERSIZE + RANGES_RECSIZE * count;
+	if (_str.length() < len)
+	    return errh->error("OTF coverage table too short (format 2)");
 	// XXX don't check sorting
 	// XXX don't check startCoverageIndexes
-    } else
+	break;
+      default:
 	return errh->error("OTF coverage table has unknown format %d", coverageFormat);
+    }
 
+    _str = _str.substring(0, len);
     return 0;
+}
+
+int
+OpenTypeCoverage::size() const
+{
+    if (_str.length() == 0)
+	return -1;
+    const uint8_t *data = _str.udata();
+    if (data[1] == T_LIST)
+	return (_str.length() - HEADERSIZE) / LIST_RECSIZE;
+    else if (data[1] == T_RANGES) {
+	data += _str.length() - RANGES_RECSIZE;
+	return USHORT_AT(data + 4) + USHORT_AT(data + 2) - USHORT_AT(data) + 1;
+    } else
+	return -1;
 }
 
 int
@@ -449,14 +490,13 @@ OpenTypeCoverage::lookup(OpenTypeGlyph g) const
 	return -1;
     
     const uint8_t *data = _str.udata();
-    int coverageFormat = USHORT_AT(data);
     int count = USHORT_AT(data + 2);
-    if (coverageFormat == 1) {
+    if (data[1] == T_LIST) {
 	int l = 0, r = count - 1;
-	data += 4;
+	data += HEADERSIZE;
 	while (l <= r) {
 	    int m = (l + r) >> 1;
-	    int mval = USHORT_AT(data + (m << 1));
+	    int mval = USHORT_AT(data + m * LIST_RECSIZE);
 	    if (g == mval)
 		return m;
 	    else if (g < mval)
@@ -465,12 +505,12 @@ OpenTypeCoverage::lookup(OpenTypeGlyph g) const
 		l = m + 1;
 	}
 	return -1;
-    } else if (coverageFormat == 2) {
+    } else if (data[2] == T_RANGES) {
 	int l = 0, r = count - 1;
-	data += 4;
+	data += HEADERSIZE;
 	while (l <= r) {
 	    int m = (l + r) >> 1;
-	    const uint8_t *rec = data + m * 12;
+	    const uint8_t *rec = data + m * RANGES_RECSIZE;
 	    if (g < USHORT_AT(rec))
 		r = m - 1;
 	    else if (g <= USHORT_AT(rec + 2))
@@ -481,6 +521,128 @@ OpenTypeCoverage::lookup(OpenTypeGlyph g) const
 	return -1;
     } else
 	return -1;
+}
+
+
+
+/********************************
+ * OpenTypeCoverage::iterator   *
+ *                              *
+ ********************************/
+
+OpenTypeCoverage::iterator::iterator(const String &str, int pos)
+    : _str(str), _pos(pos), _value(0)
+{
+    // XXX assume _str has been checked
+
+    // shrink _str to fit the coverage table
+    const uint8_t *data = _str.udata();
+    if (_str.length()) {
+	int n = USHORT_AT(data + 2);
+	switch (USHORT_AT(data)) {
+	  case T_LIST:
+	    _str = _str.substring(0, HEADERSIZE + n*LIST_RECSIZE);
+	    break;
+	  case T_RANGES:
+	    _str = _str.substring(0, HEADERSIZE + n*RANGES_RECSIZE);
+	    break;
+	  default:
+	    _str = String();
+	    break;
+	}
+    }
+    if (_pos >= _str.length())
+	_pos = _str.length();
+    else {
+	// now, move _pos into the coverage table
+	_pos = HEADERSIZE;
+	_value = (_pos >= _str.length() ? 0 : USHORT_AT(data + _pos));
+    }
+}
+
+int
+OpenTypeCoverage::iterator::coverage_index() const
+{
+    const uint8_t *data = _str.udata();
+    assert(_pos < _str.length());
+    if (data[1] == T_LIST)
+	return (_pos - HEADERSIZE) / LIST_RECSIZE;
+    else
+	return USHORT_AT(data + _pos + 4) + _value - USHORT_AT(data + _pos);
+}
+
+void
+OpenTypeCoverage::iterator::operator++(int)
+{
+    const uint8_t *data = _str.udata();
+    int len = _str.length();
+    if (_pos >= len
+	|| (data[1] == T_RANGES && ++_value <= USHORT_AT(data + _pos + 2)))
+	return;
+    _pos += (data[1] == T_LIST ? LIST_RECSIZE : RANGES_RECSIZE);
+    _value = (_pos >= len ? 0 : USHORT_AT(data + _pos));
+}
+
+void
+OpenTypeCoverage::iterator::forward_to(OpenTypeGlyph find)
+{
+    if (find > _value && _pos < _str.length()) {
+	const uint8_t *data = _str.udata();
+	if (data[1] == T_LIST) {
+	    // check for "common" case: next element
+	    if (find <= USHORT_AT(data + _pos + LIST_RECSIZE)) {
+		_pos += LIST_RECSIZE;
+		_value = USHORT_AT(data + _pos);
+		return;
+	    }
+	    
+	    // otherwise, binary search over remaining area
+	    int l = (_pos - HEADERSIZE) / LIST_RECSIZE;
+	    int r = (_str.length() - HEADERSIZE) / LIST_RECSIZE - 1;
+	    data += HEADERSIZE;
+	    while (l <= r) {
+		int m = (l + r) >> 1;
+		OpenTypeGlyph g = USHORT_AT(data + m * LIST_RECSIZE);
+		if (find < g)
+		    r = m - 1;
+		else if (find == g)
+		    l = m, r = m - 1;
+		else
+		    l = m + 1;
+	    }
+	    _pos = HEADERSIZE + l * LIST_RECSIZE;
+	    _value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
+	} else {		// data[1] == T_RANGES
+	    // check for "common" case: this or next element
+	    if (find <= USHORT_AT(data + _pos + 2)) {
+		assert(find >= USHORT_AT(data + _pos));
+		_value = find;
+		return;
+	    } else if (find <= USHORT_AT(data + _pos + RANGES_RECSIZE + 2)) {
+		_pos += RANGES_RECSIZE;
+		_value = (find >= USHORT_AT(data + _pos) ? find : USHORT_AT(data + _pos));
+		return;
+	    }
+
+	    // otherwise, binary search over remaining area
+	    int l = (_pos - HEADERSIZE) / RANGES_RECSIZE;
+	    int r = (_str.length() - HEADERSIZE) / RANGES_RECSIZE - 1;
+	    data += HEADERSIZE;
+	    while (l <= r) {
+		int m = (l + r) >> 1;
+		if (find < USHORT_AT(data + m * RANGES_RECSIZE))
+		    l = m + 1;
+		else if (find <= USHORT_AT(data + m * RANGES_RECSIZE + 2)) {
+		    _pos = HEADERSIZE + m * RANGES_RECSIZE;
+		    _value = find;
+		    return;
+		} else
+		    r = m - 1;
+	    }
+	    _pos = HEADERSIZE + l * LIST_RECSIZE;
+	    _value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
+	}
+    }
 }
 
 
@@ -561,3 +723,7 @@ OpenTypeClassDef::lookup(OpenTypeGlyph g) const
 
 
 }
+
+
+// template instantiations
+#include <lcdf/vector.cc>

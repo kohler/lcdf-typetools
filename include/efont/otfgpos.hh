@@ -11,7 +11,9 @@ namespace Efont {
 // Generate a list of substitutions of different types that apply?
 // Use: ??que?
 
-class EfontOTF_GPOS { public:
+class OpenType
+
+class OpenType_GPOS { public:
 
     EfontOTF_GPOS(const String &, ErrorHandler * = 0);
     // default destructor

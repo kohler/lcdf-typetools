@@ -61,7 +61,9 @@ class OpenTypeFont { public:
 
 class OpenTypeScriptList { public:
 
+    OpenTypeScriptList()		{ }
     OpenTypeScriptList(const String &, ErrorHandler * = 0);
+    int assign(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
@@ -70,7 +72,9 @@ class OpenTypeScriptList { public:
     
   private:
 
-    enum { SCRIPTREC_SIZE = 6, LANGSYSREC_SIZE = 6 };
+    enum { SCRIPTLIST_HEADERSIZE = 2, SCRIPT_RECSIZE = 6,
+	   SCRIPT_HEADERSIZE = 4, LANGSYS_RECSIZE = 6,
+	   LANGSYS_HEADERSIZE = 6, FEATURE_RECSIZE = 2 };
     
     String _str;
 
@@ -82,18 +86,23 @@ class OpenTypeScriptList { public:
 
 class OpenTypeFeatureList { public:
 
+    OpenTypeFeatureList()		{ }
     OpenTypeFeatureList(const String &, ErrorHandler * = 0);
+    int assign(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
 
+    int feature_tags(const Vector<int> &fids, Vector<OpenTypeTag> &ftags) const;
     void filter_features(Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags) const;
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(int required_fid, const Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
+    int lookups(const OpenTypeScriptList &, OpenTypeTag script, OpenTypeTag langsys, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
     
   private:
 
-    enum { FEATUREREC_SIZE = 6 };
+    enum { FEATURELIST_HEADERSIZE = 2, FEATURE_RECSIZE = 6,
+	   FEATURE_HEADERSIZE = 4, LOOKUPLIST_RECSIZE = 2 };
     
     String _str;
 
@@ -105,20 +114,55 @@ class OpenTypeFeatureList { public:
 
 class OpenTypeCoverage { public:
 
-    OpenTypeCoverage(const String &, ErrorHandler * = 0);
+    OpenTypeCoverage(const String &, ErrorHandler * = 0, bool check = true);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
+    int size() const;
 
     int lookup(OpenTypeGlyph) const;
     int operator[](OpenTypeGlyph g) const { return lookup(g); }
+
+    class iterator { public:
+	// private constructor
+	// default destructor
+	
+	OpenTypeGlyph operator*() const	{ return _value; }
+	OpenTypeGlyph value() const	{ return _value; }
+	int coverage_index() const;
+	
+	void operator++(int);
+	void operator++()		{ (*this)++; }
+	void forward_to(OpenTypeGlyph);
+
+	// XXX should check iterators are of same type
+	bool operator<(const iterator &o) { return _pos < o._pos || (_pos == o._pos && _value < o._value); }
+	bool operator<=(const iterator &o) { return _pos < o._pos || (_pos == o._pos && _value <= o._value); }
+	bool operator>=(const iterator &o) { return _pos > o._pos || (_pos == o._pos && _value >= o._value); }
+	bool operator>(const iterator &o) { return _pos > o._pos || (_pos == o._pos && _value > o._value); }
+	bool operator==(const iterator &o) { return _pos == o._pos && _value == o._value; }
+	bool operator!=(const iterator &o) { return _pos != o._pos || _value != o._value; }
+	
+      private:
+	String _str;
+	int _pos;
+	OpenTypeGlyph _value;
+	friend class OpenTypeCoverage;
+	iterator(const String &, int);
+    };
+    
+    iterator begin() const		{ return iterator(_str, 0); }
+    iterator end() const		{ return iterator(_str, _str.length()); }
+
+    enum { T_LIST = 1, T_RANGES = 2,
+	   HEADERSIZE = 4, LIST_RECSIZE = 2, RANGES_RECSIZE = 6 };
     
   private:
 
     String _str;
 
     int check(ErrorHandler *);
-
+    
 };
 
 class OpenTypeClassDef { public:
@@ -192,6 +236,18 @@ inline bool
 operator<(OpenTypeTag t1, OpenTypeTag t2)
 {
     return t1.value() < t2.value();
+}
+
+inline
+OpenTypeScriptList::OpenTypeScriptList(const String &str, ErrorHandler *errh)
+{
+    assign(str, errh);
+}
+
+inline
+OpenTypeFeatureList::OpenTypeFeatureList(const String &str, ErrorHandler *errh)
+{
+    assign(str, errh);
 }
 
 }
