@@ -62,6 +62,7 @@ using namespace Efont;
 #define LITERAL_ENCODING_OPT	314
 #define EXTEND_OPT		315
 #define SLANT_OPT		316
+#define LETTERSPACE_OPT		317
 
 #define AUTOMATIC_OPT		321
 #define FONT_NAME_OPT		322
@@ -101,6 +102,8 @@ Clp_Option options[] = {
     { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
     { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
+    { "letterspacing", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
+    { "letterspace", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -154,6 +157,7 @@ static String font_name;
 static String encoding_file;
 static double extend;
 static double slant;
+static int letterspace;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -199,6 +203,7 @@ Font feature options:\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
+  -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
 \n\
 Automatic mode options:\n\
   -a, --automatic              Install in a TeX Directory Structure.\n\
@@ -375,6 +380,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     if (OpenType::Glyph g = cmap.map_uni(' ')) {
 	Charstring *cs = cff->glyph(g);
 	boundser.run(*cs, bounds, width);
+	// advance space width by letterspacing
+	width += letterspace;
 	fprintf(f, "   (SPACE D %d)\n", width);
 	if (cff->dict_value(Efont::Cff::oIsFixedPitch, 0, &val) && val)
 	    // fixed-pitch: no space stretch or shrink
@@ -958,19 +965,27 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (lookups[i].used) {
 	    OpenType::GposLookup l = gpos.lookup(i);
 	    bool understood = l.unparse_automatics(poss);
-	    int nunderstood = 0;
-	    for (int j = 0; j < poss.size(); j++)
-		nunderstood += encoding.apply(poss[j]);
+	    int nunderstood = encoding.apply(poss);
 
 	    // mark as used
 	    int d = (understood && nunderstood == poss.size() ? F_GPOS_ALL : (nunderstood ? F_GPOS_PART : 0)) + F_GPOS_TRY;
 	    for (int j = 0; j < lookups[i].features.size(); j++)
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
-    encoding.simplify_kerns();
 
     // apply LIGKERN commands to the result
     dvipsenc.apply_ligkern(encoding, errh);
+
+    // apply letterspacing, if any
+    if (letterspace) {
+	for (int code = 0; code < 256; code++)
+	    if (encoding.glyph(code) > 0 && code != dvipsenc.boundary_char()) {
+		encoding.add_single_positioning(code, letterspace / 2, 0, letterspace);
+		encoding.add_kern(code, 256, -letterspace / 2);
+		encoding.add_kern(256, code, -letterspace / 2);
+	    }
+    }
+    encoding.simplify_positionings();
 
     // reencode right components of boundary_glyph as boundary_char
     encoding.reencode_right_ligkern(256, dvipsenc.boundary_char());
@@ -1055,6 +1070,9 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    sa << " <" << pathname_filename(fn);
 	sa << '\n';
 	update_autofont_map(font_name + metrics_suffix, sa.take_string(), errh);
+	// if virtual font, remove any map line for base font name
+	if (metrics_suffix)
+	    update_autofont_map(font_name, "", errh);
     }
 }
 
@@ -1221,6 +1239,12 @@ main(int argc, char **argv)
 	    if (slant)
 		usage_error(errh, "slant value specified twice");
 	    slant = clp->val.d;
+	    break;
+
+	  case LETTERSPACE_OPT:
+	    if (letterspace)
+		usage_error(errh, "letterspacing value specified twice");
+	    letterspace = clp->val.i;
 	    break;
 	    
 	  case AUTOMATIC_OPT:

@@ -241,6 +241,17 @@ Like
 .M afm2tfm 1 's
 .B \-s
 option.
+'
+.Sp
+.TP 5
+.BI \-L " amt\fR, " \-\-letterspacing= amt
+Letterspace each character by
+.IR amt
+units, where 1000 units equals one em. The width of each character
+increases by
+.IR amt ,
+with half the space distributed to each sidebearing. Boundary-character
+kerns are added to maintain alignment at the ends of lines.
 .PD
 '
 '
