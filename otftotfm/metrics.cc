@@ -1161,7 +1161,10 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 		unencoded.push_back(code_name(slot->old_code));
 	std::sort(unencoded.begin(), unencoded.end());
 	StringAccum sa;
-	sa.append_fill_lines(unencoded, 68, "", "  ");
+	for (const String* a = unencoded.begin(); a < unencoded.end(); a++)
+	    sa << *a << ' ';
+	sa.pop_back();
+	sa.append_break_lines(sa.take_string(), 68, "  ");
 	sa.pop_back();
 	errh->lwarning(" ", (unencoded.size() == 1 ? "not enough room in encoding, ignoring %d glyph" : "not enough room in encoding, ignoring %d glyphs"), unencoded.size());
 	errh->lmessage(" ", "(\

@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.8   5.Aug.2004
+
+* otftotfm: Fix bug where missing GPOS or GSUB tables would cause an abort.
+  Reported by Ryuji Suzuki.
+
+
 Version 2.7   3.Aug.2004
 
 * otftotfm: Bug fix for obscure cases involving 'dotlessj' characters: the

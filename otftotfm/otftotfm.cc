@@ -1030,12 +1030,12 @@ enum { F_GSUB_TRY = 1, F_GSUB_PART = 2, F_GSUB_ALL = 4,
        X_GPOS_NONE = 4, X_GPOS_PART = 5, X_COUNT };
 
 static const char * const x_messages[] = {
-    "this script does not support '%s'",
-    "'%s' ignored, too complex for me",
-    "complex substitutions from '%s' ignored",
-    "some complex substitutions from '%s' ignored",
-    "complex positionings from '%s' ignored",
-    "some complex positionings from '%s' ignored",
+    "% ignored, not supported by font",
+    "% ignored, too complex for me",
+    "complex substitutions from % ignored",
+    "some complex substitutions from % ignored",
+    "complex positionings from % ignored",
+    "some complex positionings from % ignored",
 };
 
 static void
@@ -1045,22 +1045,23 @@ report_underused_features(const HashMap<uint32_t, int> &feature_usage, ErrorHand
     for (int i = 0; i < interesting_features.size(); i++) {
 	OpenType::Tag f = interesting_features[i];
 	int fu = feature_usage[f.value()];
+	String ftext = "'" + f.text() + "'";
 	if (fu == 0)
-	    x[X_UNUSED].push_back(f.text());
+	    x[X_UNUSED].push_back(ftext);
 	else if ((fu & (F_GSUB_TRY | F_GPOS_TRY)) == fu)
-	    x[X_BOTH_NONE].push_back(f.text());
+	    x[X_BOTH_NONE].push_back(ftext);
 	else {
 	    if (fu & F_GSUB_TRY) {
 		if ((fu & (F_GSUB_PART | F_GSUB_ALL)) == 0)
-		    x[X_GSUB_NONE].push_back(f.text());
+		    x[X_GSUB_NONE].push_back(ftext);
 		else if (fu & F_GSUB_PART)
-		    x[X_GSUB_PART].push_back(f.text());
+		    x[X_GSUB_PART].push_back(ftext);
 	    }
 	    if (fu & F_GPOS_TRY) {
 		if ((fu & (F_GPOS_PART | F_GPOS_ALL)) == 0)
-		    x[X_GPOS_NONE].push_back(f.text());
+		    x[X_GPOS_NONE].push_back(ftext);
 		else if (fu & F_GPOS_PART)
-		    x[X_GPOS_PART].push_back(f.text());
+		    x[X_GPOS_PART].push_back(ftext);
 	    }
 	}
     }
@@ -1074,9 +1075,15 @@ report_underused_features(const HashMap<uint32_t, int> &feature_usage, ErrorHand
     for (int i = 0; i < X_COUNT; i++)
 	if (x[i].size()) {
 	    StringAccum sa;
-	    sa.append_fill_lines(x[i], 65, "", "", ", ");
-	    sa.pop_back();
-	    errh->warning(x_messages[i], sa.c_str());
+	    const char* msg_pct = strchr(x_messages[i], '%');
+	    sa.append(x_messages[i], msg_pct - x_messages[i]);
+	    const char* sep = (x[i].size() > 2 ? ", " : " ");
+	    for (const String* a = x[i].begin(); a < x[i].end() - 1; a++)
+		sa << *a << sep;
+	    sa << (x[i].size() > 1 ? "and " : "") << x[i].back()
+	       << (x[i].size() > 1 ? " features" : " feature") << (msg_pct+1);
+	    sa.append_break_lines(sa.take_string(), 61);
+	    errh->warning("%s", sa.c_str());
 	}
 }
 
@@ -1092,60 +1099,8 @@ main_dvips_map(const String &ps_name, StringAccum &sa, ErrorHandler *errh)
 }
 
 static void
-do_file(const String &otf_filename, const OpenType::Font &otf,
-	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
-	ErrorHandler *errh)
+do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bool dvipsenc_literal, HashMap<uint32_t, int>& feature_usage, const Vector<PermString>& glyph_names, ErrorHandler* errh)
 {
-    // get font
-    Cff cff(otf.table("CFF"), errh);
-    if (!cff.ok())
-	return;
-
-    Cff::FontParent *fp = cff.font(PermString(), errh);
-    if (!fp || !fp->ok())
-	return;
-    Cff::Font *font = dynamic_cast<Cff::Font *>(fp);
-    if (!font) {
-	errh->error("CID-keyed fonts not supported");
-	return;
-    }
-
-    // save glyph names
-    Vector<PermString> glyph_names;
-    font->glyph_names(glyph_names);
-    OpenType::debug_glyph_names = glyph_names;
-
-    // set typeface name from font family name
-    {
-	String typeface = font->dict_string(Cff::oFamilyName);
-
-	// make it reasonable for the shell
-	StringAccum sa;
-	for (int i = 0; i < typeface.length(); i++)
-	    if (isalnum(typeface[i]) || typeface[i] == '_' || typeface[i] == '-' || typeface[i] == '.' || typeface[i] == ',' || typeface[i] == '+')
-		sa << typeface[i];
-
-	set_typeface(sa.length() ? sa.take_string() : font_name, false);
-    }
-
-    // initialize encoding
-    DvipsEncoding dvipsenc(dvipsenc_in); // make copy
-    Metrics metrics(font, font->nglyphs());
-    OpenType::Cmap cmap(otf.table("cmap"), errh);
-    assert(cmap.ok());
-    if (dvipsenc_literal)
-	dvipsenc.make_metrics(metrics, cmap, font, 0, true, errh);
-    else {
-	T1Secondary secondary(font, cmap);
-	secondary.set_font_information(font_name, otf, otf_filename);
-	dvipsenc.make_metrics(metrics, cmap, font, &secondary, false, errh);
-    }
-    // encode boundary glyph at 256; pretend its Unicode value is '\n'
-    metrics.encode(256, '\n', metrics.boundary_glyph());
-    
-    // maintain statistics about features
-    HashMap<uint32_t, int> feature_usage(0);
-    
     // apply activated GSUB features
     OpenType::Gsub gsub(otf.table("GSUB"), errh);
     Vector<Lookup> lookups(gsub.nlookups(), Lookup());
@@ -1205,20 +1160,13 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	    }
 	altselector_features.swap(interesting_features);
     }
-    
-    // apply LIGKERN ligature commands to the result
-    dvipsenc.apply_ligkern_lig(metrics, errh);
+}
 
-    // test fake ligature mechanism
-    //metrics.add_threeligature('T', 'h', 'e', '0');
-    
-    // reencode characters to fit within 8 bytes (+ 1 for the boundary)
-    if (!dvipsenc_literal)
-	metrics.shrink_encoding(257, dvipsenc_in, errh);
-    
-    // apply activated GPOS features
+static void
+do_gpos(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& feature_usage, ErrorHandler* errh)
+{
     OpenType::Gpos gpos(otf.table("GPOS"), errh);
-    lookups.assign(gpos.nlookups(), Lookup());
+    Vector<Lookup> lookups(gpos.nlookups(), Lookup());
     find_lookups(gpos.script_list(), gpos.feature_list(), lookups, errh);
     Vector<OpenType::Positioning> poss;
     for (int i = 0; i < lookups.size(); i++)
@@ -1233,6 +1181,90 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	    for (int j = 0; j < lookups[i].features.size(); j++)
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
+}
+
+static void
+do_file(const String &otf_filename, const OpenType::Font &otf,
+	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
+	ErrorHandler *errh)
+{
+    // get font
+    Cff cff(otf.table("CFF"), errh);
+    if (!cff.ok())
+	return;
+
+    Cff::FontParent *fp = cff.font(PermString(), errh);
+    if (!fp || !fp->ok())
+	return;
+    Cff::Font *font = dynamic_cast<Cff::Font *>(fp);
+    if (!font) {
+	errh->error("CID-keyed fonts not supported");
+	return;
+    }
+
+    // save glyph names
+    Vector<PermString> glyph_names;
+    font->glyph_names(glyph_names);
+    OpenType::debug_glyph_names = glyph_names;
+
+    // set typeface name from font family name
+    {
+	String typeface = font->dict_string(Cff::oFamilyName);
+
+	// make it reasonable for the shell
+	StringAccum sa;
+	for (int i = 0; i < typeface.length(); i++)
+	    if (isalnum(typeface[i]) || typeface[i] == '_' || typeface[i] == '-' || typeface[i] == '.' || typeface[i] == ',' || typeface[i] == '+')
+		sa << typeface[i];
+
+	set_typeface(sa.length() ? sa.take_string() : font_name, false);
+    }
+
+    // initialize encoding
+    DvipsEncoding dvipsenc(dvipsenc_in); // make copy
+    Metrics metrics(font, font->nglyphs());
+    OpenType::Cmap cmap(otf.table("cmap"), errh);
+    assert(cmap.ok());
+    if (dvipsenc_literal)
+	dvipsenc.make_metrics(metrics, cmap, font, 0, true, errh);
+    else {
+	T1Secondary secondary(font, cmap);
+	secondary.set_font_information(font_name, otf, otf_filename);
+	dvipsenc.make_metrics(metrics, cmap, font, &secondary, false, errh);
+    }
+    // encode boundary glyph at 256; pretend its Unicode value is '\n'
+    metrics.encode(256, '\n', metrics.boundary_glyph());
+
+    // maintain statistics about features
+    HashMap<uint32_t, int> feature_usage(0);
+
+    // apply activated GSUB features
+    try {
+	do_gsub(metrics, otf, dvipsenc, dvipsenc_literal, feature_usage, glyph_names, errh);
+    } catch (OpenType::BlankTable) {
+	// nada
+    } catch (OpenType::Error e) {
+	errh->warning("GSUB '%s' error, continuing", e.description.c_str());
+    }
+    
+    // apply LIGKERN ligature commands to the result
+    dvipsenc.apply_ligkern_lig(metrics, errh);
+
+    // test fake ligature mechanism
+    //metrics.add_threeligature('T', 'h', 'e', '0');
+    
+    // reencode characters to fit within 8 bytes (+ 1 for the boundary)
+    if (!dvipsenc_literal)
+	metrics.shrink_encoding(257, dvipsenc_in, errh);
+    
+    // apply activated GPOS features
+    try {
+	do_gpos(metrics, otf, feature_usage, errh);
+    } catch (OpenType::BlankTable) {
+	// nada
+    } catch (OpenType::Error e) {
+	errh->warning("GPOS '%s' error, continuing", e.description.c_str());
+    }
 
     // apply LIGKERN kerning commands to the result
     dvipsenc.apply_ligkern_kern(metrics, errh);
@@ -1634,73 +1666,77 @@ particular purpose.\n");
     }
     
   done:
-    if (!input_file)
-	usage_error(errh, "no font filename provided");
-    if (!encoding_file) {
-	errh->warning("no encoding provided");
-	errh->message("(Use '-e ENCODING' to choose an encoding. '-e texnansx' often works,\nor say '-e -' to turn off this warning.)");
-    } else if (encoding_file == "-")
-	encoding_file = "";
+    try {
+	if (!input_file)
+	    usage_error(errh, "no font filename provided");
+	if (!encoding_file) {
+	    errh->warning("no encoding provided");
+	    errh->message("(Use '-e ENCODING' to choose an encoding. '-e texnansx' often works,\nor say '-e -' to turn off this warning.)");
+	} else if (encoding_file == "-")
+	    encoding_file = "";
     
-    // read font
-    String font_data = read_file(input_file, errh);
-    if (errh->nerrors())
-	exit(1);
+	// read font
+	String font_data = read_file(input_file, errh);
+	if (errh->nerrors())
+	    exit(1);
 
-    LandmarkErrorHandler cerrh(errh, printable_filename(input_file));
-    BailErrorHandler bail_errh(&cerrh);
+	LandmarkErrorHandler cerrh(errh, printable_filename(input_file));
+	BailErrorHandler bail_errh(&cerrh);
 
-    OpenType::Font otf(font_data, &bail_errh);
-    assert(otf.ok());
+	OpenType::Font otf(font_data, &bail_errh);
+	assert(otf.ok());
 
-    // figure out scripts we care about
-    if (!interesting_scripts.size()) {
-	interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
-	interesting_scripts.push_back(Efont::OpenType::Tag());
-    }
-    if (interesting_features.size())
+	// figure out scripts we care about
+	if (!interesting_scripts.size()) {
+	    interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
+	    interesting_scripts.push_back(Efont::OpenType::Tag());
+	}
 	std::sort(interesting_features.begin(), interesting_features.end());
 
-    // read glyphlist
-    if (String s = read_file(glyphlist_file, errh, true))
-	DvipsEncoding::parse_glyphlist(s);
+	// read glyphlist
+	if (String s = read_file(glyphlist_file, errh, true))
+	    DvipsEncoding::parse_glyphlist(s);
 
-    // read encoding
-    DvipsEncoding dvipsenc;
-    if (encoding_file) {
-	if (String path = locate_encoding(encoding_file, errh))
-	    dvipsenc.parse(path, no_ecommand || default_ligkern, no_ecommand, errh);
-	else
-	    errh->fatal("encoding '%s' not found", encoding_file.c_str());
-    } else {
-	// use encoding from font
-	Cff cff(otf.table("CFF"), &bail_errh);
-	Cff::FontParent *font = cff.font(PermString(), &bail_errh);
-	assert(cff.ok() && font->ok());
-	if (Type1Encoding *t1e = font->type1_encoding()) {
-	    for (int i = 0; i < 256; i++)
-		dvipsenc.encode(i, (*t1e)[i]);
-	} else
-	    errh->fatal("font has no encoding, specify one explicitly");
-	delete font;
-    }
+	// read encoding
+	DvipsEncoding dvipsenc;
+	if (encoding_file) {
+	    if (String path = locate_encoding(encoding_file, errh))
+		dvipsenc.parse(path, no_ecommand || default_ligkern, no_ecommand, errh);
+	    else
+		errh->fatal("encoding '%s' not found", encoding_file.c_str());
+	} else {
+	    // use encoding from font
+	    Cff cff(otf.table("CFF"), &bail_errh);
+	    Cff::FontParent *font = cff.font(PermString(), &bail_errh);
+	    assert(cff.ok() && font->ok());
+	    if (Type1Encoding *t1e = font->type1_encoding()) {
+		for (int i = 0; i < 256; i++)
+		    dvipsenc.encode(i, (*t1e)[i]);
+	    } else
+		errh->fatal("font has no encoding, specify one explicitly");
+	    delete font;
+	}
 
-    // apply default ligkern commands
-    if (default_ligkern || (!dvipsenc.file_had_ligkern() && !ligkern.size() && !no_ecommand))
-	for (const char * const *lk = default_ligkerns; *lk; lk++)
-	    dvipsenc.parse_ligkern(*lk, ErrorHandler::silent_handler());
+	// apply default ligkern commands
+	if (default_ligkern || (!dvipsenc.file_had_ligkern() && !ligkern.size() && !no_ecommand))
+	    for (const char * const *lk = default_ligkerns; *lk; lk++)
+		dvipsenc.parse_ligkern(*lk, ErrorHandler::silent_handler());
     
-    // apply command-line ligkern commands and coding scheme
-    cerrh.set_landmark("--ligkern command");
-    for (int i = 0; i < ligkern.size(); i++)
-	dvipsenc.parse_ligkern(ligkern[i], &cerrh);
-    cerrh.set_landmark("--unicoding command");
-    for (int i = 0; i < unicoding.size(); i++)
-	dvipsenc.parse_unicoding(unicoding[i], &cerrh);
-    if (codingscheme)
-	dvipsenc.set_coding_scheme(codingscheme);
+	// apply command-line ligkern commands and coding scheme
+	cerrh.set_landmark("--ligkern command");
+	for (int i = 0; i < ligkern.size(); i++)
+	    dvipsenc.parse_ligkern(ligkern[i], &cerrh);
+	cerrh.set_landmark("--unicoding command");
+	for (int i = 0; i < unicoding.size(); i++)
+	    dvipsenc.parse_unicoding(unicoding[i], &cerrh);
+	if (codingscheme)
+	    dvipsenc.set_coding_scheme(codingscheme);
 
-    do_file(input_file, otf, dvipsenc, literal_encoding, errh);
+	do_file(input_file, otf, dvipsenc, literal_encoding, errh);
+	
+    } catch (OpenType::Error e) {
+	errh->error("unhandled exception '%s'", e.description.c_str());
+    }
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }
