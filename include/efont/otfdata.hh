@@ -32,17 +32,23 @@ class Bounds : public Error { public:
 };
 
 class Format : public Error { public:
-    Format(const String &name)		: Error(name + " format error") { }
+    Format(const String& name)		: Error(name + " format error") { }
+    Format(const String& name, const String& type)
+					: Error(name + " " + type + " format error") { }
+};
+
+class BlankTable : public Format { public:
+    BlankTable(const String& name)	: Format(name, "blank table") { }
 };
 
 class Data { public:
 
     Data()				{ }
-    Data(const String &str)		: _str(str) { _str.align(2); }
+    Data(const String& str)		: _str(str) { _str.align(2); }
     // default copy constructor
     // default destructor
 
-    operator const String &() const	{ return _str; }
+    operator const String&() const	{ return _str; }
 
     int length() const			{ return _str.length(); }
 
@@ -71,7 +77,7 @@ inline uint8_t Data::operator[](unsigned offset) const throw (Bounds)
 
 inline uint16_t Data::u16(unsigned offset) const throw (Bounds)
 {
-    if (offset >= static_cast<unsigned>(_str.length() - 1))
+    if (offset + 1 >= static_cast<unsigned>(_str.length()) || offset + 1 == 0)
 	throw Bounds();
     else
 	return ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset));
@@ -79,7 +85,7 @@ inline uint16_t Data::u16(unsigned offset) const throw (Bounds)
 
 inline int16_t Data::s16(unsigned offset) const throw (Bounds)
 {
-    if (offset >= static_cast<unsigned>(_str.length() - 1))
+    if (offset + 1 >= static_cast<unsigned>(_str.length()) || offset + 1 == 0)
 	throw Bounds();
     else
 	return ntohs(*reinterpret_cast<const int16_t *>(_str.data() + offset));
@@ -87,7 +93,7 @@ inline int16_t Data::s16(unsigned offset) const throw (Bounds)
 
 inline uint32_t Data::u32(unsigned offset) const throw (Bounds)
 {
-    if (offset >= static_cast<unsigned>(_str.length() - 3))
+    if (offset + 3 >= static_cast<unsigned>(_str.length()) || offset + 3 < 3)
 	throw Bounds();
     else
 	return (ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset)) << 16)
@@ -96,7 +102,7 @@ inline uint32_t Data::u32(unsigned offset) const throw (Bounds)
 
 inline int32_t Data::s32(unsigned offset) const throw (Bounds)
 {
-    if (offset >= static_cast<unsigned>(_str.length() - 3))
+    if (offset + 3 >= static_cast<unsigned>(_str.length()) || offset + 3 < 3)
 	throw Bounds();
     else
 	return (ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset)) << 16)

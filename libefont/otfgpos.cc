@@ -38,6 +38,8 @@ Gpos::Gpos(const Data &d, ErrorHandler *errh) throw (Error)
     // Offset	ScriptList
     // Offset	FeatureList
     // Offset	LookupList
+    if (d.length() == 0)
+	throw BlankTable("GPOS");
     if (d.u16(0) != 1)
 	throw Format("GPOS");
     if (_script_list.assign(d.offset_subtable(4), errh) < 0)
