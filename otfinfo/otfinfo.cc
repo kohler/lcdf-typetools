@@ -264,7 +264,7 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 	    sa << ", size range (" << (size_data.u16(6) / 10.) << " pt, "
 	       << (size_data.u16(8) / 10.) << " pt], "
 	       << "subfamily ID " << size_data.u16(2);
-	    if (String n = name.find(size_data.u16(4), OpenType::Name::EnglishPlatformPred()))
+	    if (String n = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(size_data.u16(4)))))
 		sa << ", subfamily name " << n;
 	}
 	
@@ -285,7 +285,7 @@ do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHan
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    postscript_name = name.find(OpenType::Name::N_POSTSCRIPT, OpenType::Name::EnglishPlatformPred());
+	    postscript_name = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(OpenType::Name::N_POSTSCRIPT)));
     }
 
     if (errh->nerrors() == before_nerrors)

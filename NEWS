@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.88   23.Dec.2003
+
+* otfinfo: Change coding to be friendlier to older C++ compilers. Requested
+  by Ulrich Dirr.
+
+
 Version 1.87   22.Dec.2003
 
 * otftotfm: Fix --extend bug reported by Ulrich Dirr (the expansion factor
