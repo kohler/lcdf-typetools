@@ -146,7 +146,7 @@ GlyphFilter::add_pattern(const String& pattern, int ptype, ErrorHandler* errh)
 
 	// otherwise must be name pattern
 	p.data = D_NAME;
-	p.pattern = pattern;
+	p.pattern = pattern.substring(begin, word);
 	_patterns.push_back(p);
 	
 	// move to next clause
