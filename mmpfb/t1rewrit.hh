@@ -60,32 +60,48 @@ class Type1MMRemover {
 };
 
 
-class Type1OneMMRemover: public Type1Interp {
+class Type1SubrRemover {
   
-  Type1MMRemover *_remover;
-  Type1CharstringGen _prefix_gen;
-  Type1CharstringGen _main_gen;
+  Type1Font *_font;
   
-  int _subr_level;
-  bool _in_prefix;
-  bool _reduce;
-  bool _output_mm;
+  int _subr_count;
+  Vector<bool> _save;
+  Vector<int> _cost;
+  int _save_count;
+  int _nonexist_count;
   
-  void run_subr(Type1Charstring *);
-  bool run_once(const Type1Charstring &, bool do_prefix);
+  ErrorHandler *_errh;
   
  public:
   
-  Type1OneMMRemover(Type1MMRemover *);
+  Type1SubrRemover(Type1Font *, ErrorHandler *);
+  ~Type1SubrRemover();
   
-  bool command(int);
+  Type1Program *program() const			{ return _font; }
   
-  void run(const Type1Charstring &, bool do_prefix);
-
-  Type1Charstring *output_prefix();
-  void output_main(Type1Charstring &);
-  bool contained_mm() const			{ return _output_mm; }
+  void mark_save(int n);
+  int save_count() const			{ return _save_count; }
+  void add_subr_call(int n);
+  
+  bool run(int);
   
 };
+
+
+inline void
+Type1SubrRemover::mark_save(int n)
+{
+  if (n >= 0 && n < _subr_count && !_save[n]) {
+    _save[n] = true;
+    _save_count++;
+  }
+}
+
+inline void
+Type1SubrRemover::add_subr_call(int n)
+{
+  if (n >= 0 && n < _subr_count)
+    _cost[n]++;
+}
 
 #endif

@@ -5,6 +5,7 @@
 #include "t1rw.hh"
 #include "t1mm.hh"
 #include "myfont.hh"
+#include "t1rewrit.hh"
 #include "clp.h"
 #include "error.hh"
 #include <stdlib.h>
@@ -33,6 +34,7 @@
 #define OUTPUT_OPT	313
 #define QUIET_OPT	314
 #define PRECISION_OPT	315
+#define SUBRS_OPT	316
 
 Clp_Option options[] = {
   { "1", '1', N1_OPT, Clp_ArgDouble, 0 },
@@ -48,6 +50,7 @@ Clp_Option options[] = {
   { "precision", 'p', PRECISION_OPT, Clp_ArgUnsigned, 0 },
   { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
   { "style", 0, STYLE_OPT, Clp_ArgDouble, 0 },
+  { "subrs", 0, SUBRS_OPT, Clp_ArgInt, Clp_Negate },
   { "version", 0, VERSION_OPT, 0, 0 },
   { "wd", 0, WIDTH_OPT, Clp_ArgDouble, 0 },
   { "weight", 'w', WEIGHT_OPT, Clp_ArgDouble, 0 },
@@ -99,6 +102,7 @@ General options:\n\
   -b, --pfb                    Output PFB font. This is the default.\n\
   -o, --output=FILE            Write output to FILE.\n\
   -p, --precision=N            Set precision to N (larger means more precise).\n\
+      --subrs=N                Output font has at most N subroutines.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
@@ -228,8 +232,10 @@ main(int argc, char **argv)
   bool write_pfb = true;
   bool amcp_info = false;
   int precision = 5;
+  int subr_count = -1;
   FILE *outfile = 0;
   ErrorHandler *default_errh = new FileErrorHandler(stderr);
+  default_errh = new PinnedErrorHandler("mmpfb", default_errh);
   errh = default_errh;
   
   while (1) {
@@ -277,6 +283,15 @@ main(int argc, char **argv)
 	precision = 107;
       } else
 	precision = clp->val.i;
+      break;
+
+     case SUBRS_OPT:
+      if (clp->negated)
+	subr_count = -1;
+      else if (clp->val.i <= 0)
+	errh->warning("subr count too small");
+      else
+	subr_count = clp->val.i;
       break;
       
      case QUIET_OPT:
@@ -356,7 +371,7 @@ particular purpose.\n");
   
   font->interpolate_dicts(errh);
   font->interpolate_charstrings(precision, errh);
-
+  
   { // Add an identifying comment.
 #if HAVE_CTIME
     time_t cur_time = time(0);
@@ -374,7 +389,12 @@ particular purpose.\n");
     font->add_header_comment("%% Mmpfb is free software.  See <http://www.lcdf.org/type/>.");
     delete[] buf;
   }
-    
+
+  if (subr_count >= 0) {
+    Type1SubrRemover sr(font, errh);
+    sr.run(subr_count);
+  }
+  
   if (write_pfb) {
     Type1PfbWriter w(outfile);
     font->write(w);

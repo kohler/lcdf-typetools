@@ -224,14 +224,14 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   Type1Definition *def;
   while (dict_each(dBlend, i, name, def))
     if (def) {
-      errh->warning("didn't interpolate %s in Blend", name.cc());
+      //errh->warning("didn't interpolate %s in Blend", name.cc());
       kill_def(def, dBlend);
     }
   
   i = 0;
   while (dict_each(dBlendPrivate, i, name, def))
     if (def) {
-      errh->warning("didn't interpolate %s in BlendPrivate", name.cc());
+      //errh->warning("didn't interpolate %s in BlendPrivate", name.cc());
       kill_def(def, dBlendPrivate);
     }
   
