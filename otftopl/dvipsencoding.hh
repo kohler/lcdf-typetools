@@ -15,6 +15,7 @@ class DvipsEncoding { public:
 
     operator bool() const			{ return _e.size() > 0; }
     const String &name() const			{ return _name; }
+    const String &filename() const		{ return _filename; }
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
@@ -37,15 +38,17 @@ class DvipsEncoding { public:
 	int c1, c2, join, d;
     };
 
-    String _name;
     Vector<PermString> _e;
-    String _initial_comment;
-    String _final_text;
     int _boundary_char;
 
     Vector<Ligature> _lig;
     HashMap<PermString, int> _unicoding_map;
     Vector<int> _unicoding;
+
+    String _name;
+    String _filename;
+    String _initial_comment;
+    String _final_text;
 
     int parse_ligkern(Vector<String> &, ErrorHandler *);
     int parse_unicoding(Vector<String> &, ErrorHandler *);

@@ -38,59 +38,79 @@ using namespace Efont;
 
 #define VERSION_OPT		301
 #define HELP_OPT		302
-#define QUIET_OPT		303
-#define OUTPUT_OPT		304
-#define FEATURE_OPT		305
-#define GLYPHLIST_OPT		306
-#define ENCODING_OPT		307
-#define LITERAL_ENCODING_OPT	308
-#define SCRIPT_OPT		309
-#define ENCODING_DIR_OPT	310
-#define ENCODING_FILE_OPT	312
-#define QUERY_SCRIPTS_OPT	313
-#define QUERY_FEATURES_OPT	314
-#define FONT_NAME_OPT		315
-#define TFM_OPT			316
-#define TFM_DIR_OPT		317
-#define AUTOMATIC_OPT		318
-#define PL_DIR_OPT		319
-#define EXTEND_OPT		320
-#define SLANT_OPT		321
+#define QUERY_SCRIPTS_OPT	303
+#define QUERY_FEATURES_OPT	304
+
+#define SCRIPT_OPT		311
+#define FEATURE_OPT		312
+#define ENCODING_OPT		313
+#define LITERAL_ENCODING_OPT	314
+#define EXTEND_OPT		315
+#define SLANT_OPT		316
+
+#define AUTOMATIC_OPT		321
+#define FONT_NAME_OPT		322
+#define QUIET_OPT		323
+#define GLYPHLIST_OPT		324
+
+#define VIRTUAL_OPT		331
+#define PL_OPT			332
+#define TFM_OPT			333
+
+enum { O_ENCODING = 0, O_TFM, O_PL, O_VF, O_VPL, NUMODIR };
+enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_BINARY = 8, G_ASCII = 16 };
+static const struct {
+    const char *name;
+    const char *envvar;
+} odir_stats[] = {
+    { "encoding", "ENCODINGDESTDIR" },
+    { "TFM", "TFMDESTDIR" },
+    { "PL", "PLDESTDIR" },
+    { "VF", "VFDESTDIR" },
+    { "VPL", "VPLDESTDIR" }
+};
+
+#define DIR_OPTS		350
+#define ENCODING_DIR_OPT	(DIR_OPTS + O_ENCODING)
+#define TFM_DIR_OPT		(DIR_OPTS + O_TFM)
+#define PL_DIR_OPT		(DIR_OPTS + O_PL)
+#define VF_DIR_OPT		(DIR_OPTS + O_VF)
+#define VPL_DIR_OPT		(DIR_OPTS + O_VPL)
 
 Clp_Option options[] = {
     
+    { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
+    { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
-    { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
-    { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
+    { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
+    { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
     
-    { "tfm", 't', TFM_OPT, 0, Clp_Negate },
+    { "pl", 'p', PL_OPT, 0, 0 },
+    { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
+    
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
+    { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
     
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ArgString, 0 },
     { "pl-directory", 0, PL_DIR_OPT, Clp_ArgString, 0 },
     { "tfm-directory", 0, TFM_DIR_OPT, Clp_ArgString, 0 },
+    { "vpl-directory", 0, VPL_DIR_OPT, Clp_ArgString, 0 },
+    { "vf-directory", 0, VF_DIR_OPT, Clp_ArgString, 0 },
     
-    { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
-
-    { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
-    { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
-    
-    { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
-    { "output-encoding", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
-    
+    { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
 
     { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
-    { "print-features", 0, QUERY_FEATURES_OPT, 0, 0 }, // deprecated
-    { "print-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 }, // deprecated
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 'v', VERSION_OPT, 0, 0 },
 
-    { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
+    { "tfm", 't', TFM_OPT, 0, 0 }, // deprecated
+    { "print-features", 0, QUERY_FEATURES_OPT, 0, 0 }, // deprecated
+    { "print-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 }, // deprecated
     
 };
 
@@ -106,16 +126,17 @@ static PermString dot_notdef(".notdef");
 static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
 
+static String font_name;
 static String encoding_file;
-static String new_encoding_name;
-static String new_encoding_file;
-
 static double extend;
 static double slant;
 
-static String font_name;
+static String odir[NUMODIR];
 
-static bool tfm = false;
+static String out_encoding_file;
+static String out_encoding_name;
+
+static int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_BINARY;
 
 static bool automatic = false;
 
@@ -145,9 +166,8 @@ format supports. Supply '-s SCRIPT[.LANG]' options to specify the relevant\n\
 language, '-f FEAT' options to turn on optional OpenType features, and a\n\
 '-e ENC' option to specify a base encoding.\n\
 \n\
-Usage: %s [OPTIONS] FONTFILE [PLOUTPUT ENCODINGOUTPUT]\n\
-   or: %s --auto [OPTIONS] FONTFILE [PLDIR ENCODINGDIR]\n\
-   or: %s --auto --tfm [OPTIONS] FONTFILE [TFMDIR ENCODINGDIR]\n\
+Usage: %s [OPTIONS] FONTFILE [FONTNAME]\n\
+   or: %s --auto [OPTIONS] FONTFILE [FONTNAME]\n\
 \n\
 Input options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
@@ -158,14 +178,14 @@ Input options:\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
 \n\
 Output options:\n\
-  -a, --automatic              Derive output filenames automatically.\n\
-  -t, --tfm                    Output TFM metrics, not PL metrics.\n\
   -n, --name=NAME              Generated font name is NAME.\n\
-  -o, --output=FILE            Output metrics to FILE.\n\
-      --output-encoding=FILE   Output encoding to FILE.\n\
-      --pl-directory=DIR       Automatic mode: put PL files in DIR.\n\
-      --tfm-directory=DIR      Automatic mode: put TFM files in DIR.\n\
-      --encoding-directory=DIR Automatic mode: put encoding files in DIR.\n\
+  -p, --pl                     Output human-readable PL/VPLs, not VF/TFMs.\n\
+  -a, --automatic              Derive directories from the environment.\n\
+      --tfm-directory=DIR      Put TFM files in DIR [.|TFMDESTDIR].\n\
+      --pl-directory=DIR       Put PL files in DIR [.|PLDESTDIR].\n\
+      --vf-directory=DIR       Put VF files in DIR [.|VFDESTDIR].\n\
+      --vpl-directory=DIR      Put VPL files in DIR [.|VPLDESTDIR].\n\
+      --encoding-directory=DIR Put encoding files in DIR [.|ENCODINGDESTDIR].\n\
 \n\
 Other options:\n\
   --qs, --query-scripts        Print font's supported scripts and exit.\n\
@@ -176,7 +196,7 @@ Other options:\n\
   -q, --quiet                  Do not generate any error messages.\n\
   -v, --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name, program_name, program_name);
+Report bugs to <kohler@icir.org>.\n", program_name, program_name);
 }
 
 
@@ -275,7 +295,7 @@ static const char * const digit_names[] = {
 static void
 output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
-	  FILE *f)
+	  bool vpl, FILE *f)
 {
     // XXX check DESIGNSIZE and DESIGNUNITS for correctness
 
@@ -287,8 +307,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	family_name = family_name.substring(0, 9) + family_name.substring(-10);
     fprintf(f, "(FAMILY %s)\n", family_name.c_str());
 
-    if (new_encoding_name)
-	fprintf(f, "(CODINGSCHEME %.39s)\n", new_encoding_name.c_str());
+    if (out_encoding_name)
+	fprintf(f, "(CODINGSCHEME %.39s)\n", out_encoding_name.c_str());
 
     fprintf(f, "(DESIGNSIZE R 10.0)\n"
 	    "(DESIGNUNITS R 1000)\n"
@@ -334,6 +354,10 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     fprintf(f, "   (QUAD D 1000)\n"
 	    "   )\n");
 
+    // write MAPFONT
+    if (vpl)
+	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s_raw)\n   )\n", font_name.c_str());
+    
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
     Vector<String> glyph_comments(256, String());
@@ -381,11 +405,32 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     fprintf(f, "   )\n");
     
     // CHARACTERs
+    Vector<Setting> settings;
+    StringAccum sa;
+    Transform start_transform = boundser.transform();
     for (int i = 0; i < 256; i++)
-	if (OpenType::Glyph g = gse.glyph(i)) {
+	if (gse.setting(i, settings)) {
 	    fprintf(f, "(CHARACTER %s%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
-	    Charstring *cs = cff->glyph(g);
-	    boundser.run(*cs, bounds, width);
+
+	    // unparse settings into DVI commands
+	    sa.clear();
+	    boundser.set_transform(start_transform);
+	    for (int j = 0; j < settings.size(); j++) {
+		Setting &s = settings[j];
+		if (s.op == Setting::SHOW) {
+		    boundser.run_incr(*(cff->glyph(s.x)));
+		    sa << "      (SETCHAR " << glyph_ids[i] << ')' << glyph_comments[i] << "\n";
+		} else if (s.op == Setting::HMOVETO && vpl) {
+		    boundser.translate(s.x, 0);
+		    sa << "      (MOVERIGHT R " << s.x << ")\n";
+		} else if (s.op == Setting::VMOVETO && vpl) {
+		    boundser.translate(0, s.x);
+		    sa << "      (MOVEUP R " << s.x << ")\n";
+		}
+	    }
+
+	    // output information
+	    boundser.bounds(bounds, width);
 	    fprintf(f, "   (CHARWD R %d)\n", width);
 	    if (bounds[3] > 0)
 		fprintf(f, "   (CHARHT R %d)\n", bounds[3]);
@@ -393,6 +438,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		fprintf(f, "   (CHARDP R %d)\n", -bounds[1]);
 	    if (bounds[2] > width)
 		fprintf(f, "   (CHARIC R %d)\n", bounds[2] - width);
+	    if (vpl && (settings.size() > 1 || settings[0].op != Setting::SHOW))
+		fprintf(f, "   (MAP\n%s      )\n", sa.c_str());
 	    fprintf(f, "   )\n");
 	}
 }
@@ -448,9 +495,6 @@ write_encoding_file(String &filename, const String &encoding_name,
 	f = stdout;
 	filename = "";
 	stdout_used = true;
-    } else if (!automatic) {
-	if (!(f = fopen(filename.c_str(), "w")))
-	    return errh->error("%s: %s", filename.c_str(), strerror(errno));
     } else {
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
@@ -493,9 +537,11 @@ write_encoding_file(String &filename, const String &encoding_name,
 	    int pos2 = old_encodings.find_left("\n%%", pos1 + 1);
 	    if (pos2 < 0)
 		pos2 = old_encodings.length();
-	    if (old_encodings.substring(pos1 + 3, encoding_name.length()) == encoding_name)
-		/* do nothing */;
-	    else
+	    if (old_encodings.substring(pos1 + 3, encoding_name.length()) == encoding_name) {
+		// encoding already exists, don't change it
+		fclose(f);
+		return 0;
+	    } else
 		contents << old_encodings.substring(pos1, pos2 - pos1);
 	    pos1 = pos2;
 	}
@@ -517,6 +563,21 @@ write_encoding_file(String &filename, const String &encoding_name,
     return 0;
 }
 
+static String
+getodir(int o, ErrorHandler *errh)
+{
+    assert(o >= 0 && o < NUMODIR);
+    if (!odir[o]
+	&& automatic
+	&& !(odir[o] = getenv(odir_stats[o].envvar)))
+	errh->warning("%s not specified", odir_stats[o].envvar);
+    if (!odir[o])
+	odir[o] = ".";
+    while (odir[o].length() && odir[o].back() == '/')
+	odir[o] = odir[o].substring(0, -1);
+    return odir[o];
+}
+	
 static void
 output_encoding(const GsubEncoding &gsub_encoding,
 		const Vector<PermString> &glyph_names,
@@ -546,19 +607,26 @@ output_encoding(const GsubEncoding &gsub_encoding,
     md5_final_text(text_digest, &md5);
 
     // name encoding using digest
-    new_encoding_name = "AutoEnc_" + String(text_digest);
+    out_encoding_name = "AutoEnc_" + String(text_digest);
+
+    // create encoding filename
+    out_encoding_file = getodir(O_ENCODING, errh) + String("/auto_") + String(text_digest).substring(0, 6) + ".enc";
+
+    // exit if we're not responsible for generating an encoding
+    if (!(output_flags & G_ENCODING))
+	return;
 
     // put encoding block in a StringAccum
     // 3.Jun.2003: stick command line definition at the end of the encoding,
     // where it won't confuse idiotic ps2pk
     StringAccum contents;
     contents << "% THIS FILE WAS AUTOMATICALLY GENERATED -- DO NOT EDIT\n\n\
-%%" << new_encoding_name << "\n\
+%%" << out_encoding_name << "\n\
 % Encoding created by otftopl" << current_time << "\n\
 % Command line follows encoding\n";
     
     // the encoding itself
-    contents << '/' << new_encoding_name << " [\n" << sa << "] def\n";
+    contents << '/' << out_encoding_name << " [\n" << sa << "] def\n";
     
     // write banner -- unfortunately this takes some doing
     String banner = String("Command line: '") + String(invocation.data(), invocation.length()) + String("'");
@@ -585,12 +653,8 @@ output_encoding(const GsubEncoding &gsub_encoding,
 	banner = banner.substring(last_pos + 1);
     }
     
-    // create encoding filename
-    if (automatic)
-	new_encoding_file += String("/auto_") + String(text_digest).substring(0, 6) + ".enc";
-
     // open encoding file
-    write_encoding_file(new_encoding_file, new_encoding_name, contents, errh);
+    write_encoding_file(out_encoding_file, out_encoding_name, contents, errh);
 }
 
 static int
@@ -628,50 +692,43 @@ temporary_file(String &filename, ErrorHandler *errh)
 }
 
 static void
-output_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
-	   const GsubEncoding &gse, const Vector<PermString> &glyph_names,
-	   const String &outfile, ErrorHandler *errh)
+write_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
+	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	  String tfm_filename, String vf_filename, ErrorHandler *errh)
 {
     String pl_filename;
     int pl_fd = temporary_file(pl_filename, errh);
     if (pl_fd < 0)
 	return;
 
-    String true_tfm_filename;
     int tfm_fd = -1;
-    if (automatic)
-	true_tfm_filename = outfile + "/" + font_name + ".tfm";
-    else if (!outfile || outfile == "-") {
-	if ((tfm_fd = temporary_file(true_tfm_filename, errh)) < 0) {
-	    close(pl_fd);
-	    unlink(pl_filename.c_str());
-	    return;
-	}
-	stdout_used = true;
-    } else
-	true_tfm_filename = outfile;
+    bool vpl = vf_filename;
 
     FILE *f = fdopen(pl_fd, "w");
-    output_pl(cff, cmap, gse, glyph_names, f);
+    output_pl(cff, cmap, gse, glyph_names, vpl, f);
     fclose(f);
 
     StringAccum command;
-    command << "pltotf " << pl_filename << ' ' << true_tfm_filename;
+    if (vpl)
+	command << "vptovf " << pl_filename << ' ' << vf_filename << ' ' << tfm_filename;
+    else
+	command << "pltotf " << pl_filename << ' ' << tfm_filename;
+    
     int status = system(command.c_str());
 
     unlink(pl_filename.c_str());
     
     if (tfm_fd >= 0) {
 	if (status == 0) { // read file and write the result to stdout
-	    String tfm_text = read_file(true_tfm_filename.c_str(), errh);
+	    String tfm_text = read_file(tfm_filename.c_str(), errh);
 	    fwrite(tfm_text.data(), 1, tfm_text.length(), stdout);
 	}
 	close(tfm_fd);
-	unlink(true_tfm_filename.c_str());
+	unlink(tfm_filename.c_str());
     }
 
     if (status != 0)
-	errh->fatal("pltotf execution failed");
+	errh->fatal("%s execution failed", (vpl ? "vptovf" : "pltotf"));
 }
 
 enum { F_GSUB_TRY = 1, F_GSUB_PART = 2, F_GSUB_ALL = 4,
@@ -731,7 +788,7 @@ report_underused_features(const HashMap<uint32_t, int> &feature_usage, ErrorHand
 }
 
 static void
-do_file(const OpenType::Font &otf, String outfile,
+do_file(const OpenType::Font &otf,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
 	ErrorHandler *errh)
 {
@@ -820,16 +877,7 @@ do_file(const OpenType::Font &otf, String outfile,
     report_underused_features(feature_usage, errh);
 
     // figure out our FONTNAME
-    if (font_name)
-	/* already have a name */;
-    else if (!automatic && outfile && outfile != "-") {
-	// derive font name from output filename
-	int slash = outfile.find_right('/');
-	int dot = outfile.find_right('.');
-	if (dot < slash)
-	    dot = outfile.length();
-	font_name = outfile.substring(slash, dot - slash);
-    } else {
+    if (!font_name) {
 	// derive font name from OpenType font name
 	font_name = font.font_name();
 	if (encoding_file) {
@@ -851,47 +899,59 @@ do_file(const OpenType::Font &otf, String outfile,
     }
     
     // output encoding
-    if (dvipsenc_literal)
-	new_encoding_name = dvipsenc_in.name();
-    else if (!new_encoding_file) {
-	errh->error("encoding changed, but no encoding output specified");
-	errh->lmessage(String(" "), "(The features you specified caused the encoding to change. Provide\n\
-either '--output-encoding' to tell me where to write the new\n\
-encoding or '--literal-encoding' so I don't change the input\n\
-encoding, or try '--automatic' mode.)");
-	exit(1);
+    if (dvipsenc_literal) {
+	out_encoding_name = dvipsenc_in.name();
+	out_encoding_file = dvipsenc_in.filename();
     } else
 	output_encoding(encoding, glyph_names, errh);
+
+    // check whether virtual metrics are necessary
+    String raw_metrics_suffix;
+    if (encoding.need_virtual())
+	raw_metrics_suffix = "_raw";
+    else
+	output_flags &= ~G_VMETRICS;
     
     // output metrics
-    if (tfm) {
-	output_tfm(&font, cmap, encoding, glyph_names, outfile, errh);
+    if (!(output_flags & G_METRICS))
+	/* do nothing */;
+    else if (output_flags & G_BINARY) {
+	String fn = getodir(O_TFM, errh) + "/" + font_name + raw_metrics_suffix + ".tfm";
+	write_tfm(&font, cmap, encoding, glyph_names, fn, String(), errh);
     } else {
-	if (automatic)
-	    outfile += "/" + font_name + ".pl";
-	
+	String outfile = getodir(O_PL, errh) + "/" + font_name + raw_metrics_suffix + ".pl";
 	FILE *f;
-	if (!outfile || outfile == "-") {
-	    f = stdout;
-	    stdout_used = true;
-	} else if (!(f = fopen(outfile.c_str(), "w")))
+	if (!(f = fopen(outfile.c_str(), "w")))
 	    errh->fatal("%s: %s", outfile.c_str(), strerror(errno));
+	output_pl(&font, cmap, encoding, glyph_names, false, f);
+	fclose(f);
+    }
 
-	output_pl(&font, cmap, encoding, glyph_names, f);
-
-	if (f != stdout)
-	    fclose(f);
+    // output virtual metrics
+    if (!(output_flags & G_VMETRICS))
+	/* do nothing */;
+    else if (output_flags & G_BINARY) {
+	String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
+	String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
+	write_tfm(&font, cmap, encoding, glyph_names, tfm, vf, errh);
+    } else {
+	String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
+	FILE *f;
+	if (!(f = fopen(outfile.c_str(), "w")))
+	    errh->fatal("%s: %s", outfile.c_str(), strerror(errno));
+	output_pl(&font, cmap, encoding, glyph_names, true, f);
+	fclose(f);
     }
 
     // print DVIPS map line
     if (!stdout_used && errh->nerrors() == 0) {
 	StringAccum sa;
-	sa << font_name << ' ' << font.font_name() << " \"";
+	sa << font_name << raw_metrics_suffix << ' ' << font.font_name() << " \"";
 	if (extend)
 	    sa << extend << " ExtendFont ";
 	if (slant)
 	    sa << slant << " SlantFont ";
-	sa << new_encoding_name << " ReEncodeFont\" <[" << new_encoding_file << '\n';
+	sa << out_encoding_name << " ReEncodeFont\" <[" << out_encoding_file << '\n';
 	printf("%s", sa.c_str());
     }
 }
@@ -996,9 +1056,7 @@ main(int argc, char **argv)
     
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
-    String output_file;
     const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
-    String tfm_directory, pl_directory, new_encoding_directory;
     bool literal_encoding = false;
     bool query_scripts = false;
     bool query_features = false;
@@ -1041,6 +1099,13 @@ main(int argc, char **argv)
 	    encoding_file = clp->arg;
 	    break;
 
+	  case LITERAL_ENCODING_OPT:
+	    if (encoding_file)
+		usage_error(errh, "encoding specified twice");
+	    encoding_file = clp->arg;
+	    literal_encoding = true;
+	    break;
+
 	  case EXTEND_OPT:
 	    if (extend)
 		usage_error(errh, "extend value specified twice");
@@ -1056,49 +1121,39 @@ main(int argc, char **argv)
 	  case AUTOMATIC_OPT:
 	    automatic = !clp->negated;
 	    break;
-	    
-	  case ENCODING_FILE_OPT:
-	  new_encoding_file:
-	    if (new_encoding_file)
-		usage_error(errh, "encoding file specified twice");
-	    new_encoding_file = clp->arg;
+
+	  case VIRTUAL_OPT:
+	    if (clp->negated)
+		output_flags &= ~G_VMETRICS;
+	    else
+		output_flags |= G_VMETRICS;
 	    break;
 
+	  case PL_OPT:
+	    output_flags = (output_flags & ~G_BINARY) | G_ASCII;
+	    break;
+
+	  case TFM_OPT:
+	    output_flags = (output_flags & ~G_ASCII) | G_BINARY;
+	    break;
+	    
 	  case ENCODING_DIR_OPT:
-	    if (new_encoding_directory)
-		usage_error(errh, "encoding directory specified twice");
-	    new_encoding_directory = clp->arg;
+	  case TFM_DIR_OPT:
+	  case PL_DIR_OPT:
+	  case VF_DIR_OPT:
+	  case VPL_DIR_OPT:
+	    if (odir[opt - DIR_OPTS])
+		usage_error(errh, "%s directory specified twice", odir_stats[opt - DIR_OPTS].name);
+	    odir[opt - DIR_OPTS] = clp->arg;
 	    break;
 	    
-	  case LITERAL_ENCODING_OPT:
-	    if (encoding_file)
-		usage_error(errh, "encoding specified twice");
-	    encoding_file = clp->arg;
-	    literal_encoding = true;
-	    break;
-
 	  case FONT_NAME_OPT:
+	  font_name:
 	    if (font_name)
 		usage_error(errh, "font name specified twice");
 	    font_name = clp->arg;
 	    break;
 
-	  case TFM_OPT:
-	    tfm = !clp->negated;
-	    break;
-
-	  case TFM_DIR_OPT:
-	    if (tfm_directory)
-		usage_error(errh, "TFM directory specified twice");
-	    tfm_directory = clp->arg;
-	    break;
-	    
-	  case PL_DIR_OPT:
-	    if (pl_directory)
-		usage_error(errh, "PL directory specified twice");
-	    pl_directory = clp->arg;
-	    break;
-	    
 	  case GLYPHLIST_OPT:
 	    glyphlist_file = clp->arg;
 	    break;
@@ -1132,24 +1187,15 @@ particular purpose.\n");
 	    exit(0);
 	    break;
 
-	  case OUTPUT_OPT:
-	  output_file:
-	    if (output_file)
-		usage_error(errh, "output file specified twice");
-	    output_file = clp->arg;
-	    break;
-
 	  case Clp_NotOption:
-	    if (input_file && output_file && new_encoding_file)
+	    if (input_file && font_name)
 		usage_error(errh, "too many arguments");
-	    else if (input_file && output_file)
-		goto new_encoding_file;
 	    else if (input_file)
-		goto output_file;
+		goto font_name;
 	    else
 		input_file = clp->arg;
 	    break;
-      
+
 	  case Clp_Done:
 	    goto done;
       
@@ -1162,27 +1208,8 @@ particular purpose.\n");
       
 	}
     }
-  
-  done:
-    // automatic mode
-    const char *env;
-    if (automatic && !output_file) {
-	output_file = (tfm ? tfm_directory : pl_directory);
-	if (!output_file && (env = getenv(tfm ? "TFMDESTDIR" : "PLDESTDIR")))
-	    output_file = env;
-	if (!output_file)
-	    output_file = ".";
-    }
-    if (automatic && !new_encoding_file) {
-	new_encoding_file = new_encoding_directory;
-	if (!new_encoding_file && (env = getenv("ENCODINGDESTDIR")))
-	    new_encoding_file = env;
-	if (!new_encoding_file)
-	    new_encoding_file = ".";
-    }
-
-    assert(!automatic || (output_file && new_encoding_file));
     
+  done:
     // read font
     String font_data = read_file(input_file, errh);
     if (errh->nerrors())
@@ -1215,13 +1242,12 @@ particular purpose.\n");
     if (String s = read_file(glyphlist_file, errh, true))
 	DvipsEncoding::parse_glyphlist(s);
 
+    // read encoding
     DvipsEncoding dvipsenc;
     if (encoding_file)
 	dvipsenc.parse(encoding_file, errh);
 
-    do_file(otf, output_file, dvipsenc, literal_encoding, &cerrh);
+    do_file(otf, dvipsenc, literal_encoding, &cerrh);
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }
-
-#include <lcdf/vector.cc>

@@ -4,6 +4,13 @@
 #include <efont/otfgpos.hh>
 class DvipsEncoding;
 
+struct Setting {
+    enum { SHOW, HMOVETO, VMOVETO };
+    int op;
+    int x;
+    Setting(int op_in, int x_in) : op(op_in), x(x_in) { }
+};
+
 class GsubEncoding { public:
 
     typedef Efont::OpenType::Glyph Glyph;
@@ -14,6 +21,7 @@ class GsubEncoding { public:
     // default destructor
 
     Glyph glyph(int) const;
+    bool setting(int, Vector<Setting> &) const;
     int encoding(Glyph) const;
     int force_encoding(Glyph);
     
@@ -35,6 +43,9 @@ class GsubEncoding { public:
 
     int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const;
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
+    int kern(int code1, int code2) const;
+    
+    bool need_virtual() const		{ return _vfpos.size() > 0 || _fake_ligatures.size() > 0; }
     
     void unparse(const Vector<PermString> * = 0) const;
     
@@ -59,6 +70,14 @@ class GsubEncoding { public:
 	int amount;
     };
     Vector<Kern> _kerns;
+
+    struct Vfpos {
+	int in;
+	int pdx;
+	int pdy;
+	int adx;
+    };
+    Vector<Vfpos> _vfpos;
     
     void apply_single_substitution(Glyph, Glyph);
     static void reassign_ligature(Ligature &, const Vector<int> &);

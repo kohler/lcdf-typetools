@@ -13,6 +13,38 @@ GsubEncoding::GsubEncoding()
     _encoding.assign(256, 0);
 }
 
+bool
+GsubEncoding::setting(int code, Vector<Setting> &v) const
+{
+    v.clear();
+    if (code < 0 || code >= _encoding.size())
+	return false;
+
+    // find _vfpos entry, if any
+    int pdx = 0, pdy = 0, adx = 0;
+    for (int vfp = 0; vfp < _vfpos.size(); vfp++)
+	if (_vfpos[vfp].in == code) {
+	    pdx = _vfpos[vfp].pdx, pdy = _vfpos[vfp].pdy, adx = _vfpos[vfp].adx;
+	    break;
+	}
+
+    // XXX find _fake_ligatures entry
+
+    if (_encoding[code] <= 0)
+	return false;
+    
+    if (pdx != 0)
+	v.push_back(Setting(Setting::HMOVETO, pdx));
+    if (pdy != 0)
+	v.push_back(Setting(Setting::VMOVETO, pdy));
+    v.push_back(Setting(Setting::SHOW, _encoding[code]));
+    if (pdy != 0)
+	v.push_back(Setting(Setting::VMOVETO, -pdy));
+    if (adx - pdx != 0)
+	v.push_back(Setting(Setting::HMOVETO, adx - pdx));
+    return true;
+}
+
 int
 GsubEncoding::encoding(Glyph g) const
 {
@@ -108,6 +140,17 @@ GsubEncoding::apply(const Positioning &p)
 	    k.right = code2;
 	    k.amount = p.left().adx;
 	    _kerns.push_back(k);
+	}
+	return true;
+    } else if (p.is_single()) {
+	int code = encoding(p.left_glyph());
+	if (code >= 0) {
+	    Vfpos v;
+	    v.in = code;
+	    v.pdx = p.left().pdx;
+	    v.pdy = p.left().pdy;
+	    v.adx = p.left().adx;
+	    _vfpos.push_back(v);
 	}
 	return true;
     } else
@@ -218,6 +261,10 @@ GsubEncoding::reassign_codes(const Vector<int> &reassignment)
 	_kerns[i].left = reassignment[_kerns[i].left + 1];
 	_kerns[i].right = reassignment[_kerns[i].right + 1];
     }
+    
+    // reassign code points in virtual positioning vector
+    for (int i = 0; i < _vfpos.size(); i++)
+	_vfpos[i].in = reassignment[_vfpos[i].in + 1];
 }
 
 void
@@ -381,6 +428,17 @@ GsubEncoding::kerns(int code1, Vector<int> &code2, Vector<int> &amount) const
 	}
     }
     return n;
+}
+
+int
+GsubEncoding::kern(int code1, int code2) const
+{
+    for (int i = 0; i < _kerns.size(); i++) {
+	const Kern &k = _kerns[i];
+	if (k.left == code1 && k.right == code2)
+	    return k.amount;
+    }
+    return 0;
 }
 
 

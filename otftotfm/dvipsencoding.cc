@@ -378,6 +378,7 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
     String s = read_file(filename, errh);
     if (errh->nerrors() != before)
 	return -1;
+    _filename = filename;
     filename = printable_filename(filename);
     int pos = 0, line = 1;
 
