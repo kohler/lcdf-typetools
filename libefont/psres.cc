@@ -64,7 +64,7 @@ read_psres_line(Slurper &slurper, int *equals_pos)
   if (!s) return false;
   
   bool is_terminator = s[0] == '.';
-  unsigned len, pos = 0;
+  unsigned len, pos = 0, last_escape = ~0;
   bool found_eq = false;
   
   while (true) {
@@ -76,27 +76,36 @@ read_psres_line(Slurper &slurper, int *equals_pos)
       if (s[pos] == '\\') {
 	// quote the next character
 	pos++;
+	last_escape = pos;
       } else if (!found_eq && s[pos] == '=') {
 	// an equals sign: store its position
 	if (equals_pos) *equals_pos = pos;
 	found_eq = true;
       } else if (s[pos] == '%') {
-	// unescaped '%' is a comment; return immediately
-	s[pos] = 0;
+	// unescaped '%' is a comment; return immediately after shortening line
+	len = pos;
 	goto done;
       }
     }
     
     // stop processing if not a continuation line
     if (pos == len || s[pos] != '\\') break;
-    
-    s = slurper.append_line(s + pos);
+
+    slurper.shorten_line(pos);
+    s = slurper.append_next_line();
   }
   
   if (pos < len && !found_eq && s[pos] == '=' && equals_pos)
     *equals_pos = pos;
   
  done:
+  // eat trailing whitespace, except for the space in `\ ' if it ends the line
+  // -- unless the `\' is the second `\' in a `\\'!
+  for (pos = len; pos > 0 && (s[pos-1] == ' ' || s[pos-1] == '\t'); pos--)
+    /* nada */;
+  if (pos == last_escape)
+    pos++;
+  slurper.shorten_line(pos);
   return !is_terminator;
 }
 
