@@ -234,6 +234,17 @@ minimize(Type1Font *font)
 	sa << ' ' << version;
     output->add_item(new Type1CopyItem(sa.take_string()));
 
+    // other comments from font header
+    for (int i = 0; i < font->nitems(); i++)
+	if (Type1CopyItem *c = font->item(i)->cast_copy()) {
+	    if (c->length() > 1 && c->value()[0] == '%') {
+		if (c->value()[1] != '!')
+		    output->add_item(new Type1CopyItem(c->value()));
+	    } else
+		break;
+	} else
+	    break;
+    
     // count members of font dictionary
     int nfont_dict = 4		// FontName, Private, FontInfo, Encoding
 	+ 4			// PaintType, FontType, FontMatrix, FontBBox
