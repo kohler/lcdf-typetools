@@ -109,7 +109,7 @@ do_file(const char *infn, const char *outfn,
     int c = getc(f);
     ungetc(c, f);
 
-    EfontCFF::Font *font = 0;
+    Cff::Font *font = 0;
     
     if (c == EOF)
 	errh->fatal("%s: empty file", infn);
@@ -127,7 +127,7 @@ do_file(const char *infn, const char *outfn,
 	if (c == 'O')
 	    data = Efont::OpenType::Font(data, &cerrh).table("CFF");
 	
-	font = new EfontCFF::Font(new EfontCFF(data, &cerrh), PermString(), &cerrh);
+	font = new Cff::Font(new Cff(data, &cerrh), PermString(), &cerrh);
     } else
 	errh->fatal("%s: not a CFF or OpenType/CFF font", infn);
   

@@ -17,11 +17,12 @@ class DvipsEncoding { public:
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
+    bool encoded(int e) const;
 
     int parse(String filename, ErrorHandler *);
 
     // also modifies 'this':
-    void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::EfontCFF::Font * = 0);
+    void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::Cff::Font * = 0);
     
   private:
 
@@ -45,6 +46,14 @@ class DvipsEncoding { public:
     int parse_unicoding(const Vector<String> &);
     int parse_words(const String &, int (DvipsEncoding::*)(const Vector<String> &));
 
+    static PermString dot_notdef;
+
 };
+
+inline bool
+DvipsEncoding::encoded(int e) const
+{
+    return e >= 0 && e < _e.size() && _e[e] != dot_notdef;
+}
 
 #endif

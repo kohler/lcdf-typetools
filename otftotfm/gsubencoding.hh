@@ -2,6 +2,7 @@
 #define T1SICLE_GSUBENCODING_HH
 #include <efont/otfgsub.hh>
 #include <efont/otfgpos.hh>
+class DvipsEncoding;
 
 class GsubEncoding { public:
 
@@ -23,7 +24,7 @@ class GsubEncoding { public:
     void apply(const Positioning &);
 
     void simplify_ligatures(bool add_fake);
-    void shrink_encoding(int size);
+    void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names);
 
     int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const;
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;

@@ -2,6 +2,7 @@
 # include <config.h>
 #endif
 #include "gsubencoding.hh"
+#include "dvipsencoding.hh"
 #include <cstring>
 #include <cstdio>
 #include <algorithm>
@@ -166,10 +167,10 @@ GsubEncoding::simplify_ligatures(bool add_fake)
 }
 
 namespace {
-struct Pair { int position, new_position, value; };
+struct Slot { int position, new_position, value; };
 
 static bool
-operator<(const Pair &a, const Pair &b)
+operator<(const Slot &a, const Slot &b)
 {
     return a.value < b.value;
 }
@@ -184,37 +185,62 @@ GsubEncoding::reassign_ligature(Ligature &l, const Vector<int> &reassignment)
 }
 
 void
-GsubEncoding::shrink_encoding(int size)
+GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names)
 {
     if (_encoding.size() < size)
 	_encoding.resize(size, 0);
     
     // collect larger values
-    Vector<Pair> slots;
+    Vector<Slot> slots;
     for (int i = size; i < _encoding.size(); i++)
 	if (_encoding[i]) {
-	    Pair p = { i, -1, _encoding[i] };
+	    Slot p = { i, -1, _encoding[i] };
 	    slots.push_back(p);
 	}
     // sort them by value
     std::sort(slots.begin(), slots.end());
 
-    // insert them into encoding holes
-    int slotnum = 0;
-    for (int i = 0; i < size && slotnum < slots.size(); i++)
-	if (!_encoding[i]) {
-	    _encoding[i] = slots[slotnum].value;
-	    slots[slotnum++].new_position = i;
+    // insert ligatures into encoding holes
+
+    // first, prefer their old slots, if available
+    for (int slotnum = 0; slotnum < slots.size(); slotnum++)
+	if (PermString g = glyph_names[slots[slotnum].value]) {
+	    int e = dvipsenc.encoding_of(g);
+	    if (e >= 0 && !_encoding[e]) {
+		_encoding[e] = slots[slotnum].value;
+		slots[slotnum].new_position = e;
+	    }
 	}
-    if (slotnum < slots.size())
-	// XXX
-	fprintf(stderr, "cannot shrink encoding!\n");
+
+    // next, loop over all empty slots
+    {
+	int slotnum = 0, e = 0;
+	bool avoid = true;
+	while (slotnum < slots.size() && e < size)
+	    if (slots[slotnum].new_position >= 0)
+		slotnum++;
+	    else if (!_encoding[e] && (!avoid || !dvipsenc.encoded(e))) {
+		_encoding[e] = slots[slotnum].value;
+		slots[slotnum].new_position = e;
+		e++;
+		slotnum++;
+	    } else {
+		e++;
+		if (e >= size && avoid)
+		    avoid = false, e = 0;
+	    }
+
+	// complain if they can't fit
+	if (slotnum < slots.size())
+	    // XXX
+	    fprintf(stderr, "cannot shrink encoding!\n");
+    }
 
     // create reassignment vector
     Vector<int> reassignment(_encoding.size() + 1, -1);
     for (int i = -1; i < size; i++)
 	reassignment[i+1] = i;
-    for (slotnum = 0; slotnum < slots.size(); slotnum++)
+    for (int slotnum = 0; slotnum < slots.size(); slotnum++)
 	reassignment[slots[slotnum].position+1] = slots[slotnum].new_position;
     
     // reassign code points in ligature_data vector

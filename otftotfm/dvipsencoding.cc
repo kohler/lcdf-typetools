@@ -13,22 +13,24 @@
 
 static String::Initializer initializer;
 static HashMap<String, int> glyphlist(-1);
+static PermString::Initializer perm_initializer;
+PermString DvipsEncoding::dot_notdef(".notdef");
 
 int
 DvipsEncoding::parse_glyphlist(String text)
 {
+    // XXX ignores glyph names that map to multiple characters
     glyphlist.clear();
     const char *data = text.c_str();
     int pos = 0, len = text.length();
     while (1) {
+	// move to first nonblank
 	while (pos < len && isspace(data[pos]))
 	    pos++;
+	// parse line
 	if (pos >= len)
 	    return 0;
-	else if (data[pos] == '#')
-	    for (pos++; pos < len && data[pos] != '\n' && data[pos] != '\r'; pos++)
-		/* nada */;
-	else {
+	else if (data[pos] != '#') {
 	    int first = pos;
 	    for (; pos < len && !isspace(data[pos]) && data[pos] != ';'; pos++)
 		/* nada */;
@@ -41,9 +43,14 @@ DvipsEncoding::parse_glyphlist(String text)
 		|| ((value = strtol(data + pos + 1, &next, 16)),
 		    (!isspace(*next) && *next && *next != ';')))
 		return -1;
-	    glyphlist.insert(text.substring(first, pos - first), value);
+	    while (*next == ' ' || *next == '\t')
+		next++;
+	    if (*next == '\r' || *next == '\n')
+		glyphlist.insert(text.substring(first, pos - first), value);
 	    pos = next - data;
 	}
+	while (pos < len && data[pos] != '\n' && data[pos] != '\r')
+	    pos++;
     }
 }
 
@@ -120,7 +127,7 @@ void
 DvipsEncoding::encode(int e, PermString what)
 {
     if (e >= _e.size())
-	_e.resize(e + 1, PermString(".notdef"));
+	_e.resize(e + 1, dot_notdef);
     _e[e] = what;
 }
 
@@ -287,7 +294,7 @@ DvipsEncoding::parse_unicoding(const Vector<String> &v)
 	return -1;
     _unicoding_map.insert(v[0], _unicoding.size());
     
-    if (v.size() == 3 && v[2] == ".notdef")
+    if (v.size() == 3 && v[2] == dot_notdef)
 	/* no warnings to delete a glyph */;
     else {
 	for (int i = 2; i < v.size(); i++) {
@@ -377,9 +384,8 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 }
 
 void
-DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::EfontCFF::Font *font)
+DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font)
 {
-    PermString dot_notdef = ".notdef";
     for (int i = 0; i < _e.size(); i++)
 	if (_e[i] != dot_notdef) {
 	    Efont::OpenType::Glyph gid = 0;

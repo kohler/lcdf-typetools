@@ -928,7 +928,7 @@ MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer)
  **/
 
 static void
-add_number_def(Type1Font *output, int dict, PermString name, const EfontCFF::Font *font, EfontCFF::DictOperator op)
+add_number_def(Type1Font *output, int dict, PermString name, const Cff::Font *font, Cff::DictOperator op)
 {
     double v;
     if (font->dict_value(op, 0, &v))
@@ -936,7 +936,7 @@ add_number_def(Type1Font *output, int dict, PermString name, const EfontCFF::Fon
 }
 
 static void
-add_delta_def(Type1Font *output, int dict, PermString name, const EfontCFF::Font *font, EfontCFF::DictOperator op)
+add_delta_def(Type1Font *output, int dict, PermString name, const Cff::Font *font, Cff::DictOperator op)
 {
     Vector<double> vec;
     if (font->dict_value(op, vec)) {
@@ -951,14 +951,14 @@ add_delta_def(Type1Font *output, int dict, PermString name, const EfontCFF::Font
 }
 
 Type1Font *
-create_type1_font(EfontCFF::Font *font)
+create_type1_font(Cff::Font *font)
 {
     Type1Font *output = new Type1Font(font->font_name());
 
     // %!PS-Adobe-Font comment
     StringAccum sa;
     sa << "%!PS-AdobeFont-1.0: " << font->font_name();
-    String version = font->dict_string(EfontCFF::oVersion);
+    String version = font->dict_string(Cff::oVersion);
     if (version)
 	sa << ' ' << version;
     output->add_item(new Type1CopyItem(sa.take_string()));
@@ -966,8 +966,8 @@ create_type1_font(EfontCFF::Font *font)
     // count members of font dictionary
     int nfont_dict = 4		// FontName, Private, FontInfo, Encoding
 	+ 4			// PaintType, FontType, FontMatrix, FontBBox
-	+ font->dict_has(EfontCFF::oUniqueID)
-	+ font->dict_has(EfontCFF::oXUID)
+	+ font->dict_has(Cff::oUniqueID)
+	+ font->dict_has(Cff::oXUID)
 	+ 2;			// padding
     sa << nfont_dict << " dict begin";
     output->add_item(new Type1CopyItem(sa.take_string()));
@@ -977,46 +977,46 @@ create_type1_font(EfontCFF::Font *font)
     output->add_item(new Type1CopyItem("/FontInfo 0 dict dup begin"));
     if (version)
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("version", version, "readonly def"));
-    if (String s = font->dict_string(EfontCFF::oNotice))
+    if (String s = font->dict_string(Cff::oNotice))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("Notice", s, "readonly def"));
-    if (String s = font->dict_string(EfontCFF::oCopyright))
+    if (String s = font->dict_string(Cff::oCopyright))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("Copyright", s, "readonly def"));
-    if (String s = font->dict_string(EfontCFF::oFullName))
+    if (String s = font->dict_string(Cff::oFullName))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("FullName", s, "readonly def"));
-    if (String s = font->dict_string(EfontCFF::oFamilyName))
+    if (String s = font->dict_string(Cff::oFamilyName))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("FamilyName", s, "readonly def"));
-    if (String s = font->dict_string(EfontCFF::oWeight))
+    if (String s = font->dict_string(Cff::oWeight))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("Weight", s, "readonly def"));
     double v;
-    if (font->dict_value(EfontCFF::oIsFixedPitch, 0, &v))
+    if (font->dict_value(Cff::oIsFixedPitch, 0, &v))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_literal("isFixedPitch", (v ? "true" : "false"), "def"));
-    add_number_def(output, Type1Font::dFI, "ItalicAngle", font, EfontCFF::oItalicAngle);
-    add_number_def(output, Type1Font::dFI, "UnderlinePosition", font, EfontCFF::oUnderlinePosition);
-    add_number_def(output, Type1Font::dFI, "UnderlineThickness", font, EfontCFF::oUnderlineThickness);
+    add_number_def(output, Type1Font::dFI, "ItalicAngle", font, Cff::oItalicAngle);
+    add_number_def(output, Type1Font::dFI, "UnderlinePosition", font, Cff::oUnderlinePosition);
+    add_number_def(output, Type1Font::dFI, "UnderlineThickness", font, Cff::oUnderlineThickness);
     output->add_item(new Type1CopyItem("end readonly def"));
     
     // Encoding
     output->add_item(font->type1_encoding_copy());
 
     // other font dictionary entries
-    font->dict_value(EfontCFF::oPaintType, 0, &v);
+    font->dict_value(Cff::oPaintType, 0, &v);
     output->add_definition(Type1Font::dF, Type1Definition::make("PaintType", v, "def"));
     output->add_definition(Type1Font::dF, Type1Definition::make("FontType", 1.0, "def"));
     Vector<double> vec;
-    if (font->dict_value(EfontCFF::oFontMatrix, vec) && vec.size() == 6) {
+    if (font->dict_value(Cff::oFontMatrix, vec) && vec.size() == 6) {
 	sa << '[' << vec[0] << ' ' << vec[1] << ' ' << vec[2] << ' ' << vec[3] << ' ' << vec[4] << ' ' << vec[5] << ']';
 	output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontMatrix", sa.take_string(), "readonly def"));
     } else
 	output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontMatrix", "[0.001 0 0 0.001 0 0]", "readonly def"));
-    add_number_def(output, Type1Font::dF, "StrokeWidth", font, EfontCFF::oStrokeWidth);
-    add_number_def(output, Type1Font::dF, "UniqueID", font, EfontCFF::oUniqueID);
-    if (font->dict_value(EfontCFF::oXUID, vec) && vec.size()) {
+    add_number_def(output, Type1Font::dF, "StrokeWidth", font, Cff::oStrokeWidth);
+    add_number_def(output, Type1Font::dF, "UniqueID", font, Cff::oUniqueID);
+    if (font->dict_value(Cff::oXUID, vec) && vec.size()) {
 	for (int i = 0; i < vec.size(); i++)
 	    sa << (i ? ' ' : '[') << vec[i];
 	sa << ']';
 	output->add_definition(Type1Font::dF, Type1Definition::make_literal("XUID", sa.take_string(), "readonly def"));
     }
-    if (font->dict_value(EfontCFF::oFontBBox, vec) && vec.size() == 4) {
+    if (font->dict_value(Cff::oFontBBox, vec) && vec.size() == 4) {
 	sa << '{' << vec[0] << ' ' << vec[1] << ' ' << vec[2] << ' ' << vec[3] << '}';
 	output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontBBox", sa.take_string(), "readonly def"));
     } else
@@ -1033,24 +1033,24 @@ create_type1_font(EfontCFF::Font *font)
     output->set_charstring_definer(" -| ");
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("|-", "{noaccess def}", "executeonly def"));
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("|", "{noaccess put}", "executeonly def"));
-    add_delta_def(output, Type1Font::dP, "BlueValues", font, EfontCFF::oBlueValues);
-    add_delta_def(output, Type1Font::dP, "OtherBlues", font, EfontCFF::oOtherBlues);
-    add_delta_def(output, Type1Font::dP, "FamilyBlues", font, EfontCFF::oFamilyBlues);
-    add_delta_def(output, Type1Font::dP, "FamilyOtherBlues", font, EfontCFF::oFamilyOtherBlues);
-    add_number_def(output, Type1Font::dP, "BlueScale", font, EfontCFF::oBlueScale);
-    add_number_def(output, Type1Font::dP, "BlueShift", font, EfontCFF::oBlueShift);
-    add_number_def(output, Type1Font::dP, "BlueFuzz", font, EfontCFF::oBlueFuzz);
-    if (font->dict_value(EfontCFF::oStdHW, 0, &v))
+    add_delta_def(output, Type1Font::dP, "BlueValues", font, Cff::oBlueValues);
+    add_delta_def(output, Type1Font::dP, "OtherBlues", font, Cff::oOtherBlues);
+    add_delta_def(output, Type1Font::dP, "FamilyBlues", font, Cff::oFamilyBlues);
+    add_delta_def(output, Type1Font::dP, "FamilyOtherBlues", font, Cff::oFamilyOtherBlues);
+    add_number_def(output, Type1Font::dP, "BlueScale", font, Cff::oBlueScale);
+    add_number_def(output, Type1Font::dP, "BlueShift", font, Cff::oBlueShift);
+    add_number_def(output, Type1Font::dP, "BlueFuzz", font, Cff::oBlueFuzz);
+    if (font->dict_value(Cff::oStdHW, 0, &v))
 	output->add_definition(Type1Font::dP, Type1Definition::make_literal("StdHW", String("[") + String(v) + "]", "|-"));
-    if (font->dict_value(EfontCFF::oStdVW, 0, &v))
+    if (font->dict_value(Cff::oStdVW, 0, &v))
 	output->add_definition(Type1Font::dP, Type1Definition::make_literal("StdVW", String("[") + String(v) + "]", "|-"));
-    add_delta_def(output, Type1Font::dP, "StemSnapH", font, EfontCFF::oStemSnapH);
-    add_delta_def(output, Type1Font::dP, "StemSnapV", font, EfontCFF::oStemSnapV);
-    if (font->dict_value(EfontCFF::oForceBold, 0, &v))
+    add_delta_def(output, Type1Font::dP, "StemSnapH", font, Cff::oStemSnapH);
+    add_delta_def(output, Type1Font::dP, "StemSnapV", font, Cff::oStemSnapV);
+    if (font->dict_value(Cff::oForceBold, 0, &v))
 	output->add_definition(Type1Font::dP, Type1Definition::make_literal("ForceBold", (v ? "true" : "false"), "def"));
-    add_number_def(output, Type1Font::dP, "LanguageGroup", font, EfontCFF::oLanguageGroup);
-    add_number_def(output, Type1Font::dP, "ExpansionFactor", font, EfontCFF::oExpansionFactor);
-    add_number_def(output, Type1Font::dP, "UniqueID", font, EfontCFF::oUniqueID);
+    add_number_def(output, Type1Font::dP, "LanguageGroup", font, Cff::oLanguageGroup);
+    add_number_def(output, Type1Font::dP, "ExpansionFactor", font, Cff::oExpansionFactor);
+    add_number_def(output, Type1Font::dP, "UniqueID", font, Cff::oUniqueID);
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("MinFeature", "{16 16}", "|-"));
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("password", "5839", "def"));
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("lenIV", "0", "def"));
