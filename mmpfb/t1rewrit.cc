@@ -32,13 +32,12 @@ Type1CharstringGen::Type1CharstringGen(int precision)
 void
 Type1CharstringGen::gen_number(double float_val)
 {
-    int val = (int)floor(float_val);
-    int frac = (int)floor(float_val * _f_precision) - (val * _precision);
-    if (frac == _precision)
-	val++, frac = 0;
+    int big_val = (int)floor(float_val * _f_precision + _f_rounder);
+    int val = big_val / _precision;
+    int frac = big_val % _precision;
     fprintf(stderr, "%.12g %d %d\n", float_val, val, frac);
     if (frac != 0)
-	val = val * _precision + frac;
+	val = big_val;
 
     if (val >= -107 && val <= 107)
 	_ncs.push(val + 139);
