@@ -76,6 +76,11 @@ inline bool operator<(const GlyphFilter::Pattern& a, const GlyphFilter::Pattern&
     return GlyphFilter::Pattern::compare(a, b) < 0;
 }
 
+inline bool operator!=(const GlyphFilter::Pattern& a, const GlyphFilter::Pattern& b)
+{
+    return !(a == b);
+}
+
 bool operator==(const GlyphFilter&, const GlyphFilter&);
 
 inline bool operator!=(const GlyphFilter& a, const GlyphFilter& b)
