@@ -1,5 +1,5 @@
-#ifndef T1SICLE_DVIPSENCODING_HH
-#define T1SICLE_DVIPSENCODING_HH
+#ifndef OTFTOTFM_DVIPSENCODING_HH
+#define OTFTOTFM_DVIPSENCODING_HH
 #include <efont/otfcmap.hh>
 #include <efont/cff.hh>
 #include <lcdf/hashmap.hh>

@@ -12,6 +12,7 @@ EXTRA_DIST = \
 	include/lcdf/clp.h \
 	include/lcdf/error.hh \
 	include/lcdf/filename.hh \
+	include/lcdf/globmatch.hh \
 	include/lcdf/hashmap.hh include/lcdf/hashmap.cc \
 	include/lcdf/inttypes.h \
 	include/lcdf/landmark.hh \
