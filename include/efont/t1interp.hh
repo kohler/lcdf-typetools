@@ -65,6 +65,7 @@ class CharstringInterp { public:
     bool mm_command(int, int);
     bool itc_command(int, int);
 
+    const Point &left_sidebearing() const	{ return _lsb; }
     const Point &currentpoint() const		{ return _cp; }
     void set_state_path()			{ _state = S_PATH; }
     
@@ -160,10 +161,10 @@ class CharstringInterp { public:
     bool roll_command();
     int type2_handle_width(int, bool);
 
-    inline void act_rmoveto(int, double, double);
-    inline void act_rlineto(int, double, double);
-    void act_rrcurveto(int, double, double, double, double, double, double);
-    void act_rrflex(int, double, double, double, double, double, double, double, double, double, double, double, double, double);
+    inline void actp_rmoveto(int, double, double);
+    inline void actp_rlineto(int, double, double);
+    void actp_rrcurveto(int, double, double, double, double, double, double);
+    void actp_rrflex(int, double, double, double, double, double, double, double, double, double, double, double, double, double);
     
 };
 

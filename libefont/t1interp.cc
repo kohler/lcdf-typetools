@@ -26,7 +26,9 @@
 #endif
 
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
-#define CHECK_STATE()		do { if (_state < S_IPATH) return error(errOrdering, cmd); _state = S_PATH; } while (0)
+#define CHECK_STATE()		do { if (_state < S_IPATH) return error(errOrdering, cmd); } while (0)
+#define CHECK_PATH_START()	do { _state = S_PATH; } while (0)
+#define CHECK_PATH_END()	do { if (_state == S_PATH) { act_closepath(cmd); } _state = S_IPATH; } while (0)
 
 #ifndef static_assert
 # define static_assert(c)	switch (c) case 0: case (c):
@@ -570,13 +572,13 @@ CharstringInterp::itc_command(int command, int on_stack)
 
 
 inline void
-CharstringInterp::act_rmoveto(int /*cmd*/, double dx, double dy)
+CharstringInterp::actp_rmoveto(int /*cmd*/, double dx, double dy)
 {
     _cp.shift(dx, dy);
 }
 
 inline void
-CharstringInterp::act_rlineto(int cmd, double dx, double dy)
+CharstringInterp::actp_rlineto(int cmd, double dx, double dy)
 {
     Point p0(_cp);
     _cp.shift(dx, dy);
@@ -584,13 +586,26 @@ CharstringInterp::act_rlineto(int cmd, double dx, double dy)
 }
 
 void
-CharstringInterp::act_rrcurveto(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3)
+CharstringInterp::actp_rrcurveto(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3)
 {
     Point p0(_cp);
     Point p1(p0, dx1, dy1);
     Point p2(p1, dx2, dy2);
     _cp = p2.shifted(dx3, dy3);
     act_curve(cmd, p0, p1, p2, _cp);
+}
+
+void
+CharstringInterp::actp_rrflex(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3, double dx4, double dy4, double dx5, double dy5, double dx6, double dy6, double flex_depth)
+{
+    Point p0(_cp);
+    Point p1(p0, dx1, dy1);
+    Point p2(p1, dx2, dy2);
+    Point p3_4(p2, dx3, dy3);
+    Point p5(p3_4, dx4, dy4);
+    Point p6(p5, dx5, dy5);
+    _cp = p6.shifted(dx6, dy6);
+    act_flex(cmd, p0, p1, p2, p3_4, p5, p6, _cp, flex_depth);
 }
 
 
@@ -604,6 +619,7 @@ CharstringInterp::callothersubr_command(int othersubrnum, int n)
 	    goto unknown;
 	if (!_flex || ps_size() != 16)
 	    return error(errFlex);
+	CHECK_PATH_START();
 	act_flex(CS::cCallothersubr, Point(ps_at(0), ps_at(1)),
 		 Point(ps_at(4), ps_at(5)), Point(ps_at(6), ps_at(7)),
 		 Point(ps_at(8), ps_at(9)), Point(ps_at(10), ps_at(11)),
@@ -686,28 +702,32 @@ CharstringInterp::type1_command(int cmd)
 
       case CS::cHsbw:
 	CHECK_STACK(2);
-	if (_state <= S_SEAC) {
+	if (_state > S_SEAC && _careful)
+	    return error(errOrdering, cmd);
+	else {
 	    _lsb = _cp = _seac_origin.shifted(at(0), 0);
 	    if (_state == S_INITIAL) {
 		act_sidebearing(cmd, _lsb);
 		act_width(cmd, Point(at(1), 0));
 	    }
-	    _state = S_SBW;
-	} else if (_careful)
-	    return error(errOrdering, cmd);
+	    if (_state <= S_SEAC)
+		_state = S_SBW;
+	}
 	break;
 
       case CS::cSbw:
 	CHECK_STACK(4);
-	if (_state <= S_SEAC) {
+	if (_state > S_SEAC && _careful)
+	    return error(errOrdering, cmd);
+	else {
 	    _lsb = _cp = _seac_origin.shifted(at(0), at(1));
 	    if (_state == S_INITIAL) {
 		act_sidebearing(cmd, _lsb);
 		act_width(cmd, Point(at(2), at(3)));
 	    }
-	    _state = S_SBW;
-	} else if (_careful)
-	    return error(errOrdering, cmd);
+	    if (_state <= S_SEAC)
+		_state = S_SBW;
+	}
 	break;
 	
       case CS::cSeac:
@@ -761,62 +781,56 @@ CharstringInterp::type1_command(int cmd)
 
       case CS::cHlineto:
 	CHECK_STACK(1);
-	_state = S_PATH;
-	act_rlineto(cmd, at(0), 0);
+	CHECK_PATH_START();
+	actp_rlineto(cmd, at(0), 0);
 	break;
 	
       case CS::cHmoveto:
 	CHECK_STACK(1);
-	if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
-	act_rmoveto(cmd, at(0), 0);
+	CHECK_PATH_END();
+	actp_rmoveto(cmd, at(0), 0);
 	break;
 	
       case CS::cHvcurveto:
 	CHECK_STACK(4);
-	_state = S_PATH;
-	act_rrcurveto(cmd, at(0), 0, at(1), at(2), 0, at(3));
+	CHECK_PATH_START();
+	actp_rrcurveto(cmd, at(0), 0, at(1), at(2), 0, at(3));
 	break;
 
       case CS::cRlineto:
 	CHECK_STACK(2);
-	_state = S_PATH;
-	act_rlineto(cmd, at(0), at(1));
+	CHECK_PATH_START();
+	actp_rlineto(cmd, at(0), at(1));
 	break;
 
       case CS::cRmoveto:
 	CHECK_STACK(2);
-	if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
-	act_rmoveto(cmd, at(0), at(1));
+	CHECK_PATH_END();
+	actp_rmoveto(cmd, at(0), at(1));
 	break;
 
       case CS::cRrcurveto:
 	CHECK_STACK(6);
-	_state = S_PATH;
-	act_rrcurveto(cmd, at(0), at(1), at(2), at(3), at(4), at(5));
+	CHECK_PATH_START();
+	actp_rrcurveto(cmd, at(0), at(1), at(2), at(3), at(4), at(5));
 	break;
 
       case CS::cVhcurveto:
 	CHECK_STACK(4);
-	_state = S_PATH;
-	act_rrcurveto(cmd, 0, at(0), at(1), at(2), at(3), 0);
+	CHECK_PATH_START();
+	actp_rrcurveto(cmd, 0, at(0), at(1), at(2), at(3), 0);
 	break;
 
       case CS::cVlineto:
 	CHECK_STACK(1);
-	_state = S_PATH;
-	act_rlineto(cmd, 0, at(0));
+	CHECK_PATH_START();
+	actp_rlineto(cmd, 0, at(0));
 	break;
 
       case CS::cVmoveto:
 	CHECK_STACK(1);
-	if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
-	act_rmoveto(cmd, 0, at(0));
+	CHECK_PATH_END();
+	actp_rmoveto(cmd, 0, at(0));
 	break;
 
       case CS::cDotsection:
@@ -848,14 +862,11 @@ CharstringInterp::type1_command(int cmd)
 	break;
 
       case CS::cClosepath:
-	if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
+	CHECK_PATH_END();
 	break;
 	
       case CS::cEndchar:
-	if (_state == S_PATH)
-	    act_closepath(cmd);
+	CHECK_PATH_END();
 	set_done();
 	return false;
     
@@ -958,10 +969,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	CHECK_STACK(2);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 2);
-	else if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
-	act_rmoveto(cmd, at(bottom), at(bottom + 1));
+	CHECK_PATH_END();
+	actp_rmoveto(cmd, at(bottom), at(bottom + 1));
 #if DEBUG_TYPE2
 	bottom += 2;
 #endif
@@ -971,10 +980,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	CHECK_STACK(1);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 1);
-	else if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
-	act_rmoveto(cmd, at(bottom), 0);
+	CHECK_PATH_END();
+	actp_rmoveto(cmd, at(bottom), 0);
 #if DEBUG_TYPE2
 	bottom++;
 #endif
@@ -984,10 +991,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	CHECK_STACK(1);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 1);
-	else if (_state == S_PATH)
-	    act_closepath(cmd);
-	_state = S_IPATH;
-	act_rmoveto(cmd, 0, at(bottom));
+	CHECK_PATH_END();
+	actp_rmoveto(cmd, 0, at(bottom));
 #if DEBUG_TYPE2
 	bottom++;
 #endif
@@ -996,58 +1001,64 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cRlineto:
 	CHECK_STACK(2);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	for (; bottom + 1 < size(); bottom += 2)
-	    act_rlineto(cmd, at(bottom), at(bottom + 1));
+	    actp_rlineto(cmd, at(bottom), at(bottom + 1));
 	break;
 	
       case CS::cHlineto:
 	CHECK_STACK(1);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	while (bottom < size()) {
-	    act_rlineto(cmd, at(bottom++), 0);
+	    actp_rlineto(cmd, at(bottom++), 0);
 	    if (bottom < size())
-		act_rlineto(cmd, 0, at(bottom++));
+		actp_rlineto(cmd, 0, at(bottom++));
 	}
 	break;
 	
       case CS::cVlineto:
 	CHECK_STACK(1);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	while (bottom < size()) {
-	    act_rlineto(cmd, 0, at(bottom++));
+	    actp_rlineto(cmd, 0, at(bottom++));
 	    if (bottom < size())
-		act_rlineto(cmd, at(bottom++), 0);
+		actp_rlineto(cmd, at(bottom++), 0);
 	}
 	break;
 
       case CS::cRrcurveto:
 	CHECK_STACK(6);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	for (; bottom + 5 < size(); bottom += 6)
-	    act_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
+	    actp_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
 	break;
 
       case CS::cHhcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	if (size() % 2 == 1) {
-	    act_rrcurveto(cmd, at(bottom + 1), at(bottom), at(bottom + 2), at(bottom + 3), at(bottom + 4), 0);
+	    actp_rrcurveto(cmd, at(bottom + 1), at(bottom), at(bottom + 2), at(bottom + 3), at(bottom + 4), 0);
 	    bottom += 5;
 	}
 	for (; bottom + 3 < size(); bottom += 4)
-	    act_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), at(bottom + 3), 0);
+	    actp_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), at(bottom + 3), 0);
 	break;
 
       case CS::cHvcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	while (bottom + 3 < size()) {
 	    double dx3 = (bottom + 5 == size() ? at(bottom + 4) : 0);
-	    act_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), dx3, at(bottom + 3));
+	    actp_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), dx3, at(bottom + 3));
 	    bottom += 4;
 	    if (bottom + 3 < size()) {
 		double dy3 = (bottom + 5 == size() ? at(bottom + 4) : 0);
-		act_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), dy3);
+		actp_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), dy3);
 		bottom += 4;
 	    }
 	}
@@ -1060,9 +1071,10 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cRcurveline:
 	CHECK_STACK(8);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	for (; bottom + 7 < size(); bottom += 6)
-	    act_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
-	act_rlineto(cmd, at(bottom), at(bottom + 1));
+	    actp_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
+	actp_rlineto(cmd, at(bottom), at(bottom + 1));
 #if DEBUG_TYPE2
 	bottom += 2;
 #endif
@@ -1071,9 +1083,10 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cRlinecurve:
 	CHECK_STACK(8);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	for (; bottom + 7 < size(); bottom += 2)
-	    act_rlineto(cmd, at(bottom), at(bottom + 1));
-	act_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
+	    actp_rlineto(cmd, at(bottom), at(bottom + 1));
+	actp_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
 #if DEBUG_TYPE2
 	bottom += 6;
 #endif
@@ -1082,13 +1095,14 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cVhcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	while (bottom + 3 < size()) {
 	    double dy3 = (bottom + 5 == size() ? at(bottom + 4) : 0);
-	    act_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), dy3);
+	    actp_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), dy3);
 	    bottom += 4;
 	    if (bottom + 3 < size()) {
 		double dx3 = (bottom + 5 == size() ? at(bottom + 4) : 0);
-		act_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), dx3, at(bottom + 3));
+		actp_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), dx3, at(bottom + 3));
 		bottom += 4;
 	    }
 	}
@@ -1101,22 +1115,24 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cVvcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	if (size() % 2 == 1) {
-	    act_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), 0, at(bottom + 4));
+	    actp_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), 0, at(bottom + 4));
 	    bottom += 5;
 	}
 	for (; bottom + 3 < size(); bottom += 4)
-	    act_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), 0, at(bottom + 3));
+	    actp_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), 0, at(bottom + 3));
 	break;
 
       case CS::cFlex:
 	CHECK_STACK(13);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	assert(bottom == 0);
-	act_rrflex(cmd,
-		   at(0), at(1), at(2), at(3), at(4), at(5),
-		   at(6), at(7), at(8), at(9), at(10), at(11),
-		   at(12));
+	actp_rrflex(cmd,
+		    at(0), at(1), at(2), at(3), at(4), at(5),
+		    at(6), at(7), at(8), at(9), at(10), at(11),
+		    at(12));
 #if DEBUG_TYPE2
 	bottom += 13;
 #endif
@@ -1125,11 +1141,12 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cHflex:
 	CHECK_STACK(7);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	assert(bottom == 0);
-	act_rrflex(cmd,
-		   at(0), 0, at(1), at(2), at(3), 0,
-		   at(4), 0, at(5), -at(2), at(6), 0,
-		   50);
+	actp_rrflex(cmd,
+		    at(0), 0, at(1), at(2), at(3), 0,
+		    at(4), 0, at(5), -at(2), at(6), 0,
+		    50);
 #if DEBUG_TYPE2
 	bottom += 7;
 #endif
@@ -1138,11 +1155,12 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cHflex1:
 	CHECK_STACK(9);
 	CHECK_STATE();
+	CHECK_PATH_START();
 	assert(bottom == 0);
-	act_rrflex(cmd,
-		   at(0), at(1), at(2), at(3), at(4), 0,
-		   at(5), 0, at(6), at(7), at(8), -(at(1) + at(3) + at(7)),
-		   50);
+	actp_rrflex(cmd,
+		    at(0), at(1), at(2), at(3), at(4), 0,
+		    at(5), 0, at(6), at(7), at(8), -(at(1) + at(3) + at(7)),
+		    50);
 #if DEBUG_TYPE2
 	bottom += 9;
 #endif
@@ -1151,19 +1169,20 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cFlex1: {
 	  CHECK_STACK(11);
 	  CHECK_STATE();
+	  CHECK_PATH_START();
 	  assert(bottom == 0);
 	  double dx = at(0) + at(2) + at(4) + at(6) + at(8);
 	  double dy = at(1) + at(3) + at(5) + at(7) + at(9);
 	  if (fabs(dx) > fabs(dy))
-	      act_rrflex(cmd,
-			 at(0), at(1), at(2), at(3), at(4), at(5),
-			 at(6), at(7), at(8), at(9), at(10), -dy,
-			 50);
+	      actp_rrflex(cmd,
+			  at(0), at(1), at(2), at(3), at(4), at(5),
+			  at(6), at(7), at(8), at(9), at(10), -dy,
+			  50);
 	  else
-	      act_rrflex(cmd,
-			 at(0), at(1), at(2), at(3), at(4), at(5),
-			 at(6), at(7), at(8), at(9), -dx, at(10),
-			 50);
+	      actp_rrflex(cmd,
+			  at(0), at(1), at(2), at(3), at(4), at(5),
+			  at(6), at(7), at(8), at(9), -dx, at(10),
+			  50);
 	  break;
 #if DEBUG_TYPE2
 	  bottom += 11;
@@ -1175,8 +1194,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	    bottom = type2_handle_width(cmd, size() > 0 && size() != 4);
 	if (bottom + 3 < size() && _state == S_INITIAL)
 	    act_seac(cmd, 0, at(bottom), at(bottom + 1), (int)at(bottom + 2), (int)at(bottom + 3));
-	else if (_state == S_PATH)
-	    act_closepath(cmd);
+	CHECK_PATH_END();
 	set_done();
 	clear();
 	return false;
@@ -1313,19 +1331,6 @@ CharstringInterp::act_flex(int cmd, const Point &p0, const Point &p1, const Poin
     (void) flex_depth;
     act_curve(cmd, p0, p1, p2, p3_4);
     act_curve(cmd, p3_4, p5, p6, p7);
-}
-
-void
-CharstringInterp::act_rrflex(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3, double dx4, double dy4, double dx5, double dy5, double dx6, double dy6, double flex_depth)
-{
-    Point p0(_cp);
-    Point p1(p0, dx1, dy1);
-    Point p2(p1, dx2, dy2);
-    Point p3_4(p2, dx3, dy3);
-    Point p5(p3_4, dx4, dy4);
-    Point p6(p5, dx5, dy5);
-    _cp = p6.shifted(dx6, dy6);
-    act_flex(cmd, p0, p1, p2, p3_4, p5, p6, _cp, flex_depth);
 }
 
 void
