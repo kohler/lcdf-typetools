@@ -90,6 +90,8 @@ using namespace Efont;
 #define INCLUDE_SUBS_OPT	332
 #define EXCLUDE_SUBS_OPT	333
 #define CLEAR_SUBS_OPT		334
+#define SUBS_FILTER_OPT		335
+#define ALTERNATES_FILTER_OPT	336
 
 #define AUTOMATIC_OPT		341
 #define FONT_NAME_OPT		342
@@ -132,6 +134,8 @@ static Clp_Option options[] = {
     { "include-substitutions", 0, INCLUDE_SUBS_OPT, Clp_ArgString, 0 },
     { "exclude-substitutions", 0, EXCLUDE_SUBS_OPT, Clp_ArgString, 0 },
     { "clear-substitutions", 0, CLEAR_SUBS_OPT, 0, 0 },
+    { "substitution-filter", 0, SUBS_FILTER_OPT, Clp_ArgString, 0 },
+    { "subs-filter", 0, SUBS_FILTER_OPT, Clp_ArgString, 0 },
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
@@ -154,6 +158,7 @@ static Clp_Option options[] = {
     { "include-alternates", 0, INCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
     { "exclude-alternates", 0, EXCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
     { "clear-alternates", 0, CLEAR_ALTERNATES_OPT, 0, 0 },
+    { "alternates-filter", 0, ALTERNATES_FILTER_OPT, Clp_ArgString, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -268,7 +273,8 @@ Font feature and transformation options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Activate feature FEAT.\n\
   --lf, --letter-feature=FEAT  Activate feature FEAT for letters.\n\
-      --include-subs=PAT       Substitute only characters matching PAT.\n\
+      --subs-filter=PAT        Substitute only characters matching PAT.\n\
+      --include-subs=PAT       Same, but cumulative.\n\
       --exclude-subs=PAT       Don't substitute characters matching PAT.\n\
       --clear-subs             Clear included/excluded substitutions.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
@@ -289,7 +295,8 @@ Encoding options:\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
       --altselector-char=CHAR  Set the alternate selector character to CHAR.\n\
       --altselector-feature=F  Activate feature F for --altselector-char.\n\
-      --include-alternates=PAT Include only alternate characters matching PAT.\n\
+      --alternates-filter=PAT  Include only alternate characters matching PAT.\n\
+      --include-alternates=PAT Same, but cumulative.\n\
       --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
       --clear-alternates       Clear included/excluded alternates.\n\
 \n");
@@ -1486,9 +1493,6 @@ main(int argc, char *argv[])
 		      current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
 		  interesting_features.push_back(t);
 		  feature_filters.insert(t, current_filter_ptr);
-		  StringAccum sa;
-		  current_filter_ptr->unparse(sa);
-		  errh->message("%s", sa.c_str());
 	      }
 	      break;
 	  }
@@ -1509,6 +1513,9 @@ main(int argc, char *argv[])
 	      break;
 	  }
 
+	  case SUBS_FILTER_OPT:
+	    current_substitution_filter = null_filter;
+	    /* fallthru */
 	  case EXCLUDE_SUBS_OPT:
 	  case INCLUDE_SUBS_OPT:
 	    current_substitution_filter.add_substitution_filter(clp->arg, opt == EXCLUDE_SUBS_OPT, errh);
@@ -1594,6 +1601,9 @@ main(int argc, char *argv[])
 	      break;
 	  }
 
+	  case ALTERNATES_FILTER_OPT:
+	    current_alternate_filter = null_filter;
+	    /* fallthru */
 	  case EXCLUDE_ALTERNATES_OPT:
 	  case INCLUDE_ALTERNATES_OPT:
 	    current_alternate_filter.add_alternate_filter(clp->arg, opt == EXCLUDE_ALTERNATES_OPT, errh);

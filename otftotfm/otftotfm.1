@@ -333,6 +333,8 @@ characters with the "Letter" Unicode property.
 '
 .Sp
 .TP 5
+.BI \-\-subs\-filter " pattern"
+.TP 5
 .BI \-\-include\-subs " pattern"
 .TP 5
 .BI \-\-exclude\-subs " pattern"
@@ -347,8 +349,13 @@ patterns, and none of the
 .B \-\-exclude
 patterns.  Each pattern applies to all following features, except that the
 .B \-\-clear
-option clears any accumulated patterns.  For pattern syntax, see CHARACTER
-PATTERNS, below.
+option clears any accumulated patterns.  The
+.BI \-\-subs\-filter " pattern"
+option acts like
+.B \-\-clear\-subs
+followed by
+.BI \-\-include\-subs " pattern\fR. "
+For pattern syntax, see CHARACTER PATTERNS, below.
 .Sp
 In the command line below, the '<Number>' pattern will force the "onum"
 feature to substitute only numbers (and not, for example, punctuation).
@@ -544,6 +551,8 @@ features.
 '
 .Sp
 .TP 5
+.BI \-\-alternates\-filter= pattern
+.TP 5
 .BI \-\-include\-alternates= pattern
 .TP 5
 .BI \-\-exclude\-alternates= pattern
@@ -557,8 +566,13 @@ patterns, and none of the
 .B \-\-exclude
 patterns.  Each pattern applies to all following features, except that the
 .B \-\-clear
-option clears any accumulated patterns.  For pattern syntax, see CHARACTER
-PATTERNS, below.
+option clears any accumulated patterns.  The
+.BI \-\-alternates\-filter " pattern"
+option acts like
+.B \-\-clear\-alternates
+followed by
+.BI \-\-include\-alternates " pattern\fR. "
+For pattern syntax, see CHARACTER PATTERNS, below.
 .Sp
 OpenType fonts can have many alternates per character, most of which aren't
 interesting.  For example, the character "a" in WarnockPro-Regular has five
