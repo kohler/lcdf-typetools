@@ -6,6 +6,7 @@
 #include "error.hh"
 #include "straccum.hh"
 #include <stdio.h>
+#include <math.h>
 
 static bool itc_complained = false;
 static ErrorHandler *itc_errh;
@@ -13,53 +14,58 @@ static ErrorHandler *itc_errh;
 void
 itc_complain()
 {
-  //itc_errh->warning("strange `callothersubr'; is this an ITC font?");
-  itc_complained = true;
+    //itc_errh->warning("strange `callothersubr'; is this an ITC font?");
+    itc_complained = true;
 }
 
 
 Type1CharstringGen::Type1CharstringGen(int precision)
 {
-  if (precision >= 0 && precision <= 107)
-    _precision = precision;
-  else
-    _precision = 5;
+    if (precision >= 0 && precision <= 107)
+	_precision = precision;
+    else
+	_precision = 5;
+    _f_precision = _precision;
+    _f_rounder = (1. / _f_precision) / 2;
 }
 
 void
 Type1CharstringGen::gen_number(double float_val)
 {
-  int val = (int)float_val;
-  int frac = (int)(float_val * _precision) - (val * _precision);
-  if (frac != 0)
-    val = val * _precision + frac;
-  
-  if (val >= -107 && val <= 107)
-    _ncs.push(val + 139);
-  
-  else if (val >= -1131 && val <= 1131) {
-    int base = val < 0 ? 251 : 247;
-    if (val < 0) val = -val;
-    val -= 108;
-    int w = val % 256;
-    val = (val - w) / 256;
-    _ncs.push(val + base);
-    _ncs.push(w);
-    
-  } else {
-    _ncs.push(255);
-    long l = val;
-    _ncs.push((int)((l >> 24) & 0xFF));
-    _ncs.push((int)((l >> 16) & 0xFF));
-    _ncs.push((int)((l >> 8) & 0xFF));
-    _ncs.push((int)((l >> 0) & 0xFF));
-  }
-  
-  if (frac != 0) {
-    _ncs.push(_precision + 139);
-    _ncs.push(Type1Interp::cEscape);
-    _ncs.push(Type1Interp::cDiv - Type1Interp::cEscapeDelta);
-  }
+    int val = (int)floor(float_val);
+    int frac = (int)(float_val * _precision) - (val * _precision);
+    if (frac == _precision)
+	val++, frac = 0;
+    fprintf(stderr, "%.12g %d %d\n", float_val, val, frac);
+    if (frac != 0)
+	val = val * _precision + frac;
+
+    if (val >= -107 && val <= 107)
+	_ncs.push(val + 139);
+
+    else if (val >= -1131 && val <= 1131) {
+	int base = val < 0 ? 251 : 247;
+	if (val < 0) val = -val;
+	val -= 108;
+	int w = val % 256;
+	val = (val - w) / 256;
+	_ncs.push(val + base);
+	_ncs.push(w);
+
+    } else {
+	_ncs.push(255);
+	long l = val;
+	_ncs.push((int)((l >> 24) & 0xFF));
+	_ncs.push((int)((l >> 16) & 0xFF));
+	_ncs.push((int)((l >> 8) & 0xFF));
+	_ncs.push((int)((l >> 0) & 0xFF));
+    }
+
+    if (frac != 0) {
+	_ncs.push(_precision + 139);
+	_ncs.push(Type1Interp::cEscape);
+	_ncs.push(Type1Interp::cDiv - Type1Interp::cEscapeDelta);
+    }
 }
 
 
