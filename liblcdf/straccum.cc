@@ -72,7 +72,7 @@ StringAccum::operator<<(double d)
 {
   if (char *x = reserve(256)) {
     int len;
-    sprintf(x, "%g%n", d, &len);
+    sprintf(x, "%.10g%n", d, &len);
     forward(len);
   }
   return *this;

@@ -327,7 +327,7 @@ vpermprintf(const char *s, va_list val)
 	 double x = va_arg(val, double);
 	 char buffer[1000];
 	 int len;
-	 sprintf(buffer, "%g%n", x, &len);
+	 sprintf(buffer, "%.10g%n", x, &len);
 	 extend(len);
 	 strcpy(psc + pspos, buffer);
 	 pspos += len;
