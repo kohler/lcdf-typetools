@@ -35,6 +35,9 @@ class Type1CharstringGen { public:
     
     Point _true;
     Point _false;
+
+    enum State { S_INITIAL, S_GEN };
+    State _state;
     
 };
 
