@@ -357,6 +357,7 @@ main(int argc, char **argv)
   program_name = Clp_ProgramName(clp);
   
   ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
+  int nfiles = 0;
   
   while (1) {
     int opt = Clp_Next(clp);
@@ -385,6 +386,7 @@ particular purpose.\n");
       
      case Clp_NotOption:
       do_file(clp->arg, psres, errh);
+      nfiles++;
       break;
       
      case Clp_Done:
@@ -401,5 +403,8 @@ particular purpose.\n");
   }
   
  done:
+  if (nfiles == 0)
+      do_file("-", psres, errh);
+  
   return (errh->nerrors() == 0 ? 0 : 1);
 }
