@@ -10,6 +10,9 @@ struct Point {
 
     Point()				{ }
     Point(double xx, double yy)		: x(xx), y(yy) { }
+    // Point(const Point &)		use compiler default
+    Point(const Point &p, double dx, double dy) : x(p.x + dx), y(p.y + dy) { }
+    // ~Point()				use compiler default
 
     double squared_length() const;
     double length() const;
@@ -20,6 +23,9 @@ struct Point {
 
     double angle() const;
 
+    void shift(double dx, double dy)	{ x += dx; y += dy; }
+    
+    Point shifted(double dx, double dy) const;
     Point rotated(double) const;
     Point normal() const;
 
@@ -64,6 +70,12 @@ inline double
 Point::angle() const
 {
     return atan2(y, x);
+}
+
+inline Point
+Point::shifted(double dx, double dy) const
+{
+    return Point(x + dx, y + dy);
 }
 
 inline Point

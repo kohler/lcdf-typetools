@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/lcdf/bezier.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "bezier.hh"
+#include <lcdf/bezier.hh>
 
 //
 // bounding box

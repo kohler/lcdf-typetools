@@ -1,7 +1,9 @@
-#ifndef BEZIER_HH
-#define BEZIER_HH
+// -*- related-file-name: "../../liblcdf/bezier.cc" -*-
+#ifndef LCDF_BEZIER_HH
+#define LCDF_BEZIER_HH
 #include <lcdf/transform.hh>
 #include <lcdf/vector.hh>
+#include <cstring>
 
 class Bezier { public:
   
@@ -52,12 +54,9 @@ class Bezier { public:
 
 inline
 Bezier::Bezier(Point p[4])
+    : _bb(-1)
 {
-    _p[0] = p[0];
-    _p[1] = p[1];
-    _p[2] = p[2];
-    _p[3] = p[3];
-    _bb = -1;
+    memcpy(_p, p, sizeof(Point) * 4);
 }
 
 inline
