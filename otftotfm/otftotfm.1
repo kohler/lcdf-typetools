@@ -21,8 +21,10 @@ otftotfm \- create TeX font metrics from PostScript OpenType fonts
 creates TeX font metrics and a 
 .M dvips 1 -like
 encoding file that correspond, as far as possible, to a PostScript-flavored
-OpenType font. The generated files are written into the current directory,
-or, with the
+OpenType font. The generated files are named
+.IR fontname .vf,
+.IR fontname .tfm,
+and so forth. They are written into the current directory, or, with the
 .B \-a 
 option, into a TeX Directory Structure.
 .LP
@@ -341,8 +343,7 @@ Set the name of the output font, which is used in the
 .M dvips 1
 .I psfonts.map
 line and, in automatic mode, to generate the output filename. The default
-is derived from the output filename in manual mode, and from the OpenType
-font's name and the features you selected in automatic mode.
+is derived from the OpenType font's name and the features you selected.
 '
 .Sp
 .TP 5

@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 0.53   10.Aug.2003
+
+* Fix problem with Type 1 output in '--without-kpathsea' reported by Adam
+  Lindsay.
+
+
 Version 0.52   7.Aug.2003
 
 * Attempt to fix some build problems reported by Nelson H.F. Beebe.
