@@ -521,15 +521,19 @@ output_encoding(const GsubEncoding &gsub_encoding,
     md5_final_text(text_digest, &md5);
 
     // name encoding using digest
-    // 3.Jun.2003: switch from "AutoEnc_" to "AutoEnc-", since ps2pk
-    // idiotically thinks that '_' cannot be part of PostScript names
-    new_encoding_name = "AutoEnc-" + String(text_digest);
+    new_encoding_name = "AutoEnc_" + String(text_digest);
 
     // put encoding block in a StringAccum
+    // 3.Jun.2003: stick command line definition at the end of the encoding,
+    // where it won't confuse idiotic ps2pk
     StringAccum contents;
     contents << "% THIS FILE WAS AUTOMATICALLY GENERATED -- DO NOT EDIT\n\n\
 %%" << new_encoding_name << "\n\
-% Encoding created by otftopl" << current_time << '\n';
+% Encoding created by otftopl" << current_time << "\n\
+% Command line follows encoding\n";
+    
+    // the encoding itself
+    contents << '/' << new_encoding_name << " [\n" << sa << "] def\n";
     
     // write banner -- unfortunately this takes some doing
     String banner = String("Command line: '") + String(invocation.data(), invocation.length()) + String("'");
@@ -550,14 +554,11 @@ output_encoding(const GsubEncoding &gsub_encoding,
 	    last_pos = pos;
 	    pos = banner.find_left(' ', pos + 1);
 	}
-	if (pos < 0)
+	if (last_pos < 0 || (pos < 0 && banner.length() < 75))
 	    last_pos = banner.length();
 	contents << "% " << banner.substring(0, last_pos) << '\n';
 	banner = banner.substring(last_pos + 1);
     }
-
-    // the encoding itself
-    contents << '/' << new_encoding_name << " [\n" << sa << "] def\n";
     
     // create encoding filename
     if (automatic)
