@@ -76,6 +76,7 @@ class CharstringInterp { public:
     virtual void char_vstem(int, double, double);
     virtual void char_hstem3(int, double, double, double, double, double, double);
     virtual void char_vstem3(int, double, double, double, double, double, double);
+    virtual void char_hintmask(int, const unsigned char *, int);
 
     typedef Charstring CS;
     

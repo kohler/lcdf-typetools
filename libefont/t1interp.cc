@@ -745,6 +745,7 @@ CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
 	    return error(errInternal, cmd);
 	if (((_t2nhints - 1) >> 3) + 1 > *left)
 	    return error(errRunoff, cmd);
+	char_hintmask(cmd, data, _t2nhints);
 	*left -= ((_t2nhints - 1) >> 3) + 1;
 	break;
 
@@ -1128,4 +1129,10 @@ CharstringInterp::char_vstem3(int cmd, double x0, double dx0, double x1, double 
     char_vstem(cmd, x0, dx0);
     char_vstem(cmd, x1, dx1);
     char_vstem(cmd, x2, dx2);
+}
+
+void
+CharstringInterp::char_hintmask(int, const unsigned char *, int)
+{
+    /* do nothing */
 }
