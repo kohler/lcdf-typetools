@@ -332,11 +332,6 @@ inline bool operator<(Tag t1, Tag t2)
     return t1.value() < t2.value();
 }
 
-inline unsigned hashcode(Tag t)
-{
-    return t.value();
-}
-
 inline ScriptList::ScriptList(const String& str, ErrorHandler* errh)
 {
     assign(str, errh);
@@ -370,4 +365,10 @@ inline bool GlyphSet::operator[](Glyph g) const
 }
 
 }}
+
+inline unsigned hashcode(Efont::OpenType::Tag t)
+{
+    return t.value();
+}
+
 #endif
