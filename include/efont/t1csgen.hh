@@ -35,7 +35,7 @@ class Type1CharstringGen { public:
     
     Point _true;
     Point _false;
-  
+    
 };
 
 }

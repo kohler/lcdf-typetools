@@ -29,6 +29,8 @@ static const char * const command_desc[] = {
     "XY", 0, 0, 0, 0
 };
 
+#define INITIAL_COORDINATE -100000.
+
 Type1CharstringGen::Type1CharstringGen(int precision)
 {
     if (precision >= 1 && precision <= 107)
@@ -42,7 +44,8 @@ void
 Type1CharstringGen::clear()
 {
     _ncs.clear();
-    _true = _false = Point(0, 0);
+    _true = Point(0, 0);
+    _false = Point(INITIAL_COORDINATE, INITIAL_COORDINATE);
 }
 
 void
@@ -141,12 +144,17 @@ Type1CharstringGen::gen_stack(CharstringInterp &interp, int for_cmd)
 void
 Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
 {
+    // make sure we generate some moveto on the first command
+    bool initial = (_false.x == INITIAL_COORDINATE);
+    if (initial)
+	_false = _true;
+    
     double dx = p.x - _false.x;
     double dy = p.y - _false.y;
     int big_dx = (int)floor(dx * _f_precision + 0.5);
     int big_dy = (int)floor(dy * _f_precision + 0.5);
 
-    if (big_dx == 0 && big_dy == 0)
+    if (big_dx == 0 && big_dy == 0 && !initial)
 	/* do nothing */;
     else {
 	if (closepath)
