@@ -5,7 +5,7 @@
 #endif
 #include <assert.h>
 #include <stdlib.h>
-#ifndef NO_NEW_H
+#ifdef HAVE_NEW_H
 #include <new.h>
 #else
 static inline void *operator new(size_t, void *v) { return v; }
