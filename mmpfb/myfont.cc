@@ -7,9 +7,9 @@
 #include "t1rewrit.hh"
 #include "t1mm.hh"
 #include "error.hh"
+#include "straccum.hh"
 #include <string.h>
 #include <stdio.h>
-
 
 MyFont::MyFont(Type1Reader &reader)
   : Type1Font(reader)
@@ -20,6 +20,34 @@ MyFont::~MyFont()
 {
 }
 
+void
+MyFont::kill_def(Type1Definition *t1d, int whichd = -1)
+{
+  if (!t1d) return;
+  
+  if (whichd < 0)
+    for (whichd = dFont; whichd < dLast; whichd = (Dict)(whichd + 1))
+      if (dict(whichd, t1d->name()) == t1d)
+	break;
+  if (whichd < 0 || whichd >= dLast || dict(whichd, t1d->name()) != t1d)
+    return;
+  
+  int icount = item_count();
+  for (int i = first_dict_item(whichd); i < icount; i++)
+    if (item(i) == t1d) {
+      StringAccum sa;
+      sa << '%';
+      t1d->gen(sa);
+      int sa_length = sa.length();
+      Type1CopyItem *t1ci = new Type1CopyItem(sa.take(), sa_length);
+      set_item(i, t1ci);
+      set_dict(whichd, t1d->name(), 0);
+      delete t1d;
+      return;
+    }
+  
+  assert(0);
+}
 
 bool
 MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
@@ -34,7 +62,7 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
     if (mmspace->design_to_norm_design(design, norm_design))
       t1d->set_numvec(norm_design);
     else
-      t1d->kill();
+      kill_def(t1d, dFont);
   }
   
   if (!mmspace->design_to_weight(design, _weight_vector, errh))
@@ -69,18 +97,24 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
     sa.push(0);
     t1d->set_name(sa.value());
   }
-
+  
+  // save UniqueID, then kill its definition
+  int uniqueid;
+  t1d = dict("UniqueID");
+  bool have_uniqueid = (t1d && t1d->value_int(uniqueid));
+  kill_def(t1d, dFont);
+  
+  // prepare XUID
   t1d = dict("XUID");
   NumVector xuid;
   if (!t1d || !t1d->value_numvec(xuid)) {
-    int uniqueid;
-    if ((t1d = dict("UniqueID")) && t1d->value_int(uniqueid)) {
+    if (have_uniqueid) {
       t1d = ensure(dFont, "XUID");
       xuid.clear();
       xuid.push_back(1);
       xuid.push_back(uniqueid);
     } else if (t1d) {
-      t1d->kill();
+      kill_def(t1d, dFont);
       t1d = 0;
     }
   }
@@ -94,14 +128,11 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   return true;
 }
 
-
 void
-MyFont::interpolate_dict_num(PermString name, bool is_private = true)
+MyFont::interpolate_dict_num(PermString name, Dict the_dict = dPrivate)
 {
-  Type1Definition *blend_def =
-    (is_private ? bp_dict(name) : b_dict(name));
-  Type1Definition *def =
-    (is_private ? p_dict(name) : dict(name));
+  Type1Definition *def = dict(the_dict, name);
+  Type1Definition *blend_def = dict(the_dict + dBlend, name);
   NumVector blend;
   
   if (def && blend_def && blend_def->value_numvec(blend)) {
@@ -110,18 +141,16 @@ MyFont::interpolate_dict_num(PermString name, bool is_private = true)
     for (int m = 0; m < n; m++)
       val += blend[m] * _weight_vector[m];
     def->set_num(val);
-    blend_def->kill();
+    kill_def(blend_def, the_dict + dBlend);
   }
 }
 
 void
-MyFont::interpolate_dict_numvec(PermString name, bool is_private = true,
+MyFont::interpolate_dict_numvec(PermString name, Dict the_dict = dPrivate,
 				bool executable = false)
 {
-  Type1Definition *blend_def =
-    (is_private ? bp_dict(name) : b_dict(name));
-  Type1Definition *def =
-    (is_private ? p_dict(name) : dict(name));
+  Type1Definition *def = dict(the_dict, name);
+  Type1Definition *blend_def = dict(the_dict + dBlend, name);
   Vector<NumVector> blend;
   
   if (def && blend_def && blend_def->value_numvec_vec(blend)) {
@@ -134,10 +163,9 @@ MyFont::interpolate_dict_numvec(PermString name, bool is_private = true,
       val.push_back(d);
     }
     def->set_numvec(val, executable);
-    blend_def->kill();
+    kill_def(blend_def, the_dict + dBlend);
   }
 }
-
 
 void
 MyFont::interpolate_dicts(ErrorHandler *errh)
@@ -145,7 +173,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   // Unfortunately, some programs (acroread) expect the FontBBox to consist
   // of integers. Round its elements away from zero (this is what the
   // Acrobat distiller seems to do).
-  interpolate_dict_numvec("FontBBox", false, true);
+  interpolate_dict_numvec("FontBBox", dFont, true);
   {
     Type1Definition *def = dict("FontBBox");
     NumVector bbox_vec;
@@ -166,7 +194,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   interpolate_dict_numvec("StdVW");
   interpolate_dict_numvec("StemSnapH");
   interpolate_dict_numvec("StemSnapV");
-
+  
   interpolate_dict_num("BlueScale");
   interpolate_dict_num("BlueShift");
   
@@ -183,36 +211,36 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
 	if (namevec[m] == "true")
 	  v += _weight_vector[m];
       def->set_code(v >= thresh_val ? "true" : "false");
-      blend_def->kill();
+      kill_def(blend_def, dBlendPrivate);
     }
   }
+
+  interpolate_dict_num("UnderlinePosition", dFontInfo);
+  interpolate_dict_num("UnderlineThickness", dFontInfo);
+  interpolate_dict_num("ItalicAngle", dFontInfo);
   
   int i = 0;
   PermString name;
   Type1Definition *def;
   while (dict_each(dBlend, i, name, def))
-    if (def->alive()) {
-      errh->warning("didn't interpolate %s in Blend\n", name.cc());
-      def->kill();
+    if (def) {
+      errh->warning("didn't interpolate %s in Blend", name.cc());
+      kill_def(def, dBlend);
     }
   
   i = 0;
   while (dict_each(dBlendPrivate, i, name, def))
-    if (def->alive()) {
-      errh->warning("didn't interpolate %s in BlendPrivate\n", name.cc());
-      def->kill();
+    if (def) {
+      errh->warning("didn't interpolate %s in BlendPrivate", name.cc());
+      kill_def(def, dBlendPrivate);
     }
   
-  def = p_dict("NDV");
-  if (def) def->kill();
-  def = p_dict("CDV");
-  if (def) def->kill();
-  def = dict("BlendDesignPositions");
-  if (def) def->kill();
-  def = dict("BlendDesignMap");
-  if (def) def->kill();
+  kill_def(p_dict("NDV"), dPrivate);
+  kill_def(p_dict("CDV"), dPrivate);
+  kill_def(fi_dict("BlendDesignPositions"), dFontInfo);
+  kill_def(fi_dict("BlendDesignMap"), dFontInfo);
+  kill_def(fi_dict("BlendAxisTypes"), dFontInfo);
 }
-
 
 void
 MyFont::interpolate_charstrings(ErrorHandler *errh)

@@ -133,11 +133,14 @@ Type1Font::Type1Font(Type1Reader &reader)
       _items.push_back(new Type1EexecItem(false));
       eexec_state = 2;
     } else if (strstr(x, "begin") != 0) {
-      bool in_private = (strstr(x, "/Private") != 0);
-      bool in_blend = (strstr(x, "/Blend") != 0);
-      cur_dict = (Dict)((in_private ? dP : dF) | (in_blend ? dB : dF));
-      if (cur_dict == dF && strstr(x, "/FontInfo") != 0)
+      if (strstr(x, "/Private") != 0)
+	cur_dict = dPrivate;
+      else if (strstr(x, "/FontInfo") != 0)
 	cur_dict = dFontInfo;
+      else
+	cur_dict = dFont;
+      if (strstr(x, "/Blend") != 0)
+	cur_dict = (Dict)(cur_dict + dBlend);
     } else if (cur_dict == dFontInfo && strstr(x, "end") != 0)
       cur_dict = dFont;
   }
@@ -221,7 +224,6 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
   }
 }
 
-
 Type1Font::~Type1Font()
 {
   delete[] _dict;
@@ -238,7 +240,6 @@ Type1Font::subr(int e) const
   else
     return 0;
 }
-
 
 Type1Charstring *
 Type1Font::glyph(PermString name) const
@@ -333,7 +334,6 @@ Type1Font::write(Type1Writer &w)
   w.flush();
 }
 
-
 void
 Type1Font::cache_defs() const
 {
@@ -344,7 +344,6 @@ Type1Font::cache_defs() const
   
   _cached_defs = true;
 }
-
 
 Type1MMSpace *
 Type1Font::create_mmspace(ErrorHandler *errh = 0) const

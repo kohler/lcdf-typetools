@@ -24,13 +24,15 @@ class ErrorHandler;
 
 class Type1Font: public Type1Program {
  public:
-  
+
+  // note: the order is relevant
   enum Dict {
     dFont = 0,			dF = dFont,
-    dPrivate = 1,		dP = dPrivate,
-    dBlend = 2,			dB = dBlend,
-    dBlendPrivate = dP|dB,	dBP = dBlendPrivate,
-    dFontInfo = 4,		dFI = dFontInfo,
+    dFontInfo = 1,		dFI = dFontInfo,
+    dPrivate = 2,		dP = dPrivate,
+    dBlend = 3,			dB = dBlend,
+    dBlendFontInfo = dB+dFI,	dBFI = dBlendFontInfo,
+    dBlendPrivate = dB+dP,	dBP = dBlendPrivate,
     dLast
   };
   
@@ -84,14 +86,16 @@ class Type1Font: public Type1Program {
   
   Type1Encoding *encoding() const	{ return _encoding; }
   
-  Type1Definition *dict(Dict d, PermString s) const { return _dict[d][s]; }
+  Type1Definition *dict(int d, PermString s) const { return _dict[d][s]; }
   Type1Definition *dict(PermString s) const	{ return _dict[dF][s]; }
   Type1Definition *p_dict(PermString s) const	{ return _dict[dP][s]; }
   Type1Definition *b_dict(PermString s) const	{ return _dict[dB][s]; }
   Type1Definition *bp_dict(PermString s) const	{ return _dict[dBP][s];}
   Type1Definition *fi_dict(PermString s) const	{ return _dict[dFI][s];}
   
-  bool dict_each(Dict, int &, PermString &, Type1Definition *&) const;
+  bool dict_each(int dict, int &, PermString &, Type1Definition *&) const;
+  int first_dict_item(int d) const		{ return _index[d]; }
+  void set_dict(int dict, PermString, Type1Definition *);
   
   Type1Definition *ensure(Dict, PermString);
   void add_header_comment(const char *);
@@ -105,10 +109,16 @@ class Type1Font: public Type1Program {
 
 
 inline bool
-Type1Font::dict_each(Dict dict, int &i, PermString &n,
-		     Type1Definition *&d) const
+Type1Font::dict_each(int dict, int &i, PermString &name,
+		     Type1Definition *&def) const
 {
-  return _dict[dict].each(i, n, d);
+  return _dict[dict].each(i, name, def);
+}
+
+inline void
+Type1Font::set_dict(int dict, PermString name, Type1Definition *t1d)
+{
+  _dict[dict].insert(name, t1d);
 }
 
 inline PermString

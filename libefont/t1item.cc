@@ -48,12 +48,10 @@ Type1Definition::Type1Definition(PermString n, char *v, PermString d)
 {
 }
 
-
 Type1Definition::~Type1Definition()
 {
   delete[] _val;
 }
-
 
 int
 Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
@@ -81,7 +79,6 @@ Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
   return s - accum.value();
 }
 
-
 Type1Definition *
 Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
 		      bool force_definition = false)
@@ -108,7 +105,7 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
   
   else if (*s == '(')
     val_end_pos = slurp_string(accum, val_pos, reader);
-
+  
   else if (*s == '[' || *s == '{') {
     int brace_level = 0;
     int brack_level = 0;
@@ -149,12 +146,16 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
   return new Type1Definition(name, val, def);
 }
 
-
 void
 Type1Definition::gen(Type1Writer &w)
 {
-  if (!_name) return;
   w << '/' << _name << ' ' << _val << ' ' << _definer << '\n';
+}
+
+void
+Type1Definition::gen(StringAccum &sa)
+{
+  sa << '/' << _name << ' ' << _val << ' ' << _definer;
 }
 
 
@@ -170,7 +171,6 @@ Type1Definition::value_bool(bool &b) const
   } else
     return false;
 }
-
 
 bool
 Type1Definition::value_int(int &i) const
@@ -200,7 +200,6 @@ Type1Definition::value_name(PermString &str) const
   return true;
 }
 
-
 static bool
 strtonumvec(const char *f, char **endf, NumVector &v)
 {
@@ -226,7 +225,6 @@ Type1Definition::value_numvec(NumVector &v) const
 {
   return strtonumvec(_val, 0, v);
 }
-
 
 static bool
 strtonumvec_vec(char *f, char **endf, Vector<NumVector> &v)
@@ -256,7 +254,6 @@ Type1Definition::value_numvec_vec(Vector<NumVector> &v) const
 {
   return strtonumvec_vec(_val, 0, v);
 }
-
 
 bool
 Type1Definition::value_normalize(Vector<NumVector> &in,
@@ -290,7 +287,6 @@ Type1Definition::value_normalize(Vector<NumVector> &in,
   }
 }
 
-
 bool
 Type1Definition::value_namevec(Vector<PermString> &v) const
 {
@@ -317,7 +313,6 @@ Type1Definition::set_val(char *v)
   _val = v;
 }
 
-
 inline void
 Type1Definition::set_val(StringAccum &sa)
 {
@@ -325,7 +320,6 @@ Type1Definition::set_val(StringAccum &sa)
   sa.push(0);
   _val = sa.take();
 }
-
 
 void
 Type1Definition::set_val_copy(char *v)
@@ -335,7 +329,6 @@ Type1Definition::set_val_copy(char *v)
   _val = new char[len + 1];
   strcpy(_val, v);
 }
-
 
 void
 Type1Definition::set_bool(bool b)

@@ -86,8 +86,6 @@ class Type1Definition: public Type1Item {
   
   PermString name() const		{ return _name; }
   const char *value() const		{ return _val; }
-  bool alive() const			{ return _name; }
-  void kill()				{ _name = 0; }
   
   bool value_bool(bool &) const;
   bool value_int(int &) const;
@@ -109,6 +107,7 @@ class Type1Definition: public Type1Item {
   void set_namevec(const Vector<PermString> &, bool executable = true);
   
   void gen(Type1Writer &);
+  void gen(StringAccum &);
   
 };
 

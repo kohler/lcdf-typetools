@@ -5,16 +5,16 @@
 class Type1MMSpace;
 class ErrorHandler;
 
-
 class MyFont: public Type1Font {
   
   typedef Vector<double> NumVector;
-
+  
   int _nmasters;
   Vector<double> _weight_vector;
   
-  void interpolate_dict_numvec(PermString, bool = true, bool = false);
-  void interpolate_dict_num(PermString, bool = true);
+  void interpolate_dict_numvec(PermString, Dict = dPrivate, bool = false);
+  void interpolate_dict_num(PermString, Dict = dPrivate);
+  void kill_def(Type1Definition *, int which_dict = -1); 
   
  public:
   
