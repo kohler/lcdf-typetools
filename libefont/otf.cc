@@ -292,7 +292,7 @@ ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHan
     const uint8_t *data = _str.udata();
     int nscripts = USHORT_AT(data);
     for (int i = 0; i < nscripts; i++) {
-	Tag script_tag = ULONG_AT2(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE);
+	Tag script_tag(ULONG_AT2(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE));
 	int script_off = USHORT_AT(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE + 4);
 	if (check_script(script_tag, script_off, errh) < 0)
 	    return -1;
@@ -301,7 +301,7 @@ ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHan
 	    script.push_back(script_tag), langsys.push_back(Tag());
 	int nlangsys = USHORT_AT(script_table + 2);
 	for (int j = 0; j < nlangsys; j++) {
-	    Tag langsys_tag = ULONG_AT2(script_table + SCRIPT_HEADERSIZE + j*LANGSYS_RECSIZE);
+	    Tag langsys_tag(ULONG_AT2(script_table + SCRIPT_HEADERSIZE + j*LANGSYS_RECSIZE));
 	    script.push_back(script_tag), langsys.push_back(langsys_tag);
 	}
     }
@@ -419,7 +419,7 @@ FeatureList::find(Tag tag, const Vector<int> &fids) const
     for (const int *fidp = fids.begin(); fidp != fids.end(); fidp++)
 	if (*fidp >= 0 && *fidp < nfeatures) {
 	    uint32_t ftag = ULONG_AT2(data + FEATURELIST_HEADERSIZE + (*fidp)*FEATURE_RECSIZE);
-	    if (ftag == tag)
+	    if (ftag == tag.value())
 		return *fidp;
 	}
 
@@ -444,11 +444,11 @@ FeatureList::filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const
 	int nfeatures = USHORT_AT(data);
 	while (i < fids.size() && j < sorted_ftags.size() && fids[i] < nfeatures) {
 	    uint32_t ftag = ULONG_AT2(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE);
-	    if (ftag < sorted_ftags[j]) { // not an interesting feature
+	    if (ftag < sorted_ftags[j].value()) { // not an interesting feature
 		// replace featureID with a large number, remove later
 		fids[i] = 0x7FFFFFFF;
 		i++;
-	    } else if (ftag == sorted_ftags[j]) // interesting feature
+	    } else if (ftag == sorted_ftags[j].value()) // interesting feature
 		i++;
 	    else		// an interesting feature is not available
 		j++;

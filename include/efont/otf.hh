@@ -10,13 +10,15 @@ typedef int Glyph;			// 16-bit integer
 class Tag { public:
     
     Tag()				: _tag(0U) { }
-    Tag(uint32_t tag)			: _tag(tag) { }
+    explicit Tag(uint32_t tag)		: _tag(tag) { }
     Tag(const char *);
     Tag(const String &);
     // default destructor
 
     bool null() const			{ return _tag == 0; }
+    operator bool() const		{ return _tag != 0; }
     bool valid() const;
+    
     uint32_t value() const		{ return _tag; }
     
     String text() const;
