@@ -240,8 +240,9 @@ AmfmReader::AmfmReader(LineScanner &l, FontFinder *finder, ErrorHandler *errh)
     read();
 }
 
-AmfmReader::AmfmReader(LineScanner &l, AmfmMetrics *amfm)
-  : _amfm(amfm), _l(l)
+AmfmReader::AmfmReader(const AmfmReader &r, LineScanner &l)
+  : _amfm(r._amfm), _finder(r._finder), _l(l), _mmspace(r._mmspace),
+    _errh(r._errh)
 {
   // Used to read .amcp file.
   if (_l.ok())
@@ -451,12 +452,19 @@ AmfmReader::read()
   } while (l.next_line());
   
  done:
+  if (!_mmspace) {
+    _errh->error(_l, "not an AMFM file");
+    delete _amfm;
+    _amfm = 0;
+    return;
+  }
+  
   if (!_mmspace->ndv() && !_mmspace->cdv() && _l.filename().directory()) {
     PermString name = permprintf("%p.amcp", l.filename().base().capsule());
     Filename filename = _l.filename().from_directory(name);
     if (filename.readable()) {
       LineScanner l(filename);
-      AmfmReader new_reader(l, _amfm);
+      AmfmReader new_reader(*this, l);
     }
   }
   
@@ -770,14 +778,14 @@ AmfmReader::read_primary_fonts() const
 Type1Charstring *
 AmfmReader::conversion_program(Vector<PermString> &l) const
 {
-  int len = 0, i;
-  for (i = 0; i < l.count(); i++)
+  int len = 0;
+  for (int i = 0; i < l.count(); i++)
     len += l[i].length();
   if (len == 0) return 0;
   
   unsigned char *v = new unsigned char[len];
   int pos = 0;
-  for (i = 0; i < l.count(); i++) {
+  for (int i = 0; i < l.count(); i++) {
     memcpy(v + pos, l[i].cc(), l[i].length());
     pos += l[i].length();
   }

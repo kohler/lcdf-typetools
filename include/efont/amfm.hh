@@ -134,7 +134,7 @@ class AmfmReader {
   
   void read_amcp_file();
   
-  AmfmReader(LineScanner &, AmfmMetrics *);
+  AmfmReader(const AmfmReader &, LineScanner &);
   
  public:
   
