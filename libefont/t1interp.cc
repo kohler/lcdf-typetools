@@ -433,8 +433,6 @@ CharstringInterp::callgsubr_command()
     return !done();
 }
 
-extern int fucker;
-
 bool
 CharstringInterp::mm_command(int command, int on_stack)
 {
@@ -469,12 +467,6 @@ CharstringInterp::mm_command(int command, int on_stack)
     for (int i = nargs - 1; i >= 0; i--)
 	ps_push(at(base + i));
 
-    if (fucker) {
-	for (int i = nargs - 1; i >= 0; i--)
-	    fprintf(stderr, "%.12g ", at(base + i));
-	fprintf(stderr, "\n");
-    }
-    
     pop(on_stack);
     return true;
 }

@@ -20,8 +20,6 @@
 #include <cmath>
 namespace Efont {
 
-int fucker;
-
 static const char * const command_desc[] = {
     0, 0, 0, 0, "y",
     "xy", "x", "y", "xyxyxy", 0,
@@ -84,11 +82,11 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 	break;
     }
 
-    int big_val = (int)floor(float_val * _f_precision + 0.5001);
+    // 30.Jul.2003 - Avoid rounding differences between platforms with the
+    // extra 0.00001.
+    int big_val = (int)floor(float_val * _f_precision + 0.50001);
     int frac = big_val % _precision;
     int val = (frac == 0 ? big_val / _precision : big_val);
-    if (fucker)
-	fprintf(stderr, "T%.12g,%.12g F%.12g,%.12g %c %.12g %d/%d\n", _true.x, _true.y, _false.x, _false.y, (kind ? kind : '-'), float_val, val, frac);
 
     if (val >= -107 && val <= 107)
 	_ncs.append((char)(val + 139));
@@ -164,8 +162,8 @@ Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
     
     double dx = p.x - _false.x;
     double dy = p.y - _false.y;
-    int big_dx = (int)round(dx * _f_precision);
-    int big_dy = (int)round(dy * _f_precision);
+    int big_dx = (int)floor(dx * _f_precision + 0.50001);
+    int big_dy = (int)floor(dy * _f_precision + 0.50001);
 
     if (big_dx == 0 && big_dy == 0 && _state != S_INITIAL)
 	/* do nothing */;
