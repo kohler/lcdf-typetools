@@ -16,7 +16,6 @@ MyFont::MyFont(Type1Reader &reader)
 {
 }
 
-
 MyFont::~MyFont()
 {
 }
@@ -64,6 +63,25 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
 
 
 void
+MyFont::interpolate_dict_num(PermString name, bool is_private = true)
+{
+  Type1Definition *blend_def =
+    (is_private ? bp_dict(name) : b_dict(name));
+  Type1Definition *def =
+    (is_private ? p_dict(name) : dict(name));
+  NumVector blend;
+  
+  if (def && blend_def && blend_def->value_numvec(blend)) {
+    int n = _nmasters;
+    double val = 0;
+    for (int m = 0; m < n; m++)
+      val += blend[m] * _weight_vector[m];
+    def->set_num(val);
+    blend_def->kill();
+  }
+}
+
+void
 MyFont::interpolate_dict_numvec(PermString name, bool is_private = true,
 				bool executable = false)
 {
@@ -89,29 +107,24 @@ MyFont::interpolate_dict_numvec(PermString name, bool is_private = true,
 
 
 void
-MyFont::interpolate_dict_num(PermString name, bool is_private = true)
-{
-  Type1Definition *blend_def =
-    (is_private ? bp_dict(name) : b_dict(name));
-  Type1Definition *def =
-    (is_private ? p_dict(name) : dict(name));
-  NumVector blend;
-  
-  if (def && blend_def && blend_def->value_numvec(blend)) {
-    int n = _nmasters;
-    double val = 0;
-    for (int m = 0; m < n; m++)
-      val += blend[m] * _weight_vector[m];
-    def->set_num(val);
-    blend_def->kill();
-  }
-}
-
-
-void
 MyFont::interpolate_dicts(ErrorHandler *errh)
 {
+  // Unfortunately, some programs (acroread) expect the FontBBox to consist
+  // of integers. Round its elements away from zero (this is what the
+  // Acrobat distiller seems to do).
   interpolate_dict_numvec("FontBBox", false, true);
+  {
+    Type1Definition *def = dict("FontBBox");
+    NumVector bbox_vec;
+    if (def && def->value_numvec(bbox_vec) && bbox_vec.count() == 4) {
+      bbox_vec[0] = (int)(bbox_vec[0] - 0.5);
+      bbox_vec[1] = (int)(bbox_vec[1] - 0.5);
+      bbox_vec[2] = (int)(bbox_vec[2] + 0.5);
+      bbox_vec[3] = (int)(bbox_vec[3] + 0.5);
+      def->set_numvec(bbox_vec, true);
+    }
+  }
+  
   interpolate_dict_numvec("BlueValues");
   interpolate_dict_numvec("OtherBlues");
   interpolate_dict_numvec("FamilyBlues");

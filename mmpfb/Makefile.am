@@ -10,7 +10,7 @@ mmpfb_SOURCES = hashmapi.cc \
 	main.cc \
 	t1rewrit.cc t1rewrit.hh
 
-mmpfb_LDADD = ../edlib/libedlib.a ../t1lib/libt1lib.a
+mmpfb_LDADD = ../t1lib/libt1lib.a ../edlib/libedlib.a
 
 INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib
 

@@ -8,8 +8,7 @@ mmafm_SOURCES = vectori.cc \
 	hashmapi.cc \
 	main.cc
 
-mmafm_LDADD = ../edlib/libedlib.a ../t1lib/libt1lib.a \
-	../metricslib/libmetrics.a
+mmafm_LDADD = ../metricslib/libmetrics.a ../t1lib/libt1lib.a ../edlib/libedlib.a
 
 INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib -I$(top_srcdir)/metricslib
 
