@@ -8,7 +8,7 @@ Transform::Transform()
 {
     _m[0] = _m[4] = 1;
     _m[1] = _m[2] = _m[3] = _m[5] = 0;
-    _default = true;
+    _null = true;
 }
 
 Transform::Transform(double m0, double m1, double m2,
@@ -20,7 +20,7 @@ Transform::Transform(double m0, double m1, double m2,
     _m[3] = m3;
     _m[4] = m4;
     _m[5] = m5;
-    _default = (m2 == 0 && m0 == 1 && m1 == 0 && m3 == 0 && m4 == 1 && m5 == 0);
+    _null = (m2 == 0 && m0 == 1 && m1 == 0 && m3 == 0 && m4 == 1 && m5 == 0);
 }
 
 
@@ -33,7 +33,7 @@ Transform::add_scale(double x, double y)
     _m[4] *= y;
 
     if (x != 1 || y != 1)
-	_default = false;
+	_null = false;
 }
 
 void
@@ -51,7 +51,7 @@ Transform::add_rotate(double r)
     _m[4] = b*c - a*s;
 
     if (r != 0)
-	_default = false;
+	_null = false;
 }
 
 void
@@ -61,7 +61,7 @@ Transform::add_translate(double x, double y)
     _m[5] += _m[3]*x + _m[4]*y;
 
     if (x != 0 || y != 0)
-	_default = false;
+	_null = false;
 }
 
 Transform
@@ -79,7 +79,7 @@ Transform::transform(const Transform &t) const
 Point &
 operator*=(Point &p, const Transform &t)
 {
-    if (!t.is_default()) {
+    if (!t.null()) {
 	double x = p.x;
 	p.x = x*t._m[0] + p.y*t._m[1] + t._m[2];
 	p.y = x*t._m[3] + p.y*t._m[4] + t._m[5];
@@ -90,7 +90,7 @@ operator*=(Point &p, const Transform &t)
 Point
 operator*(const Point &p, const Transform &t)
 {
-    return (t.is_default()
+    return (t.null()
 	    ? p
 	    : Point(p.x*t._m[0] + p.y*t._m[1] + t._m[2],
 		    p.x*t._m[3] + p.y*t._m[4] + t._m[5]));
@@ -99,7 +99,7 @@ operator*(const Point &p, const Transform &t)
 Bezier &
 operator*=(Bezier &b, const Transform &t)
 {
-    if (!t.is_default()) {
+    if (!t.null()) {
 	b.mpoint(0) *= t;
 	b.mpoint(1) *= t;
 	b.mpoint(2) *= t;
@@ -111,7 +111,7 @@ operator*=(Bezier &b, const Transform &t)
 Bezier
 operator*(const Bezier &b, const Transform &t)
 {
-    return (t.is_default()
+    return (t.null()
 	    ? b
 	    : Bezier(b.point(0) * t, b.point(1) * t, b.point(2) * t, b.point(3) * t));
 }
