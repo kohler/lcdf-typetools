@@ -11,6 +11,7 @@
 #include "gsubencoding.hh"
 #include "dvipsencoding.hh"
 #include "automatic.hh"
+#include "kpseinterface.h"
 #include "util.hh"
 #include "md5.h"
 #include <lcdf/clp.h>
@@ -54,12 +55,16 @@ using namespace Efont;
 #define QUIET_OPT		323
 #define GLYPHLIST_OPT		324
 #define VENDOR_OPT		325
+#define TYPEFACE_OPT		326
+#define NOCREATE_OPT		327
+#define VERBOSE_OPT		328
 
 #define VIRTUAL_OPT		331
 #define PL_OPT			332
 #define TFM_OPT			333
 
-enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_BINARY = 8, G_ASCII = 16 };
+enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
+       G_BINARY = 16, G_ASCII = 32 };
 
 #define DIR_OPTS		350
 #define ENCODING_DIR_OPT	(DIR_OPTS + O_ENCODING)
@@ -67,6 +72,10 @@ enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_BINARY = 8, G_ASCII = 16
 #define PL_DIR_OPT		(DIR_OPTS + O_PL)
 #define VF_DIR_OPT		(DIR_OPTS + O_VF)
 #define VPL_DIR_OPT		(DIR_OPTS + O_VPL)
+
+#define NO_OUTPUT_OPTS		360
+#define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
+#define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 
 Clp_Option options[] = {
     
@@ -79,19 +88,24 @@ Clp_Option options[] = {
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
-    
+    { "no-encoding", 0, NO_ENCODING_OPT, 0, Clp_OnlyNegated },
+    { "no-type1", 0, NO_TYPE1_OPT, 0, Clp_OnlyNegated },
+        
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
     { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
     { "vendor", 'v', VENDOR_OPT, Clp_ArgString, 0 },
+    { "typeface", 0, TYPEFACE_OPT, Clp_ArgString, 0 },
     
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ArgString, 0 },
     { "pl-directory", 0, PL_DIR_OPT, Clp_ArgString, 0 },
     { "tfm-directory", 0, TFM_DIR_OPT, Clp_ArgString, 0 },
     { "vpl-directory", 0, VPL_DIR_OPT, Clp_ArgString, 0 },
     { "vf-directory", 0, VF_DIR_OPT, Clp_ArgString, 0 },
-    
+
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
+    { "no-create", 0, NOCREATE_OPT, 0, Clp_OnlyNegated },
+    { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
     { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
@@ -126,9 +140,11 @@ static double slant;
 static String out_encoding_file;
 static String out_encoding_name;
 
-static int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_BINARY;
+static int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_TYPE1 | G_BINARY;
 
 bool automatic = false;
+bool verbose = false;
+bool nocreate = false;
 
 static bool stdout_used = false;
 
@@ -171,8 +187,16 @@ Input options:\n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
   -p, --pl                     Output human-readable PL/VPLs, not VF/TFMs.\n\
+      --no-virtual             Do not generate VFs or VPLs.\n\
+      --no-encoding            Do not generate an encoding file.\n\
+\n\
+Automatic mode:\n\
   -a, --automatic              Install in a TeX Directory Structure.\n\
-  -v, --vendor=NAME            With -a, set vendor for fonts [otftotfm].\n\
+  -v, --vendor=NAME            With -a, set TDS vendor [lcdftools].\n\
+      --typeface=NAME          With -a, set TDS typeface [<font family>].\n\
+      --no-type1               With -a, do not generate a Type 1 font.\n\
+\n\
+Directory options:\n\
       --tfm-directory=DIR      Put TFM files in DIR [.|automatic].\n\
       --pl-directory=DIR       Put PL files in DIR [.|automatic].\n\
       --vf-directory=DIR       Put VF files in DIR [.|automatic].\n\
@@ -436,6 +460,24 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	}
 }
 
+static void
+output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
+	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	  bool vpl, String filename, ErrorHandler *errh)
+{
+    if (nocreate)
+	errh->message("would create %s", filename.c_str());
+    else {
+	if (verbose)
+	    errh->message("creating %s", filename.c_str());
+	if (FILE *f = fopen(filename.c_str(), "w")) {
+	    output_pl(cff, cmap, gse, glyph_names, vpl, f);
+	    fclose(f);
+	} else
+	    errh->error("%s: %s", filename.c_str(), strerror(errno));
+    }
+}
+
 struct Lookup {
     bool used;
     Vector<OpenType::Tag> features;
@@ -482,77 +524,79 @@ write_encoding_file(String &filename, const String &encoding_name,
 		    StringAccum &contents, ErrorHandler *errh)
 {
     FILE *f;
+    int ok_retval = (access(filename.c_str(), R_OK) >= 0 ? 0 : 1);
+
+    if (nocreate) {
+	errh->message((ok_retval ? "would create encoding file %s" : "would update encoding file %s"), filename.c_str());
+	return ok_retval;
+    } else if (verbose)
+	errh->message((ok_retval ? "creating encoding file %s" : "updating encoding file %s"), filename.c_str());
     
-    if (!filename || filename == "-") {
-	f = stdout;
-	filename = "";
-	stdout_used = true;
-    } else {
-	int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
-	if (fd < 0)
-	    return errh->error("%s: %s", filename.c_str(), strerror(errno));
-	f = fdopen(fd, "r+");
-	// NB: also change update_autofont_map if you change this code
+    int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
+    if (fd < 0)
+	return errh->error("%s: %s", filename.c_str(), strerror(errno));
+    f = fdopen(fd, "r+");
+    // NB: also change update_autofont_map if you change this code
 
 #if defined(F_SETLKW) && defined(HAVE_FTRUNCATE)
-	{
-	    struct flock lock;
-	    lock.l_type = F_WRLCK;
-	    lock.l_whence = SEEK_SET;
-	    lock.l_start = 0;
-	    lock.l_len = 0;
-	    int result;
-	    while ((result = fcntl(fd, F_SETLKW, &lock)) < 0 || errno == EINTR)
-		/* try again */;
-	    if (result < 0) {
-		result = errno;
-		fclose(f);
-		return errh->error("locking %s: %s", filename.c_str(), strerror(result));
-	    }
+    {
+	struct flock lock;
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 0;
+	int result;
+	while ((result = fcntl(fd, F_SETLKW, &lock)) < 0 || errno == EINTR)
+	    /* try again */;
+	if (result < 0) {
+	    result = errno;
+	    fclose(f);
+	    return errh->error("locking %s: %s", filename.c_str(), strerror(result));
 	}
-#endif
-
-	// read old data from encoding file
-	StringAccum sa;
-	while (!feof(f))
-	    if (char *x = sa.reserve(8192)) {
-		int amt = fread(x, 1, 8192, f);
-		sa.forward(amt);
-	    } else {
-		fclose(f);
-		return errh->error("Out of memory!");
-	    }
-	String old_encodings = sa.take_string();
-
-	// append old encodings
-	int pos1 = old_encodings.find_left("\n%%");
-	while (pos1 < old_encodings.length()) {
-	    int pos2 = old_encodings.find_left("\n%%", pos1 + 1);
-	    if (pos2 < 0)
-		pos2 = old_encodings.length();
-	    if (old_encodings.substring(pos1 + 3, encoding_name.length()) == encoding_name) {
-		// encoding already exists, don't change it
-		fclose(f);
-		return 0;
-	    } else
-		contents << old_encodings.substring(pos1, pos2 - pos1);
-	    pos1 = pos2;
-	}
-
-	// rewind file
-#ifdef HAVE_FTRUNCATE
-	rewind(f);
-	ftruncate(fd, 0);
-#else
-	fclose(f);
-	f = fopen(filename.c_str(), "w");
-#endif
     }
+#endif
+
+    // read old data from encoding file
+    StringAccum sa;
+    while (!feof(f))
+	if (char *x = sa.reserve(8192)) {
+	    int amt = fread(x, 1, 8192, f);
+	    sa.forward(amt);
+	} else {
+	    fclose(f);
+	    return errh->error("Out of memory!");
+	}
+    String old_encodings = sa.take_string();
+
+    // append old encodings
+    int pos1 = old_encodings.find_left("\n%%");
+    while (pos1 < old_encodings.length()) {
+	int pos2 = old_encodings.find_left("\n%%", pos1 + 1);
+	if (pos2 < 0)
+	    pos2 = old_encodings.length();
+	if (old_encodings.substring(pos1 + 3, encoding_name.length()) == encoding_name) {
+	    // encoding already exists, don't change it
+	    fclose(f);
+	    if (verbose)
+		errh->message("%s unchanged", filename.c_str());
+	    return 0;
+	} else
+	    contents << old_encodings.substring(pos1, pos2 - pos1);
+	pos1 = pos2;
+    }
+    
+    // rewind file
+#ifdef HAVE_FTRUNCATE
+    rewind(f);
+    ftruncate(fd, 0);
+#else
+    fclose(f);
+    f = fopen(filename.c_str(), "w");
+#endif
 
     fwrite(contents.data(), 1, contents.length(), f);
 
-    if (f != stdout)
-	fclose(f);
+    fclose(f);
     return 0;
 }
 	
@@ -588,7 +632,7 @@ output_encoding(const GsubEncoding &gsub_encoding,
     out_encoding_name = "AutoEnc_" + String(text_digest);
 
     // create encoding filename
-    out_encoding_file = getodir(O_ENCODING, errh) + String("/auto_") + String(text_digest).substring(0, 6) + ".enc";
+    out_encoding_file = getodir(O_ENCODING, errh) + String("/a_") + String(text_digest).substring(0, 6) + ".enc";
 
     // exit if we're not responsible for generating an encoding
     if (!(output_flags & G_ENCODING))
@@ -632,13 +676,16 @@ output_encoding(const GsubEncoding &gsub_encoding,
     }
     
     // open encoding file
-    write_encoding_file(out_encoding_file, out_encoding_name, contents, errh);
-    update_odir(O_ENCODING, out_encoding_file, errh);
+    if (write_encoding_file(out_encoding_file, out_encoding_name, contents, errh) == 1)
+	update_odir(O_ENCODING, out_encoding_file, errh);
 }
 
 static int
 temporary_file(String &filename, ErrorHandler *errh)
 {
+    if (nocreate)
+	return 0;		// random number suffices
+    
 #ifdef HAVE_MKSTEMP
     const char *tmpdir = getenv("TMPDIR");
     if (tmpdir)
@@ -682,9 +729,16 @@ write_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 
     bool vpl = vf_filename;
 
-    FILE *f = fdopen(pl_fd, "w");
-    output_pl(cff, cmap, gse, glyph_names, vpl, f);
-    fclose(f);
+    if (nocreate) {
+	errh->message("would write %s to temporary file", (vpl ? "VPL" : "PL"));
+	pl_filename = "<temporary>";
+    } else {
+	if (verbose)
+	    errh->message("writing %s to temporary file", (vpl ? "VPL" : "PL"));
+	FILE *f = fdopen(pl_fd, "w");
+	output_pl(cff, cmap, gse, glyph_names, vpl, f);
+	fclose(f);
+    }
 
     StringAccum command;
     if (vpl)
@@ -692,9 +746,10 @@ write_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     else
 	command << "pltotf " << pl_filename << ' ' << tfm_filename;
     
-    int status = system(command.c_str());
+    int status = mysystem(command.c_str(), errh);
 
-    unlink(pl_filename.c_str());
+    if (!nocreate)
+	unlink(pl_filename.c_str());
     
     if (status != 0)
 	errh->fatal("%s execution failed", (vpl ? "vptovf" : "pltotf"));
@@ -787,7 +842,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    if (isalnum(typeface[i]) || typeface[i] == '_' || typeface[i] == '-' || typeface[i] == '.' || typeface[i] == ',' || typeface[i] == '+')
 		sa << typeface[i];
 
-	set_typeface(sa.length() ? sa.take_string() : font_name);
+	set_typeface(sa.length() ? sa.take_string() : font_name, false);
     }
 
     // prepare encoding
@@ -907,11 +962,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	write_tfm(&font, cmap, encoding, glyph_names, fn, String(), errh);
     } else {
 	String outfile = getodir(O_PL, errh) + "/" + font_name + metrics_suffix + ".pl";
-	FILE *f;
-	if (!(f = fopen(outfile.c_str(), "w")))
-	    errh->fatal("%s: %s", outfile.c_str(), strerror(errno));
-	output_pl(&font, cmap, encoding, glyph_names, false, f);
-	fclose(f);
+	output_pl(&font, cmap, encoding, glyph_names, false, outfile, errh);
 	update_odir(O_PL, outfile, errh);
     }
 
@@ -924,11 +975,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	write_tfm(&font, cmap, encoding, glyph_names, tfm, vf, errh);
     } else {
 	String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
-	FILE *f;
-	if (!(f = fopen(outfile.c_str(), "w")))
-	    errh->fatal("%s: %s", outfile.c_str(), strerror(errno));
-	output_pl(&font, cmap, encoding, glyph_names, true, f);
-	fclose(f);
+	output_pl(&font, cmap, encoding, glyph_names, true, outfile, errh);
 	update_odir(O_VPL, outfile, errh);
     }
 
@@ -941,7 +988,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (slant)
 	    sa << slant << " SlantFont ";
 	sa << out_encoding_name << " ReEncodeFont\" <[" << out_encoding_file;
-	if (String fn = installed_type1(input_filename, errh))
+	if (String fn = installed_type1(input_filename, font.font_name(), (output_flags & G_TYPE1), errh))
 	    sa << " <" << fn;
 	sa << '\n';
 	if (!automatic)
@@ -1038,6 +1085,7 @@ main(int argc, char **argv)
     Clp_Parser *clp =
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
+    kpsei_init(argv[0]);
 #ifdef HAVE_CTIME
     {
 	time_t t = time(0);
@@ -1121,11 +1169,21 @@ main(int argc, char **argv)
 		usage_error(errh, "vendor name specified twice");
 	    break;
 
+	  case TYPEFACE_OPT:
+	    if (!set_typeface(clp->arg, true))
+		usage_error(errh, "typeface name specified twice");
+	    break;
+
 	  case VIRTUAL_OPT:
 	    if (clp->negated)
 		output_flags &= ~G_VMETRICS;
 	    else
 		output_flags |= G_VMETRICS;
+	    break;
+
+	  case NO_ENCODING_OPT:
+	  case NO_TYPE1_OPT:
+	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
 	    break;
 
 	  case PL_OPT:
@@ -1169,6 +1227,14 @@ main(int argc, char **argv)
 		errh = ErrorHandler::default_handler();
 	    else
 		errh = ErrorHandler::silent_handler();
+	    break;
+
+	  case VERBOSE_OPT:
+	    verbose = !clp->negated;
+	    break;
+
+	  case NOCREATE_OPT:
+	    nocreate = clp->negated;
 	    break;
 
 	  case VERSION_OPT:
@@ -1249,7 +1315,7 @@ particular purpose.\n");
 	if (String path = locate_encoding(encoding_file, errh))
 	    dvipsenc.parse(path, errh);
 
-    do_file(input_file, otf, dvipsenc, literal_encoding, &cerrh);
+    do_file(input_file, otf, dvipsenc, literal_encoding, errh);
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }

@@ -23,31 +23,33 @@ dnl
 dnl kpathsea, cfftota
 dnl
 
-AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea programs are under PREFIX [[$PATH]]],
+AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
   [kpathsea=$withval], [kpathsea=])
 
 if test "x$kpathsea" = xno; then
-    :
+    KPSEI_LDADD=
 else
-    AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
-    if test "x$kpathsea" = x -o "x$kpathsea" = xyes; then
-	AC_CHECK_PROG([KPSEWHICH], [kpsewhich], [yes], [no])
-	AC_DEFINE(KPATHSEA_BINDIR, [""], [The prefix to prepend to kpathsea programs.])
-    else
-	kpathsea=`echo kpathsea | sed 's/\/*$//'`
-	AC_CHECK_PROG([KPSEWHICH], [kpsewhich], [yes], [no], [$kpathsea/bin])
-	AC_DEFINE(KPATHSEA_BINDIR, ["$kpathsea/bin/"])
+    if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
+	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
+	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
+	AC_MSG_NOTICE([foo])
     fi
-    if test $KPSEWHICH = no; then
+    AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
+    AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
+    if test "x$kpse_header" != xyes -o "x$kpse_library" != xyes; then
 	AC_MSG_ERROR([
 =========================================
 
 I can't find the 'kpsewhich' program. Tell me where to look with the
 --with-kpathsea=PREFIX option, or disable support with --without-kpathsea.
+XXX
 
 =========================================])
     fi
+    AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
+    KPSEI_LDADD='kpseinterface.$(OBJEXT) -lkpathsea'
 fi
+AC_SUBST([KPSEI_LDADD])
 
 AC_ARG_ENABLE(cfftot1, [  --disable-cfftot1       disable running cfftot1 from otftotfm], :, enable_cfftot1=yes)
 

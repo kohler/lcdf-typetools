@@ -3,8 +3,10 @@
 #include <lcdf/string.hh>
 class ErrorHandler;
 
+extern bool nocreate;
+extern bool verbose;
 String read_file(String filename, ErrorHandler *, bool warn = false);
 String printable_filename(const String &);
-String shell_command_output(String cmdline, const String &input, ErrorHandler *, bool strip_newlines = true);
+int mysystem(const char *command, ErrorHandler *);
 
 #endif

@@ -1,5 +1,6 @@
 #include <config.h>
 #include "automatic.hh"
+#include "kpseinterface.h"
 #include "util.hh"
 #include <cstdlib>
 #include <cstdio>
@@ -11,6 +12,7 @@
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
 #ifdef HAVE_FCNTL_H
@@ -19,9 +21,10 @@
 
 static String::Initializer initializer;
 static String odir[NUMODIR];
-static String typeface = "unknown";
+static String typeface;
 static String vendor;
 #define DEFAULT_VENDOR "lcdftools"
+#define DEFAULT_TYPEFACE "unknown"
 
 static const struct {
     const char *name;
@@ -41,19 +44,27 @@ static const struct {
 static String odir_kpathsea[NUMODIR];
 
 static bool writable_texdir_tried = false;
-static String writable_texdir;
+static String writable_texdir;	// always ends with directory separator
 
 static bool mktexupd_tried = false;
 static String mktexupd;
+
+static String
+kpsei_string(char *x)
+{
+    String s(x);
+    free((void *)x);
+    return s;
+}
 #endif
 
 #if HAVE_KPATHSEA
 static void
-find_writable_texdir(ErrorHandler *errh)
+find_writable_texdir(ErrorHandler *)
 {
-    String path = shell_command_output(KPATHSEA_BINDIR "kpsewhich --expand-path '$TEXMF'", "", errh);
+    String path = kpsei_string(kpsei_path_expand("$TEXMF"));
     while (path && !writable_texdir) {
-	int colon = path.find_left(':');
+	int colon = path.find_left(kpsei_env_sep_char);
 	String texdir = path.substring(0, (colon < 0 ? path.length() : colon));
 	path = path.substring(colon < 0 ? path.length() : colon + 1);
 	if (access(texdir.c_str(), W_OK) >= 0)
@@ -82,6 +93,8 @@ getodir(int o, ErrorHandler *errh)
 	if (dir.back() == '%') {
 	    if (!vendor)
 		vendor = DEFAULT_VENDOR;
+	    if (!typeface)
+		typeface = DEFAULT_TYPEFACE;
 	    dir = dir.substring(0, -1) + vendor + "/" + typeface;
 	}
 	
@@ -92,6 +105,7 @@ getodir(int o, ErrorHandler *errh)
 		slash = dir.length();
 	    String subdir = dir.substring(0, slash);
 	    if (access(subdir.c_str(), F_OK) < 0
+		&& !nocreate
 		&& mkdir(subdir.c_str(), 0777) < 0)
 		goto kpathsea_done;
 	}
@@ -135,20 +149,59 @@ update_odir(int o, String file, ErrorHandler *errh)
 {
     assert(o >= 0 && o < NUMODIR);
 #if HAVE_KPATHSEA
-    if (odir_kpathsea[o]) {
+    if (file.find_left('/') < 0)
+	file = odir[o] + "/" + file;
+
+    // exit if this directory was not found via kpathsea, or the file is not
+    // in the kpathsea directory
+    if (!odir_kpathsea[o]
+	|| file.length() <= odir[o].length()
+	|| memcmp(file.data(), odir[o].data(), odir[0].length() != 0)
+	|| file[odir[o].length()] != '/')
+	return;
+
+    assert(writable_texdir && writable_texdir.length() <= odir[o].length()
+	   && memcmp(file.data(), writable_texdir.data(), writable_texdir.length()) == 0);
+
+    // divide the filename into portions
+    // file == writable_texdir + directory + file
+    file = file.substring(writable_texdir.length());
+    while (file && file[0] == '/')
+	file = file.substring(1);
+    int last_slash = file.find_right('/');
+    String directory = (last_slash >= 0 ? file.substring(0, last_slash) : "");
+    file = file.substring(last_slash >= 0 ? last_slash + 1 : 0);
+    if (!file)			// no filename to update
+	return;
+
+    // return if nocreate
+    if (nocreate) {
+	errh->message("would update %sls-R for %s/%s", writable_texdir.c_str(), directory.c_str(), file.c_str());
+	return;
+    } else if (verbose)
+	errh->message("updating %sls-R for %s/%s", writable_texdir.c_str(), directory.c_str(), file.c_str());
+    
+    // try to update ls-R ourselves, rather than running mktexupd --
+    // mktexupd's runtime is painful: a half second to update a file
+    String ls_r = writable_texdir + "ls-R";
+    bool success = false;
+    if (FILE *f = fopen(ls_r.c_str(), "a")) {
+	fprintf(f, "./%s:\n%s\n", directory.c_str(), file.c_str());
+	success = true;
+	fclose(f);
+    }
+
+    // otherwise, run mktexupd
+    if (!success && writable_texdir.find_left('\'') < 0 && directory.find_left('\'') < 0 && file.find_left('\'') < 0) {
 	// look for mktexupd script
 	if (!mktexupd_tried) {
-	    mktexupd = shell_command_output(KPATHSEA_BINDIR "kpsewhich --format='web2c files' mktexupd", "", errh);
+	    mktexupd = kpsei_string(kpsei_find_file("mktexupd", KPSEI_FMT_WEB2C));
 	    mktexupd_tried = true;
 	}
 
-	// check for file prefix
-	if (file.length() > odir[o].length() + 1 && memcmp(file.data(), odir[o].data(), odir[o].length()) == 0 && file[odir[o].length()] == '/')
-	    file = file.substring(odir[o].length() + 1);
-
 	// run script
-	if (mktexupd && odir[o].find_left('\'') < 0 && file.find_left('\'') < 0) {
-	    String command = mktexupd + " '" + odir[o] + "' '" + file + "'";
+	if (mktexupd) {
+	    String command = mktexupd + " '" + writable_texdir + directory + "' '" + file + "'";
 	    int retval = system(command.c_str());
 	    if (retval == 127)
 		errh->error("could not run '%s'", command.c_str());
@@ -159,7 +212,7 @@ update_odir(int o, String file, ErrorHandler *errh)
 	}
     }
 #else
-    (void) file;
+    (void) file, (void) errh;
 #endif
 }
 
@@ -171,51 +224,50 @@ set_vendor(const String &s)
     return !had;
 }
 
-void
-set_typeface(const String &s)
+bool
+set_typeface(const String &s, bool override)
 {
-    typeface = s;
+    bool had = (bool) typeface;
+    if (!had || override)
+	typeface = s;
+    return !had;
 }
 
 String
-installed_type1(const String &opentype_filename, ErrorHandler *errh)
+installed_type1(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
 #if HAVE_AUTO_CFFTOT1
-    if (automatic && opentype_filename && opentype_filename != "-"
-	&& getodir(O_TYPE1, errh)
-	&& opentype_filename.find_left('\'') < 0
-	&& odir[O_TYPE1].find_left('\'') < 0) {
-	// construct pfb name from otf name
-	String pfb_filename = odir[O_TYPE1] + "/";
-	int slash = opentype_filename.find_right('/');
-	slash = (slash < 0 ? 0 : slash + 1);
-	int len = opentype_filename.length();
-	if (len - 4 > slash
-	    && opentype_filename[len - 4] == '.'
-	    && tolower(opentype_filename[len - 3]) == 'o'
-	    && tolower(opentype_filename[len - 2]) == 't'
-	    && tolower(opentype_filename[len - 1]) == 'f')
-	    pfb_filename += opentype_filename.substring(slash, -4) + ".pfb";
-	else
-	    pfb_filename += opentype_filename.substring(slash) + ".pfb";
+    // no font available if not in automatic mode
+    if (!automatic || !ps_fontname)
+	return String();
 
-	// only run cfftot1 if the file doesn't exist
-	if (access(pfb_filename.c_str(), R_OK) < 0) {
-	    String command = "cfftot1 '" + opentype_filename + "' '" + pfb_filename + "'";
-	    int retval = system(command.c_str());
-	    if (retval == 127)
-		errh->error("could not run '%s'", command.c_str());
-	    else if (retval < 0)
-		errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
-	    else if (retval != 0)
-		errh->error("'%s' failed", command.c_str());
-	    if (retval == 0)
-		update_odir(O_TYPE1, pfb_filename, errh);
-	    else
-		return String();
+    // look for .pfb and .pfa
+    String pfb_filename = ps_fontname + ".pfb";
+    if (String found = kpsei_string(kpsei_find_file(pfb_filename.c_str(), KPSEI_FMT_TYPE1)))
+	return found;
+
+    String pfa_filename = ps_fontname + ".pfa";
+    if (String found = kpsei_string(kpsei_find_file(pfa_filename.c_str(), KPSEI_FMT_TYPE1)))
+	return found;
+
+    // if not found, and can generate on the fly, run cfftot1
+    if (allow_generate && otf_filename && otf_filename != "-"
+	&& getodir(O_TYPE1, errh)) {
+	pfb_filename = odir[O_TYPE1] + "/" + pfb_filename;
+	if (pfb_filename.find_left('\'') >= 0 || otf_filename.find_left('\'') >+ 0)
+	    return String();
+	String command = "cfftot1 '" + otf_filename + "' -n '" + ps_fontname + "' '" + pfb_filename + "'";
+	int retval = mysystem(command.c_str(), errh);
+	if (retval == 127)
+	    errh->error("could not run '%s'", command.c_str());
+	else if (retval < 0)
+	    errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+	else if (retval != 0)
+	    errh->error("'%s' failed", command.c_str());
+	if (retval == 0) {
+	    update_odir(O_TYPE1, pfb_filename, errh);
+	    return pfb_filename;
 	}
-
-	return pfb_filename;
     }
 #endif
     return String();
@@ -227,6 +279,14 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 #if HAVE_KPATHSEA
     if (automatic && getodir(O_MAP, errh)) {
 	String filename = odir[O_MAP] + "/" + vendor + ".map";
+
+	// report nocreate/verbose
+	if (nocreate) {
+	    errh->message("would update %s", filename.c_str());
+	    return 0;
+	} else if (verbose)
+	    errh->message("updating %s", filename.c_str());
+	
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
 	    return errh->error("%s: %s", filename.c_str(), strerror(errno));
@@ -295,6 +355,8 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		if (text.substring(fl, nl - fl) == mapline) {
 		    // duplicate of old name, don't change it
 		    fclose(f);
+		    if (verbose)
+			errh->message("%s unchanged", filename.c_str());
 		    return 0;
 		} else {
 		    text = text.substring(0, fl) + text.substring(nl);
@@ -347,9 +409,8 @@ locate_encoding(String encfile, ErrorHandler *errh, bool literal)
     }
     
 #if HAVE_KPATHSEA
-    if (encfile.find_left('\'') < 0)
-	if (String file = shell_command_output(KPATHSEA_BINDIR "kpsewhich --format='PostScript header' '" + encfile + "'", "", errh))
-	    return file;
+    if (String file = kpsei_string(kpsei_find_file(encfile.c_str(), KPSEI_FMT_ENCODING)))
+	return file;
 #endif
 
     if (access(encfile.c_str(), R_OK) >= 0)

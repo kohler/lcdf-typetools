@@ -6,6 +6,7 @@
 #include <lcdf/straccum.hh>
 #include <cstdio>
 #include <cerrno>
+#include <cstdlib>
 #if defined(_MSDOS) || defined(_WIN32)
 # include <fcntl.h>
 # include <io.h>
@@ -51,6 +52,20 @@ printable_filename(const String &s)
 	return s;
 }
 
+int
+mysystem(const char *command, ErrorHandler *errh)
+{
+    if (nocreate) {
+	errh->message("would run %s", command);
+	return 0;
+    } else {
+	if (verbose)
+	    errh->message("running %s", command);
+	return system(command);
+    }
+}
+
+#if 0
 String
 shell_command_output(String cmdline, const String &input, ErrorHandler *errh, bool strip_newlines)
 {
@@ -83,3 +98,4 @@ shell_command_output(String cmdline, const String &input, ErrorHandler *errh, bo
 	sa.pop_back();
     return sa.take_string();
 }
+#endif
