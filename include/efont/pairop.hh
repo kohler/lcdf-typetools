@@ -3,11 +3,7 @@
 #ifdef __GNUG__
 #pragma interface
 #endif
-#include "vector.hh"
-#include <assert.h>
-#ifndef GLYPHINDEX
-typedef int GlyphIndex;
-#endif
+#include "encoding.hh" /* get GlyphIndex */
 
 enum PairOpDefs {
   

@@ -4,9 +4,7 @@
 #pragma interface
 #endif
 #include "vector.hh"
-#ifndef GLYPHINDEX
 typedef int GlyphIndex;
-#endif
 
 class Encoding8 {
   

@@ -9,7 +9,6 @@
 #include "encoding.hh"
 #include "pairop.hh"
 class MetricsXt;
-typedef int GlyphIndex;
 
 // Allow unknown doubles to have some `fuzz' -- so if an unknown double
 // is a bit off from the canonical Unkdouble value, we'll still recognize
@@ -45,12 +44,17 @@ class Metrics {
   
   HashMap<PermString, int> _xt_map;
   Vector<MetricsXt *> _xt;
+
+  unsigned _uses;
   
  public:
   
   Metrics();
   Metrics(PermString font_name, PermString full_name, const Metrics &);
   ~Metrics();
+  
+  void use()				{ _uses++; }
+  void unuse()				{ if (--_uses == 0) delete this; }
   
   // GLOBALS
   
@@ -122,6 +126,8 @@ class MetricsXt {
   virtual ~MetricsXt()				{ }
   
   virtual PermString kind() const = 0;
+  
+  virtual void reserve_glyphs(int)		{ }
   
 };
 

@@ -2,14 +2,14 @@
 #pragma implementation "afm.hh"
 #endif
 #include "afm.hh"
-#include "linescan.hh"
+#include "afmparse.hh"
 #include "error.hh"
 #include <ctype.h>
 #include <assert.h>
 
 
-AfmReader::AfmReader(LineScanner &l, ErrorHandler *errh)
-  : _afm(0), _l(l),
+AfmReader::AfmReader(Slurper &slurp, ErrorHandler *errh)
+  : _afm(0), _l(*(new AfmParser(slurp))),
     _composite_warned(false), _metrics_sets_warned(false), _y_width_warned(0)
 {
   _errh = errh ? errh : ErrorHandler::null_handler();
@@ -20,15 +20,16 @@ AfmReader::AfmReader(LineScanner &l, ErrorHandler *errh)
 AfmReader::~AfmReader()
 {
   delete _afm;
+  delete &_l;
 }
 
 
 Metrics *
 AfmReader::take()
 {
-  Metrics *a = _afm;
+  Metrics *m = _afm;
   _afm = 0;
-  return a;
+  return m;
 }
 
 
@@ -73,23 +74,27 @@ AfmReader::y_width_warning() const
 
 
 void
-AfmReader::no_match_warning() const
+AfmReader::no_match_warning(const char *context = 0) const
 {
-  PermString keyword;
-  // Have to check waskeywordfailure() before doing any other is() tests.
-  if (!_l.keyword_failure() && _l.is("-%s", &keyword))
-    _errh->warning(_l, "bad %s", keyword.cc());
-  else if (_l.is("-%s", &keyword))
-    // is(...) will fail (and a warning won't get printed) only if the string
-    // is all whitespace, which the AFM spec allows
-    _errh->warning(_l, "unknown directive `%s'", keyword.cc());
+  // keyword() will fail (and a warning won't get printed) only if the string
+  // is all whitespace, which the spec allows
+  PermString keyword = _l.keyword();
+  if (!keyword) return;
+  if (_l.key_matched()) {
+    _errh->warning(_l, context ? "bad `%s' command in %s:"
+		   : "bad `%s' command:", keyword.cc(), context);
+    _errh->warning(_l, "field %d %s", _l.fail_field(), _l.message().cc());
+  } else
+    _errh->warning(_l, context ? "unknown command `%s' in %s"
+		   : "unknown command `%s'", keyword.cc(), context);
+  _l.clear_message();
 }
 
 
 void
 AfmReader::read()
 {
-  LineScanner &l = _l;
+  AfmParser &l = _l;
   assert(!_afm);
   _afm = new Metrics;
   _afm_xt = new AfmMetricsXt;
@@ -115,7 +120,7 @@ AfmReader::read()
   int direction;
   
   do {
-    switch (l[0]) {
+    switch (l.first()) {
       
      case 'A':
       if (l.isall("Ascender %g", &fd( fdAscender )))
@@ -127,11 +132,11 @@ AfmReader::read()
 	break;
       if (l.isall("CapHeight %g", &fd( fdCapHeight )))
 	break;
-      if (l.isall("CharacterSet %+s", (PermString *)0))
+      if (l.isall("CharacterSet"))
 	break;
       if (l.isall("CharWidth %g %g", (double *)0, (double *)0))
 	break;
-      if (l.is("Comment%."))
+      if (l.isall("Comment"))
 	break;
       goto invalid;
       
@@ -234,7 +239,7 @@ AfmReader::read()
      case 'U':
       if (l.isall("UnderlinePosition %g", &fd( fdUnderlinePosition )))
 	break;
-      else if (l.isall("UnderlineThickness %g", &fd( fdUnderlineThickness )))
+      if (l.isall("UnderlineThickness %g", &fd( fdUnderlineThickness )))
 	break;
       goto invalid;
       
@@ -288,17 +293,16 @@ AfmReader::read_char_metric_data() const
   double wx = Unkdouble;
   double bllx = Unkdouble, blly = 0, burx = 0, bury = 0;
   PermString n;
-  PermString keyword;
   PermString ligright, ligresult;
-
-  LineScanner &l = _l;
   
-  l.is("C %d ; WX %g ; N %/s ; B %g %g %g %g ;-",
+  AfmParser &l = _l;
+  
+  l.is("C %d ; WX %g ; N %/s ; B %g %g %g %g ;",
        &c, &wx, &n, &bllx, &blly, &burx, &bury);
   
   while (l.left()) {
     
-    switch (l[0]) {
+    switch (l.first()) {
       
      case 'B':
       if (l.is("B %g %g %g %g", &bllx, &blly, &burx, &bury))
@@ -356,15 +360,13 @@ AfmReader::read_char_metric_data() const
      default:
      invalid:
       // always warn about unknown directives here!
-      if (l.is("-%s", &keyword))
-	_errh->warning(l, "unknown directive `%s' in char metrics",
-		       keyword.cc());
+      no_match_warning("character metrics");
       l.skip_until(';');
       break;
       
     }
     
-    l.is("-;-"); // get rid of any possible semicolon
+    l.is(";"); // get rid of any possible semicolon
   }
   
   // create the character
@@ -395,14 +397,14 @@ AfmReader::read_char_metrics() const
   
   while (_l.next_line())
     // Grok the whole line. Are we on a character metric data line?
-    switch (_l[0]) {
+    switch (_l.first()) {
       
      case 'C':
       if (isspace(_l[1]) || _l[1] == 'H' && isspace(_l[2])) {
 	read_char_metric_data();
 	break;
       }
-      if (_l.is("Comment%."))
+      if (_l.is("Comment"))
 	break;
       goto invalid;
       
@@ -440,15 +442,15 @@ AfmReader::read_kerns() const
   PermString left, right;
   GlyphIndex leftgi, rightgi;
   
-  LineScanner &l = _l;
+  AfmParser &l = _l;
   // AFM files have reversed pair programs when read.
   _afm->pair_program()->set_reversed(true);
   
   while (l.next_line())
-    switch (l[0]) {
+    switch (l.first()) {
       
      case 'C':
-      if (l.is("Comment%."))
+      if (l.is("Comment"))
 	break;
       goto invalid;
       
@@ -521,12 +523,12 @@ void
 AfmReader::read_composites() const
 {
   while (_l.next_line())
-    switch (_l[0]) {
+    switch (_l.first()) {
       
      case 'C':
-      if (_l.is("Comment%."))
+      if (_l.is("Comment"))
 	break;
-      if (_l.is("CC "))
+      if (_l.is("CC"))
 	break;
       goto invalid;
       

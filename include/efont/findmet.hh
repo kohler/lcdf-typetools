@@ -25,7 +25,7 @@ class MetricsFinder {
   MetricsFinder();
   virtual ~MetricsFinder();
 
-  MetricsFinder *next() const		{ return _next; }
+  MetricsFinder *next() const			{ return _next; }
   
   void append(MetricsFinder *);
   
@@ -35,7 +35,8 @@ class MetricsFinder {
   virtual Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
   virtual AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler*);
   
-  virtual void record(Metrics *);
+  void record(Metrics *m);
+  virtual void record(Metrics *, PermString);
   virtual void record(AmfmMetrics *);
   
 };
@@ -51,11 +52,14 @@ class CacheMetricsFinder: public MetricsFinder {
  public:
   
   CacheMetricsFinder();
+  ~CacheMetricsFinder();
   
   Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
   AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);
-  void record(Metrics *);
+  void record(Metrics *, PermString);
   void record(AmfmMetrics *);
+
+  void clear();
   
 };
 

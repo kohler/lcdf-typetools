@@ -6,7 +6,8 @@
 #include "metrics.hh"
 #include "hashmap.hh"
 #include "t1mm.hh"
-class LineScanner;
+class Slurper;
+class AfmParser;
 class MetricsFinder;
 class Type1Charstring;
 class ErrorHandler;
@@ -65,6 +66,8 @@ class AmfmMetrics {
   AmfmPrimaryFont *_primary_fonts;
   
   Metrics *_sanity_afm;
+
+  unsigned _uses;
   
   static HashMap<PermString, PermString> axis_generic_label;
   static void make_axis_generic_label();
@@ -83,7 +86,9 @@ class AmfmMetrics {
   AmfmMetrics(MetricsFinder *);
   ~AmfmMetrics();
   
-  void read(LineScanner &);
+  void use()				{ _uses++; }
+  void unuse()				{ if (--_uses == 0) delete this; }
+  
   bool sanity(ErrorHandler *) const;
   
   double &fd(int i) const		{ return _fdv[i]; }
@@ -108,7 +113,7 @@ class AmfmReader {
   
   AmfmMetrics *_amfm;
   MetricsFinder *_finder;
-  LineScanner &_l;
+  AfmParser &_l;
   Type1MMSpace *_mmspace;
   ErrorHandler *_errh;
   
@@ -118,7 +123,7 @@ class AmfmReader {
 
   void check_mmspace();
   
-  void no_match_warning() const;
+  void no_match_warning(const char *context = 0) const;
   
   bool read_simple_array(Vector<double> &) const;
   void read_positions() const;
@@ -134,11 +139,11 @@ class AmfmReader {
   
   void read_amcp_file();
   
-  AmfmReader(const AmfmReader &, LineScanner &);
+  AmfmReader(const AmfmReader &, Slurper &);
   
  public:
   
-  AmfmReader(LineScanner &, MetricsFinder *, ErrorHandler *);
+  AmfmReader(Slurper &, MetricsFinder *, ErrorHandler *);
   ~AmfmReader();
   
   bool ok() const				{ return _amfm; }

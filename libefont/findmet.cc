@@ -2,7 +2,7 @@
 #pragma implementation "findmet.hh"
 #endif
 #include "findmet.hh"
-#include "linescan.hh"
+#include "afmparse.hh"
 #include "afm.hh"
 #include "amfm.hh"
 #include <string.h>
@@ -60,7 +60,13 @@ MetricsFinder::find_amfm(PermString name, ErrorHandler *errh)
 void
 MetricsFinder::record(Metrics *m)
 {
-  if (_next) _next->record(m);
+  record(m, m->font_name());
+}
+
+void
+MetricsFinder::record(Metrics *m, PermString name)
+{
+  if (_next) _next->record(m, name);
 }
 
 void
@@ -91,6 +97,11 @@ CacheMetricsFinder::CacheMetricsFinder()
 {
 }
 
+CacheMetricsFinder::~CacheMetricsFinder()
+{
+  clear();
+}
+
 Metrics *
 CacheMetricsFinder::find_metrics_x(PermString name, MetricsFinder *,
 				   ErrorHandler *)
@@ -109,10 +120,12 @@ CacheMetricsFinder::find_amfm_x(PermString name, MetricsFinder *,
 
 
 void
-CacheMetricsFinder::record(Metrics *m)
+CacheMetricsFinder::record(Metrics *m, PermString name)
 {
   int index = _metrics.append(m);
-  _metrics_map.insert(m->font_name(), index);
+  _metrics_map.insert(name, index);
+  m->use();
+  MetricsFinder::record(m, name);
 }
 
 void
@@ -120,6 +133,21 @@ CacheMetricsFinder::record(AmfmMetrics *amfm)
 {
   int index = _amfm.append(amfm);
   _amfm_map.insert(amfm->font_name(), index);
+  amfm->use();
+  MetricsFinder::record(amfm);
+}
+
+void
+CacheMetricsFinder::clear()
+{
+  for (int i = 0; i < _metrics.count(); i++)
+    _metrics[i]->unuse();
+  for (int i = 0; i < _amfm.count(); i++)
+    _amfm[i]->unuse();
+  _metrics.clear();
+  _amfm.clear();
+  _metrics_map.clear();
+  _amfm_map.clear();
 }
 
 
@@ -155,8 +183,14 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
   if (!mmspace->design_to_weight(design, weight, errh))
     return 0;
   Metrics *new_afm = amfm->interpolate(design, weight, errh);
-  if (new_afm)
+  if (new_afm) {
     finder->record(new_afm);
+    // What if the dimensions changed because the user specified out-of-range
+    // dimens? We don't want to reinterpolate each time, so record the new
+    // AFM under that name as well.
+    if (new_afm->font_name() != name)
+      finder->record(new_afm, name);
+  }
   return new_afm;
 }
 
@@ -182,7 +216,10 @@ PsresMetricsFinder::PsresMetricsFinder()
 void
 PsresMetricsFinder::read_psres(const Filename &file_name)
 {
-  LineScanner l(file_name);
+  Slurper slurper(file_name);
+  AfmParser l(slurper);
+  AfmParser::set_ends_names('=', true);
+  
   PermString directory = file_name.directory();
   PermString font, file;
   
@@ -192,7 +229,7 @@ PsresMetricsFinder::read_psres(const Filename &file_name)
   while (l.next_line() && !l.is("FontAFM"))
     ;
   while (l.next_line() && !l.is("."))
-    if (l.is("%==%+s", &font, &file) && !_afm_path_map[font]) {
+    if (l.is("%/s=%+s", &font, &file) && !_afm_path_map[font]) {
       PermString path =
 	permprintf("%p/%p", directory.capsule(), file.capsule());
       _afm_path_map.insert(font, path);
@@ -201,11 +238,13 @@ PsresMetricsFinder::read_psres(const Filename &file_name)
   while (l.next_line() && !l.is("FontAMFM"))
     ;
   while (l.next_line() && !l.is("."))
-    if (l.is("%==%+s", &font, &file) && !_amfm_path_map[font]) {
+    if (l.is("%/s=%+s", &font, &file) && !_amfm_path_map[font]) {
       PermString path =
 	permprintf("%p/%p", directory.capsule(), file.capsule());
       _amfm_path_map.insert(font, path);
     }
+  
+  AfmParser::set_ends_names('=', false);
 }
 
 Metrics *
@@ -215,8 +254,8 @@ PsresMetricsFinder::find_metrics_x(PermString name, MetricsFinder *finder,
   PermString tryname = _afm_path_map[name];
   Filename newfile = tryname;
   if (newfile.readable()) {
-    LineScanner l(newfile);
-    AfmReader reader(l, errh);
+    Slurper slurper(newfile);
+    AfmReader reader(slurper, errh);
     Metrics *afm = reader.take();
     if (afm) finder->record(afm);
     return afm;
@@ -231,8 +270,8 @@ PsresMetricsFinder::find_amfm_x(PermString name, MetricsFinder *finder,
   PermString tryname = _amfm_path_map[name];
   Filename newfile = tryname;
   if (newfile.readable()) {
-    LineScanner l(newfile);
-    AmfmReader reader(l, finder, errh);
+    Slurper slurper(newfile);
+    AmfmReader reader(slurper, finder, errh);
     AmfmMetrics *amfm = reader.take();
     if (amfm) finder->record(amfm);
     return amfm;
@@ -257,8 +296,8 @@ DirectoryMetricsFinder::find_metrics_x(PermString name, MetricsFinder *finder,
   Filename newfile =
     Filename(_directory, permprintf("%p.afm", name.capsule()));
   if (newfile.readable()) {
-    LineScanner l(newfile);
-    AfmReader reader(l, errh);
+    Slurper slurper(newfile);
+    AfmReader reader(slurper, errh);
     Metrics *afm = reader.take();
     if (afm) finder->record(afm);
     return afm;
@@ -273,8 +312,8 @@ DirectoryMetricsFinder::find_amfm_x(PermString name, MetricsFinder *finder,
   Filename newfile =
     Filename(_directory, permprintf("%p.amfm", name.capsule()));
   if (newfile.readable()) {
-    LineScanner l(newfile);
-    AmfmReader reader(l, finder, errh);
+    Slurper slurper(newfile);
+    AmfmReader reader(slurper, finder, errh);
     AmfmMetrics *amfm = reader.take();
     if (amfm) finder->record(amfm);
     return amfm;

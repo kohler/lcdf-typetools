@@ -4,16 +4,25 @@
 #pragma interface
 #endif
 #include "metrics.hh"
-class LineScanner;
+class AfmParser;
+class Slurper;
 class ErrorHandler;
-class AfmMetricsXt;
 
+struct AfmMetricsXt: public MetricsXt {
+  
+  Vector<PermString> opening_comments;
+  PermString notice;
+  PermString encoding_scheme;
+  
+  PermString kind() const			{ return "AFM"; }
+  
+};
 
 class AfmReader {
   
   Metrics *_afm;
   AfmMetricsXt *_afm_xt;
-  LineScanner &_l;
+  AfmParser &_l;
   ErrorHandler *_errh;
   
   mutable bool _composite_warned;
@@ -23,7 +32,7 @@ class AfmReader {
   void composite_warning() const;
   void metrics_sets_warning() const;
   void y_width_warning() const;
-  void no_match_warning() const;
+  void no_match_warning(const char *context = 0) const;
   
   double &fd(int i)				{ return _afm->fd(i); }
   GlyphIndex find_err(PermString, const char *) const;
@@ -37,22 +46,11 @@ class AfmReader {
   
  public:
   
-  AfmReader(LineScanner &, ErrorHandler *);
+  AfmReader(Slurper &, ErrorHandler *);
   ~AfmReader();
   
   bool ok() const				{ return _afm; }
   Metrics *take();
-  
-};
-
-
-struct AfmMetricsXt: public MetricsXt {
-  
-  Vector<PermString> opening_comments;
-  PermString notice;
-  PermString encoding_scheme;
-  
-  PermString kind() const			{ return "AFM"; }
   
 };
 

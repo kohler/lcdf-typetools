@@ -97,7 +97,7 @@ do_file(FILE *f)
   
   font = new MyFont(*reader);
   delete reader;
-
+  
   mmspace = font->create_mmspace(&errh);
   if (!mmspace)
     errh.fatal("not a multiple master font");

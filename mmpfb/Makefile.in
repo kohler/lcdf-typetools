@@ -48,7 +48,7 @@ main.o: main.cc
 # Cleaning and distribution
 
 clean:
-	rm -f $(PROGRAMS) $(MY_OBJS) core
+	rm -f $(PROGRAMS) $(MY_OBJS) core *.core
 mostlyclean: clean
 distclean: mostlyclean
 	rm -f Makefile

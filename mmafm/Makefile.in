@@ -28,11 +28,11 @@ LDFLAGS		= @LDFLAGS@
 
 PROGRAMS	= mmafm
 MY_OBJS		= vectori.o hashmapi.o main.o
-OBJS		= ../edlib/permstr.o ../edlib/landmark.o \
+OBJS		= ../edlib/permstr.o ../edlib/landmark.o ../edlib/slurper.o \
 	../edlib/error.o ../edlib/filename.o ../metricslib/encoding.o \
 	../metricslib/pairop.o ../metricslib/metrics.o ../metricslib/afm.o \
 	../metricslib/afmw.o ../metricslib/amfm.o ../metricslib/findmet.o \
-	../metricslib/linescan.o ../edlib/clp.o ../t1lib/t1cs.o \
+	../metricslib/afmparse.o ../edlib/clp.o ../t1lib/t1cs.o \
 	../t1lib/t1interp.o ../t1lib/t1mm.o $(MY_OBJS)
 
 all: $(PROGRAMS)
@@ -47,7 +47,7 @@ main.o: main.cc
 # Cleaning and distribution
 
 clean:
-	rm -f $(PROGRAMS) $(MY_OBJS) core
+	rm -f $(PROGRAMS) $(MY_OBJS) core *.core
 mostlyclean: clean
 distclean: mostlyclean
 	rm -f Makefile

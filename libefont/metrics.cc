@@ -7,7 +7,8 @@
 Metrics::Metrics()
   : _name_map(-1),
     _scale(1), _fdv(fdLast, Unkdouble),
-    _xt_map(0)
+    _xt_map(0),
+    _uses(0)
 {
   _xt.append((MetricsXt *)0);
 }
@@ -19,7 +20,8 @@ Metrics::Metrics(PermString font_name, PermString full_name, const Metrics &m)
     _name_map(m._name_map), _names(m._names), _encoding(m._encoding),
     _scale(1), _fdv(fdLast, Unkdouble),
     _pairp(m._pairp),
-    _xt_map(0)
+    _xt_map(0),
+    _uses(0)
 {
   reserve_glyphs(m._wdv.count());
   _kernv.resize(m._kernv.count(), Unkdouble);
@@ -29,6 +31,7 @@ Metrics::Metrics(PermString font_name, PermString full_name, const Metrics &m)
 
 Metrics::~Metrics()
 {
+  assert(_uses == 0);
   for (int i = 0; i < _xt.count(); i++)
     delete _xt[i];
 }
@@ -53,6 +56,8 @@ Metrics::reserve_glyphs(int amt)
   _btv.resize(amt, Unkdouble);
   _encoding.reserve_glyphs(amt);
   _pairp.reserve_glyphs(amt);
+  for (int i = 0; i < _xt.count(); i++)
+    _xt[i]->reserve_glyphs(amt);
 }
 
 
@@ -100,4 +105,6 @@ Metrics::add_xt(MetricsXt *mxt)
 {
   int n = _xt.append(mxt);
   _xt_map.insert(mxt->kind(), n);
+  if (_wdv.count() > 0)
+    mxt->reserve_glyphs(_wdv.count());
 }

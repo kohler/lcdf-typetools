@@ -1,5 +1,5 @@
 #include "findmet.hh"
-#include "linescan.hh"
+#include "slurper.hh"
 #include "afm.hh"
 #include "afmw.hh"
 #include "amfm.hh"
@@ -85,10 +85,16 @@ read_file(char *fn, MetricsFinder *finder)
     return;
   }
   
-  LineScanner l(filename, file);
-  if (file != stdin && l.next_line()
-      && l.isall("StartFontMetrics %g", (double *)0)) {
-    AfmReader reader(l, &errh);
+  Slurper slurper(filename, file);
+  bool is_afm = false;
+  if (file != stdin) {
+    char *first_line = slurper.peek_line();
+    if (first_line)
+      is_afm = strncmp(first_line, "StartFontMetrics", 16) == 0;
+  }
+  
+  if (is_afm) {
+    AfmReader reader(slurper, &errh);
     Metrics *afm = reader.take();
     if (!afm)
       errh.fatal("`%s' doesn't seem to contain an AFM file", fn);
@@ -97,7 +103,7 @@ read_file(char *fn, MetricsFinder *finder)
   } else {
     if (amfm)
       errh.fatal("already read one AMFM file");
-    AmfmReader reader(l, finder, &errh);
+    AmfmReader reader(slurper, finder, &errh);
     amfm = reader.take();
     if (!amfm)
       errh.fatal("`%s' doesn't seem to contain an AMFM file", fn);

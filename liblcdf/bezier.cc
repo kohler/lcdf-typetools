@@ -4,9 +4,9 @@
 #include "bezier.hh"
 #include "charpanel.hh"
 #include "segment.hh"
+#include "cntlsprt.hh"
 #include <float.h>
 #include <assert.h>
-
 
 Bezier::Bezier(const point &p1, const point &p2, const point &p3,
 	       const point &p4)
@@ -146,6 +146,15 @@ Bezier::eval(double t) const
  * drawing
  **/
 
+/* bezierpoints is an array of XPoints used so we can make one call to
+   XDrawLines rather than many to XDrawLine, to reduce network traffic.
+   It is dynamically allocated so its size, maxbezierpoints, can depend on the
+   capabilities of the X server. numbezierpoints is the number of points
+   currently in the array. */
+XPoint *Bezier::points;
+int Bezier::npoints;
+int Bezier::maxpoints;
+
 void
 Bezier::segment_recurse()
 {
@@ -172,4 +181,129 @@ Bezier::segment_curve(Lens *lens)
     Segment::make(winb._p[0].x, winb._p[0].y, winb._p[3].x, winb._p[3].y);
   else
     winb.segment_recurse();
+}
+
+
+/* drawbezierrecurse  Draws the bezier b, which need not necessarily be
+     prepared (ie. its bounding box information in particular may be invalid),
+     using the recursive subdivision algorithm. b should already be in window
+     coordinates. The bezcontext c is used to specify the display (c->d),
+     window (c->w), and GC (c->gc) to draw into/with. */
+
+void
+Bezier::draw_recurse(Charpanel *c)
+{
+  if (is_flat(0.5)) {
+    if (!npoints) {
+      /* the very first point */
+      points[0].x = (int)_p[0].x;
+      points[0].y = (int)_p[0].y;
+      npoints++;
+    }
+    if (npoints == maxpoints) {
+      c->draw_outline(points, npoints);
+      points[0] = points[npoints - 1];
+      npoints = 1;
+    }
+    points[npoints].x = (int)_p[3].x;
+    points[npoints].y = (int)_p[3].y;
+    npoints++;
+  } else {
+    Bezier left, right;
+    halve(left, right);
+    left.draw_recurse(c);
+    right.draw_recurse(c);
+  }
+}
+
+
+inline void
+Bezier::unx_draw_curve(Charpanel *c)
+{
+  npoints = 0;
+  draw_recurse(c);
+  if (npoints > 1)
+    c->draw_outline(points, npoints);
+}
+
+
+inline void
+Bezier::unx_draw_segments(Charpanel *c, int parts)
+{
+  if (parts & DrawSegment(0))
+    c->draw_segment((int)_p[0].x, (int)_p[0].y, (int)_p[1].x, (int)_p[1].y);
+  if (parts & DrawSegment(1))
+    c->draw_segment((int)_p[3].x, (int)_p[3].y, (int)_p[2].x, (int)_p[2].y);
+  if (parts & DrawCrossSegment)
+    c->draw_segment((int)_p[1].x, (int)_p[1].y, (int)_p[2].x, (int)_p[2].y);
+}
+
+
+inline void
+Bezier::unx_draw_controls(Charpanel *c, int parts)
+{
+  if (parts & DrawControl(0))
+    c->anchor()->draw(c, (int)_p[0].x, (int)_p[0].y);
+  if (parts & DrawControl(1))
+    c->control()->draw(c, (int)_p[1].x, (int)_p[1].y);
+  if (parts & DrawControl(2))
+    c->control()->draw(c, (int)_p[2].x, (int)_p[2].y);
+  if (parts & DrawControl(3))
+    c->anchor()->draw(c, (int)_p[3].x, (int)_p[3].y);
+}
+
+
+void
+Bezier::draw_curve(Lens *lens, Charpanel *c)
+{
+  Bezier winb(lens, *this);
+  winb.unx_draw_curve(c);
+}
+
+
+void
+Bezier::draw(Lens *lens, Charpanel *c, int parts)
+{
+  Bezier winb(lens, *this);
+  winb.unx_draw_segments(c, parts);
+  if (parts & DrawCurve)
+    winb.unx_draw_curve(c);
+  winb.unx_draw_controls(c, parts);
+}
+
+
+void
+Stroke::draw(Lens *lens, Charpanel *cp, int parts) const
+{
+  int internal_parts = parts & ~DrawControl(3);
+  Bezier::npoints = 0;
+  
+  for (Bezier *b = first(); b; b = next(b)) {
+    Bezier winb(lens, *b);
+    winb.unx_draw_segments(cp, parts);
+    if (parts & DrawCurve)
+      winb.draw_recurse(cp);
+    if (b->_right)
+      winb.unx_draw_controls(cp, internal_parts);
+    else
+      winb.unx_draw_controls(cp, parts);
+  }
+  
+  if (Bezier::npoints > 1)
+    cp->draw_outline(Bezier::points, Bezier::npoints);
+}
+
+
+/* initbezierdrawing  Initializes several things for the bezier-drawing system.
+     Must be called before the first call to drawbezier(). */
+
+void
+Bezier::initialize_class(Charpanel *c) {
+  // if we've already been initialized, return immediately.
+  if (maxpoints) return;
+  
+  // create the points array
+  maxpoints = (XMaxRequestSize(c->display()) - 3) / 2;
+  if (maxpoints > 10000) maxpoints = 10000;
+  points = new XPoint[maxpoints];
 }

@@ -3,7 +3,7 @@
 #endif
 #include "amfm.hh"
 #include "afm.hh"
-#include "linescan.hh"
+#include "afmparse.hh"
 #include "error.hh"
 #include "findmet.hh"
 #include "t1cs.hh"
@@ -24,6 +24,10 @@ AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
 
 AmfmMetrics::~AmfmMetrics()
 {
+  assert(_uses == 0);
+  for (int m = 0; m < _nmasters; m++)
+    if (_masters[m].afm)
+      _masters[m].afm->unuse();
   delete[] _masters;
   delete _mmspace;
   while (_primary_fonts) {
@@ -103,6 +107,7 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
     } else if (!_sanity_afm) {
       master.afm = afm;
       _sanity_afm = afm;
+      afm->use();
       
     } else {
       PairProgram *sanity_pairp = _sanity_afm->pair_program();
@@ -115,8 +120,10 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
 	if (errh)
 	  errh->error("%s: AFM for master `%s' failed sanity checks",
 		      _font_name.cc(), master.font_name.cc());
-      } else
+      } else {
 	master.afm = afm;
+	afm->use();
+      }
       
     }
   }
@@ -232,18 +239,18 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
  * AmfmReader
  **/
 
-AmfmReader::AmfmReader(LineScanner &l, MetricsFinder *finder,
+AmfmReader::AmfmReader(Slurper &slurper, MetricsFinder *finder,
 		       ErrorHandler *errh)
-  : _amfm(0), _finder(finder), _l(l)
+  : _amfm(0), _finder(finder), _l(*(new AfmParser(slurper)))
 {
   _errh = errh ? errh : ErrorHandler::null_handler();
   if (_l.ok())
     read();
 }
 
-AmfmReader::AmfmReader(const AmfmReader &r, LineScanner &l)
-  : _amfm(r._amfm), _finder(r._finder), _l(l), _mmspace(r._mmspace),
-    _errh(r._errh)
+AmfmReader::AmfmReader(const AmfmReader &r, Slurper &slurper)
+  : _amfm(r._amfm), _finder(r._finder), _l(*(new AfmParser(slurper))),
+    _mmspace(r._mmspace), _errh(r._errh)
 {
   // Used to read .amcp file.
   if (_l.ok())
@@ -254,6 +261,7 @@ AmfmReader::AmfmReader(const AmfmReader &r, LineScanner &l)
 AmfmReader::~AmfmReader()
 {
   delete _amfm;
+  delete &_l;
 }
 
 
@@ -266,16 +274,20 @@ AmfmReader::take()
 }
 
 void
-AmfmReader::no_match_warning() const
+AmfmReader::no_match_warning(const char *context = 0) const
 {
-  PermString keyword;
-  // Have to check waskeywordfailure() before doing any other is() tests.
-  if (!_l.keyword_failure() && _l.is("-%s", &keyword))
-    _errh->warning(_l, "bad %s", keyword.cc());
-  else if (_l.is("-%s", &keyword))
-    // is(...) will fail (and a warning won't get printed) only if the string
-    // is all whitespace, which the AFM spec allows
-    _errh->warning(_l, "unknown directive `%s'", keyword.cc());
+  // keyword() will fail (and a warning won't get printed) only if the string
+  // is all whitespace, which the spec allows
+  PermString keyword = _l.keyword();
+  if (!keyword) return;
+  if (_l.key_matched()) {
+    _errh->warning(_l, context ? "bad `%s' command in %s:"
+		   : "bad `%s' command:", keyword.cc(), context);
+    _errh->warning(_l, "field %d %s", _l.fail_field(), _l.message().cc());
+  } else
+    _errh->warning(_l, context ? "unknown command `%s' in %s"
+		   : "unknown command `%s'", keyword.cc(), context);
+  _l.clear_message();
 }
 
 
@@ -297,7 +309,7 @@ AmfmReader::read()
   _amfm = new AmfmMetrics(_finder);
   _mmspace = 0;
   
-  LineScanner &l = _l;
+  AfmParser &l = _l;
   _amfm->_directory = l.filename().directory();
   
   // First, read all opening comments into an array so we can print them out
@@ -327,15 +339,15 @@ AmfmReader::read()
       goto invalid;
       
      case 'B':
-      if (l.is("BlendDesignPositions%.")) {
+      if (l.is("BlendDesignPositions")) {
 	read_positions();
 	break;
       }
-      if (l.is("BlendDesignMap%.")) {
+      if (l.is("BlendDesignMap")) {
 	read_normalize();
 	break;
       }
-      if (l.is("BlendAxisTypes%.")) {
+      if (l.is("BlendAxisTypes")) {
 	read_axis_types();
 	break;
       }
@@ -344,7 +356,7 @@ AmfmReader::read()
      case 'C':
       if (l.isall("CapHeight %g", &fd( fdCapHeight )))
 	break;
-      if (l.is("Comment%."))
+      if (l.is("Comment"))
 	break;
       goto invalid;
       
@@ -430,7 +442,7 @@ AmfmReader::read()
      case 'W':
       if (l.isall("Weight %+s", &_amfm->_weight))
 	break;
-      if (l.is("WeightVector%.")) {
+      if (l.is("WeightVector")) {
 	Vector<double> wv;
 	if (!read_simple_array(wv) || !_mmspace)
 	  _errh->error(_l, "bad WeightVector");
@@ -464,8 +476,8 @@ AmfmReader::read()
     PermString name = permprintf("%p.amcp", l.filename().base().capsule());
     Filename filename = _l.filename().from_directory(name);
     if (filename.readable()) {
-      LineScanner l(filename);
-      AmfmReader new_reader(*this, l);
+      Slurper slurp(filename);
+      AmfmReader new_reader(*this, slurp);
     }
   }
   
@@ -488,7 +500,7 @@ AmfmReader::read_amcp_file()
     switch (_l[0]) {
       
      case 'C':
-      if (_l.is("Comment%."))
+      if (_l.is("Comment"))
 	break;
       goto invalid;
       
@@ -501,7 +513,7 @@ AmfmReader::read_amcp_file()
       
      default:
      invalid:
-      no_match_warning();
+      no_match_warning("AMCP file");
       
     }
   }
@@ -514,14 +526,14 @@ AmfmReader::read_amcp_file()
 bool
 AmfmReader::read_simple_array(Vector<double> &vec) const
 {
-  if (!_l.is("-[-")) return false;
+  if (!_l.is("[")) return false;
   
   vec.clear();
   double d;
-  while (_l.is("%g-", &d))
+  while (_l.is("%g", &d))
     vec.append(d);
   
-  return _l.is("-]-");
+  return _l.is("]");
 }
 
 
@@ -530,7 +542,7 @@ AmfmReader::read_positions() const
 {
   if (nmasters() < 2 || naxes() < 1) return;
   Vector<NumVector> positions;
-  if (!_l.is("-[-") || !_mmspace) goto error;
+  if (!_l.is("[") || !_mmspace) goto error;
   
   for (int i = 0; i < nmasters(); i++) {
     positions.append(NumVector());
@@ -538,7 +550,7 @@ AmfmReader::read_positions() const
       goto error;
   }
   
-  if (!_l.is("-]-")) goto error;
+  if (!_l.is("]")) goto error;
   _mmspace->set_master_positions(positions);
   return;
   
@@ -552,21 +564,21 @@ AmfmReader::read_normalize() const
 {
   if (naxes() < 1) return;
   Vector<NumVector> normalize_in, normalize_out;
-  if (!_l.is("-[-") || !_mmspace) goto error;
+  if (!_l.is("[") || !_mmspace) goto error;
   
   for (int a = 0; a < naxes(); a++) {
-    if (!_l.is("[-")) goto error;
+    if (!_l.is("[")) goto error;
     normalize_in.append(NumVector());
     normalize_out.append(NumVector());
     double v1, v2;
-    while (_l.is("[-%g %g-]-", &v1, &v2)) {
+    while (_l.is("[-%g %g-]", &v1, &v2)) {
       normalize_in[a].append(v1);
       normalize_out[a].append(v2);
     }
-    if (!_l.is("]-")) goto error;
+    if (!_l.is("]")) goto error;
   }
   
-  if (!_l.is("]-")) goto error;
+  if (!_l.is("]")) goto error;
   _mmspace->set_normalize(normalize_in, normalize_out);
   return;
   
@@ -582,13 +594,13 @@ AmfmReader::read_axis_types() const
   int ax = 0;
   Vector<PermString> types;
   if (naxes() < 1) return;
-  if (!_l.is("-[-") || !_mmspace) goto error;
+  if (!_l.is("[") || !_mmspace) goto error;
   _mmspace->check();
 
-  while (_l.is("/%/s-", &s))
+  while (_l.is("/%/s", &s))
     _mmspace->set_axis_type(ax++, s);
   
-  if (!_l.is("-]")) goto error;
+  if (!_l.is("]")) goto error;
   return;
   
  error:
@@ -622,7 +634,7 @@ AmfmReader::read_axis(int ax) const
       goto invalid;
       
      case 'C':
-      if (_l.is("Comment%."))
+      if (_l.is("Comment"))
 	break;
       goto invalid;
       
@@ -660,7 +672,7 @@ AmfmReader::read_master(int m) const
     switch (_l[0]) {
       
      case 'C':
-      if (_l.is("Comment%."))
+      if (_l.is("Comment"))
 	break;
       goto invalid;
       
@@ -684,7 +696,7 @@ AmfmReader::read_master(int m) const
       goto invalid;
       
      case 'W':
-      if (_l.is("WeightVector%.")) {
+      if (_l.is("WeightVector")) {
 	if (!(read_simple_array(amfmm->weight_vector) &&
 	      amfmm->weight_vector.count() == nmasters())) {
 	  _errh->error(_l, "bad WeightVector");
@@ -713,25 +725,20 @@ AmfmReader::read_one_primary_font() const
   
   while (_l.left()) {
     
-    if (_l.is("PC ")) {
+    if (_l.is("PC")) {
       for (int a = 0; a < naxes(); a++)
-	if (!_l.is("%d-", &pf->design_vector[a]))
+	if (!_l.is("%d", &pf->design_vector[a]))
 	  goto error;
-    } else if (_l.is("PL ")) {
+    } else if (_l.is("PL")) {
       for (int a = 0; a < naxes(); a++)
-	if (!_l.is("(-%/s-)-", &pf->labels[a]))
+	if (!_l.is("(-%/s-)", &pf->labels[a]))
 	  goto error;
     } else if (_l.is("PN %(", &pf->name))
       ;
-    else {
-      PermString keyword;
-      if (_l.is("-%s", &keyword))
-	_errh->warning(_l, "unknown directive `%s' in primary font",
-		       keyword.cc());
-      _l.skip_until(';');
-    }
+    else
+      no_match_warning("primary font");
     
-    _l.is("-;-"); // get rid of any possible semicolon
+    _l.is(";"); // get rid of any possible semicolon
   }
   
   pf->next = _amfm->_primary_fonts;
@@ -750,7 +757,7 @@ AmfmReader::read_primary_fonts() const
     switch (_l[0]) {
       
      case 'C':
-      if (_l.is("Comment%."))
+      if (_l.is("Comment"))
 	break;
       goto invalid;
       
@@ -827,6 +834,7 @@ AmfmReader::read_conversion_programs() const
      default:
      invalid:
       no_match_warning();
+      break;
       
     }
   
