@@ -62,6 +62,7 @@ Type1CharstringGen::clear()
     _state = S_INITIAL;
 }
 
+
 void
 Type1CharstringGen::gen_number(double float_val, int kind)
 {
@@ -225,7 +226,8 @@ Type1CharstringGen::callsubr_string(int subr)
  **/
 
 Type1CharstringGenInterp::Type1CharstringGenInterp(int precision)
-    : _csgen(precision), _hr_storage(0), _hr_csgen(precision),
+    : _csgen(precision), _hint_csgen(precision),
+      _direct_hr(false), _hr_storage(0),
       _max_flex_height(0), _bad_flex(false)
 {
 }
@@ -298,13 +300,18 @@ Type1CharstringGenInterp::act_seac(int, double asb, double adx, double ady, int 
 }
 
 void
+Type1CharstringGenInterp::swap_stem_hints()
+{
+    _stem_info.clear();
+    _nhstem = 0;
+    _in_hr = true;
+}
+
+void
 Type1CharstringGenInterp::act_hstem(int, double pos, double width)
 {
-    if (_state != S_INITIAL && !_in_hr) {
-	_stem_info.clear();
-	_nhstem = 0;
-	_in_hr = true;
-    }
+    if (_state != S_INITIAL && !_in_hr)
+	swap_stem_hints();
     _stem_info.push_back(pos);
     _stem_info.push_back(width);
     _nhstem++;
@@ -313,28 +320,27 @@ Type1CharstringGenInterp::act_hstem(int, double pos, double width)
 void
 Type1CharstringGenInterp::act_vstem(int, double pos, double width)
 {
-    if (_state != S_INITIAL && !_in_hr) {
-	_stem_info.clear();
-	_nhstem = 0;
-	_in_hr = true;
-    }
+    if (_state != S_INITIAL && !_in_hr)
+	swap_stem_hints();
     _stem_info.push_back(pos);
     _stem_info.push_back(width);
 }
 
-void
-Type1CharstringGenInterp::gen_hintmask(Type1CharstringGen &csgen, const unsigned char *data, int nhints) const
+String
+Type1CharstringGenInterp::gen_hints(const unsigned char *data, int nhints) const
 {
+    _hint_csgen.clear();
     unsigned char mask = 0x80;
     for (int i = 0; i < nhints; i++) {
 	if (*data & mask) {
-	    csgen.gen_number(_stem_info[2*i]);
-	    csgen.gen_number(_stem_info[2*i + 1]);
-	    csgen.gen_command(i < _nhstem ? CS::cHstem : CS::cVstem);
+	    _hint_csgen.gen_number(_stem_info[2*i]);
+	    _hint_csgen.gen_number(_stem_info[2*i + 1]);
+	    _hint_csgen.gen_command(i < _nhstem ? CS::cHstem : CS::cVstem);
 	}
 	if ((mask >>= 1) == 0)
 	    data++, mask = 0x80;
     }
+    return _hint_csgen.take_string();
 }
 
 void
@@ -348,26 +354,27 @@ Type1CharstringGenInterp::act_hintmask(int cmd, const unsigned char *data, int n
 	data_holder = String::fill_string('\377', ((nhints - 1) >> 3) + 1);
 	data = data_holder.udata();
     }
+
+    String hints = gen_hints(data, nhints);
+    _in_hr = false;
     
-    if (_state == S_INITIAL) {
+    if (_state == S_INITIAL || _direct_hr) {
+	_last_hints = hints;
 	gen_sbw(true);
-	gen_hintmask(_csgen, data, nhints);
-    } else if (_hr_storage) {
-	_hr_csgen.clear();
-	gen_hintmask(_hr_csgen, data, nhints);
-	_hr_csgen.gen_command(CS::cReturn);
-	Type1Charstring hr_subr;
-	_hr_csgen.output(hr_subr);
+	_csgen.append_charstring(hints);
+    } else if (_hr_storage && hints != _last_hints) {
+	_last_hints = hints;
+	hints += (char)(CS::cReturn);
 
 	int subrno = -1, nsubrs = _hr_storage->nsubrs();
 	for (int i = _hr_firstsubr; i < nsubrs; i++)
 	    if (Type1Subr *s = _hr_storage->subr_x(i))
-		if (s->t1cs() == hr_subr) {
+		if (s->t1cs() == hints) {
 		    subrno = i;
 		    break;
 		}
 	
-	if (subrno < 0 && _hr_storage->set_subr(nsubrs, hr_subr))
+	if (subrno < 0 && _hr_storage->set_subr(nsubrs, Type1Charstring(hints)))
 	    subrno = nsubrs;
 
 	if (subrno >= 0) {
@@ -529,6 +536,15 @@ Type1CharstringGenInterp::act_closepath(int cmd)
 	act_hintmask(cmd, 0, nhints());
     gen_command(CS::cClosepath);
     _state = S_CLOSED;
+}
+
+void
+Type1CharstringGenInterp::intermediate_output(Type1Charstring &out)
+{
+    _csgen.output(out);
+    _csgen.clear();
+    _state = S_INITIAL;
+    act_hintmask(CS::cEndchar, 0, nhints());
 }
 
 void

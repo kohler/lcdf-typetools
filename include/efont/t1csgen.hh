@@ -10,6 +10,8 @@ class Type1CharstringGen { public:
 
     Type1CharstringGen(int precision = 5);
 
+    int precision() const		{ return _precision; }
+
     void clear();
     char *data() const			{ return _ncs.data(); }
     int length() const			{ return _ncs.length(); }
@@ -23,6 +25,7 @@ class Type1CharstringGen { public:
     const Point &current_point(bool real) const { return (real ? _true : _false); }
     void gen_moveto(const Point &, bool closepath);
 
+    inline String take_string();
     Type1Charstring *output();
     void output(Type1Charstring &);
 
@@ -45,6 +48,9 @@ class Type1CharstringGen { public:
 class Type1CharstringGenInterp : public CharstringInterp { public:
 
     Type1CharstringGenInterp(int precision);
+
+    int precision() const		{ return _csgen.precision(); }
+    void set_direct_hint_replacement(bool dhr)	{ _direct_hr = dhr; }
     void set_hint_replacement_storage(Type1Font *);
     
     int nhints() const			{ return _stem_info.size() >> 1; }
@@ -66,12 +72,14 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     void act_closepath(int);
     void act_flex(int, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, double);
 
+    void intermediate_output(Type1Charstring &out);
     void run(const CharstringContext &g, Type1Charstring &out);
     
   private:
 
     // output
     Type1CharstringGen _csgen;
+    mutable Type1CharstringGen _hint_csgen;
 
     // current glyph
     Point _sidebearing;
@@ -82,11 +90,12 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     // hints and hint replacement
     Vector<double> _stem_info;
     int _nhstem;
+    String _last_hints;
 
     bool _in_hr;
+    bool _direct_hr;
     int _hr_firstsubr;
     Type1Font *_hr_storage;
-    Type1CharstringGen _hr_csgen;
 
     // Flex
     double _max_flex_height;
@@ -95,9 +104,16 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     inline void gen_number(double, int = 0);
     inline void gen_command(int);
     void gen_sbw(bool hints_follow);
-    void gen_hintmask(Type1CharstringGen &, const unsigned char *, int) const;
+    String gen_hints(const unsigned char *, int) const;
+    void swap_stem_hints();
     
 };
+
+inline String
+Type1CharstringGen::take_string()
+{
+    return _ncs.take_string();
+}
 
 }
 #endif
