@@ -7,7 +7,8 @@ class ErrorHandler;
 
 class CharstringChecker : public Efont::CharstringInterp { public:
   
-    CharstringChecker(Efont::EfontProgram *, Vector<double> *);
+    CharstringChecker(Efont::EfontProgram *);
+    CharstringChecker(Efont::EfontProgram *, const Vector<double> &weight_vec);
   
     void init();
     bool error(int, int);

@@ -25,7 +25,12 @@ using namespace Efont;
 #define CHECK_STACK_CP(numargs)	do { CHECK_STACK(numargs); if (!_cp_exists) return error(errCurrentPoint, cmd); } while (0)
 
 
-CharstringChecker::CharstringChecker(EfontProgram *program, Vector<double> *weight)
+CharstringChecker::CharstringChecker(EfontProgram *program)
+  : CharstringInterp(program), _errh(0)
+{
+}
+
+CharstringChecker::CharstringChecker(EfontProgram *program, const Vector<double> &weight)
   : CharstringInterp(program, weight), _errh(0)
 {
 }

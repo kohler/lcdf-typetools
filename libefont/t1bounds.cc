@@ -23,7 +23,17 @@
 
 namespace Efont {
 
-CharstringBounds::CharstringBounds(const EfontProgram *p, Vector<double> *weight)
+CharstringBounds::CharstringBounds(const EfontProgram *p)
+    : CharstringInterp(p)
+{
+    // see also version with weight vector
+    double matrix[6];
+    program()->font_matrix(matrix);
+    _xf = Transform(matrix).scaled(1000);
+    _xf.check_null(0.001);
+}
+
+CharstringBounds::CharstringBounds(const EfontProgram *p, const Vector<double> &weight)
     : CharstringInterp(p, weight)
 {
     double matrix[6];

@@ -7,7 +7,8 @@ namespace Efont {
 
 class CharstringBounds : public CharstringInterp { public:
 
-    CharstringBounds(const EfontProgram *, Vector<double> *weight = 0);
+    CharstringBounds(const EfontProgram *);
+    CharstringBounds(const EfontProgram *, const Vector<double> &weight_vec);
     ~CharstringBounds()				{ }
 
     const Transform &transform() const		{ return _xf; }
