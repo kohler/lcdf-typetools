@@ -1,8 +1,8 @@
 LCDF Typetools NEWS
 
-Version 2.9   9.Aug.2004
+Version 2.9   10.Aug.2004
 
-* otftotfm: Add '--letter-feature' option.
+* otftotfm: Add '--letter-feature' option, inspired by Michael Zedler.
 
 
 Version 2.8   5.Aug.2004
