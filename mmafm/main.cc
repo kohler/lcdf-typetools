@@ -71,7 +71,7 @@ set_design(PermString a, double v)
 static void
 set_design(int a, double v)
 {
-  ax_names.push_back(0);
+  ax_names.push_back(PermString());
   ax_nums.push_back(a);
   values.push_back(v);
 }
@@ -306,7 +306,7 @@ main(int argc, char **argv)
       
      case VERSION_OPT:
       printf("mmafm (LCDF mminstance) %s\n", VERSION);
-      printf("Copyright (C) 1997-2001 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2003 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
