@@ -155,6 +155,17 @@ Substitution::Substitution(Context c, Glyph g)
 	_right_is = T_GLYPH, _right.gid = g;
 }
 
+Substitution::Substitution(Context c, Glyph g1, Glyph g2)
+    : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
+{
+    assert(c == C_LEFT || c == C_RIGHT);
+    Glyph gs[2] = { g1, g2 };
+    if (c == C_LEFT)
+	assign(_left, _left_is, 2, gs);
+    else
+	assign(_right, _right_is, 2, gs);
+}
+
 Substitution::~Substitution()
 {
     clear(_left, _left_is);

@@ -125,6 +125,7 @@ class Substitution { public:
     // context marker
     enum Context { C_LEFT = 0, C_RIGHT = 1 };
     Substitution(Context, Glyph);
+    Substitution(Context, Glyph, Glyph);
     
     ~Substitution();
     
