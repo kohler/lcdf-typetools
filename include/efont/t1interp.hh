@@ -2,6 +2,7 @@
 #ifndef EFONT_T1INTERP_HH
 #define EFONT_T1INTERP_HH
 #include <efont/t1cs.hh>
+#include <lcdf/point.hh>
 #include <cstdio>
 namespace Efont {
 
@@ -63,29 +64,31 @@ class CharstringInterp { public:
     bool callxsubr_command(bool g);
     bool mm_command(int, int);
     bool itc_command(int, int);
+
+    const Point &currentpoint() const		{ return _cp; }
+    void set_state_path()			{ _state = S_PATH; }
     
     virtual bool callothersubr_command(int, int);
     virtual bool type1_command(int);
     virtual bool type2_command(int, const uint8_t *, int *);
 
-    virtual void char_sidebearing(int, double, double);
-    virtual void char_width(int, double, double);
-    virtual void char_default_width(int);
-    virtual void char_nominal_width_delta(int, double);
-    virtual void char_seac(int, double, double, double, int, int);
+    virtual void act_sidebearing(int, const Point &);
+    virtual void act_width(int, const Point &);
+    virtual void act_default_width(int);
+    virtual void act_nominal_width_delta(int, double);
+    virtual void act_seac(int, double, double, double, int, int);
 
-    virtual void char_rmoveto(int, double, double);
-    virtual void char_setcurrentpoint(int, double, double);
-    virtual void char_rlineto(int, double, double);
-    virtual void char_rrcurveto(int, double, double, double, double, double, double);
-    virtual void char_flex(int, double, double, double, double, double, double, double, double, double, double, double, double, double);
-    virtual void char_closepath(int);
+    virtual void act_line(int, const Point &, const Point &);
+    virtual void act_curve(int, const Point &, const Point &, const Point &, const Point &);
+    virtual void act_closepath(int);
 
-    virtual void char_hstem(int, double, double);
-    virtual void char_vstem(int, double, double);
-    virtual void char_hstem3(int, double, double, double, double, double, double);
-    virtual void char_vstem3(int, double, double, double, double, double, double);
-    virtual void char_hintmask(int, const uint8_t *, int);
+    virtual void act_flex(int, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, double);
+
+    virtual void act_hstem(int, double, double);
+    virtual void act_vstem(int, double, double);
+    virtual void act_hstem3(int, double, double, double, double, double, double);
+    virtual void act_vstem3(int, double, double, double, double, double, double);
+    virtual void act_hintmask(int, const uint8_t *, int);
 
     typedef Charstring CS;
     
@@ -131,16 +134,19 @@ class CharstringInterp { public:
     Vector<double> *_weight_vector;
     Vector<double> _scratch_vector;
 
-    double _lsbx;
-    double _lsby;
+    Point _lsb;
+    Point _cp;
+    Point _seac_origin;
   
     const EfontProgram *_program;
 
-    // for processing Type 2 charstrings
-    enum Type2State {
-	T2_INITIAL, T2_HSTEM, T2_VSTEM, T2_HINTMASK, T2_PATH
+    enum State {
+	S_INITIAL, S_SEAC, S_SBW, S_HSTEM, S_VSTEM, S_HINTMASK, S_IPATH, S_PATH
     };
-    Type2State _t2state;
+    State _state;
+    bool _flex;
+
+    // for processing Type 2 charstrings
     int _t2nhints;
     
     static double double_for_error;
@@ -148,6 +154,11 @@ class CharstringInterp { public:
     bool roll_command();
     int type2_handle_width(int, bool);
 
+    inline void act_rmoveto(int, double, double);
+    inline void act_rlineto(int, double, double);
+    void act_rrcurveto(int, double, double, double, double, double, double);
+    void act_rrflex(int, double, double, double, double, double, double, double, double, double, double, double, double, double);
+    
 };
 
 
