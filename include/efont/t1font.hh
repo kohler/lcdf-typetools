@@ -32,6 +32,7 @@ class Type1Font : public CharstringProgram { public:
     void add_item(Type1Item *it)	{ _items.push_back(it); }
     void set_item(int, Type1Item *);	// for experts only
     void add_definition(int dict, Type1Definition *);
+    void add_type1_encoding(Type1Encoding *);
 
     int nsubrs() const			{ return _subrs.size(); }
     Type1Charstring *subr(int) const;
@@ -84,7 +85,6 @@ class Type1Font : public CharstringProgram { public:
     void undo_synthetic();
 
     void set_charstring_definer(PermString d)	{ _charstring_definer = d; }
-    void set_type1_encoding(Type1Encoding *e)	{ assert(!_encoding); _encoding = e; }
     
     void write(Type1Writer &);
 

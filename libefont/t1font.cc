@@ -92,6 +92,21 @@ Type1Font::add_definition(int dict, Type1Definition *t1d)
 }
 
 void
+Type1Font::add_type1_encoding(Type1Encoding *e)
+{
+    if (_encoding) {
+	for (Type1Item** t1i = _items.begin(); t1i < _items.end(); t1i++)
+	    if (*t1i == _encoding) {
+		delete _encoding;
+		*t1i = _encoding = e;
+		return;
+	    }
+    }
+    _encoding = e;
+    add_item(e);
+}
+
+void
 Type1Font::add_glyph(Type1Subr *s)
 {
     _glyphs.push_back(s);
@@ -242,7 +257,7 @@ Type1Font::read(Type1Reader &reader)
 	    }
 	    cur_group = 0;
 	}
-    
+
 	// add COPY ITEM
 	String s = accum.take_string();
 	add_item(new Type1CopyItem(s));
@@ -303,13 +318,11 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     while (isspace(*first_line))
 	first_line++;
     if (strncmp(first_line, "StandardEncoding", 16) == 0) {
-	_encoding = Type1Encoding::standard_encoding();
-	add_item(_encoding);
+	add_type1_encoding(Type1Encoding::standard_encoding());
 	return;
     }
 
-    _encoding = new Type1Encoding;
-    add_item(_encoding);
+    add_type1_encoding(new Type1Encoding);
   
     bool got_any = false;
     StringAccum accum;
