@@ -151,10 +151,10 @@ Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
     else {
 	if (closepath)
 	    gen_command(Charstring::cClosepath);
-	if (big_dx == 0) {
+	if (big_dy == 0) {
 	    gen_number(dx, 'x');
 	    gen_command(Charstring::cHmoveto);
-	} else if (big_dy == 0) {
+	} else if (big_dx == 0) {
 	    gen_number(dy, 'y');
 	    gen_command(Charstring::cVmoveto);
 	} else {
