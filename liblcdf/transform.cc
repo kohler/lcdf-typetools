@@ -17,6 +17,7 @@
 # include <config.h>
 #endif
 #include <lcdf/transform.hh>
+#include <lcdf/straccum.hh>
 #include <math.h>
 
 Transform::Transform()
@@ -149,4 +150,18 @@ operator*(const Bezier &b, const Transform &t)
     return (t.null()
 	    ? b
 	    : Bezier(b.point(0) * t, b.point(1) * t, b.point(2) * t, b.point(3) * t));
+}
+
+String
+Transform::unparse() const
+{
+    StringAccum sa;
+    sa << '[';
+    for (int i = 0; i < 6; i++) {
+	if (i)
+	    sa << ',' << ' ';
+	sa << _m[i];
+    }
+    sa << ']';
+    return sa.take_string();
 }

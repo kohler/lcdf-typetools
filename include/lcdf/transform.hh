@@ -2,6 +2,7 @@
 #ifndef LCDF_TRANSFORM_HH
 #define LCDF_TRANSFORM_HH
 #include <lcdf/bezier.hh>
+#include <lcdf/string.hh>
 #include <assert.h>
 
 class Transform { public:
@@ -44,6 +45,8 @@ class Transform { public:
     friend Point &operator*=(Point &, const Transform &);
     friend Bezier operator*(const Bezier &, const Transform &);
     friend Bezier &operator*=(Bezier &, const Transform &);
+
+    String unparse() const;
 
   private:
 
