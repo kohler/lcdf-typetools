@@ -242,7 +242,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
       
       _encoding->put(char_value, PermString(name_pos, name_end - name_pos));
       got_any = true;
-      pos = scan + 4;
+      pos = scan + 3;
     }
     
     // add COPY ITEM if necessary for leftovers we didn't parse
