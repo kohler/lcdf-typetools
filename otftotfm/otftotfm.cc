@@ -195,7 +195,7 @@ Automatic mode options:\n\
 \n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
-  -p, --pl                     Output human-readable PL/VPLs, not VF/TFMs.\n\
+  -p, --pl                     Output human-readable PL/VPLs, not TFM/VFs.\n\
       --no-virtual             Do not generate VFs or VPLs.\n\
       --no-encoding            Do not generate an encoding file.\n\
       --no-map                 Do not generate a psfonts.map line.\n\
