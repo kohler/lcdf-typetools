@@ -150,11 +150,16 @@ Type1Font::Type1Font(Type1Reader &reader)
     // add COPY ITEM
     x = accum.take();
     _items.push_back(new Type1CopyItem(x, x_length));
-    
-    if (eexec_state == 0 && strcmp(x, "currentfile eexec") == 0) {
-      reader.switch_eexec(true);
-      _items.push_back(new Type1EexecItem(true));
-      eexec_state = 1;
+
+    if (eexec_state == 0 && strncmp(x, "currentfile eexec", 17) == 0) {
+      // allow arbitrary whitespace after "currentfile eexec".
+      // note: strlen("currentfile eexec") == 17
+      while (isspace(x[17])) x++;
+      if (!x[17]) {
+	reader.switch_eexec(true);
+	_items.push_back(new Type1EexecItem(true));
+	eexec_state = 1;
+      }
     } else if (eexec_state == 1 && strstr(x, "currentfile closefile") != 0) {
       reader.switch_eexec(false);
       _items.push_back(new Type1EexecItem(false));
