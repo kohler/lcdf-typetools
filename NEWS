@@ -1,8 +1,12 @@
 LCDF Typetools NEWS
 
-Version 2.10   17.Aug.2004
+Version 2.10   18.Aug.2004
 
-* otftotfm: Add support for the TeX Directory Structure 1.1 standard.
+* otftotfm: Add preliminary support for the TeX Directory Structure 1.1
+  standard.
+
+* Bug fix that should let us compile on Cygwin.  Problem reported by
+  Christian Gudrian.
 
 
 Version 2.9   10.Aug.2004
