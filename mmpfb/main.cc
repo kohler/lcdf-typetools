@@ -119,7 +119,7 @@ Interpolation settings:\n\
       --style=N                Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N   Set first (second, third, fourth) axis to N.\n\
 \n\
-Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
+Report bugs to <kohler@icir.org>.\n", program_name);
 }
 
 
