@@ -751,7 +751,6 @@ Metrics::cut_encoding(int size)
 	    }
     }
 
-
     /* Finally, change "emptyslot"s to ".notdef"s. */
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
 	if (ch->glyph == emptyslot_glyph())
