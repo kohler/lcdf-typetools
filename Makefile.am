@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign check-news
 
 SUBDIRS = liblcdf libefont @SELECTED_SUBDIRS@
-DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otftotfm t1lint t1testpage
+DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1lint t1testpage
 
 pkgdata_DATA = glyphlist.txt 7t.enc
 
