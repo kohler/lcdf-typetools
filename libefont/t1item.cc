@@ -24,7 +24,9 @@
 #include <cctype>
 #include <cstring>
 #include <sys/stat.h>
-#include <unistd.h>
+#ifndef WIN32
+# include <unistd.h>
+#endif
 #ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif

@@ -170,11 +170,8 @@ PsresDatabaseSection::add_psres_file_section
       continue;
     
     // double equals means absolute pathname
-    PermString this_directory = directory;
-    if (s[equals_pos + 1] == '=') {
+    if (s[equals_pos + 1] == '=')
       equals_pos++;
-      this_directory = PermString();
-    }
     
     // get the value. Don't escape it yet
     len = slurper.cur_line_length() - (equals_pos + 1);

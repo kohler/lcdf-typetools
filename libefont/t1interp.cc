@@ -148,7 +148,7 @@ CharstringInterp::vector_command(int cmd)
     
       case CS::cStore:
 	CHECK_STACK(4);
-	which_vector = (EfontProgram::VectorType)top(3);
+	which_vector = (EfontProgram::VectorType)((int)top(3));
 	vectoroff = (int)top(2);
 	offset = (int)top(1);
 	num = (int)top(0);
@@ -169,7 +169,7 @@ CharstringInterp::vector_command(int cmd)
 
       case CS::cLoad:
 	CHECK_STACK(3);
-	which_vector = (EfontProgram::VectorType)top(2);
+	which_vector = (EfontProgram::VectorType)((int)top(2));
 	offset = (int)top(1);
 	num = (int)top(0);
 	pop(3);
