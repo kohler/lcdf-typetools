@@ -82,23 +82,24 @@ using namespace Efont;
 #define ALTSELECTOR_FEATURE_OPT	327
 #define DEFAULT_LIGKERN_OPT	328
 #define NO_ECOMMAND_OPT		329
+#define LETTER_FEATURE_OPT	330
 
-#define AUTOMATIC_OPT		331
-#define FONT_NAME_OPT		332
-#define QUIET_OPT		333
-#define GLYPHLIST_OPT		334
-#define VENDOR_OPT		335
-#define TYPEFACE_OPT		336
-#define NOCREATE_OPT		337
-#define VERBOSE_OPT		338
-#define FORCE_OPT		339
+#define AUTOMATIC_OPT		341
+#define FONT_NAME_OPT		342
+#define QUIET_OPT		343
+#define GLYPHLIST_OPT		344
+#define VENDOR_OPT		345
+#define TYPEFACE_OPT		346
+#define NOCREATE_OPT		347
+#define VERBOSE_OPT		348
+#define FORCE_OPT		349
 
-#define VIRTUAL_OPT		341
-#define PL_OPT			342
-#define TFM_OPT			343
-#define MAP_FILE_OPT		344
+#define VIRTUAL_OPT		351
+#define PL_OPT			352
+#define TFM_OPT			353
+#define MAP_FILE_OPT		354
 
-#define DIR_OPTS		350
+#define DIR_OPTS		360
 #define ENCODING_DIR_OPT	(DIR_OPTS + O_ENCODING)
 #define TFM_DIR_OPT		(DIR_OPTS + O_TFM)
 #define PL_DIR_OPT		(DIR_OPTS + O_PL)
@@ -106,7 +107,7 @@ using namespace Efont;
 #define VPL_DIR_OPT		(DIR_OPTS + O_VPL)
 #define TYPE1_DIR_OPT		(DIR_OPTS + O_TYPE1)
 
-#define NO_OUTPUT_OPTS		370
+#define NO_OUTPUT_OPTS		380
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 #define NO_DOTLESSJ_OPT		(NO_OUTPUT_OPTS + G_DOTLESSJ)
@@ -117,6 +118,8 @@ static Clp_Option options[] = {
     
     { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
     { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
+    { "letter-feature", 0, LETTER_FEATURE_OPT, Clp_ArgString, 0 },
+    { "lf", 0, LETTER_FEATURE_OPT, Clp_ArgString, 0 },
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
@@ -176,15 +179,13 @@ static Clp_Option options[] = {
     
 };
 
-static const char * const default_ligkerns[] = {
-   "space l =: lslash ; space L =: Lslash ;",
-   "question quoteleft =: questiondown ;",
-   "exclam quoteleft =: exclamdown ;",
-   "hyphen hyphen =: endash ; endash hyphen =: emdash ;",
-   "quoteleft quoteleft =: quotedblleft ;",
-   "quoteright quoteright =: quotedblright ;",
-   0
-};
+static const char * const default_ligkerns = "\
+space l =: lslash ; space L =: Lslash ; \
+question quoteleft =: questiondown ; \
+exclam quoteleft =: exclamdown ; \
+hyphen hyphen =: endash ; endash hyphen =: emdash ; \
+quoteleft quoteleft =: quotedblleft ; \
+quoteright quoteright =: quotedblright ;";
 
 static const char *program_name;
 static String::Initializer initializer;
@@ -197,6 +198,8 @@ static PermString dot_notdef(".notdef");
 static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
 static Vector<Efont::OpenType::Tag> altselector_features;
+static GlyphFilter null_filter;
+static HashMap<Efont::OpenType::Tag, GlyphFilter*> feature_filters(&null_filter);
 
 static GlyphFilter alternate_filter;
 
@@ -250,6 +253,7 @@ Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\n",
 Font feature and transformation options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Activate feature FEAT.\n\
+  --lf, --letter-feature=FEAT  Activate feature FEAT for letters.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
@@ -658,16 +662,19 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 
 struct Lookup {
     bool used;
+    bool required;
     Vector<OpenType::Tag> features;
-    Lookup()			: used(false) { }
+    GlyphFilter* filter;
+    Lookup()			: used(false), required(false), filter(0) { }
 };
 
 static void
-find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &features, Vector<Lookup> &lookups, ErrorHandler *errh)
+find_lookups(const OpenType::ScriptList& scripts, const OpenType::FeatureList& features, Vector<Lookup>& lookups, ErrorHandler* errh)
 {
     Vector<int> fids, lookupids;
     int required;
-    
+
+    // go over all scripts
     for (int i = 0; i < interesting_scripts.size(); i += 2) {
 	OpenType::Tag script = interesting_scripts[i];
 	OpenType::Tag langsys = interesting_scripts[i+1];
@@ -691,10 +698,23 @@ find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &f
 		else {
 		    lookups[l].used = true;
 		    lookups[l].features.push_back(ftag);
+		    if (j < 0)
+			lookups[l].required = true;
 		}
 	    }
 	}
     }
+
+    // now check for compatible glyph filters
+    for (Lookup* l = lookups.begin(); l < lookups.end(); l++)
+	if (l->used && !l->required) {
+	    l->filter = feature_filters[l->features[0]];
+	    for (OpenType::Tag* ft = l->features.begin() + 1; ft < l->features.end(); ft++)
+		if (!l->filter->check_eq(*feature_filters[*ft])) {
+		    errh->error("'%s' and '%s' features share a lookup, but have different filters", l->features[0].text().c_str(), ft->text().c_str());
+		    break;
+		}
+	}
 }
 
 static int
@@ -1130,8 +1150,9 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
 	    }
 
 	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%5d\t%s\n", i, subs[subno].unparse().c_str());
-	    
-	    int nunderstood = metrics.apply(subs, !dvipsenc_literal, i, alternate_filter, glyph_names);
+
+	    // figure out which glyph filter to use
+	    int nunderstood = metrics.apply(subs, !dvipsenc_literal, i, *lookups[i].filter + alternate_filter, glyph_names);
 
 	    // mark as used
 	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;
@@ -1392,7 +1413,7 @@ main(int argc, char *argv[])
     Vector<String> unicoding;
     bool no_ecommand = false, default_ligkern = false;
     String codingscheme;
-  
+    
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -1425,6 +1446,18 @@ main(int argc, char *argv[])
 	      break;
 	  }
       
+	  case LETTER_FEATURE_OPT: {
+	      OpenType::Tag t(clp->arg);
+	      if (t.valid()) {
+		  interesting_features.push_back(t);
+		  GlyphFilter* gf = new GlyphFilter;
+		  gf->add_substitution_filter("<Letter>", false, errh);
+		  feature_filters.insert(t, gf); 
+	      } else
+		  usage_error(errh, "bad feature tag");
+	      break;
+	  }
+
 	  case ENCODING_OPT:
 	    if (encoding_file)
 		usage_error(errh, "encoding specified twice");
@@ -1719,8 +1752,7 @@ particular purpose.\n");
 
 	// apply default ligkern commands
 	if (default_ligkern || (!dvipsenc.file_had_ligkern() && !ligkern.size() && !no_ecommand))
-	    for (const char * const *lk = default_ligkerns; *lk; lk++)
-		dvipsenc.parse_ligkern(*lk, ErrorHandler::silent_handler());
+	    dvipsenc.parse_ligkern(default_ligkerns, ErrorHandler::silent_handler());
     
 	// apply command-line ligkern commands and coding scheme
 	cerrh.set_landmark("--ligkern command");

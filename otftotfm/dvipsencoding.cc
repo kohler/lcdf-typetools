@@ -83,22 +83,6 @@ DvipsEncoding::parse_glyphlist(String text)
     }
 }
 
-static int
-uniparsenumber(const char *a, int len)
-{
-    int value = 0;
-    for (int i = 0; i < len; a++, i++)
-	if (*a >= '0' && *a <= '9')
-	    value = (value << 4) | (*a - '0');
-	else if (*a >= 'A' && *a <= 'F')
-	    value = (value << 4) | (*a - 'A' + 10);
-	else
-	    return -1;
-    return ((value >= 0 && value <= 0xD7FF)
-	    || (value >= 0xE000 && value <= 0x10FFFF)
-	    ? value : -1);
-}
-
 void
 DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
 {    
@@ -118,6 +102,7 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
 
 	// check glyphlist
 	int value = glyphlist[component];
+	uint32_t uval;
 	if (value >= 0) {
 	    unis.push_back(value & ~GLYPHLIST_MORE);
 	    if (more && (value & GLYPHLIST_MORE) && !gn)
@@ -126,9 +111,9 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
 		   && (component.length() % 4) == 3
 		   && memcmp(component.data(), "uni", 3) == 0) {
 	    int old_size = unis.size();
-	    for (int i = 3; i < component.length(); i += 4)
-		if ((value = uniparsenumber(component.data() + i, 4)) >= 0)
-		    unis.push_back(value);
+	    for (const char* s = component.begin() + 3; s < component.end(); s += 4)
+		if (parse_unicode_number(s, s + 4, -1, uval))
+		    unis.push_back(uval);
 		else {
 		    unis.resize(old_size);
 		    break;
@@ -136,8 +121,8 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
 	} else if (component.length() >= 5
 		   && component.length() <= 7
 		   && component[0] == 'u'
-		   && (value = uniparsenumber(component.data() + 1, component.length() - 1)) >= 0)
-	    unis.push_back(value);
+		   && parse_unicode_number(component.begin() + 1, component.end(), -1, uval))
+	    unis.push_back(uval);
     }
 }
 

@@ -586,7 +586,7 @@ Metrics::apply_ligature(const Vector<Code> &in, const Substitution *s, int looku
 }
 
 int
-Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, const GlyphFilter &glyph_filter, const Vector<PermString> &glyph_names)
+Metrics::apply(const Vector<Substitution>& sv, bool allow_single, int lookup, const GlyphFilter& glyph_filter, const Vector<PermString>& glyph_names)
 {
     // keep track of what substitutions we have performed
     ChangedContext ctx(_encoding.size());
@@ -598,17 +598,27 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, co
     for (const Substitution *s = sv.begin(); s != sv.end(); s++) {
 	bool is_single = s->is_single() || s->is_alternate();
 	if (is_single && allow_single) {
+	    // check if encoded
+	    Code cin = encoding(s->in_glyph());
+	    if (!ctx.allowed(cin, false))
+		/* not encoded before this substitution began, or completely
+		   changed; ingore */
+		continue;
+
+	    // check if substitution of this code allowed
+	    if (!glyph_filter.allow_substitution(s->in_glyph(), glyph_names, unicode(cin)))
+		continue;
+	    
 	    // look for an allowed alternate
 	    Glyph out = -1;
 	    for (int i = 0; out < 0 && i < s->out_nglyphs(); i++)
-		if (glyph_filter.allow_alternate(s->out_glyph(i), *this, glyph_names))
+		if (glyph_filter.allow_alternate(s->out_glyph(i), glyph_names, unicode(cin)))
 		    out = s->out_glyph(i);
-	    
-	    Code cin = encoding(s->in_glyph());
-	    if (!ctx.allowed(cin, false) || out < 0)
-		/* not encoded before this substitution began, or completely
-		   changed; ignore */;
-	    else if (ctx.virgin(cin)) {
+	    if (out < 0)	// no allowed alternate
+		continue;
+
+	    // apply substitution
+	    if (ctx.virgin(cin)) {
 		// no one has changed this glyph yet, change it unilaterally
 		assign_emap(s->in_glyph(), -2);
 		assign_emap(out, cin);
@@ -668,7 +678,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, co
 }
 
 void
-Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const GlyphFilter &glyph_filter, const Vector<PermString> &glyph_names)
+Metrics::apply_alternates(const Vector<Substitution>& sv, int lookup, const GlyphFilter& glyph_filter, const Vector<PermString>& glyph_names)
 {
     for (const Substitution *s = sv.begin(); s != sv.end(); s++)
 	if (s->is_single() || s->is_alternate()) {
@@ -679,7 +689,7 @@ Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const Glyp
 		if (as->kern == 0) {
 		    Code last = e;
 		    for (int i = 0; i < s->out_nglyphs(); i++)
-			if (glyph_filter.allow_alternate(s->out_glyph(i), *this, glyph_names)) {
+			if (glyph_filter.allow_alternate(s->out_glyph(i), glyph_names, unicode(e))) {
 			    Code out = force_encoding(s->out_glyph(i), lookup);
 			    add_ligature(last, as->in2, out);
 			    last = out;
@@ -691,7 +701,7 @@ Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const Glyp
 	} else if (s->is_ligature()) {
 	    // check whether the output character is allowed
 	    bool ok = true;
-	    if (!glyph_filter.allow_alternate(s->out_glyph(), *this, glyph_names))
+	    if (!glyph_filter.allow_alternate(s->out_glyph(), glyph_names, 0))
 		ok = false;
 
 	    // check whether the input characters are encoded
@@ -719,7 +729,7 @@ Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const Glyp
 /* applying GPOS positionings						     */
 
 static bool			// returns old value
-assign_bitvec(int *&bitvec, int e, int n)
+assign_bitvec(int*& bitvec, int e, int n)
 {
     if (e >= 0 && e < n) {
 	if (!bitvec) {
@@ -734,7 +744,7 @@ assign_bitvec(int *&bitvec, int e, int n)
 }
 
 int
-Metrics::apply(const Vector<Positioning> &pv)
+Metrics::apply(const Vector<Positioning>& pv)
 {
     // keep track of what substitutions we have performed
     int *single_changed = 0;

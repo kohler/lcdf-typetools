@@ -209,7 +209,7 @@ const unsigned int UnicodeProperty::property_offsets[] = {
 };
 const int UnicodeProperty::nproperty_offsets = (sizeof(UnicodeProperty::property_offsets) / (3*sizeof(unsigned int)));
 
-inline const unsigned int *
+inline const unsigned int*
 UnicodeProperty::find_offset(uint32_t u)
 {
     // Up to U+1A00 each page has its own definition.
@@ -219,7 +219,7 @@ UnicodeProperty::find_offset(uint32_t u)
     int l = 0x1A, r = nproperty_offsets - 2;
     while (l <= r) {
 	int m = (l + r) / 2;
-	const unsigned int *ptr = &property_offsets[3*m];
+	const unsigned int* ptr = &property_offsets[3*m];
 	if (u < ptr[0])
 	    r = m - 1;
 	else if (u >= ptr[3])
@@ -234,17 +234,17 @@ UnicodeProperty::find_offset(uint32_t u)
 int
 UnicodeProperty::property(uint32_t u)
 {
-    const unsigned int *offsets = find_offset(u);
+    const unsigned int* offsets = find_offset(u);
 
     // Now we only care about the last byte.
     u &= 255;
 
     // Binary search within record.
     int l = offsets[1], r = offsets[2] - 4;
-    const unsigned char *the_ptr;
+    const unsigned char* the_ptr;
     while (l <= r) {
 	int m = ((l + r) / 2) & ~1;
-	const unsigned char *ptr = &property_pages[m];
+	const unsigned char* ptr = &property_pages[m];
 	if (u < ptr[0])
 	    r = m - 2;
 	else if (u >= ptr[2])
@@ -273,7 +273,7 @@ static const char property_names[] =
     "Po\0Pc\0Pd\0Ps\0Pe\0Pi\0Pf\0\0\0\0"
     "So\0Sm\0Sc\0Sk";
 
-static const char * const property_long_names[] = {
+static const char* const property_long_names[] = {
     "Unassigned", "PrivateUse", "Surrogate", "Format", "Control", 0, 0, 0,
     "SpaceSeparator", "LineSeparator", "ParagraphSeparator", 0, 0, 0, 0, 0,
     "NonspacingMark", "SpacingMark", "EnclosingMark", 0, 0, 0, 0, 0,
@@ -283,12 +283,12 @@ static const char * const property_long_names[] = {
     "OtherSymbol", "MathSymbol", "CurrencySymbol", "ModifierSymbol"
 };
 
-static const char * const property_category_long_names[] = {
+static const char* const property_category_long_names[] = {
     "Other", "Separator", "Mark", "Letter", "Number", "Punctuation", "Symbol"
 };
 
 
-const char *
+const char*
 UnicodeProperty::property_name(int p)
 {
     if (p >= 0 && p <= P_Sk && property_names[p*3])
@@ -298,7 +298,7 @@ UnicodeProperty::property_name(int p)
 }
 
 bool
-UnicodeProperty::parse_property(const String &s, int &prop, int &prop_mask)
+UnicodeProperty::parse_property(const String& s, int& prop, int& prop_mask)
 {
     if (s.length() == 0)
 	return false;
@@ -320,7 +320,7 @@ UnicodeProperty::parse_property(const String &s, int &prop, int &prop_mask)
 	    }
 	return false;
     } else {
-	const char * const *dict = property_category_long_names;
+	const char* const *dict = property_category_long_names;
 	for (int i = 0; i <= P_S; i += 010, dict++)
 	    if (s == *dict) {
 		prop = i;

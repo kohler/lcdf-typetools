@@ -16,57 +16,196 @@
 #endif
 #include "glyphfilter.hh"
 #include <lcdf/error.hh>
+#include <ctype.h>
+#include <algorithm>
 #include "uniprop.hh"
 #include "util.hh"
 
 bool
-GlyphFilter::match(Efont::OpenType::Glyph glyph, const Metrics &, const Vector<PermString> &glyph_names, const Vector<PatternID> &patterns) const
+GlyphFilter::allow(Efont::OpenType::Glyph glyph, const Vector<PermString>& glyph_names, uint32_t unicode, int ptype) const
 {
+    // out-of-range glyphs never match
     if (glyph < 0 || glyph >= glyph_names.size())
 	return false;
+
     String glyph_name = glyph_names[glyph];
     int uniprop = -1;
-    for (const PatternID *p = patterns.begin(); p < patterns.end(); p++)
-	if (p->type == PT_NAME_MATCH
-	    && glob_match(glyph_name, _pattern_strings[p->x1]))
-	    return true;
-	else if (p->type == PT_UNICODE_PROPERTY) {
-	    if (uniprop < 0)
-		uniprop = UnicodeProperty::property(0);
-	    if ((uniprop & p->x2) == p->x1)
-		return true;
+    bool any_includes = false;
+    bool included = false;
+
+    // loop over patterns
+    for (const Pattern* p = _patterns.begin(); p < _patterns.end(); p++) {
+	// check pattern type
+	if ((p->type & ~T_TYPEMASK) != ptype)
+	    continue;
+	// check include/exclude
+	if ((p->type & T_EXCLUDE) == 0) {
+	    if (included)
+		continue;
+	    any_includes = true;
 	}
-    return false;
+	// check if there's a match
+	bool match;
+	if (p->data == D_NAME)
+	    match = glob_match(glyph_name, p->pattern);
+	else if (p->data == D_UNIPROP) {
+	    if (uniprop < 0)
+		uniprop = UnicodeProperty::property(unicode);
+	    match = ((uniprop & p->u.uniprop.mask) == p->u.uniprop.value);
+	} else
+	    match = (unicode >= p->u.unirange.low && unicode <= p->u.unirange.high);
+	// act if match
+	if (match == ((p->type & T_NEGATE) == 0)) {
+	    if ((p->type & T_EXCLUDE) == 0)
+		included = true;
+	    else
+		return false;
+	}
+    }
+    
+    return !any_includes || included;
 }
 
-bool
-GlyphFilter::allow_alternate(Efont::OpenType::Glyph glyph, const Metrics &m, const Vector<PermString> &glyph_names) const
+GlyphFilter::Pattern::Pattern(uint16_t ptype)
+    : type(ptype), data(D_NAME)
 {
-    return ((!_include_alternates.size() || match(glyph, m, glyph_names, _include_alternates))
-	    && !match(glyph, m, glyph_names, _exclude_alternates));
+    // make sure that even unused data has a known value, to simplify
+    // operator==
+    u.unirange.low = u.unirange.high = 0;
+}
+
+int
+GlyphFilter::Pattern::compare(const GlyphFilter::Pattern& a, const GlyphFilter::Pattern& b)
+{
+    int cmp = a.type - b.type;
+    if (cmp == 0)
+	cmp = a.data - b.data;
+    if (cmp == 0)
+	cmp = (int) (a.u.unirange.low - b.u.unirange.low);
+    if (cmp == 0)
+	cmp = (int) (a.u.unirange.high - b.u.unirange.high);
+    if (cmp == 0)
+	cmp = String::compare(a.pattern, b.pattern);
+    return cmp;
 }
 
 void
-GlyphFilter::add_pattern(const String &pattern, Vector<PatternID> &v, ErrorHandler *errh)
+GlyphFilter::add_pattern(const String& pattern, int ptype, ErrorHandler* errh)
 {
-    if (pattern.length() >= 3 && pattern[0] == '<' && pattern.back() == '>') {
-	PatternID p;
-	if (UnicodeProperty::parse_property(pattern.substring(pattern.begin() + 1, pattern.end() - 1), p.x1, p.x2)) {
-	    p.type = PT_UNICODE_PROPERTY;
-	    v.push_back(p);
-	} else if (errh)
-	    errh->error("unknown Unicode property '%s'", pattern.c_str());
-    } else {
-	PatternID p;
-	p.type = PT_NAME_MATCH;
-	p.x1 = _pattern_strings.size();
-	_pattern_strings.push_back(pattern);
-	v.push_back(p);
+    _sorted = false;
+    
+    const char* begin = pattern.begin();
+    const char* end = pattern.end();
+    while (begin < end && isspace(*begin))
+	begin++;
+    if (begin >= end)
+	errh->error("missing pattern");
+
+    while (begin < end) {
+	const char* word = begin;
+	while (word < end && !isspace(*word))
+	    word++;
+	bool negated = false;
+	if (begin < word && begin[0] == '!')
+	    negated = true, begin++;
+
+	// actually parse clause
+	Pattern p(ptype + (negated ? T_NEGATE : 0));
+
+	// unicode property
+	if (begin + 3 <= word && begin[0] == '<' && word[-1] == '>') {
+	    p.data = D_UNIPROP;
+	    if (UnicodeProperty::parse_property(pattern.substring(begin + 1, word - 1), p.u.uniprop.value, p.u.uniprop.mask))
+		_patterns.push_back(p);
+	    else if (errh)
+		errh->error("unknown Unicode property '%s'", pattern.c_str());
+	    goto next_clause;
+	}
+
+	// unicode values
+	{
+	    const char* dash = std::find(begin, word, '-');
+	    if (parse_unicode_number(begin, dash, 1, p.u.unirange.low)) {
+		if (dash == word) {
+		    p.u.unirange.high = p.u.unirange.low;
+		    goto next_clause;
+		} else if (dash == word - 1) {
+		    p.u.unirange.high = 0xFFFFFFFFU;
+		    goto next_clause;
+		} else if (parse_unicode_number(dash + 1, word, 0, p.u.unirange.high))
+		    goto next_clause;
+	    }
+	}
+
+	// otherwise must be name pattern
+	p.data = D_NAME;
+	p.pattern = pattern;
+	_patterns.push_back(p);
+	
+	// move to next clause
+      next_clause:
+	for (begin = word; begin < end && isspace(*begin); begin++)
+	    /* nada */;
     }
 }
 
 void
-GlyphFilter::add_alternate_filter(const String &s, bool is_exclude, ErrorHandler *errh)
+GlyphFilter::add_substitution_filter(const String& s, bool is_exclude, ErrorHandler* errh)
 {
-    add_pattern(s, is_exclude ? _exclude_alternates : _include_alternates, errh);
+    add_pattern(s, is_exclude ? T_SRC + T_EXCLUDE : T_SRC, errh);
+}
+
+void
+GlyphFilter::add_alternate_filter(const String& s, bool is_exclude, ErrorHandler* errh)
+{
+    add_pattern(s, is_exclude ? T_DST + T_EXCLUDE : T_DST, errh);
+}
+
+GlyphFilter&
+GlyphFilter::operator+=(const GlyphFilter& gf)
+{
+    // be careful about self-addition
+    _patterns.reserve(gf._patterns.size());
+    const Pattern* end = gf._patterns.end();
+    for (const Pattern* p = gf._patterns.begin(); p < end; p++)
+	_patterns.push_back(*p);
+    return *this;
+}
+
+GlyphFilter
+operator+(const GlyphFilter& a, const GlyphFilter& b)
+{
+    if (!b)
+	return a;
+    if (!a)
+	return b;
+    GlyphFilter x(a);
+    x += b;
+    return x;
+}
+
+bool
+operator==(const GlyphFilter& a, const GlyphFilter& b)
+{
+    if (&a == &b)
+	return true;
+    if (a._patterns.size() != b._patterns.size())
+	return false;
+    const GlyphFilter::Pattern* pa = a._patterns.begin();
+    const GlyphFilter::Pattern* pb = b._patterns.begin();
+    for (; pa < a._patterns.end(); pa++, pb++)
+	if (!(*pa == *pb))
+	    return false;
+    return true;
+}
+
+void
+GlyphFilter::sort()
+{
+    if (!_sorted) {
+	std::sort(_patterns.begin(), _patterns.end());
+	Pattern* true_end = std::unique(_patterns.begin(), _patterns.end());
+	_patterns.erase(true_end, _patterns.end());
+	_sorted = true;
+    }
 }

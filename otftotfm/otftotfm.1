@@ -59,7 +59,7 @@ that change their appearance.  Use the
 .B \-f
 option to turn on selected features.  For example, "\fB\-f\fRsmcp" replaces
 lower-case letters with the corresponding small capitals, in fonts that
-support this.
+support this.  
 '
 .PP
 You'll generally provide at least the "\fB\-f\fRkern" and "\fB\-f\fRliga"
@@ -72,6 +72,14 @@ contextual swash.  See the FEATURE DIRECTORY section below for more.  The
 .M otfinfo 1
 program will report which features a font supports; run "\fBotfinfo\fR
 \fB\-f\fR \fIfontfile\fR.otf".
+'
+.PP
+Feature options can also apply a feature to a subset of characters in the
+font.  For example, "\fB\-\-lf\fR smcp"
+.I only
+replaces letters with small capitals, whereas "\fB\-f\fRsmcp" might
+additionally replace digits and punctuation marks with small-capital
+versions.
 '
 .SS Automatic Mode
 .PP
@@ -319,6 +327,17 @@ capitals).  Give this option multiple times to apply multiple features.  Run
 "\fBotfinfo\fR \-f [\-\-script option] \fIfont\fR" to see the list
 of features a font supports for a specified script.
 Defaults to any features required by the selected scripts.
+'
+.Sp
+.TP 5
+.BI \-\-lf " feature\fR, " \-\-letter\-feature= "feature"
+Activate the feature named
+.IR feature ,
+but only for letters.  For instance, the "\-f smcp" option will apply the
+small-caps feature to all characters in the encoding; this may result in
+changes to punctuation and numbers as well as letters.  The "\-\-lf smcp"
+option will apply the small-caps feature only to letters, meaning
+characters with the "Letter" Unicode property.
 '
 .Sp
 .TP 5

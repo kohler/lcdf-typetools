@@ -75,9 +75,9 @@ class Metrics { public:
     void remove_kerns(Code in1, Code in2);
     int reencode_right_ligkern(Code old_in2, Code new_in2);
     
-    int apply(const Vector<Substitution> &, bool allow_single, int lookup, const GlyphFilter &, const Vector<PermString> &glyph_names);
-    void apply_alternates(const Vector<Substitution> &, int lookup, const GlyphFilter &, const Vector<PermString> &glyph_names);
-    int apply(const Vector<Positioning> &);
+    int apply(const Vector<Substitution>&, bool allow_single, int lookup, const GlyphFilter&, const Vector<PermString>& glyph_names);
+    void apply_alternates(const Vector<Substitution>&, int lookup, const GlyphFilter&, const Vector<PermString>& glyph_names);
+    int apply(const Vector<Positioning>&);
 
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &, ErrorHandler *);
