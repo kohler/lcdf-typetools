@@ -169,7 +169,7 @@ getodir(int o, ErrorHandler *errh)
 		// using a procedure suggested by Olaf Weber
 		String encfonts = kpsei_string(kpsei_path_expand("$TEXMFMAIN/fonts/enc"));
 		if (!encfonts)
-		    encfonts = kpsei_string(kpsei_var_expand("$TEXMFDIST/fonts/enc"));
+		    encfonts = kpsei_string(kpsei_path_expand("$TEXMFDIST/fonts/enc"));
 		tds_1_1 = (encfonts != String());
 	    }
 	    if (tds_1_1 == 0)
