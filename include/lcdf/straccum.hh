@@ -60,6 +60,7 @@ class StringAccum {
 #ifdef HAVE_STRING
   StringAccum &operator<<(const String &);
 #endif
+  StringAccum &operator<<(const StringAccum &);
   StringAccum &operator<<(int);
   StringAccum &operator<<(unsigned);
   StringAccum &operator<<(double);
@@ -152,6 +153,13 @@ StringAccum::operator<<(const String &s)
   return *this;
 }
 #endif
+
+inline StringAccum &
+StringAccum::operator<<(const StringAccum &s)
+{
+  push(s.data(), s.length());
+  return *this;
+}
 
 inline unsigned char *
 StringAccum::take_bytes()
