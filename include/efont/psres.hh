@@ -38,7 +38,7 @@ class PsresDatabaseSection {
   HashMap<PermString, int> _map;
   Vector<PermString> _directories;
   Vector<String> _values;
-  Vector<bool> _value_escaped;
+  Vector<int> _value_escaped;
   
   const String &value(int index);
   
