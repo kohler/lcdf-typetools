@@ -16,8 +16,9 @@ cfftot1 \- convert PostScript font from CFF to Type 1
 .SH DESCRIPTION
 .BR Cfftot1
 converts PostScript font programs in the Compact Font Format (CFF) into
-Type 1 font programs in PFB or PFA format. The input file should be a raw
-CFF file or a PostScript-flavored OpenType font. If the file
+Type 1 font programs in PFB or PFA format, preserving all hints that can be
+represented in Type 1. The input file should be a raw CFF file or a
+PostScript-flavored OpenType font. If the file
 .I output
 is not specified output goes to the standard output.
 If the file
