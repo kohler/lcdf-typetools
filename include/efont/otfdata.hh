@@ -7,8 +7,11 @@
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
+#if NEED_ARPA_INET_H
+# include <arpa/inet.h>
+#endif
 #if HAVE_BYTEORDER_H
-# include <byteorder.h>			/* for ntohl() */
+# include <byteorder.h>
 #elif HAVE_NETINET_IN_H
 # include <netinet/in.h>
 #elif HAVE_SYS_PARAM_H
