@@ -661,8 +661,9 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	// Use named glyph, if any.  Special case for "UNICODING foo =: ;",
 	// which should turn off the character (even if a named_glyph exists),
 	// UNLESS the glyph was explicitly requested.
-	if (!unicodes_explicit || unicodes.size() > 0
-	    || (_encoding_required.size() > code && _encoding_required[code]))
+	if (named_glyph > 0
+	    && (!unicodes_explicit || unicodes.size() > 0
+		|| (_encoding_required.size() > code && _encoding_required[code])))
 	    metrics.encode(code, unicodes.size() ? unicodes[0] : 0, named_glyph);
 
       encoded:
