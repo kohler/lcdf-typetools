@@ -19,10 +19,10 @@ class GsubEncoding { public:
     
     void encode(int code, Glyph g);
 
-    void apply(const Substitution &, bool allow_single);
+    bool apply(const Substitution &, bool allow_single);
     void apply_substitutions();
     void simplify_ligatures(bool add_fake);
-    void apply(const Positioning &);
+    bool apply(const Positioning &);
     void simplify_kerns();
 
     void cut_encoding(int size);

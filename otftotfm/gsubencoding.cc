@@ -53,16 +53,18 @@ GsubEncoding::apply_single_substitution(Glyph in, Glyph out)
 	}
 }
 
-void
+bool
 GsubEncoding::apply(const Substitution &s, bool allow_single)
 {
-    if (s.is_single() && allow_single)
+    if (s.is_single() && allow_single) {
 	apply_single_substitution(s.in_glyph(), s.out_glyph());
+	return true;
     
-    else if (s.is_alternate() && allow_single) {
+    } else if (s.is_alternate() && allow_single) {
 	Vector<Glyph> possibilities;
 	s.out_glyphs(possibilities);
 	apply_single_substitution(s.in_glyph(), possibilities[0]);
+	return true;
 	
     } else if (s.is_ligature()) {
 	Vector<Glyph> in;
@@ -78,8 +80,11 @@ GsubEncoding::apply(const Substitution &s, bool allow_single)
 	l.out = force_encoding(s.out_glyph());
 	l.skip = 1;
 	_ligatures.push_back(l);
-      ligature_fail: ;
-    }
+      ligature_fail:
+	return true;
+	
+    } else
+	return false;
 }
 
 void
@@ -91,7 +96,7 @@ GsubEncoding::apply_substitutions()
     _substitutions.clear();
 }
 
-void
+bool
 GsubEncoding::apply(const Positioning &p)
 {
     if (p.is_pairkern()) {
@@ -104,7 +109,9 @@ GsubEncoding::apply(const Positioning &p)
 	    k.amount = p.left().adx;
 	    _kerns.push_back(k);
 	}
-    }
+	return true;
+    } else
+	return false;
 }
 
 int

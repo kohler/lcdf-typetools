@@ -14,6 +14,7 @@
 #include "md5.h"
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
+#include <lcdf/hashmap.hh>
 #include <efont/cff.hh>
 #include <efont/otf.hh>
 #include <cstdlib>
@@ -104,7 +105,6 @@ static PermString dot_notdef(".notdef");
 
 static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
-static Vector<int> interesting_features_used;
 
 static String encoding_file;
 static String new_encoding_name;
@@ -397,36 +397,45 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	}
 }
 
+struct Lookup {
+    bool used;
+    Vector<OpenType::Tag> features;
+    Lookup()			: used(false) { }
+};
+
 static void
-find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &features, Vector<int> &lookups, ErrorHandler *errh)
+find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &features, Vector<Lookup> &lookups, ErrorHandler *errh)
 {
-    Vector<int> fids;
+    Vector<int> fids, lookupids;
     int required;
-    Vector<int> all_fids, all_required;
     
     for (int i = 0; i < interesting_scripts.size(); i += 2) {
+	OpenType::Tag script = interesting_scripts[i];
+	OpenType::Tag langsys = interesting_scripts[i+1];
+	
 	// collect features applying to this script
-	scripts.features(interesting_scripts[i], interesting_scripts[i+1],
-			 required, fids, errh);
-	if (required >= 0)
-	    all_required.push_back(required);
-	for (int j = 0; j < fids.size(); j++)
-	    all_fids.push_back(fids[j]);
+	scripts.features(script, langsys, required, fids, errh);
+
+	// only use the selected features
+	features.filter_features(fids, interesting_features);
 
 	// mark features as having been used
-	for (int j = -1; j < fids.size(); j++) {
+	for (int j = (required < 0 ? 0 : -1); j < fids.size(); j++) {
 	    int fid = (j < 0 ? required : fids[j]);
-	    if (fid >= 0) {
-		OpenType::Tag tag = features.feature_tag(fid);
-		for (int k = 0; k < interesting_features.size(); k++)
-		    if (interesting_features[k] == tag)
-			interesting_features_used[k] = 1;
+	    OpenType::Tag ftag = features.feature_tag(fid);
+	    if (features.lookups(fid, lookupids, errh) < 0)
+		lookupids.clear();
+	    for (int k = 0; k < lookupids.size(); k++) {
+		int l = lookupids[k];
+		if (l < 0 || l >= lookups.size())
+		    errh->error("lookup for '%s' feature out of range", OpenType::Tag::langsys_text(script, langsys).c_str());
+		else {
+		    lookups[l].used = true;
+		    lookups[l].features.push_back(ftag);
+		}
 	    }
 	}
     }
-
-    // finally, get lookups
-    features.lookups(all_required, all_fids, interesting_features, lookups, errh);
 }
 
 static int
@@ -665,6 +674,62 @@ output_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	errh->fatal("pltotf execution failed");
 }
 
+enum { F_GSUB_TRY = 1, F_GSUB_PART = 2, F_GSUB_ALL = 4,
+       F_GPOS_TRY = 8, F_GPOS_PART = 16, F_GPOS_ALL = 32,
+       X_UNUSED = 0, X_BOTH_NONE = 1, X_GSUB_NONE = 2, X_GSUB_PART = 3,
+       X_GPOS_NONE = 4, X_GPOS_PART = 5, X_COUNT };
+
+static const char * const x_messages[] = {
+    "this script does not support '%s'",
+    "'%s' ignored, too complex for me",
+    "complex substitutions from '%s' ignored",
+    "some complex substitutions from '%s' ignored",
+    "complex positionings from '%s' ignored",
+    "some complex positionings from '%s' ignored",
+};
+
+static void
+report_underused_features(const HashMap<uint32_t, int> &feature_usage, ErrorHandler *errh)
+{
+    Vector<String> x[X_COUNT];
+    for (int i = 0; i < interesting_features.size(); i++) {
+	OpenType::Tag f = interesting_features[i];
+	int fu = feature_usage[f.value()];
+	if (fu == 0)
+	    x[X_UNUSED].push_back(f.text());
+	else if ((fu & (F_GSUB_TRY | F_GPOS_TRY)) == fu)
+	    x[X_BOTH_NONE].push_back(f.text());
+	else {
+	    if (fu & F_GSUB_TRY) {
+		if ((fu & (F_GSUB_PART | F_GSUB_ALL)) == 0)
+		    x[X_GSUB_NONE].push_back(f.text());
+		else if (fu & F_GSUB_PART)
+		    x[X_GSUB_PART].push_back(f.text());
+	    }
+	    if (fu & F_GPOS_TRY) {
+		if ((fu & (F_GPOS_PART | F_GPOS_ALL)) == 0)
+		    x[X_GPOS_NONE].push_back(f.text());
+		else if (fu & F_GPOS_PART)
+		    x[X_GPOS_PART].push_back(f.text());
+	    }
+	}
+    }
+
+    for (int i = 0; i < X_COUNT; i++)
+	if (x[i].size())
+	    goto found;
+    return;
+
+  found:
+    for (int i = 0; i < X_COUNT; i++)
+	if (x[i].size()) {
+	    StringAccum sa;
+	    sa.append_fill_lines(x[i], 65, "", "", ", ");
+	    sa.pop_back();
+	    errh->warning(x_messages[i], sa.c_str());
+	}
+}
+
 static void
 do_file(const OpenType::Font &otf, String outfile,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
@@ -699,21 +764,28 @@ do_file(const OpenType::Font &otf, String outfile,
     else
 	dvipsenc.make_gsub_encoding(encoding, cmap, &font);
     
-    // feature variables
-    Vector<int> lookups;
-    interesting_features_used.assign(interesting_features.size(), 0);
+    // maintain statistics about features
+    HashMap<uint32_t, int> feature_usage(0);
     
     // apply activated GSUB features
     OpenType::Gsub gsub(otf.table("GSUB"), errh);
+    Vector<Lookup> lookups(gsub.nlookups(), Lookup());
     find_lookups(gsub.script_list(), gsub.feature_list(), lookups, errh);
     Vector<OpenType::Substitution> subs;
-    for (int i = 0; i < lookups.size(); i++) {
-	OpenType::GsubLookup l = gsub.lookup(lookups[i]);
-	l.unparse_automatics(gsub, subs);
-	for (int i = 0; i < subs.size(); i++)
-	    encoding.apply(subs[i], !dvipsenc_literal);
-	encoding.apply_substitutions();
-    }
+    for (int i = 0; i < lookups.size(); i++)
+	if (lookups[i].used) {
+	    OpenType::GsubLookup l = gsub.lookup(i);
+	    bool understood = l.unparse_automatics(gsub, subs);
+	    int nunderstood = 0;
+	    for (int j = 0; j < subs.size(); j++)
+		nunderstood += encoding.apply(subs[j], !dvipsenc_literal);
+	    encoding.apply_substitutions();
+
+	    // mark as used
+	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;
+	    for (int j = 0; j < lookups[i].features.size(); j++)
+		feature_usage.find_force(lookups[i].features[j].value()) |= d;
+	}
     encoding.simplify_ligatures(false);
     
     if (dvipsenc_literal)
@@ -723,38 +795,29 @@ do_file(const OpenType::Font &otf, String outfile,
     
     // apply activated GPOS features
     OpenType::Gpos gpos(otf.table("GPOS"), errh);
+    lookups.assign(gpos.nlookups(), Lookup());
     find_lookups(gpos.script_list(), gpos.feature_list(), lookups, errh);
     Vector<OpenType::Positioning> poss;
-    for (int i = 0; i < lookups.size(); i++) {
-	OpenType::GposLookup l = gpos.lookup(lookups[i]);
-	l.unparse_automatics(poss);
-	for (int i = 0; i < poss.size(); i++)
-	    encoding.apply(poss[i]);
-    }
+    for (int i = 0; i < lookups.size(); i++)
+	if (lookups[i].used) {
+	    OpenType::GposLookup l = gpos.lookup(i);
+	    bool understood = l.unparse_automatics(poss);
+	    int nunderstood = 0;
+	    for (int j = 0; j < poss.size(); j++)
+		nunderstood += encoding.apply(poss[j]);
+
+	    // mark as used
+	    int d = (understood && nunderstood == poss.size() ? F_GPOS_ALL : (nunderstood ? F_GPOS_PART : 0)) + F_GPOS_TRY;
+	    for (int j = 0; j < lookups[i].features.size(); j++)
+		feature_usage.find_force(lookups[i].features[j].value()) |= d;
+	}
     encoding.simplify_kerns();
 
     // apply LIGKERN commands to the result
     dvipsenc.apply_ligkern(encoding, errh);
 
-    // report unused features if any
-    StringAccum sa;
-    int nunused = 0;
-    for (int i = 0; i < interesting_features.size(); i++)
-	if (!interesting_features_used[i]) {
-	    nunused++;
-	    sa << (sa ? ", " : "") << interesting_features[i].text();
-	}
-    if (nunused) {
-	String w = (nunused == 1 ? "feature '%s' unsupported" : "features '%s' unsupported");
-	w += (interesting_scripts.size() == 2 ? " by script '%s'" : " by scripts '%s'");
-	StringAccum ssa;
-	for (int i = 0; i < interesting_scripts.size(); i += 2) {
-	    ssa << (i ? ", " : "") << interesting_scripts[i].text();
-	    if (!interesting_scripts[i+1].null())
-		ssa << '.' << interesting_scripts[i+1].text();
-	}
-	errh->warning(w.c_str(), sa.c_str(), ssa.c_str());
-    }
+    // report unused and underused features if any
+    report_underused_features(feature_usage, errh);
 
     // figure out our FONTNAME
     if (font_name)
@@ -783,7 +846,7 @@ do_file(const OpenType::Font &otf, String outfile,
 		    font_name += String(".") + interesting_scripts[i+1].text();
 	    }
 	for (int i = 0; i < interesting_features.size(); i++)
-	    if (interesting_features_used[i])
+	    if (feature_usage[interesting_features[i].value()])
 		font_name += String("--F") + interesting_features[i].text();
     }
     
@@ -822,7 +885,7 @@ encoding, or try '--automatic' mode.)");
 
     // print DVIPS map line
     if (!stdout_used && errh->nerrors() == 0) {
-	sa.clear();
+	StringAccum sa;
 	sa << font_name << ' ' << font.font_name() << " \"";
 	if (extend)
 	    sa << extend << " ExtendFont ";
