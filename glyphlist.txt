@@ -4383,4 +4383,19 @@ vector;20D7
 # visualspace: Unicode for OPEN BOX, used for secondary replacement from EC.enc
 visualspace;2423
 wreathproduct;2240
+# -- Marco Kuhlmann reported annoying glyph neologisms in fontinst encodings
+# Dbar = Dcroat
+Dbar;0110
+# compwordmark = cwm
+compwordmark;200C
+# dbar = dcroat
+dbar;0111
+# rangedash = endash
+endash;2013
+# hyphenchar = hyphen
+hyphenchar;002D
+# punctdash = emdash
+punctdash;2014
+# visiblespace = visualspace
+visiblespace;2423
 # -- end TeX extensions
