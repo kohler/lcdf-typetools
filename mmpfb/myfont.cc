@@ -167,13 +167,8 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
 
 
 void
-MyFont::interpolate_charstrings()
+MyFont::interpolate_charstrings(ErrorHandler *errh)
 {
-  Type1MMRemover rewriter(this, &_weight_vector);
-  for (int i = 0; i < subr_count(); i++)
-    if (subr(i))
-      rewriter.rewrite(*subr(i));
-  for (int i = 0; i < glyph_count(); i++)
-    if (glyph(i))
-      rewriter.rewrite(glyph(i)->t1cs());
+  Type1MMRemover remover(this, &_weight_vector, errh);
+  remover.run();
 }

@@ -15,6 +15,13 @@ prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 VPATH		= @srcdir@/mmpfb
 srcdir		= @srcdir@/mmpfb
+bindir		= @bindir@
+mandir		= @mandir@/man$(manext)
+manext		= 1
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
 
 CC		= @CC@ $(PROFILING)
 CCLINKER	= @CC@ $(PROFILING)
@@ -22,16 +29,16 @@ CXX		= @CXX@ $(PROFILING)
 CXXLINKER	= @CXX@ $(PROFILING)
 CXXFLAGS	= @CFLAGS@
 CFLAGS		= @CFLAGS@
-CPPFLAGS	= @DEFS@ -I../edlib -I../t1lib -I../metricslib
+CPPFLAGS	= @DEFS@ -I../edlib -I../t1lib
 PROFILING	= 
 LDFLAGS		= @LDFLAGS@
 
 PROGRAMS	= mmpfb
-MY_OBJS		= vectori.o hashmapi.o myfont.o main.o
+MY_OBJS		= vectori.o hashmapi.o t1rewrit.o myfont.o main.o
 OBJS		= ../edlib/permstr.o ../edlib/straccum.o \
 	../edlib/landmark.o ../edlib/error.o ../edlib/clp.o ../t1lib/t1cs.o \
 	../t1lib/t1interp.o ../t1lib/t1item.o ../t1lib/t1font.o \
-	../t1lib/t1mm.o ../t1lib/t1rw.o ../t1lib/t1rewrit.o $(MY_OBJS)
+	../t1lib/t1mm.o ../t1lib/t1rw.o $(MY_OBJS)
 
 all: $(PROGRAMS)
 
@@ -40,9 +47,16 @@ mmpfb: $(OBJS)
 
 t1mm.o: ../t1lib/t1mm.cc ../t1lib/t1mm.hh
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c ../t1lib/t1mm.cc -o t1mm.o
+t1rewrit.o: t1rewrit.cc t1rewrit.hh ../t1lib/t1interp.hh
 
 main.o: main.cc
 	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
+
+install: install-prog install-man
+install-prog: mmpfb
+	$(INSTALL_PROGRAM) mmpfb $(bindir)/mmpfb
+install-man:
+	$(INSTALL_DATA) mmpfb.man $(mandir)/mmpfb.$(manext)
 
 #####
 # Cleaning and distribution
@@ -59,3 +73,6 @@ dist:
 	cp Makefile.in hashmapi.cc vectori.cc myfont.cc myfont.hh main.cc \
 	mmpfb.man \
 	../$(PACKAGE)-$(VERSION)/mmpfb
+
+.PHONY: all install install-prog install-man clean mostlyclean distclean \
+	realclean dist

@@ -16,3 +16,6 @@ template class Vector<Type1Item *>;
 
 class Type1Subr;
 template class Vector<Type1Subr *>;
+
+class Type1Charstring;
+template class Vector<Type1Charstring *>;

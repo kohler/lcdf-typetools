@@ -65,22 +65,29 @@ Type %s --help for more information.\n",
 void
 usage()
 {
-  fprintf(stderr, "Usage: %s [options] [outline font]\n\
+  printf("\
+`Mmpfb' creates a single-master PostScript Type 1 font by interpolating a\n\
+multiple master font at a point you specify. The single-master result\n\
+contains no multiple master extensions.\n\
+\n\
+Usage: %s [options] [outline font]\n\
+\n\
 General options:\n\
   --amcp-info                  Print AMCP info, if necessary, and exit.\n\
   --pfa, -a                    Output PFA font.\n\
-  --pfb, -b                    Output PFB font.\n\
+  --pfb, -b                    Output PFB font. This is the default.\n\
   --output=FILE, -o FILE       Write output to FILE.\n\
   --help, -h                   Print this message and exit.\n\
   --version                    Print version number and exit.\n\
-Multiple master settings:\n\
+\n\
+Interpolation settings:\n\
   --weight=N, -w N             Set weight to N.\n\
   --width=N, -W N              Set width to N.\n\
   --optical-size=N, -O N       Set optical size to N.\n\
   --style=N                    Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N   Set first (second, third, fourth) axis to N.\n\
-",
-	  program_name);
+\n\
+Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 }
 
 
@@ -237,6 +244,8 @@ particular purpose.\n");
 	FILE *f = fopen(clp->arg, "rb");
 	if (f)
 	  do_file(f);
+	else
+	  errh.fatal("can't open `%s' for reading", clp->arg);
       }
       break;
       
@@ -276,7 +285,7 @@ particular purpose.\n");
     errh.fatal("can't create weight vector");
   
   font->interpolate_dicts(&errh);
-  font->interpolate_charstrings();
+  font->interpolate_charstrings(&errh);
   if (write_pfb) {
     Type1PfbWriter w(outfile);
     font->write(w);
