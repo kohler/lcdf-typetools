@@ -115,52 +115,6 @@ psres_escape(char *s, unsigned len)
   return len-delta;
 }
 
-
-PsresDatabaseSection *
-PsresDatabase::force_section(PermString name)
-{
-  if (_section_map[name] > 0)
-    return _sections[_section_map[name]];
-  else {
-    PsresDatabaseSection *s = new PsresDatabaseSection(name);
-    int index = _sections.append(s);
-    _section_map.insert(name, index);
-    return s;
-  }
-}
-
-
-bool
-PsresDatabase::add_one_psres_file(Slurper &slurper, bool override)
-{
-  if (!read_psres_line(slurper, 0))
-    return /* error */ false;
-  
-  char *s = slurper.cur_line();
-  unsigned len = slurper.cur_line_length();
-  if (len < 12 || memcmp(s, "PS-Resources", 12) != 0)
-    return /* error */ false;
-  
-  bool exclusive = (len >= 22 && memcmp(s+12, "-Exclusive", 10) == 0);
-  
-  // skip list of sections
-  while (read_psres_line(slurper, 0))
-    /* nada */;
-  
-  // now, read each section
-  PermString directory = slurper.filename().directory();
-  
-  while (read_psres_line(slurper, 0)) {
-    s = slurper.cur_line();
-    len = psres_escape(s, slurper.cur_line_length());
-    PsresDatabaseSection *section = force_section(PermString(s, len));
-    section->add_psres_file_section(slurper, directory, override);
-  }
-  
-  return exclusive;
-}
-
-
 void
 PsresDatabaseSection::add_psres_file_section
 	(Slurper &slurper, PermString directory, bool override)
@@ -218,6 +172,49 @@ PsresDatabaseSection::add_psres_file_section
   }
 }
 
+
+PsresDatabaseSection *
+PsresDatabase::force_section(PermString name)
+{
+  if (_section_map[name] > 0)
+    return _sections[_section_map[name]];
+  else {
+    PsresDatabaseSection *s = new PsresDatabaseSection(name);
+    int index = _sections.append(s);
+    _section_map.insert(name, index);
+    return s;
+  }
+}
+
+bool
+PsresDatabase::add_one_psres_file(Slurper &slurper, bool override)
+{
+  if (!read_psres_line(slurper, 0))
+    return /* error */ false;
+  
+  char *s = slurper.cur_line();
+  unsigned len = slurper.cur_line_length();
+  if (len < 12 || memcmp(s, "PS-Resources", 12) != 0)
+    return /* error */ false;
+  
+  bool exclusive = (len >= 22 && memcmp(s+12, "-Exclusive", 10) == 0);
+  
+  // skip list of sections
+  while (read_psres_line(slurper, 0))
+    /* nada */;
+  
+  // now, read each section
+  PermString directory = slurper.filename().directory();
+  
+  while (read_psres_line(slurper, 0)) {
+    s = slurper.cur_line();
+    len = psres_escape(s, slurper.cur_line_length());
+    PsresDatabaseSection *section = force_section(PermString(s, len));
+    section->add_psres_file_section(slurper, directory, override);
+  }
+  
+  return exclusive;
+}
 
 bool
 PsresDatabase::add_psres_file(Filename &filename, bool override)
