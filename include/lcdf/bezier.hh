@@ -1,8 +1,5 @@
 #ifndef BEZIER_HH
 #define BEZIER_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "point.hh"
 #include <X11/Xlib.h>
 #include "vector.hh"
