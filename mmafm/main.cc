@@ -6,6 +6,7 @@
 #include "error.hh"
 #include "clp.h"
 #include <stdio.h>
+#include <string.h>
 
 #define WEIGHT_OPT	300
 #define WIDTH_OPT	301
@@ -74,11 +75,21 @@ read_file(char *fn, FontFinder *finder)
   }
   
   LineScanner l(filename, file);
-  AmfmReader reader(l, finder, &errh);
-  amfm = reader.take();
-  if (!amfm) {
-    errh.error("`%s' doesn't seem to contain an AMFM file", fn);
-    exit(1);
+  if (file != stdin && l.next_line()
+      && l.isall("StartFontMetrics %g", (double *)0)) {
+    AfmReader reader(l, &errh);
+    Metrics *afm = reader.take();
+    if (!afm)
+      errh.fatal("`%s' doesn't seem to contain an AFM file", fn);
+    else
+      finder->record(afm);
+  } else {
+    if (amfm)
+      errh.fatal("already read one AMFM file");
+    AmfmReader reader(l, finder, &errh);
+    amfm = reader.take();
+    if (!amfm)
+      errh.fatal("`%s' doesn't seem to contain an AMFM file", fn);
   }
 }
 
@@ -86,7 +97,7 @@ read_file(char *fn, FontFinder *finder)
 static void
 short_usage()
 {
-  fprintf(stderr, "Usage: %s [options] [AMFM file]\n\
+  fprintf(stderr, "Usage: %s [options and filenames]\n\
 Type %s --help for more information.\n",
 	  program_name, program_name);
 }
@@ -94,7 +105,7 @@ Type %s --help for more information.\n",
 static void
 usage()
 {
-  fprintf(stderr, "Usage: %s [options] [AMFM file]\n\
+  fprintf(stderr, "Usage: %s [options and filenames]\n\
 General options:\n\
   --output FILE, -o FILE        Write output to FILE.\n\
   --help, -h                    Print this message and exit.\n\
@@ -113,11 +124,24 @@ Multiple master settings:\n\
 int
 main(int argc, char **argv)
 {
+  FontFinder *finder = new CacheFontFinder;
+  
   PsresFontFinder *psres_finder = new PsresFontFinder;
-  char *q = getenv("AFMPATH");
-  if (q) psres_finder->read_psres(Filename(q, "PSres.upr"));
-  q = getenv("FONTPATH");
-  if (q) psres_finder->read_psres(Filename(q, "PSres.upr"));
+  Vector<PermString> paths;
+  char *token;
+  if (char *path = getenv("AFMPATH"))
+    while ((token = strtok(path, ":"))) {
+      if (*token) paths.append(token);
+      path = 0;
+    }
+  if (char *path = getenv("FONTPATH"))
+    while ((token = strtok(path, ":"))) {
+      if (*token) paths.append(token);
+      path = 0;
+    }
+  for (int i = paths.count() - 1; i >= 0; i--)
+    psres_finder->read_psres(Filename(paths[i], "PSres.upr"));
+  finder->append(psres_finder);
   
   Clp_Parser *clp =
     Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
@@ -178,13 +202,13 @@ particular purpose. That's right: you're on your own!\n");
       break;
       
      case Clp_NotOption:
-      read_file(clp->arg, psres_finder);
+      read_file(clp->arg, finder);
       break;
       
      case Clp_Done:
-      if (!amfm) read_file("-", psres_finder);
+      if (!amfm) read_file("-", finder);
       goto done;
-
+      
      case Clp_BadOption:
       short_usage();
       exit(1);
@@ -201,7 +225,7 @@ particular purpose. That's right: you're on your own!\n");
       mmspace->set_design(design, ax_names[i], values[i], &errh);
     else
       mmspace->set_design(design, ax_nums[i], values[i], &errh);
-
+  
   Vector<double> weight;
   if (!mmspace->weight_vector(design, weight, &errh))
     errh.fatal("can't create weight vector");
