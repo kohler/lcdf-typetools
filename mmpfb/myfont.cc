@@ -54,15 +54,17 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
 			  ErrorHandler *errh)
 {
   Type1Definition *t1d = dict("DesignVector");
-  if (t1d) t1d->set_numvec(design);
+  if (t1d) {
+    t1d->set_numvec(design);
+    kill_def(t1d, dFont);
+  }
   
   t1d = dict("NormDesignVector");
   if (t1d) {
     NumVector norm_design;
     if (mmspace->design_to_norm_design(design, norm_design))
       t1d->set_numvec(norm_design);
-    else
-      kill_def(t1d, dFont);
+    kill_def(t1d, dFont);
   }
   
   if (!mmspace->design_to_weight(design, _weight_vector, errh))
@@ -80,7 +82,10 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   }
   
   t1d = dict("WeightVector");
-  if (t1d) t1d->set_numvec(_weight_vector);
+  if (t1d) {
+    t1d->set_numvec(_weight_vector);
+    kill_def(t1d, dFont);
+  }
   
   int naxes = design.size();
   _nmasters = _weight_vector.size();
