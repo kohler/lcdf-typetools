@@ -31,6 +31,7 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_SS = 0xD800,		// invalid Unicode
        U_EMPTYSLOT = 0xD801,	// invalid Unicode (not handled by Secondary)
        U_ALTSELECTOR = 0xD802,	// invalid Unicode
+       U_SSSMALL = 0xD803,	// invalid Unicode
        U_VS1 = 0xFE00,
        U_VS16 = 0xFE0F,
        U_VS17 = 0xE0100,
@@ -38,7 +39,8 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_IJ = 0x0132,
        U_ij = 0x0133,
        U_DOTLESSJ = 0x0237,
-       U_DOTLESSJ_2 = 0xF6BE };
+       U_DOTLESSJ_2 = 0xF6BE,
+       U_SSMALL = 0xF773 };
 
 Secondary::~Secondary()
 {
@@ -208,6 +210,13 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	    return true;
 	break;
 
+      case U_SSSMALL:
+	if (two_char_setting(U_SSMALL, U_SSMALL, v, dvipsenc, metrics))
+	    return true;
+	else if (two_char_setting('s', 's', v, dvipsenc, metrics))
+	    return true;
+	break;
+
       case U_IJ:
 	if (two_char_setting('I', 'J', v, dvipsenc, metrics))
 	    return true;
@@ -232,7 +241,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	
     }
 
-    // variant selectors get the same setting as VSCHOICE
+    // variant selectors get the same setting as ALTSELECTOR
     if ((uni >= U_VS1 && uni <= U_VS16) || (uni >= U_VS17 && uni <= U_VS256))
 	return setting(U_ALTSELECTOR, v, dvipsenc, metrics, errh);
 

@@ -357,7 +357,7 @@ int
 DvipsEncoding::parse_unicoding_words(Vector<String> &v, ErrorHandler *errh)
 {
     int av;
-    if (v.size() < 2 || (v[1] != "=" && v[1] != "=:"))
+    if (v.size() < 2 || (v[1] != "=" && v[1] != "=:" && v[1] != ":="))
 	return errh->error("parse error in UNICODING");
     else if (v[0] == "||" || (av = encoding_of(v[0])) < 0)
 	return errh->error("target '%s' has no encoding, ignoring UNICODING", v[0].c_str());
@@ -542,8 +542,13 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	// check UNICODING map
 	int m = _unicoding_map[chname];
 	if (m >= 0) {
-	    for (; _unicoding[m] >= 0 && !gid; m++)
+	    // use first mapped character in the list; secondaries are allowed
+	    for (; _unicoding[m] >= 0 && gid <= 0; m++) {
 		gid = map_uni(_unicoding[m], cmap, metrics);
+		if (gid <= 0 && secondary
+		    && secondary->encode_uni(i, chname, _unicoding[m], *this, metrics, errh))
+		    goto encoded;
+	    }
 	} else {
 	    // otherwise, try to map this glyph name to Unicode
 	    bool more;
@@ -569,7 +574,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	    if (gid <= 0 && secondary
 		&& (m = glyphname_unicode(chname)) >= 0
 		&& secondary->encode_uni(i, chname, m, *this, metrics, errh))
-		continue;
+		goto encoded;
 	    // map unknown glyphs to 0
 	    if (gid < 0)
 		gid = 0;
@@ -578,6 +583,8 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	metrics.encode(i, gid);
 	if (gid == 0)
 	    bad_codepoint(i);
+
+      encoded: ;
     }
     metrics.set_coding_scheme(_coding_scheme);
 }

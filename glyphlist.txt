@@ -4300,11 +4300,15 @@ Delta;2206;0394
 Ifractur;2111
 # Germandbls: invalid Unicode, used for secondary replacement from EC.enc
 Germandbls;D800
+# Germandblssmall: invalid Unicode
+Germandblssmall;D803
 Ng;014A
 Omega;2126;03A9
 Rfractur;211C
 # SS: invalid Unicode, used for secondary replacement from EC.enc
 SS;D800
+# SSsmall: invalid Unicode
+SSsmall;D803
 # altselector: invalid Unicode
 altselector;D802
 angbracketleft;27E8;2329
