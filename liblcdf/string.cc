@@ -24,7 +24,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
-#include <inttypes.h>
+#include <lcdf/inttypes.h>
 
 static String::Initializer initializer;
 String::Memo *String::null_memo = 0;

@@ -12,7 +12,7 @@ class String { public:
     // Strings, and declare a String::Initializer in any file in which you
     // declare static global Strings.
     struct Initializer { Initializer(); };
-    friend class String::Initializer;
+    friend struct String::Initializer;
     static void static_initialize();
     static void static_cleanup();
   
@@ -47,11 +47,10 @@ class String { public:
     const unsigned char *udata() const	{ return reinterpret_cast<const unsigned char *>(_data); }
     unsigned char *mutable_udata()	{ return reinterpret_cast<unsigned char *>(mutable_data()); }
   
-    operator bool()			{ return _length != 0; }
     operator bool() const		{ return _length != 0; }
+    bool operator!() const		{ return _length == 0; }
   
 #ifdef HAVE_PERMSTRING
-    operator PermString()		{ return PermString(_data, _length); }
     operator PermString() const		{ return PermString(_data, _length); }
 #endif
   

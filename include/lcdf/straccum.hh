@@ -23,8 +23,8 @@ class StringAccum { public:
     char *data() const			{ return (char *)_s; }
     int length() const			{ return _len; }
 
-    operator bool()			{ return _len != 0; }
     operator bool() const		{ return _len != 0; }
+    bool operator!() const		{ return _len == 0; }
 
     bool out_of_memory() const		{ return _cap < 0; }
   

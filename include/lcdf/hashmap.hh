@@ -81,6 +81,7 @@ class _HashMap_const_iterator { public:
     typedef typename HashMap<K, V>::Pair Pair;
     
     operator bool() const		{ return _pos < _hm->_capacity; }
+    bool operator!() const		{ return _pos >= _hm->_capacity; }
     
     void operator++(int);
     void operator++()			{ (*this)++; }

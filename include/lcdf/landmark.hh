@@ -10,6 +10,7 @@ class Landmark { public:
     Landmark(const String &f, unsigned l) : _file(f), _line(l) { }
 
     operator bool() const		{ return _file; }
+    bool operator!() const		{ return !_file; }
     bool has_line() const		{ return _line != ~0U; }
 
     const String &file() const		{ return _file; }

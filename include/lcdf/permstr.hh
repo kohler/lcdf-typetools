@@ -19,6 +19,7 @@ class PermString { struct Doodad; public:
     PermString(const char *, int);
   
     operator bool() const		{ return _rep != 0; }
+    bool operator!() const		{ return _rep == 0; }
     int length() const			{ return doodad()->length; }
     char operator[](int) const;
   
@@ -50,7 +51,7 @@ class PermString { struct Doodad; public:
     PermString(Doodad *d)		: _rep(d->data) { }
     Doodad *doodad() const { return (Doodad*)(_rep - offsetof(Doodad, data)); }
   
-    friend class PermString::Initializer;
+    friend struct PermString::Initializer;
     static void static_initialize();
 
     static const int NHASH = 1024; // must be power of 2

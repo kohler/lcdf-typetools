@@ -18,8 +18,9 @@ class Filename { public:
     const String &path() const		{ return _path; }
     String base() const;
     String extension() const;
-  
+
     operator bool() const		{ return _name; }
+    bool operator!() const		{ return !_name; }
     
     FILE *open_read(bool binary = false) const;
     bool readable() const;
