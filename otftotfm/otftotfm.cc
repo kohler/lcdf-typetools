@@ -419,6 +419,17 @@ FontName %s\n",
 }
 #endif
 
+static String
+make_base_font_name(const String &font_name)
+{
+    int pos = font_name.length();
+    while (pos > 0 && (isdigit(font_name[pos-1]) || font_name[pos-1] == '-' || font_name[pos-1] == '+'))
+	pos--;
+    if (pos == 0)
+	pos = font_name.length();
+    return font_name.substring(0, pos) + "--base" + font_name.substring(pos);
+}
+
 static double
 get_design_size(const OpenType::Font &otf)
 {
@@ -569,7 +580,7 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 
     // write MAPFONT
     if (vpl)
-	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s--base)\n   (FONTDSIZE R %.1f)\n   )\n", font_name.c_str(), design_size);
+	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s)\n   (FONTDSIZE R %.1f)\n   )\n", make_base_font_name(font_name).c_str(), design_size);
     
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
@@ -1250,11 +1261,11 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	output_encoding(encoding, glyph_names, errh);
 
     // check whether virtual metrics are necessary
-    String metrics_suffix;
+    String base_font_name = font_name;
     bool need_virtual = encoding.need_virtual(257);
     if (need_virtual) {
 	if (output_flags & G_VMETRICS)
-	    metrics_suffix = "--base";
+	    base_font_name = make_base_font_name(font_name);
 	else
 	    errh->warning("features require virtual fonts");
     }
@@ -1288,10 +1299,10 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     if (!(output_flags & G_METRICS))
 	/* do nothing */;
     else if (output_flags & G_BINARY) {
-	String tfm = getodir(O_TFM, errh) + "/" + font_name + metrics_suffix + ".tfm";
+	String tfm = getodir(O_TFM, errh) + "/" + base_font_name + ".tfm";
 	write_tfm(otf, font, encoding, dvipsenc.boundary_char(), glyph_names, tfm, String(), errh);
     } else {
-	String outfile = getodir(O_PL, errh) + "/" + font_name + metrics_suffix + ".pl";
+	String outfile = getodir(O_PL, errh) + "/" + base_font_name + ".pl";
 	output_pl(otf, font, encoding, dvipsenc.boundary_char(), glyph_names, false, outfile, errh);
 	update_odir(O_PL, outfile, errh);
     }
@@ -1299,7 +1310,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     // print DVIPS map line
     if (errh->nerrors() == 0 && (output_flags & G_PSFONTSMAP)) {
 	StringAccum sa;
-	sa << font_name << metrics_suffix << ' ' << font->font_name() << " \"";
+	sa << base_font_name << ' ' << font->font_name() << " \"";
 	if (extend)
 	    sa << extend << " ExtendFont ";
 	if (slant)
@@ -1310,9 +1321,9 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	else
 	    sa << " <<" << pathname_filename(input_filename);
 	sa << '\n';
-	update_autofont_map(font_name + metrics_suffix, sa.take_string(), errh);
+	update_autofont_map(base_font_name, sa.take_string(), errh);
 	// if virtual font, remove any map line for base font name
-	if (metrics_suffix)
+	if (base_font_name != font_name)
 	    update_autofont_map(font_name, "", errh);
     }
 

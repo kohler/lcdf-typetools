@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 1.86   19.Dec.2003
+
+* otftotfm: Change where "--base" is added to support pdftex: If the font
+  name is "WarnoPro+10", the base font name is "WarnoPro--base+10".
+  Reported by Ulrich Dirr.
+
+
 Version 1.85   10.Dec.2003
 
 * otftotfm: Add --altselector-feature option, so you can specify the
