@@ -146,7 +146,7 @@ class Type1Encoding : public Type1Item { public:
     Type1Encoding *_copy_of;
     
     Type1Encoding(Type1Encoding *);
-  
+    
 };
 
 class Type1Subr : public Type1Item { public:
@@ -180,7 +180,7 @@ class Type1Subr : public Type1Item { public:
   
     static PermString cached_definer;
   
-    Type1Subr(PermString, int, PermString, int, unsigned char *, int);
+    Type1Subr(PermString, int, PermString, int, const String &);
     Type1Subr(PermString, int, PermString, const Type1Charstring &);
   
 };

@@ -10,27 +10,24 @@ PsfontCharstring::~PsfontCharstring()
 }
 
 
-Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
+Type1Charstring::Type1Charstring(int lenIV, const String &s)
 {
     if (lenIV < 0) {
 	// lenIV < 0 means there is no charstring encryption.
-	_data = new unsigned char[l];
-	_len = l;
+	_s = s;
 	_key = -1;
     } else {
-	_data = new unsigned char[l - lenIV];
-	_len = l - lenIV;
+	_s = s.substring(lenIV);
+	const unsigned char *d = reinterpret_cast<const unsigned char*>(_s.data());
 	_key = t1R_cs;
-	for (int i = 0; i < lenIV; i++, d++)
+	for (int i = 0; i < _s.length(); i++, d++)
 	    _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
     }
-    memcpy(_data, d, _len);
 }
 
 Type1Charstring::Type1Charstring(const Type1Charstring &t1cs)
-    : _data(new unsigned char[t1cs._len]), _len(t1cs._len), _key(t1cs._key)
+    : _s(t1cs._s), _key(t1cs._key)
 {
-    memcpy(_data, t1cs._data, _len);
 }
 
 void
@@ -40,14 +37,7 @@ Type1Charstring::prepend(const Type1Charstring &t1cs)
 	decrypt();
     if (t1cs._key >= 0)
 	t1cs.decrypt();
-    unsigned char *new_data = new unsigned char[_len + t1cs._len];
-    if (new_data) {
-	memcpy(new_data, t1cs._data, t1cs._len);
-	memcpy(new_data + t1cs._len, _data, _len);
-	delete[] _data;
-	_data = new_data;
-	_len += t1cs._len;
-    }
+    _s = t1cs._s + _s;
 }
 
 void
@@ -55,8 +45,8 @@ Type1Charstring::decrypt() const
 {
     if (_key >= 0) {
 	int r = _key;
-	unsigned char *d = _data;
-	for (int i = 0; i < _len; i++, d++) {
+	unsigned char *d = reinterpret_cast<unsigned char*>(_s.mutable_data());
+	for (int i = 0; i < _s.length(); i++, d++) {
 	    unsigned char encrypted = *d;
 	    *d = encrypted ^ (r >> 8);
 	    r = ((encrypted + r) * t1C1 + t1C2) & 0xFFFF;
@@ -69,8 +59,8 @@ bool
 Type1Charstring::run(Type1Interp &interp) const
 {
     const unsigned char *data = Type1Charstring::data();
-    int left = _len;
-  
+    int left = _s.length();
+
     while (left > 0) {
 	bool more;
 	int ahead;
@@ -136,16 +126,15 @@ Type1Charstring::run(Type1Interp &interp) const
 
 
 Type2Charstring::Type2Charstring(const Type2Charstring &t2cs)
-    : _data(new unsigned char[t2cs._len]), _len(t2cs._len)
+    : _s(t2cs._s)
 {
-    memcpy(_data, t2cs._data, _len);
 }
 
 bool
 Type2Charstring::run(Type1Interp &interp) const
 {
     const unsigned char *data = Type2Charstring::data();
-    int left = _len;
+    int left = _s.length();
   
     while (left > 0) {
 	bool more;
@@ -212,4 +201,14 @@ Type2Charstring::run(Type1Interp &interp) const
   runoff_error:
     interp.error(Type1Interp::errRunoff);
     return false;
+}
+
+
+void
+PsfontProgram::glyph_names(Vector<PermString> &gnames) const
+{
+    int n = nglyphs();
+    gnames.resize(n);
+    for (int i = 0; i < n; i++)
+	gnames[i] = glyph_name(i);
 }

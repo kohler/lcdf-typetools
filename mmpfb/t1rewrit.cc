@@ -89,15 +89,13 @@ Type1CharstringGen::gen_stack(Type1Interp &interp)
 Type1Charstring *
 Type1CharstringGen::output()
 {
-    int len = _ncs.length();
-    return new Type1Charstring(_ncs.take_bytes(), len);
+    return new Type1Charstring(_ncs.take_string());
 }
 
 void
 Type1CharstringGen::output(Type1Charstring &cs)
 {
-    int len = _ncs.length();
-    cs.assign(_ncs.take_bytes(), len);
+    cs.assign(_ncs.take_string());
 }
 
 
@@ -655,7 +653,7 @@ Type1MMRemover::Type1MMRemover(Type1Font *font, Vector<double> *wv,
     // find subroutines needed for hint replacement
     HintReplacementDetector hr(font, wv, 0);
     for (int i = 0; i < _font->nglyphs(); i++)
-	if (Type1Subr *g = _font->glyph(i))
+	if (Type1Subr *g = _font->glyph_x(i))
 	    hr.run(g->t1cs());
     for (int i = 0; i < _nsubrs; i++)
 	if (hr.is_hint_replacement(i))
@@ -728,7 +726,7 @@ Type1MMRemover::run()
     // expand glyphs
     Vector<PermString> bad_glyphs;
     for (int i = 0; i < _font->nglyphs(); i++) {
-	Type1Subr *g = _font->glyph(i);
+	Type1Subr *g = _font->glyph_x(i);
 	if (g) {
 	    if (one.run_fresh_glyph(g->t1cs())) {
 		// Every glyph should be fully expandable without encountering
@@ -750,7 +748,7 @@ Type1MMRemover::run()
     // remove uncalled subroutines, expand hint replacement subroutines
     HintReplacementDetector hr(_font, _weight_vector, 0);
     for (int i = 0; i < _font->nglyphs(); i++)
-	if (Type1Subr *g = _font->glyph(i))
+	if (Type1Subr *g = _font->glyph_x(i))
 	    hr.run(g->t1cs());
     // don't remove first four subroutines!
     for (int i = 4; i < _nsubrs; i++)
@@ -769,7 +767,7 @@ Type1MMRemover::run()
     // remove calls to removed subroutines
     Type1BadCallRemover bcr(this);
     for (int i = 0; i < _font->nglyphs(); i++)
-	if (Type1Subr *g = _font->glyph(i))
+	if (Type1Subr *g = _font->glyph_x(i))
 	    bcr.run(g->t1cs());
     for (int i = 4; i < _nsubrs; i++)
 	if (Type1Charstring *cs = _font->subr(i))
@@ -897,7 +895,7 @@ Type1SubrRemover::Type1SubrRemover(Type1Font *font, ErrorHandler *errh)
     // find subroutines needed for hint replacement
     HintReplacementDetector hr(font, 0, 2);
     for (int i = 0; i < _font->nglyphs(); i++) {
-	Type1Subr *g = _font->glyph(i);
+	Type1Subr *g = _font->glyph_x(i);
 	if (g)
 	    hr.run(g->t1cs());
     }
@@ -984,7 +982,7 @@ Type1SubrRemover::run(int lower_to)
 	    rem0.run(*cs);
     }
     for (int i = 0; i < _font->nglyphs(); i++) {
-	Type1Subr *g = _font->glyph(i);
+	Type1Subr *g = _font->glyph_x(i);
 	if (g)
 	    rem0.run(g->t1cs());
     }

@@ -94,10 +94,10 @@ Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
      case 0:
       if (!reader) return -1;
       pos = s - accum.data();
-      accum.pop();		// remove final 0 byte
-      accum.push('\n');		// replace with \n
+      accum.pop_back();		// remove final 0 byte
+      accum.append('\n');	// replace with \n
       if (!reader->next_line(accum)) return -1;
-      accum.push(0);		// stick on a 0 byte
+      accum.append('\0');	// stick on a 0 byte
       s = accum.data() + pos;
       break;
     }
@@ -128,10 +128,10 @@ Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
      case 0:
       if (!reader) return -1;
       pos = s - accum.data();
-      accum.pop();		// remove final 0 byte
-      accum.push('\n');		// replace with \n
+      accum.pop_back();		// remove final 0 byte
+      accum.append('\n');	// replace with \n
       if (!reader->next_line(accum)) return -1;
-      accum.push(0);		// stick on a 0 byte
+      accum.append('\0');	// stick on a 0 byte
       s = accum.data() + pos;
       break;
     }
@@ -385,7 +385,7 @@ inline void
 Type1Definition::set_val(StringAccum &sa)
 {
   delete[] _val;
-  sa.push(0);
+  sa.append('\0');
   _val = sa.take();
 }
 
@@ -598,8 +598,8 @@ Type1Encoding::gen(Type1Writer &w)
  **/
 
 Type1Subr::Type1Subr(PermString n, int num, PermString definer,
-		     int lenIV, unsigned char *cs, int l)
-  : _name(n), _subrno(num), _definer(definer), _cs(lenIV, cs, l)
+		     int lenIV, const String &s)
+  : _name(n), _subrno(num), _definer(definer), _cs(lenIV, s)
 {
 }
 
@@ -642,8 +642,7 @@ Type1Subr::make(char *s_in, int s_len, int cs_pos, int cs_len, int lenIV)
 
   // Lazily decrypt the charstring.
   PermString definer = PermString(s + cs_len, s_len - cs_len - cs_pos);
-  return new Type1Subr(name, subrno, definer,
-		       lenIV, (unsigned char *)s, cs_len);
+  return new Type1Subr(name, subrno, definer, lenIV, String(s, cs_len));
 }
 
 Type1Subr *
@@ -736,11 +735,11 @@ Type1SubrGroupItem::add_end_text(const char *s)
 {
   StringAccum sa;
   if (_end_text)
-    sa.push(_end_text, _end_length);
+    sa.append(_end_text, _end_length);
   sa << s << '\n';
   delete[] _end_text;
   _end_length = sa.length();
-  sa.push(0);
+  sa.append('\0');
   _end_text = sa.take();
 }
 
@@ -780,7 +779,7 @@ Type1SubrGroupItem::gen(Type1Writer &w)
   } else {
     int count = font->nglyphs();
     for (int i = 0; i < count; i++)
-      if (Type1Subr *g = font->glyph(i))
+      if (Type1Subr *g = font->glyph_x(i))
 	g->gen(w);
   }
 

@@ -52,7 +52,7 @@ MyFont::kill_def(Type1Definition *t1d, int whichd)
 }
 
 bool
-MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
+MyFont::set_design_vector(PsfontMMSpace *mmspace, const Vector<double> &design,
 			  ErrorHandler *errh)
 {
   Type1Definition *t1d = dict("DesignVector");

@@ -907,10 +907,10 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
       }
 	
       case cEndchar:
-	if (size() > 4 && _t2state == T2_INITIAL) {
-	    assert(bottom == 0);
-	    char_seac(cmd, 0, at(0), at(1), (int)at(2), (int)at(3));
-	}
+	if (size() > 0 && size() != 4 && _t2state == T2_INITIAL)
+	    char_width_delta(cmd, at(bottom++));
+	if (bottom + 3 < size() && _t2state == T2_INITIAL)
+	    char_seac(cmd, 0, at(bottom), at(bottom + 1), (int)at(bottom + 2), (int)at(bottom + 3));
 	set_done();
 	clear();
 	return false;

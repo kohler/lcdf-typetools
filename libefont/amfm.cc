@@ -322,7 +322,7 @@ AmfmReader::check_mmspace()
   if (!_mmspace && _amfm->_naxes >= 0 && _amfm->_nmasters >= 0
       && _amfm->_font_name) {
     _mmspace = _amfm->_mmspace =
-      new Type1MMSpace(_amfm->_font_name, _amfm->_naxes, _amfm->_nmasters);
+      new PsfontMMSpace(_amfm->_font_name, _amfm->_naxes, _amfm->_nmasters);
   }
 }
 
@@ -812,15 +812,15 @@ AmfmReader::conversion_program(Vector<PermString> &l) const
   for (int i = 0; i < l.size(); i++)
     len += l[i].length();
   if (len == 0) return 0;
-  
-  unsigned char *v = new unsigned char[len];
+
+  String s = String::garbage_string(len);
+  unsigned char *v = reinterpret_cast<unsigned char *>(s.mutable_data());
   int pos = 0;
   for (int i = 0; i < l.size(); i++) {
     memcpy(v + pos, l[i].cc(), l[i].length());
     pos += l[i].length();
   }
-  
-  return new Type1Charstring(v, len);
+  return new Type1Charstring(s);
 }
 
 

@@ -40,7 +40,7 @@ Type1Font::Type1Font(Type1Reader &reader)
     // check for NULL STRING
     int x_length = accum.length();
     if (!x_length) continue;
-    accum.push(0);		// ensure we don't run off the string
+    accum.append('\0');		// ensure we don't run off the string
     char *x = accum.data();
     
     // check for CHARSTRINGS
@@ -154,12 +154,12 @@ Type1Font::Type1Font(Type1Reader &reader)
 
     // check for MODIFIED FONT
     if (eexec_state == 1 && strstr(x, "FontDirectory") != 0) {
-      accum.pop();
+      accum.pop_back();
       if (read_synthetic_font(reader, x, accum)) {
 	accum.clear();
 	continue;
       }
-      accum.push(0);
+      accum.append('\0');
     }
 
     // check for END-OF-CHARSTRING-GROUP TEXT
@@ -260,7 +260,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     
     // check for NULL STRING
     if (!accum.length()) continue;
-    accum.push(0);		// ensure we don't run off the string
+    accum.append('\0');		// ensure we don't run off the string
     char *pos = accum.data();
     
     // skip to first `dup' token
@@ -324,7 +324,7 @@ read_synthetic_string(Type1Reader &reader, StringAccum &wrong_accum,
   if (!reader.next_line(accum))
     return false;
   wrong_accum << accum;
-  accum.push(0);		// ensure we don't run off the string
+  accum.append('\0');		// ensure we don't run off the string
   int n = 0;
   if (value)
     sscanf(accum.data(), format, value, &n);
@@ -357,7 +357,7 @@ Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
     if (!reader.next_line(accum))
       return false;
     wrong_accum << accum;
-    accum.push(0);		// ensure we don't run off the string
+    accum.append('\0');		// ensure we don't run off the string
     const char *y = accum.data();
     if (*y != '/' || strncmp(y + 1, font_name.cc(), font_name.length()) != 0)
       return false;
@@ -467,10 +467,38 @@ Type1Font::undo_synthetic()
 Type1Charstring *
 Type1Font::subr(int e) const
 {
-  if (e >= 0 && e < _subrs.size() && _subrs[e])
-    return &_subrs[e]->t1cs();
-  else
-    return 0;
+    if (e >= 0 && e < _subrs.size() && _subrs[e])
+	return &_subrs[e]->t1cs();
+    else
+	return 0;
+}
+
+PermString
+Type1Font::glyph_name(int i) const
+{
+    if (i >= 0 && i < _glyphs.size() && _glyphs[i])
+	return _glyphs[i]->name();
+    else
+	return PermString();
+}
+
+Type1Charstring *
+Type1Font::glyph(int i) const
+{
+    if (i >= 0 && i < _glyphs.size() && _glyphs[i])
+	return &_glyphs[i]->t1cs();
+    else
+	return 0;
+}
+
+Type1Charstring *
+Type1Font::glyph(PermString name) const
+{
+    int i = _glyph_map[name];
+    if (i >= 0)
+	return &_glyphs[i]->t1cs();
+    else
+	return 0;
 }
 
 
@@ -503,16 +531,6 @@ Type1Font::remove_subr(int e)
   return true;
 }
 
-
-Type1Charstring *
-Type1Font::glyph(PermString name) const
-{
-  int i = _glyph_map[name];
-  if (i >= 0)
-    return &_glyphs[i]->t1cs();
-  else
-    return 0;
-}
 
 void
 Type1Font::shift_indices(int move_index, int delta)
@@ -641,9 +659,9 @@ Type1Font::set_dict_size(int d, int size)
       while (c > value && isdigit(c[-1]))
 	c--;
       StringAccum accum;
-      accum.push(value, c - value);
+      accum.append(value, c - value);
       accum << size;
-      accum.push(d, copy->length() - (d - value));
+      accum.append(d, copy->length() - (d - value));
       int accum_length = accum.length();
       copy->set_value(accum.take(), accum_length);
     }
@@ -682,61 +700,69 @@ Type1Font::cache_defs() const
   _cached_defs = true;
 }
 
-Type1MMSpace *
+PsfontMMSpace *
+Type1Font::mmspace() const
+{
+    if (!_cached_mmspace)
+	create_mmspace();
+    return _mmspace;
+}
+
+PsfontMMSpace *
 Type1Font::create_mmspace(ErrorHandler *errh) const
 {
-  if (_cached_mmspace)
+    if (_cached_mmspace)
+	return _mmspace;
+    _cached_mmspace = 1;
+
+    Type1Definition *t1d;
+
+    Vector< Vector<double> > master_positions;
+    t1d = fi_dict("BlendDesignPositions");
+    if (!t1d || !t1d->value_numvec_vec(master_positions))
+	return 0;
+  
+    int nmasters = master_positions.size();
+    if (nmasters <= 0) {
+	errh->error("bad BlendDesignPositions");
+	return 0;
+    }
+    int naxes = master_positions[0].size();
+    _mmspace = new PsfontMMSpace(font_name(), naxes, nmasters);
+    _mmspace->set_master_positions(master_positions);
+  
+    Vector< Vector<double> > normalize_in, normalize_out;
+    t1d = fi_dict("BlendDesignMap");
+    if (t1d && t1d->value_normalize(normalize_in, normalize_out))
+	_mmspace->set_normalize(normalize_in, normalize_out);
+  
+    Vector<PermString> axis_types;
+    t1d = fi_dict("BlendAxisTypes");
+    if (t1d && t1d->value_namevec(axis_types) && axis_types.size() == naxes)
+	for (int a = 0; a < axis_types.size(); a++)
+	    _mmspace->set_axis_type(a, axis_types[a]);
+  
+    int ndv, cdv;
+    t1d = p_dict("NDV");
+    if (t1d && t1d->value_int(ndv))
+	_mmspace->set_ndv(subr(ndv), false);
+    t1d = p_dict("CDV");
+    if (t1d && t1d->value_int(cdv))
+	_mmspace->set_cdv(subr(cdv), false);
+  
+    Vector<double> design_vector;
+    t1d = dict("DesignVector");
+    if (t1d && t1d->value_numvec(design_vector))
+	_mmspace->set_design_vector(design_vector);
+  
+    Vector<double> weight_vector;
+    t1d = dict("WeightVector");
+    if (t1d && t1d->value_numvec(weight_vector))
+	_mmspace->set_weight_vector(weight_vector);
+  
+    if (!_mmspace->check(errh)) {
+	delete _mmspace;
+	_mmspace = 0;
+    }
     return _mmspace;
-  _cached_mmspace = 1;
-  
-  Type1Definition *t1d;
-  
-  Vector< Vector<double> > master_positions;
-  t1d = fi_dict("BlendDesignPositions");
-  if (!t1d || !t1d->value_numvec_vec(master_positions))
-    return 0;
-  
-  int nmasters = master_positions.size();
-  if (nmasters <= 0) {
-    errh->error("bad BlendDesignPositions");
-    return 0;
-  }
-  int naxes = master_positions[0].size();
-  _mmspace = new Type1MMSpace(font_name(), naxes, nmasters);
-  _mmspace->set_master_positions(master_positions);
-  
-  Vector< Vector<double> > normalize_in, normalize_out;
-  t1d = fi_dict("BlendDesignMap");
-  if (t1d && t1d->value_normalize(normalize_in, normalize_out))
-    _mmspace->set_normalize(normalize_in, normalize_out);
-  
-  Vector<PermString> axis_types;
-  t1d = fi_dict("BlendAxisTypes");
-  if (t1d && t1d->value_namevec(axis_types) && axis_types.size() == naxes)
-    for (int a = 0; a < axis_types.size(); a++)
-      _mmspace->set_axis_type(a, axis_types[a]);
-  
-  int ndv, cdv;
-  t1d = p_dict("NDV");
-  if (t1d && t1d->value_int(ndv))
-    _mmspace->set_ndv(subr(ndv), false);
-  t1d = p_dict("CDV");
-  if (t1d && t1d->value_int(cdv))
-    _mmspace->set_cdv(subr(cdv), false);
-  
-  Vector<double> design_vector;
-  t1d = dict("DesignVector");
-  if (t1d && t1d->value_numvec(design_vector))
-    _mmspace->set_design_vector(design_vector);
-  
-  Vector<double> weight_vector;
-  t1d = dict("WeightVector");
-  if (t1d && t1d->value_numvec(weight_vector))
-    _mmspace->set_weight_vector(weight_vector);
-  
-  if (!_mmspace->check(errh)) {
-    delete _mmspace;
-    _mmspace = 0;
-  }
-  return _mmspace;
 }

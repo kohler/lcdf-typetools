@@ -165,7 +165,7 @@ Type1Reader::test_charstring(StringAccum &str)
     if (_charstring_len >= 0)
 	return str.length() <= _charstring_start + _charstring_len;
   
-    str.push(0);			// protect against running off end of string
+    str.append('\0');		// protect against running off end of string
     char *s = str.data();
     char *start;
     while (*s == ' ')
@@ -196,11 +196,11 @@ Type1Reader::test_charstring(StringAccum &str)
   
     _charstring_len = strtol(start, 0, 10);
     _charstring_start = (s - str.data()) + _charstring_definer.length();
-    str.pop();
+    str.pop_back();
     return str.length() <= _charstring_start + _charstring_len;
   
   not_charstring:
-    str.pop();
+    str.pop_back();
     return false;
 }
 
@@ -241,7 +241,7 @@ Type1Reader::next_line(StringAccum &s)
       
 	  normal:
 	  default:
-	    s.push(c);
+	    s.append((char)c);
 	    break;
       
 	}

@@ -31,6 +31,7 @@ class Type1Interp { public:
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
   
     PsfontCharstring *get_subr(int) const;
+    PsfontCharstring *get_gsubr(int) const;
     PsfontCharstring *get_glyph(PermString) const;
 
     virtual void init();
@@ -248,6 +249,12 @@ inline PsfontCharstring *
 Type1Interp::get_subr(int n) const
 {
     return _program ? _program->subr(n) : 0;
+}
+
+inline PsfontCharstring *
+Type1Interp::get_gsubr(int n) const
+{
+    return _program ? _program->gsubr(n) : 0;
 }
 
 inline PsfontCharstring *

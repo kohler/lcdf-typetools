@@ -19,7 +19,7 @@ class Type1IncludedFont;
 class Type1Subr;
 class Type1Reader;
 class Type1Writer;
-class Type1MMSpace;
+class PsfontMMSpace;
 class StringAccum;
 class ErrorHandler;
 
@@ -27,11 +27,11 @@ class Type1Font : public PsfontProgram { public:
   
     // note: the order is relevant
     enum Dict {
-	dFont = 0,			dF = dFont,
+	dFont = 0,		dF = dFont,
 	dFontInfo = 1,		dFI = dFontInfo,
 	dPrivate = 2,		dP = dPrivate,
-	dBlend = 3,			dB = dBlend,
-	dBlendFontInfo = dB+dFI,	dBFI = dBlendFontInfo,
+	dBlend = 3,		dB = dBlend,
+	dBlendFontInfo = dB+dFI, dBFI = dBlendFontInfo,
 	dBlendPrivate = dB+dP,	dBP = dBlendPrivate,
 	dLast,
     };
@@ -47,21 +47,22 @@ class Type1Font : public PsfontProgram { public:
     void set_item(int i, Type1Item *it)	{ _items[i] = it; }
     void add_item(Type1Item *it)	{ _items.push_back(it); }
 
-    bool is_mm() const;
-  
     int nsubrs() const			{ return _subrs.size(); }
+    Type1Charstring *subr(int) const;
+  
+    int nglyphs() const			{ return _glyphs.size(); }
+    PermString glyph_name(int) const;
+    Type1Charstring *glyph(int) const;
+    Type1Charstring *glyph(PermString) const;
+
     Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
     bool set_subr(int, const Type1Charstring &);
     bool remove_subr(int);
-  
-    int nglyphs() const			{ return _glyphs.size(); }
-    Type1Subr *glyph(int i) const	{ return _glyphs[i]; }
+    
+    Type1Subr *glyph_x(int i) const	{ return _glyphs[i]; }
 
-    Type1Charstring *subr(int) const;
-    Type1Charstring *glyph(PermString) const;
-  
-    Type1Encoding *encoding() const	{ return _encoding; }
-  
+    Type1Encoding *type1_encoding() const	{ return _encoding; }
+    
     Type1Definition *dict(int d, PermString s) const { return _dict[d][s]; }
     Type1Definition *dict(PermString s) const	{ return _dict[dF][s]; }
     Type1Definition *p_dict(PermString s) const	{ return _dict[dP][s]; }
@@ -76,8 +77,8 @@ class Type1Font : public PsfontProgram { public:
     Type1Definition *ensure(Dict, PermString);
     void add_header_comment(const char *);
   
-    Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
-    Type1MMSpace *mmspace() const;
+    PsfontMMSpace *create_mmspace(ErrorHandler * = 0) const;
+    PsfontMMSpace *mmspace() const;
 
     void undo_synthetic();
   
@@ -102,7 +103,7 @@ class Type1Font : public PsfontProgram { public:
     Type1Encoding *_encoding;
   
     mutable bool _cached_mmspace;
-    mutable Type1MMSpace *_mmspace;
+    mutable PsfontMMSpace *_mmspace;
 
     Type1IncludedFont *_synthetic_item;
   
@@ -140,20 +141,6 @@ Type1Font::font_name() const
     if (!_cached_defs)
 	cache_defs();
     return _font_name;
-}
-
-inline Type1MMSpace *
-Type1Font::mmspace() const
-{
-    if (!_cached_mmspace)
-	create_mmspace();
-    return _mmspace;
-}
-
-inline bool
-Type1Font::is_mm() const
-{
-    return mmspace() != 0;
 }
 
 #endif

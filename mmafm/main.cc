@@ -328,7 +328,7 @@ particular purpose.\n");
  done:
   if (!amfm) usage_error("missing font argument");
   
-  Type1MMSpace *mmspace = amfm->mmspace();
+  PsfontMMSpace *mmspace = amfm->mmspace();
 #if MMAFM_RUN_MMPFB
   if (!mmspace->check_intermediate()) {
     char *buf = new char[amfm->font_name().length() + 30];
