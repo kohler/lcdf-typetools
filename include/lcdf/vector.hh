@@ -174,4 +174,5 @@ class Vector<T *>: private Vector<void *> {
   
 };
 
+#include <lcdf/vector.cc>	// necessary to support GCC 3.3
 #endif

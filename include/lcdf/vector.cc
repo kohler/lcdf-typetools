@@ -1,5 +1,5 @@
-#ifndef LCDF_VECTOR_CC_HH
-#define LCDF_VECTOR_CC_HH
+#ifndef LCDF_VECTOR_CC
+#define LCDF_VECTOR_CC
 
 /*
  * vector.{cc,hh} -- simple array template class
@@ -18,7 +18,7 @@
  * legally binding.
  */
 
-#include <lcdf/vector.hh>
+/* #include <lcdf/vector.hh> */
 
 template <class T>
 Vector<T>::Vector(const Vector<T> &o)
