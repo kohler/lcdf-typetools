@@ -1,7 +1,7 @@
 #ifndef BEZIER_HH
 #define BEZIER_HH
 #include "transform.hh"
-#include "vector.hh"
+#include <lcdf/vector.hh>
 
 class Bezier {
   
