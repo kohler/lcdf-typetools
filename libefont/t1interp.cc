@@ -350,6 +350,87 @@ Type1Interp::mm_command(int command, int on_stack)
 }
 
 bool
+Type1Interp::itc_command(int command, int on_stack)
+{
+  Vector<double> *weight = weight_vector();
+  if (!weight) return error(errVector);
+
+  int base = size() - on_stack;
+  switch (command) {
+
+   case othcITC_load: {
+     if (on_stack != 1)
+       return error(errOthersubr);
+     int offset = (int)at(base);
+     for (int i = 0; i < weight->size(); i++)
+       vec(&_scratch_vector, offset+i) = weight->at_u(i);
+     break;
+   }
+
+   case othcITC_put: {
+     if (on_stack != 2)
+       return error(errOthersubr);
+     int offset = (int)at(base+1);
+     vec(&_scratch_vector, offset) = at(base);
+     break;
+   }
+   
+   case othcITC_get: {
+     if (on_stack != 1)
+       return error(errOthersubr);
+     int offset = (int)at(base);
+     ps_push(vec(&_scratch_vector, offset));
+     break;
+   }
+   
+   case othcITC_add: {
+     if (on_stack != 2)
+       return error(errOthersubr);
+     ps_push(at(base) + at(base+1));
+     break;
+   }
+   
+   case othcITC_sub: {
+     if (on_stack != 2)
+       return error(errOthersubr);
+     ps_push(at(base) - at(base+1));
+     break;
+   }
+   
+   case othcITC_mul: {
+     if (on_stack != 2)
+       return error(errOthersubr);
+     ps_push(at(base) * at(base+1));
+     break;
+   }
+   
+   case othcITC_div: {
+     if (on_stack != 2)
+       return error(errOthersubr);
+     ps_push(at(base) / at(base+1));
+     break;
+   }
+   
+   case othcITC_ifelse: {
+     if (on_stack != 4)
+       return error(errOthersubr);
+     if (at(base+2) <= at(base+3))
+       ps_push(at(base));
+     else
+       ps_push(at(base+1));
+     break;
+   }
+   
+   default:
+    return error(errOthersubr);
+
+  }
+  
+  pop(on_stack);
+  return true;
+}
+
+bool
 Type1Interp::command(int cmd)
 {
   switch (cmd) {
@@ -394,7 +475,6 @@ Type1Interp::command(int cmd)
     
    case cError:
    default:
-    //fprintf(stderr, "%d\n", cmd);
     return error(errUnimplemented);
     
   }

@@ -84,6 +84,16 @@ class Type1Interp {
     othcMM3 = 16,
     othcMM4 = 17,
     othcMM6 = 18,
+    othcITC_load = 19,
+    othcITC_add = 20,
+    othcITC_sub = 21,
+    othcITC_mul = 22,
+    othcITC_div = 23,
+    othcITC_put = 24,
+    othcITC_get = 25,
+    othcITC_unknown = 26,
+    othcITC_ifelse = 27,
+    othcITC_random = 28,
   };
   
   enum Errors {
@@ -102,12 +112,13 @@ class Type1Interp {
     errMultipleMaster	= 12,
     errOpenStroke	= 13,
     errLateSidebearing	= 14,
+    errOthersubr	= 15,
   };
-  
- private:
   
   static const int StackSize = 24;
   static const int ScratchSize = 32;
+  
+ private:
   
   int _errno;
   bool _done;
@@ -150,6 +161,7 @@ class Type1Interp {
   
   double &vec(Vector<double> *, int);
   Vector<double> *weight_vector();
+  Vector<double> *scratch_vector()		{ return &_scratch_vector; }
   
   Type1Charstring *get_subr(int) const;
   Type1Charstring *get_glyph(PermString) const;
@@ -163,6 +175,7 @@ class Type1Interp {
   bool callsubr_command();
   bool blend_command();
   bool mm_command(int, int);
+  bool itc_command(int, int);
   virtual bool command(int);
 
   virtual bool run(Type1Charstring &);
