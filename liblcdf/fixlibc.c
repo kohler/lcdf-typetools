@@ -41,26 +41,17 @@ strerror(int errno)
 }
 #endif
 
-#ifdef BROKEN_STRTOARITH
+#ifdef BROKEN_STRTOD
 /* On NeXTSTEP, Melissa O'Neill <oneill@cs.sfu.ca> reports that strtod and
-   strtol consume whitespace after their argument, which makes mminstance
-   (among other programs) not work. These wrappers get rid of that whitespace
-   again. */
-
-long
-good_strtol(const char *nptr, char **endptr, int base)
-{
-  long l = strtol(nptr, endptr, base);
-  if (endptr)
-    while (*endptr > nptr && isspace((*endptr)[-1]))
-      (*endptr)--;
-  return l;
-}
+   consumes whitespace after its argument, which makes mminstance (among other
+   programs) not work. This wrapper gets rid of that whitespace again.
+   (Originally, we suspected strtol too, but it seems to work, at least in
+   NeXTSTEP 3.3 patch 2.) */
 
 double
 good_strtod(const char *nptr, char **endptr)
 {
-  double d = strtol(nptr, endptr, base);
+  double d = strtod(nptr, endptr);
   if (endptr)
     while (*endptr > nptr && isspace((*endptr)[-1]))
       (*endptr)--;

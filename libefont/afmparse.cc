@@ -8,8 +8,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdlib.h>
-#ifdef BROKEN_STRTOARITH
-# define strtol good_strtol
+#ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif
 

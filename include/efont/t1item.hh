@@ -75,7 +75,7 @@ class Type1Definition : public Type1Item {
   
   void set_val(char *);
   void set_val(StringAccum &);
-  void set_val_copy(char *);
+  void set_val_copy(const char *);
   
  public:
   
@@ -104,7 +104,7 @@ class Type1Definition : public Type1Item {
   void set_int(int);
   void set_num(double);
   void set_name(PermString, bool name = true);
-  void set_code(char *s)		{ set_val_copy(s); }
+  void set_code(const char *s)		{ set_val_copy(s); }
   void set_numvec(const NumVector &, bool executable = false);
   void set_numvec_vec(const Vector<NumVector> &);
   void set_normalize(const Vector<NumVector> &, const Vector<NumVector> &);

@@ -8,8 +8,7 @@
 #include "strtonum.h"
 #include <ctype.h>
 #include <string.h>
-#ifdef BROKEN_STRTOARITH
-# define strtol good_strtol
+#ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif
 
@@ -380,7 +379,7 @@ Type1Definition::set_val(StringAccum &sa)
 }
 
 void
-Type1Definition::set_val_copy(char *v)
+Type1Definition::set_val_copy(const char *v)
 {
   delete[] _val;
   int len = strlen(v);
