@@ -905,6 +905,16 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (lookups[i].used) {
 	    OpenType::GsubLookup l = gsub.lookup(i);
 	    bool understood = l.unparse_automatics(gsub, subs);
+
+	    // check for -ffina, which should apply only at the ends of words
+	    if (lookups[i].features.size() == 1 && lookups[i].features[0] == OpenType::Tag("fina")) {
+		if (encoding.boundary_char() < 0)
+		    errh->warning("'-ffina' requires a boundary character\n(The input encoding didn't specify a boundary character, but\nI need one to implement '-ffina' features correctly. Add one\nwith a \"%% LIGKERN || = <slot> ;\" command in the encoding.)");
+		else
+		    for (int j = 0; j < subs.size(); j++)
+			subs[j].add_right(BOUNDARYGLYPH);
+	    }
+	    
 	    int nunderstood = encoding.apply(subs, !dvipsenc_literal);
 
 	    // mark as used

@@ -4,6 +4,8 @@
 #include <efont/otfgpos.hh>
 class DvipsEncoding;
 
+enum { BOUNDARYGLYPH = 0x7FFFFFFFU };
+
 struct Setting {
     enum { SHOW, HMOVETO, VMOVETO };
     int op;

@@ -156,6 +156,7 @@ class Substitution { public:
 
     // alter
     Substitution in_out_append_glyph(Glyph) const;
+    void add_right(Glyph);
     bool out_alter(const Substitution &, int) throw ();
     
     void unparse(StringAccum &, const Vector<PermString> * = &debug_glyph_names) const;

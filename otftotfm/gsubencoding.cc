@@ -64,6 +64,8 @@ GsubEncoding::hard_encoding(Glyph g) const
 {
     if (g < 0)
 	return -1;
+    if (g == BOUNDARYGLYPH)
+	return _boundary_char;
     int answer = -1, n = 0;
     for (int i = _encoding.size() - 1; i >= 0; i--)
 	if (_encoding[i] == g)

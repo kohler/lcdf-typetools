@@ -365,6 +365,16 @@ Substitution::in_out_append_glyph(Glyph g) const
     return s;
 }
 
+void
+Substitution::add_right(Glyph g)
+{
+    Substitute x = _right;
+    uint8_t x_is = _right_is;
+    _right_is = T_NONE;
+    assign_append(_right, _right_is, x, x_is, g);
+    clear(x, x_is);
+}
+
 bool
 Substitution::out_alter(const Substitution &o, int pos) throw ()
 {
