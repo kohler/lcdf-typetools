@@ -13,7 +13,7 @@ class Type1IncludedFont;
 class Type1Subr;
 class Type1Reader;
 class Type1Writer;
-class EfontMMSpace;
+class MultipleMasterSpace;
 
 class Type1Font : public EfontProgram { public:
 
@@ -80,8 +80,8 @@ class Type1Font : public EfontProgram { public:
     Type1Definition *ensure(Dict, PermString);
     void add_header_comment(const char *);
   
-    EfontMMSpace *create_mmspace(ErrorHandler * = 0) const;
-    EfontMMSpace *mmspace() const;
+    MultipleMasterSpace *create_mmspace(ErrorHandler * = 0) const;
+    MultipleMasterSpace *mmspace() const;
 
     void undo_synthetic();
 
@@ -109,7 +109,7 @@ class Type1Font : public EfontProgram { public:
     Type1Encoding *_encoding;
   
     mutable bool _cached_mmspace;
-    mutable EfontMMSpace *_mmspace;
+    mutable MultipleMasterSpace *_mmspace;
 
     Type1IncludedFont *_synthetic_item;
   

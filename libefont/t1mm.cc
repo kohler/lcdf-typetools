@@ -24,54 +24,55 @@
 #include <cstring>
 namespace Efont {
 
-EfontMMSpace::EfontMMSpace(PermString fn, int na, int nm)
+MultipleMasterSpace::MultipleMasterSpace(PermString fn, int na, int nm)
     : _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),
-      _axis_types(na, PermString()), _axis_labels(na, PermString())
+      _axis_types(na, PermString()), _axis_labels(na, PermString()),
+      _design_vector(0), _norm_design_vector(0), _weight_vector(0)
 {
 }
 
 
 void
-EfontMMSpace::set_master_positions(const Vector<NumVector> &mp)
+MultipleMasterSpace::set_master_positions(const Vector<NumVector> &mp)
 {
     _master_positions = mp;
 }
 
 void
-EfontMMSpace::set_normalize(const Vector<NumVector> &nin,
-			     const Vector<NumVector> &nout)
+MultipleMasterSpace::set_normalize(const Vector<NumVector> &nin,
+			    const Vector<NumVector> &nout)
 {
     _normalize_in = nin;
     _normalize_out = nout;
 }
 
 void
-EfontMMSpace::set_axis_type(int ax, PermString t)
+MultipleMasterSpace::set_axis_type(int ax, PermString t)
 {
     _axis_types[ax] = t;
 }
 
 void
-EfontMMSpace::set_axis_label(int ax, PermString t)
+MultipleMasterSpace::set_axis_label(int ax, PermString t)
 {
     _axis_labels[ax] = t;
 }
 
 void
-EfontMMSpace::set_design_vector(const NumVector &v)
+MultipleMasterSpace::set_design_vector(const NumVector &v)
 {
     _default_design_vector = v;
 }
 
 void
-EfontMMSpace::set_weight_vector(const NumVector &v)
+MultipleMasterSpace::set_weight_vector(const NumVector &v)
 {
     _default_weight_vector = v;
 }
 
 
 PermString
-EfontMMSpace::axis_abbreviation(PermString atype)
+MultipleMasterSpace::axis_abbreviation(PermString atype)
 {
     if (atype == "Weight")
 	return "wt";
@@ -87,7 +88,7 @@ EfontMMSpace::axis_abbreviation(PermString atype)
 
 
 bool
-EfontMMSpace::error(ErrorHandler *errh, const char *s, ...) const
+MultipleMasterSpace::error(ErrorHandler *errh, const char *s, ...) const
 {
     if (errh) {
 	char buf[1024];
@@ -104,7 +105,7 @@ EfontMMSpace::error(ErrorHandler *errh, const char *s, ...) const
 
 
 bool
-EfontMMSpace::check(ErrorHandler *errh)
+MultipleMasterSpace::check(ErrorHandler *errh)
 {
     if (_ok)
 	return true;
@@ -151,7 +152,7 @@ EfontMMSpace::check(ErrorHandler *errh)
 }
 
 bool
-EfontMMSpace::check_intermediate(ErrorHandler *errh)
+MultipleMasterSpace::check_intermediate(ErrorHandler *errh)
 {
     if (!_ok || _cdv)
 	return true;
@@ -170,7 +171,7 @@ EfontMMSpace::check_intermediate(ErrorHandler *errh)
 
 
 int
-EfontMMSpace::axis(PermString ax) const
+MultipleMasterSpace::axis(PermString ax) const
 {
     for (int a = 0; a < _naxes; a++)
 	if (_axis_types[a] == ax || _axis_labels[a] == ax)
@@ -179,26 +180,26 @@ EfontMMSpace::axis(PermString ax) const
 }
 
 double
-EfontMMSpace::axis_low(int ax) const
+MultipleMasterSpace::axis_low(int ax) const
 {
     return _normalize_in[ax][0];
 }
 
 double
-EfontMMSpace::axis_high(int ax) const
+MultipleMasterSpace::axis_high(int ax) const
 {
     return _normalize_in[ax].back();
 }
 
 
 Vector<double>
-EfontMMSpace::empty_design_vector() const
+MultipleMasterSpace::empty_design_vector() const
 {
     return Vector<double>(_naxes, UNKDOUBLE);
 }
 
 bool
-EfontMMSpace::set_design(NumVector &design_vector, int ax, double value,
+MultipleMasterSpace::set_design(NumVector &design_vector, int ax, double value,
 			  ErrorHandler *errh) const
 {
     if (ax < 0 || ax >= _naxes)
@@ -222,7 +223,7 @@ EfontMMSpace::set_design(NumVector &design_vector, int ax, double value,
 }
 
 bool
-EfontMMSpace::set_design(NumVector &design_vector, PermString ax_name,
+MultipleMasterSpace::set_design(NumVector &design_vector, PermString ax_name,
 			  double val, ErrorHandler *errh) const
 {
     int ax = axis(ax_name);
@@ -234,7 +235,7 @@ EfontMMSpace::set_design(NumVector &design_vector, PermString ax_name,
 
 
 bool
-EfontMMSpace::normalize_vector(ErrorHandler *errh) const
+MultipleMasterSpace::normalize_vector(ErrorHandler *errh) const
 {
     NumVector &design = *_design_vector;
     NumVector &norm_design = *_norm_design_vector;
@@ -288,7 +289,7 @@ EfontMMSpace::normalize_vector(ErrorHandler *errh) const
 
 
 bool
-EfontMMSpace::convert_vector(ErrorHandler *errh) const
+MultipleMasterSpace::convert_vector(ErrorHandler *errh) const
 {
     NumVector &norm_design = *_norm_design_vector;
     NumVector &weight = *_weight_vector;
@@ -316,9 +317,9 @@ EfontMMSpace::convert_vector(ErrorHandler *errh) const
 
 
 bool
-EfontMMSpace::design_to_norm_design(const NumVector &design_in,
-				     NumVector &norm_design,
-				     ErrorHandler *errh) const
+MultipleMasterSpace::design_to_norm_design(const NumVector &design_in,
+					   NumVector &norm_design,
+					   ErrorHandler *errh) const
 {
     NumVector design(design_in);
     NumVector weight;
@@ -328,14 +329,14 @@ EfontMMSpace::design_to_norm_design(const NumVector &design_in,
     _weight_vector = &weight;
     if (!normalize_vector(errh))
 	return false;
+    _design_vector = _norm_design_vector = _weight_vector = 0;
   
     return true;
 }
 
 
 bool
-EfontMMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
-			       ErrorHandler *errh) const
+MultipleMasterSpace::design_to_weight(const NumVector &design_in, NumVector &weight, ErrorHandler *errh) const
 {
     NumVector design(design_in);
     NumVector norm_design;
@@ -353,6 +354,7 @@ EfontMMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
 	    return false;
 	if (!convert_vector(errh))
 	    return false;
+	_design_vector = _norm_design_vector = _weight_vector = 0;
     } else
 	weight = _default_weight_vector;
   
@@ -361,8 +363,31 @@ EfontMMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
 	sum += weight[m];
     if (sum < 0.9999 || sum > 1.0001)
 	return error(errh, "bad conversion: weight vector doesn't sum to 1");
-  
+
+    // adjust weight vector to max 4 decimal digits of precision, and make it
+    // sum to exactly 1
+    sum = 0;
+    for (int m = 0; m < _nmasters - 1; m++) {
+	weight[m] = floor(weight[m] * 10000. + 0.5) / 10000.;
+	sum += weight[m];
+    }
+    weight[_nmasters - 1] = 1 - sum;
+    
     return true;
+}
+
+
+Vector<double> *
+MultipleMasterSpace::mm_vector(VectorType t, bool writable) const
+{
+    if (t == VEC_WEIGHT)
+	return _weight_vector;
+    else if (t == VEC_NORM_DESIGN)
+	return _norm_design_vector;
+    else if (t == VEC_DESIGN && !writable)
+	return _design_vector;
+    else
+	return 0;
 }
 
 }

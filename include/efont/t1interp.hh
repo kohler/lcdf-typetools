@@ -15,7 +15,8 @@ namespace Efont {
 
 class CharstringInterp { public:
 
-    CharstringInterp(const EfontProgram *, Vector<double> *weight = 0);
+    CharstringInterp(const EfontProgram *);
+    CharstringInterp(const EfontProgram *, const Vector<double> &weight_vec);
     virtual ~CharstringInterp()			{ }
 
     int error() const				{ return _error; }
@@ -42,7 +43,7 @@ class CharstringInterp { public:
     int subr_depth() const			{ return _subr_depth; }
     
     double &vec(Vector<double> *, int);
-    Vector<double> *weight_vector();
+    const Vector<double> &weight_vector() const	{ return _weight_vector; }
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
 
     const EfontProgram *program() const		{ return _program; }
@@ -131,7 +132,7 @@ class CharstringInterp { public:
 
     int _subr_depth;
 
-    Vector<double> *_weight_vector;
+    Vector<double> _weight_vector;
     Vector<double> _scratch_vector;
 
     Point _lsb;
@@ -150,7 +151,10 @@ class CharstringInterp { public:
     int _t2nhints;
     
     static double double_for_error;
-  
+
+    inline void ensure_weight_vector();
+    void fetch_weight_vector();
+    
     bool roll_command();
     int type2_handle_width(int, bool);
 
@@ -220,13 +224,22 @@ CharstringInterp::get_glyph(PermString n) const
     return _program ? _program->glyph(n) : 0;
 }
 
+inline void
+CharstringInterp::ensure_weight_vector()
+{
+    if (!_weight_vector.size())
+	fetch_weight_vector();
+}
+
+#if 0
 inline Vector<double> *
 CharstringInterp::weight_vector()
 {
     if (!_weight_vector && _program)
-	_weight_vector = _program->weight_vector();
+	_weight_vector = _program->mm_vector(EfontProgram::);
     return _weight_vector;
 }
+#endif
 
 inline bool
 CharstringInterp::callxsubr_command(bool g)

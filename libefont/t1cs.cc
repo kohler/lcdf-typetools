@@ -296,6 +296,12 @@ EfontProgram::glyph_names(Vector<PermString> &gnames) const
 	gnames[i] = glyph_name(i);
 }
 
+Vector<double> *
+EfontProgram::mm_vector(VectorType, bool) const
+{
+    return 0;
+}
+
 double
 EfontProgram::global_width_x(bool) const
 {

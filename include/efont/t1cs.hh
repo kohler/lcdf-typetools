@@ -19,7 +19,7 @@ typedef u_int32_t uint32_t;
 namespace Efont {
 
 class CharstringInterp;
-class EfontMMSpace;
+class MultipleMasterSpace;
 class Type1Encoding;
 
 class Charstring { public:
@@ -207,11 +207,9 @@ class EfontProgram { public:
     virtual Charstring *glyph(PermString) const		{ return 0; }
 
     virtual bool is_mm() const				{ return mmspace(); }
-    virtual EfontMMSpace *mmspace() const		{ return 0; }
-    virtual Vector<double> *design_vector() const	{ return 0; }
-    virtual Vector<double> *norm_design_vector() const	{ return 0; }
-    virtual Vector<double> *weight_vector() const	{ return 0; }
-    virtual bool writable_vectors() const		{ return false; }
+    virtual MultipleMasterSpace *mmspace() const	{ return 0; }
+    enum VectorType { VEC_WEIGHT = 0, VEC_NORM_DESIGN = 1, VEC_DESIGN = 2 };
+    virtual Vector<double> *mm_vector(VectorType, bool writable) const;
 
     virtual Type1Encoding *type1_encoding() const	{ return 0; }
 

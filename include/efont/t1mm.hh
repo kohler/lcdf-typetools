@@ -6,9 +6,9 @@ class ErrorHandler;
 namespace Efont {
 class Type1Font;
 
-class EfontMMSpace : public EfontProgram { public:
+class MultipleMasterSpace : public EfontProgram { public:
 
-    EfontMMSpace(PermString, int naxes, int nmasters);
+    MultipleMasterSpace(PermString, int naxes, int nmasters);
     // default destructor
   
     typedef Vector<double> NumVector;
@@ -48,15 +48,10 @@ class EfontMMSpace : public EfontProgram { public:
   
     const NumVector &default_weight_vector() const;
   
-    bool design_to_norm_design(const NumVector &, NumVector &,
-			       ErrorHandler * = 0) const;
-    bool design_to_weight(const NumVector &, NumVector &,
-			  ErrorHandler * = 0) const;
+    bool design_to_norm_design(const NumVector &, NumVector &, ErrorHandler * = 0) const;
+    bool design_to_weight(const NumVector &, NumVector &, ErrorHandler * = 0) const;
   
-    NumVector *design_vector() const	{ return _design_vector; }
-    NumVector *norm_design_vector() const { return _norm_design_vector; }
-    NumVector *weight_vector() const	{ return _weight_vector; }
-    bool writable_vectors() const	{ return true; }
+    NumVector *mm_vector(VectorType, bool writable) const;
 
   private:
   
@@ -85,8 +80,8 @@ class EfontMMSpace : public EfontProgram { public:
   
     bool error(ErrorHandler *, const char *, ...) const;
   
-    EfontMMSpace(const EfontMMSpace &);
-    EfontMMSpace &operator=(const EfontMMSpace &);
+    MultipleMasterSpace(const MultipleMasterSpace &);
+    MultipleMasterSpace &operator=(const MultipleMasterSpace &);
   
     bool normalize_vector(ErrorHandler *) const;
     bool convert_vector(ErrorHandler *) const;
@@ -95,19 +90,19 @@ class EfontMMSpace : public EfontProgram { public:
 
 
 inline const Vector<double> &
-EfontMMSpace::default_design_vector() const
+MultipleMasterSpace::default_design_vector() const
 {
     return _default_design_vector;
 }
 
 inline const Vector<double> &
-EfontMMSpace::default_weight_vector() const
+MultipleMasterSpace::default_weight_vector() const
 {
     return _default_weight_vector;
 }
 
 inline PermString
-EfontMMSpace::axis_abbreviation(int a) const
+MultipleMasterSpace::axis_abbreviation(int a) const
 {
     return axis_abbreviation(_axis_types[a]);
 }

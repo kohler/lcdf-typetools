@@ -20,7 +20,7 @@
 namespace Efont {
 
 CharstringUnparser::CharstringUnparser()
-    : CharstringInterp(0, 0),
+    : CharstringInterp(0),
       _one_command_per_line(false), _start_of_line(true)
 {
 }

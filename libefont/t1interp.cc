@@ -56,8 +56,14 @@ static const char * const error_formats[] = {
 double CharstringInterp::double_for_error;
 
 
-CharstringInterp::CharstringInterp(const EfontProgram *prog, Vector<double> *weight)
-    : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
+CharstringInterp::CharstringInterp(const EfontProgram *prog)
+    : _error(errOK), _sp(0), _ps_sp(0),
+      _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
+{
+}
+
+CharstringInterp::CharstringInterp(const EfontProgram *prog, const Vector<double> &weight_vector)
+    : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight_vector),
       _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
 {
 }
@@ -110,11 +116,20 @@ CharstringInterp::number(double v)
     return true;
 }
 
+void
+CharstringInterp::fetch_weight_vector()
+{
+    if (_program)
+	if (Vector<double> *wv = _program->mm_vector(EfontProgram::VEC_WEIGHT, false))
+	    _weight_vector = *wv;
+}
+
 bool
 CharstringInterp::vector_command(int cmd)
 {
-    int which_vector, vectoroff, offset, num, i;
-    Vector<double> *vector = 0;
+    EfontProgram::VectorType which_vector;
+    int vectoroff, offset, num, i;
+    Vector<double> *v = 0;
   
     switch (cmd) {
     
@@ -133,46 +148,43 @@ CharstringInterp::vector_command(int cmd)
     
       case CS::cStore:
 	CHECK_STACK(4);
-	which_vector = (int)top(3);
+	which_vector = (EfontProgram::VectorType)top(3);
 	vectoroff = (int)top(2);
 	offset = (int)top(1);
 	num = (int)top(0);
 	pop(4);
-    
+
 	if (!_program)
 	    return error(errVector, cmd);
-	switch (which_vector) {
-	  case 0: vector = weight_vector(); break;
-	  case 1: vector = _program->norm_design_vector(); break;
-	}
-	if (!vector)
-	    return error(errVector, cmd);
-	if (!_program->writable_vectors())
+	v = _program->mm_vector(which_vector, true);
+	if (!v)
 	    return error(errVector, cmd);
     
 	for (i = 0; i < num; i++, offset++, vectoroff++)
-	    vec(vector, vectoroff) = vec(&_scratch_vector, offset);
+	    vec(v, vectoroff) = vec(&_scratch_vector, offset);
+	// erase our weight vector if the global weight vector has changed
+	if (which_vector == EfontProgram::VEC_WEIGHT)
+	    _weight_vector.clear();
 	break;
-    
+
       case CS::cLoad:
 	CHECK_STACK(3);
-	which_vector = (int)top(2);
+	which_vector = (EfontProgram::VectorType)top(2);
 	offset = (int)top(1);
 	num = (int)top(0);
 	pop(3);
 
 	if (!_program)
 	    return error(errVector, cmd);
-	switch (which_vector) {
-	  case 0: vector = weight_vector(); break;
-	  case 1: vector = _program->norm_design_vector(); break;
-	  case 2: vector = _program->design_vector(); break;
-	}
-	if (!vector)
+	v = _program->mm_vector(which_vector, false);
+	// use our weight vector if appropriate
+	if (!v && which_vector == EfontProgram::VEC_WEIGHT && _weight_vector.size())
+	    v = &_weight_vector;
+	if (!v)
 	    return error(errVector, cmd);
     
 	for (i = 0; i < num; i++, offset++)
-	    vec(&_scratch_vector, offset) = vec(vector, i);
+	    vec(&_scratch_vector, offset) = vec(v, i);
 	break;
     
       default:
@@ -190,11 +202,11 @@ CharstringInterp::blend_command()
     CHECK_STACK(1);
     int nargs = (int)pop();
 
-    Vector<double> *weight = weight_vector();
-    if (!weight || !weight->size())
+    ensure_weight_vector();
+    if (!_weight_vector.size())
 	return error(errVector, cmd);
   
-    int nmasters = weight->size();
+    int nmasters = _weight_vector.size();
     CHECK_STACK(nargs * nmasters);
  
     int base = _sp - nargs * nmasters;
@@ -202,7 +214,7 @@ CharstringInterp::blend_command()
     for (int j = 0; j < nargs; j++) {
 	double &val = _s[base + j];
 	for (int i = 1; i < nmasters; i++, off++)
-	    val += weight->at_u(i) * _s[off];
+	    val += _weight_vector.at_u(i) * _s[off];
     }
  
     pop(nargs * (nmasters - 1));
@@ -424,8 +436,8 @@ CharstringInterp::callgsubr_command()
 bool
 CharstringInterp::mm_command(int command, int on_stack)
 {
-    Vector<double> *weight = weight_vector();
-    if (!weight)
+    ensure_weight_vector();
+    if (!_weight_vector.size())
 	return error(errVector, command);
   
     int nargs;
@@ -438,7 +450,7 @@ CharstringInterp::mm_command(int command, int on_stack)
       default: return error(errInternal, command);
     }
   
-    int nmasters = weight->size();
+    int nmasters = _weight_vector.size();
     if (size() < nargs * nmasters
 	|| on_stack != nargs * nmasters)
 	return error(errMultipleMaster, command);
@@ -449,7 +461,7 @@ CharstringInterp::mm_command(int command, int on_stack)
     for (int j = 0; j < nargs; j++) {
 	double &val = at(base + j);
 	for (int i = 1; i < nmasters; i++, off++)
-	    val += weight->at_u(i) * at(off);
+	    val += _weight_vector.at_u(i) * at(off);
     }
   
     for (int i = nargs - 1; i >= 0; i--)
@@ -462,8 +474,8 @@ CharstringInterp::mm_command(int command, int on_stack)
 bool
 CharstringInterp::itc_command(int command, int on_stack)
 {
-    Vector<double> *weight = weight_vector();
-    if (!weight)
+    ensure_weight_vector();
+    if (!_weight_vector.size())
 	return error(errVector, command);
 
     int base = size() - on_stack;
@@ -473,8 +485,8 @@ CharstringInterp::itc_command(int command, int on_stack)
 	  if (on_stack != 1)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base);
-	  for (int i = 0; i < weight->size(); i++)
-	      vec(&_scratch_vector, offset+i) = weight->at_u(i);
+	  for (int i = 0; i < _weight_vector.size(); i++)
+	      vec(&_scratch_vector, offset+i) = _weight_vector.at_u(i);
 	  break;
       }
 
