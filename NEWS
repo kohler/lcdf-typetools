@@ -1,0 +1,5 @@
+T1sicle NEWS
+
+Version 0.2
+
+* Fixed serious bug in normalize_vector that resulted in incorrect output.

@@ -1,0 +1,56 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(NEWS)
+AM_INIT_AUTOMAKE(t1sicle, 0.9)
+AM_CONFIG_HEADER(config.h)
+
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_CXX
+AC_PROG_CXXCPP
+if test -n "$GCC" ; then CC="$CC -Wall" ; CXX="$CXX -Wall" ; fi
+
+AC_PROG_RANLIB
+
+dnl
+dnl directory searching
+dnl
+
+AC_HEADER_DIRENT
+
+dnl
+dnl strerror, working strto[dl], strtoul, time
+dnl
+
+FIXLIBC_O=''
+AC_CHECK_FUNC(strerror, :, FIXLIBC_O='fixlibc.o')
+
+AC_CACHE_CHECK(whether strtol works, ac_cv_working_strtoarith,
+[AC_TRY_RUN([#include <stdio.h>
+#include <stdlib.h>
+int main(int c, char **v) {
+  char s[] = "12 ";
+  char *endp;
+  long l = strtol(s, &endp, 10);
+  exit(*endp == 0 ? 1 : 0);
+}], ac_cv_working_strtoarith=yes, ac_cv_working_strtoarith=no,
+ac_cv_working_strtoarith=yes)])
+if test $ac_cv_working_strtoarith = no ;
+then FIXLIBC_O='fixlibc.o'; AC_DEFINE_UNQUOTED(BROKEN_STRTOARITH)
+fi
+
+AC_CHECK_FUNCS(strtoul ctime)
+
+AC_SUBST(FIXLIBC_O)
+
+dnl
+dnl new.h
+dnl
+
+AC_LANG_CPLUSPLUS
+AC_CHECK_HEADERS(new.h)
+
+dnl
+dnl Output
+dnl
+
+AC_OUTPUT(Makefile edlib/Makefile t1lib/Makefile t1lint/Makefile)
