@@ -25,6 +25,7 @@
 #endif
 
 
+static String::Initializer initializer;
 static String empty_string;
 
 

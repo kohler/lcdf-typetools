@@ -32,6 +32,9 @@ class String {
   
   static Memo *null_memo;
   static Memo *permanent_memo;
+
+  class Initializer;
+  friend class String::Initializer;
   
  public:
   
@@ -86,6 +89,10 @@ class String {
   // String operator+(const char *, PermString);
   // String operator+(PermString, PermString);
   // String operator+(String, char);
+
+  // Declare a String::Initializer in any file in which you declare
+  // static global Strings.
+  struct Initializer { Initializer(); };
   
 };
 

@@ -8,8 +8,9 @@
 #include <string.h>
 #include <stdio.h>
 
-String::Memo *String::null_memo = new String::Memo();
-String::Memo *String::permanent_memo = new String::Memo();
+String::Memo *String::null_memo;
+String::Memo *String::permanent_memo;
+static String::Initializer initializer;
 
 
 String::Memo::Memo()
@@ -195,4 +196,14 @@ operator!=(const String &s1, const String &s2)
   if (s1._length != s2._length) return true;
   if (s1._data == s2._data) return false;
   return memcmp(s1._data, s2._data, s1._length) != 0;
+}
+
+
+String::Initializer::Initializer()
+{
+  // do-nothing function called simply to initialize static globals
+  if (!String::null_memo) {
+    String::null_memo = new String::Memo();
+    String::permanent_memo = new String::Memo();
+  }
 }
