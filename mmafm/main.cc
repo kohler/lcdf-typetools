@@ -249,7 +249,6 @@ main(int argc, char **argv)
 
   errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
   
-  char *output_name = "<stdout>";
   FILE *output_file = 0;
   int precision = 3;
   double kern_precision = 2.0;
@@ -290,10 +289,9 @@ main(int argc, char **argv)
       
      case OUTPUT_OPT:
       if (output_file) errh->fatal("output file already specified");
-      if (strcmp(clp->arg, "-") == 0) {
+      if (strcmp(clp->arg, "-") == 0)
 	output_file = stdout;
-	output_name = "<stdout>";
-      } else {
+      else {
 	output_file = fopen(clp->arg, "wb");
 	if (!output_file)
 	    errh->fatal("%s: %s", clp->arg, strerror(errno));
