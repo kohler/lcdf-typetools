@@ -1,5 +1,5 @@
 '\"t
-.ds V 1.80
+.ds V 1.85
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -339,31 +339,52 @@ command unless you are using fontinst.
 .BI \-\-boundary\-char= char
 Sets the font's boundary character to
 .IR char ,
-which should be a number between -1 and 255. The default is taken from the
-encoding.
+which should either be a single non-digit character, or a number between -1
+and 255. The default is taken from the encoding.
 '
 .Sp
 .TP 5
 .BI \-\-altselector\-char= char
 Sets the font's alternate-selector character to
 .IR char ,
-which should be a number between -1 and 255. Use an alternate selector if
-you want to choose between different versions of a character from within a
-TeX file. For instance, say that your font provides three versions of
-"A". If you want to access them all, pick a character to be your alternate
-selector -- say "*", which is ASCII 42. Then give otftotfm the
-.BR --altselector-char= 42
+which should either be a single non-digit character, or a number between -1
+and 255. Use an alternate selector if you want to choose between different
+versions of a character from within a TeX file. For instance, say that your
+font provides three versions of "A". If you want to access them all, pick a
+character to be your alternate selector -- say "*". Then give otftotfm the
+.BR --altselector-char= '*'
 option. In TeX, "A" will produce the normal version, "A*" will produce the
 first alternate, and "A**" will produce the second alternate. Furthermore,
-"s*t" will activate any discretionary "s_t" ligature in the font.
+"s*t" will activate any discretionary "s_t" ligature in the font. The
+default alternate-selector character is taken from the encoding.
 .Sp
 The
-.B \-\-altselector
-mechanism uses the font's "aalt" and "dlig" features. You don't need to
-turn on those features if you use
+.B \-\-altselector\-char
+mechanism uses the features specified by
+.BR \-\-altselector\-feature
+options. You don't need to turn on those features if you use
 .BR \-\-altselector .
+.Sp
 See Sivan Toledo's article, cited in the See Also section, for more
 information.
+'
+.Sp
+.TP 5
+.BI \-\-altselector\-feature= feature
+Activates the feature named
+.I feature
+for the
+.B \-\-altselector\-char
+mechanism. Give this option multiple times to activate multiple
+features. This option activates features only for use with
+.BR \-\-altselector\-char ;
+use the
+.B \-\-feature
+option to activate features globally. Defaults to the
+.I salt
+and
+.I dlig
+features.
 '
 .Sp
 .TP 5
@@ -397,7 +418,9 @@ You can give any number of
 and
 .B \-\-exclude\-alternates
 options. Otftotfm will use an alternate if it matches at least one of the
-include patterns, and none of the exclude patterns.
+include patterns, and none of the exclude patterns. The patterns are
+applied to any feature introducing alternate characters, including "aalt"
+and "salt".
 '
 .PD
 '
@@ -728,8 +751,10 @@ feature incorrectly.
 Lets the user choose between all available alternate forms for a character.
 This includes things like superscript and subscript variants, as well as
 different styles (swash, for example). The
-.B \-\-altselector
-option provides useful access to this feature. See also
+.BR \-\-altselector\-char
+mechanism can provide useful access to this feature if you supply
+.BR \-\-altselector\-feature= aalt. 
+See also
 .IR salt " and " calt .
 .TP 5
 .IR c2sc ", Small Capitals From Capitals"
@@ -854,8 +879,11 @@ and
 .TP 5
 .IR salt ", Stylistic Alternates"
 Lets the user choose between stylistic alternate forms for a character.
-Partially supported: A TeX user can't interactively choose a given
-alternate form, so otftotfm takes the first option whenever there's more
+The
+.BR \-\-altselector\-char
+mechanism provides useful access to this feature. If you turn on
+.IR salt
+globally, otftotfm takes the first alternate form whenever there's more
 than one choice. See also
 .IR aalt
 and
@@ -958,9 +986,6 @@ encoding distributed with otftotfm.
 .LP
 Presumably some context-sensitive positionings and ligatures could be
 implemented with TeX's boundary character, but otftotfm doesn't do that yet.
-.LP
-More positionings and ligatures could be supported with the help of virtual
-fonts.
 .LP
 See the documentation for 
 .B \-\-pl

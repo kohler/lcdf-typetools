@@ -76,6 +76,7 @@ using namespace Efont;
 #define ALTSELECTOR_CHAR_OPT	324
 #define INCLUDE_ALTERNATES_OPT	325
 #define EXCLUDE_ALTERNATES_OPT	326
+#define ALTSELECTOR_FEATURE_OPT	327
 
 #define AUTOMATIC_OPT		331
 #define FONT_NAME_OPT		332
@@ -107,6 +108,8 @@ enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 
+#define CHAR_OPTTYPE		(Clp_FirstUserType)
+
 static Clp_Option options[] = {
     
     { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
@@ -123,8 +126,10 @@ static Clp_Option options[] = {
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
-    { "boundary-char", 0, BOUNDARY_CHAR_OPT, Clp_ArgInt, 0 },
-    { "altselector-char", 0, ALTSELECTOR_CHAR_OPT, Clp_ArgInt, 0 },
+    { "boundary-char", 0, BOUNDARY_CHAR_OPT, CHAR_OPTTYPE, 0 },
+    { "altselector", 0, ALTSELECTOR_CHAR_OPT, CHAR_OPTTYPE, Clp_PreferredMatch },
+    { "altselector-char", 0, ALTSELECTOR_CHAR_OPT, CHAR_OPTTYPE, 0 },
+    { "altselector-feature", 0, ALTSELECTOR_FEATURE_OPT, Clp_ArgString, 0 },
     { "design-size", 0, DESIGN_SIZE_OPT, Clp_ArgDouble, 0 },
     { "include-alternates", 0, INCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
     { "exclude-alternates", 0, EXCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
@@ -184,6 +189,7 @@ static PermString dot_notdef(".notdef");
 
 static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
+static Vector<Efont::OpenType::Tag> altselector_features;
 
 static Vector<String> include_alternates;
 static Vector<String> exclude_alternates;
@@ -236,7 +242,7 @@ Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\n",
     printf("\
 Font feature and transformation options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
-  -f, --feature=FEAT           Apply feature FEAT.\n\
+  -f, --feature=FEAT           Activate feature FEAT.\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
@@ -251,6 +257,7 @@ Encoding options:\n\
       --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
       --altselector-char=CHAR  Set the alternate selector character to CHAR.\n\
+      --altselector-feature=F  Activate feature F for --altselector-char.\n\
       --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
       --include-alternates=PAT Include only alternate characters matching PAT.\n\
 \n");
@@ -1137,10 +1144,13 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
     // apply 'aalt' feature if we have variant selectors
     if (encoding.altselectors() && !dvipsenc_literal) {
-	Vector<OpenType::Tag> alt_features;
-	alt_features.push_back(OpenType::Tag("aalt"));
-	alt_features.push_back(OpenType::Tag("dlig"));
-	alt_features.swap(interesting_features);
+	// apply default features
+	if (!altselector_features.size()) {
+	    altselector_features.push_back(OpenType::Tag("dlig"));
+	    altselector_features.push_back(OpenType::Tag("salt"));
+	}
+	// do lookups
+	altselector_features.swap(interesting_features);
 	Vector<Lookup> alt_lookups(gsub.nlookups(), Lookup());
 	find_lookups(gsub.script_list(), gsub.feature_list(), alt_lookups, ErrorHandler::silent_handler());
 	Vector<OpenType::Substitution> alt_subs;
@@ -1151,7 +1161,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		(void) l.unparse_automatics(gsub, alt_subs);
 		encoding.apply_alternates(alt_subs, i, include_alternates, exclude_alternates, glyph_names);
 	    }
-	alt_features.swap(interesting_features);
+	altselector_features.swap(interesting_features);
     }
     
     // apply LIGKERN ligature commands to the result
@@ -1310,6 +1320,25 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 }
 
 
+extern "C" {
+static int
+clp_parse_char(Clp_Parser *clp, const char *arg, int complain, void *)
+{
+    if (arg[0] && !arg[1] && !isdigit(arg[0])) {
+	clp->val.i = (unsigned char)arg[0];
+	return 1;
+    } else if (arg[0] == '-' || isdigit(arg[0])) {
+	char *end;
+	clp->val.i = strtol(arg, &end, 10);
+	if (clp->val.i <= 255 && !*end)
+	    return 1;
+    }
+    if (complain)
+	Clp_OptionError(clp, "'%O' expects a character, not '%s'", arg);
+    return 0;
+}
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -1317,6 +1346,7 @@ main(int argc, char *argv[])
     String::static_initialize();
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
+    Clp_AddType(clp, CHAR_OPTTYPE, 0, clp_parse_char, 0);
     program_name = Clp_ProgramName(clp);
 #if HAVE_KPATHSEA
     kpsei_init(argv[0]);
@@ -1415,12 +1445,21 @@ main(int argc, char *argv[])
 	    break;
 
 	  case BOUNDARY_CHAR_OPT:
-	    ligkern.push_back(String("|| = ") + clp->arg);
+	    ligkern.push_back(String("|| = ") + String(clp->val.i));
 	    break;
 
 	  case ALTSELECTOR_CHAR_OPT:
-	    ligkern.push_back(String("^^ = ") + clp->arg);
+	    ligkern.push_back(String("^^ = ") + String(clp->val.i));
 	    break;
+
+	  case ALTSELECTOR_FEATURE_OPT: {
+	      OpenType::Tag t(clp->arg);
+	      if (t.valid())
+		  altselector_features.push_back(t);
+	      else
+		  usage_error(errh, "bad feature tag");
+	      break;
+	  }
 
 	  case EXCLUDE_ALTERNATES_OPT:
 	  case INCLUDE_ALTERNATES_OPT: {
