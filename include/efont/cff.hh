@@ -143,9 +143,12 @@ class Cff::Dict { public:
 
     bool has(DictOperator) const;
     inline bool has_first(DictOperator) const;
+    bool xvalue(DictOperator, Vector<double> &) const;
+    bool xvalue(DictOperator, int *) const;
+    bool xvalue(DictOperator, double *) const;
     bool value(DictOperator, Vector<double> &) const;
-    bool value(DictOperator, int, int *) const;
-    bool value(DictOperator, double, double *) const;
+    bool value(DictOperator, int *) const;
+    bool value(DictOperator, double *) const;
 
     void unparse(ErrorHandler *, const char *) const;
 
@@ -257,7 +260,8 @@ class Cff::CIDFont : public Cff::FontParent { public:
 
     bool dict_has(DictOperator) const;
     String dict_string(DictOperator) const;
-    bool dict_value(DictOperator, double, double *) const;
+    bool dict_value(DictOperator, double *) const;
+    bool dict_xvalue(DictOperator, double, double *) const;
     bool dict_value(DictOperator, Vector<double> &) const;
     
   private:
@@ -347,8 +351,9 @@ class Cff::Font : public Cff::ChildFont { public:
 
     bool dict_has(DictOperator) const;
     String dict_string(DictOperator) const;
-    inline bool dict_value(DictOperator, double, double *) const;
+    inline bool dict_value(DictOperator, double *) const;
     inline bool dict_value(DictOperator, Vector<double> &) const;
+    const Dict &top_dict() const	{ return _top_dict; }
     
   private:
 
@@ -433,9 +438,9 @@ inline const Cff::Dict &Cff::Font::dict_of(DictOperator op) const
     return (op >= 0 && op <= oLastOperator && (operator_types[op] & tP) ? _private_dict : _top_dict);
 }
 
-inline bool Cff::Font::dict_value(DictOperator op, double def, double *val) const
+inline bool Cff::Font::dict_value(DictOperator op, double *val) const
 {
-    return dict_of(op).value(op, def, val);
+    return dict_of(op).value(op, val);
 }
 
 inline bool Cff::Font::dict_value(DictOperator op, Vector<double> &val) const
