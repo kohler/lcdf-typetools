@@ -23,15 +23,24 @@
 #define VERSION_OPT	301
 #define HELP_OPT	302
 #define QUIET_OPT	303
+#define PFB_OPT		304
+#define PFA_OPT		305
+#define OUTPUT_OPT	306
 
 Clp_Option options[] = {
+    { "ascii", 'a', PFA_OPT, 0, 0 },
+    { "binary", 'b', PFB_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
+    { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "pfa", 'a', PFA_OPT, 0, 0 },
+    { "pfb", 'b', PFB_OPT, 0, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "version", 0, VERSION_OPT, 0, 0 },
 };
 
 
 static const char *program_name;
+static bool binary = true;
 
 
 void
@@ -85,17 +94,15 @@ Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 // MAIN
 
 static void
-do_file(const char *filename, PsresDatabase *, ErrorHandler *errh)
+do_file(const char *infn, const char *outfn,
+	PsresDatabase *, ErrorHandler *errh)
 {
     FILE *f;
-    if (strcmp(filename, "-") == 0) {
+    if (!infn || strcmp(infn, "-") == 0) {
 	f = stdin;
-	filename = "<stdin>";
-    } else
-	f = fopen(filename, "rb");
-  
-    if (!f)
-	errh->fatal("%s: %s", filename, strerror(errno));
+	infn = "<stdin>";
+    } else if (!(f = fopen(infn, "rb")))
+	errh->fatal("%s: %s", infn, strerror(errno));
   
     int c = getc(f);
     ungetc(c, f);
@@ -103,7 +110,7 @@ do_file(const char *filename, PsresDatabase *, ErrorHandler *errh)
     EfontCFF::Font *font = 0;
     
     if (c == EOF)
-	errh->fatal("%s: empty file", filename);
+	errh->fatal("%s: empty file", infn);
     if (c == 1 || c == 'O') {
 	StringAccum sa(150000);
 	while (!feof(f)) {
@@ -111,19 +118,33 @@ do_file(const char *filename, PsresDatabase *, ErrorHandler *errh)
 	    sa.forward(forward);
 	}
 
-	PinnedErrorHandler cerrh(errh, filename);
+	PinnedErrorHandler cerrh(errh, infn);
 	String data = sa.take_string();
 	if (c == 'O')
 	    data = EfontOTF(data, errh).table("CFF");
 	
 	font = new EfontCFF::Font(new EfontCFF(data, errh), PermString(), errh);
     } else
-	errh->fatal("%s: not a CFF or OpenType/CFF font", filename);
+	errh->fatal("%s: not a CFF or OpenType/CFF font", infn);
   
     Type1Font *font1 = create_type1_font(font);
 
-    Type1PFAWriter t1w(stdout);
-    font1->write(t1w);
+    if (!outfn || strcmp(outfn, "-") == 0) {
+	f = 0;
+	outfn = "<stdin>";
+    } else if (!(f = fopen(outfn, "wb")))
+	errh->fatal("%s: %s", outfn, strerror(errno));
+
+    if (binary) {
+	Type1PFBWriter t1w(f);
+	font1->write(t1w);
+    } else {
+	Type1PFAWriter t1w(f);
+	font1->write(t1w);
+    }
+
+    if (f != stdout)
+	fclose(f);
 }
 
 int
@@ -138,10 +159,20 @@ main(int argc, char **argv)
   
     ErrorHandler *default_errh = new FileErrorHandler(stderr);
     ErrorHandler *errh = default_errh;
+    const char *input_file = 0;
+    const char *output_file = 0;
   
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
+
+	  case PFA_OPT:
+	    binary = false;
+	    break;
+      
+	  case PFB_OPT:
+	    binary = true;
+	    break;
       
 	  case QUIET_OPT:
 	    if (clp->negated)
@@ -163,9 +194,21 @@ particular purpose.\n");
 	    usage();
 	    exit(0);
 	    break;
-      
+
+	  case OUTPUT_OPT:
+	  output_file:
+	    if (output_file)
+		usage_error(errh, "output file specified twice");
+	    output_file = clp->arg;
+	    break;
+
 	  case Clp_NotOption:
-	    do_file(clp->arg, psres, errh);
+	    if (input_file && output_file)
+		usage_error(errh, "too many arguments");
+	    else if (input_file)
+		goto output_file;
+	    else
+		input_file = clp->arg;
 	    break;
       
 	  case Clp_Done:
@@ -182,5 +225,7 @@ particular purpose.\n");
     }
   
   done:
+    do_file(input_file, output_file, psres, errh);
+    
     return (errh->nerrors() == 0 ? 0 : 1);
 }

@@ -203,8 +203,12 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     MakeType1CharstringInterp(EfontProgram *program, int precision = 5);
     ~MakeType1CharstringInterp();
 
+    Type1Font *output() const			{ return _output; }
+    
     void run(Type1Font *, PermString glyph_definer);
     void run(const Charstring &, Type1Charstring &);
+
+    bool type2_command(int, const uint8_t *, int *);
     
     void char_sidebearing(int, double, double);
     void char_width(int, double, double);
@@ -242,8 +246,6 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     Vector<double> _stem_width;
     int _nhstem;
 
-    CsRef _cur_csref;
-    
     // hint replacement
     Type1CharstringGen _hr_csgen;
     int _hr_firstsubr;
@@ -254,50 +256,91 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     // subroutines
     int _subr_bias;
     int _gsubr_bias;
+    mutable Vector<Subr *> _glyphs;
     mutable Vector<Subr *> _subrs;
     mutable Vector<Subr *> _gsubrs;
-    
+
+    Subr *_cur_subr;
+
+    void gen_number(double, int = 0);
+    void gen_command(int);
     void gen_sbw(bool hints_follow);
     void gen_hintmask(Type1CharstringGen &, const unsigned char *, int) const;
 
-    inline Subr *csr_subr(CsRef, bool force) const;
-    void dfs_subrs(Subr *, CsRef, Vector<CsRef> &) const;
-    void topologically_ordered_csrs(Vector<CsRef> &) const;
+    Subr *csr_subr(CsRef, bool force) const;
+    Type1Charstring *csr_charstring(CsRef) const;
     
 };
 
 class MakeType1CharstringInterp::Subr { public:
 
-    Subr()			: _colored(false) { }
+    Subr(CsRef csr)			: _csr(csr), _output_subrno(-1), _stamp(0) { }
 
-    bool colored() const	{ return _colored; }
-    void color()		{ _colored = true; }
+    bool up_to_date() const		{ return _stamp == max_stamp; }
+    void update()			{ _stamp = max_stamp; }
+    static void bump_date()		{ max_stamp++; }
+
+    Type1Charstring *charstring(const MakeType1CharstringInterp *) const;
     
-    void add_call(CsRef n)	{ _calls.push_back(n); }
-    void add_callee(CsRef, int, int);
+    int ncalls() const			{ return _calls.size(); }
+    Subr *call(int i) const		{ return _calls[i]; }
+    bool has_call(Subr *) const;
+
+    struct Callee {
+	Subr *subr;
+	int pos;
+	int len;
+	String s;
+	Callee(Subr *s, int p, int l)	: subr(s), pos(p), len(l) { }
+	String charstring(MakeType1CharstringInterp *mcsi) const { return subr->charstring(mcsi)->substring(pos, len); }
+    };
+
+    int ncallees() const		{ return _callees.size(); }
+    const Callee &callee(int i) const	{ return _callees[i]; }
+    
+    void add_call(Subr *s)		{ _calls.push_back(s); }
+    void add_callee(Subr *, int, int);
+
+    int output_subrno() const		{ return _output_subrno; }
+    void set_output_subrno(int n)	{ _output_subrno = n; }
+
+    void transfer_nested_calls(int pos, int length, Subr *new_callee) const;
+    void change_callees(Subr *, int pos, int length, int new_length);
+    bool unify(MakeType1CharstringInterp *);
+    
+    void callee_data(bool assign, MakeType1CharstringInterp *mcsi);
     
   private:
 
-    Vector<CsRef> _calls;
-    
-    Vector<CsRef> _callee;
-    Vector<int> _callee_left;
-    Vector<int> _callee_right;
+    CsRef _csr;
+    Vector<Subr *> _calls;
+    Vector<Callee> _callees;
 
-    bool _colored : 1;
+    int _output_subrno;
+    int _stamp;
+
+    static int max_stamp;
 
     friend class MakeType1CharstringInterp;
     
 };
 
+int MakeType1CharstringInterp::Subr::max_stamp = 1;
+
 inline void
-MakeType1CharstringInterp::Subr::add_callee(CsRef callee, int left, int right)
+MakeType1CharstringInterp::Subr::add_callee(Subr *s, int pos, int len)
 {
-    _callee.push_back(callee);
-    _callee_left.push_back(left);
-    _callee_right.push_back(right);
+    _callees.push_back(Callee(s, pos, len));
 }
 
+bool
+MakeType1CharstringInterp::Subr::has_call(Subr *s) const
+{
+    for (int i = 0; i < _calls.size(); i++)
+	if (_calls[i] == s)
+	    return true;
+    return false;
+}
 
 
 /*****
@@ -312,6 +355,8 @@ MakeType1CharstringInterp::MakeType1CharstringInterp(EfontProgram *program, int 
 
 MakeType1CharstringInterp::~MakeType1CharstringInterp()
 {
+    for (int i = 0; i < _glyphs.size(); i++)
+	delete _glyphs[i];
     for (int i = 0; i < _subrs.size(); i++)
 	delete _subrs[i];
     for (int i = 0; i < _gsubrs.size(); i++)
@@ -321,6 +366,18 @@ MakeType1CharstringInterp::~MakeType1CharstringInterp()
 
 // generating charstring commands
 
+inline void
+MakeType1CharstringInterp::gen_number(double n, int what)
+{
+    _csgen.gen_number(n, what);
+}
+
+inline void
+MakeType1CharstringInterp::gen_command(int what)
+{
+    _csgen.gen_command(what);
+}
+
 void
 MakeType1CharstringInterp::gen_sbw(bool hints_follow)
 {
@@ -328,15 +385,15 @@ MakeType1CharstringInterp::gen_sbw(bool hints_follow)
 	String s = String::fill_string('\377', ((nhints() - 1) >> 3) + 1);
 	char_hintmask(CS::cHintmask, reinterpret_cast<const unsigned char *>(s.data()), nhints());
     } else if (_sidebearing.y == 0 && _width.y == 0) {
-	_csgen.gen_number(_sidebearing.x);
-	_csgen.gen_number(_width.x);
-	_csgen.gen_command(CS::cHsbw);
+	gen_number(_sidebearing.x);
+	gen_number(_width.x);
+	gen_command(CS::cHsbw);
     } else {
-	_csgen.gen_number(_sidebearing.x);
-	_csgen.gen_number(_sidebearing.y);
-	_csgen.gen_number(_width.x);
-	_csgen.gen_number(_width.y);
-	_csgen.gen_command(CS::cSbw);
+	gen_number(_sidebearing.x);
+	gen_number(_sidebearing.y);
+	gen_number(_width.x);
+	gen_number(_width.y);
+	gen_command(CS::cSbw);
     }
     _state = S_CLOSED;
 }
@@ -434,15 +491,15 @@ MakeType1CharstringInterp::char_rmoveto(int cmd, double dx, double dy)
     else if (_state == S_OPEN)
 	char_closepath(cmd);
     if (dx == 0) {
-	_csgen.gen_number(dy, 'y');
-	_csgen.gen_command(CS::cVmoveto);
+	gen_number(dy, 'y');
+	gen_command(CS::cVmoveto);
     } else if (dy == 0) {
-	_csgen.gen_number(dx, 'x');
-	_csgen.gen_command(CS::cHmoveto);
+	gen_number(dx, 'x');
+	gen_command(CS::cHmoveto);
     } else {
-	_csgen.gen_number(dx, 'x');
-	_csgen.gen_number(dy, 'y');
-	_csgen.gen_command(CS::cRmoveto);
+	gen_number(dx, 'x');
+	gen_number(dy, 'y');
+	gen_command(CS::cRmoveto);
     }
 }
 
@@ -451,9 +508,9 @@ MakeType1CharstringInterp::char_setcurrentpoint(int, double x, double y)
 {
     if (_state == S_INITIAL)
 	gen_sbw(false);
-    _csgen.gen_number(x, 'X');
-    _csgen.gen_number(y, 'Y');
-    _csgen.gen_command(CS::cSetcurrentpoint);
+    gen_number(x, 'X');
+    gen_number(y, 'Y');
+    gen_command(CS::cSetcurrentpoint);
 }
 
 void
@@ -463,15 +520,15 @@ MakeType1CharstringInterp::char_rlineto(int, double dx, double dy)
 	gen_sbw(false);
     _state = S_OPEN;
     if (dx == 0) {
-	_csgen.gen_number(dy, 'y');
-	_csgen.gen_command(CS::cVlineto);
+	gen_number(dy, 'y');
+	gen_command(CS::cVlineto);
     } else if (dy == 0) {
-	_csgen.gen_number(dx, 'x');
-	_csgen.gen_command(CS::cHlineto);
+	gen_number(dx, 'x');
+	gen_command(CS::cHlineto);
     } else {
-	_csgen.gen_number(dx, 'x');
-	_csgen.gen_number(dy, 'y');
-	_csgen.gen_command(CS::cRlineto);
+	gen_number(dx, 'x');
+	gen_number(dy, 'y');
+	gen_command(CS::cRlineto);
     }
 }
 
@@ -482,25 +539,25 @@ MakeType1CharstringInterp::char_rrcurveto(int, double dx1, double dy1, double dx
 	gen_sbw(false);
     _state = S_OPEN;
     if (dy1 == 0 && dx3 == 0) {
-	_csgen.gen_number(dx1, 'x');
-	_csgen.gen_number(dx2, 'x');
-	_csgen.gen_number(dy2, 'y');
-	_csgen.gen_number(dy3, 'y');
-	_csgen.gen_command(CS::cHvcurveto);
+	gen_number(dx1, 'x');
+	gen_number(dx2, 'x');
+	gen_number(dy2, 'y');
+	gen_number(dy3, 'y');
+	gen_command(CS::cHvcurveto);
     } else if (dx1 == 0 && dy3 == 0) {
-	_csgen.gen_number(dy1, 'y');
-	_csgen.gen_number(dx2, 'x');
-	_csgen.gen_number(dy2, 'y');
-	_csgen.gen_number(dx3, 'x');
-	_csgen.gen_command(CS::cVhcurveto);
+	gen_number(dy1, 'y');
+	gen_number(dx2, 'x');
+	gen_number(dy2, 'y');
+	gen_number(dx3, 'x');
+	gen_command(CS::cVhcurveto);
     } else {
-	_csgen.gen_number(dx1, 'x');
-	_csgen.gen_number(dy1, 'y');
-	_csgen.gen_number(dx2, 'x');
-	_csgen.gen_number(dy2, 'y');
-	_csgen.gen_number(dx3, 'x');
-	_csgen.gen_number(dy3, 'y');
-	_csgen.gen_command(CS::cRrcurveto);
+	gen_number(dx1, 'x');
+	gen_number(dy1, 'y');
+	gen_number(dx2, 'x');
+	gen_number(dy2, 'y');
+	gen_number(dx3, 'x');
+	gen_number(dy3, 'y');
+	gen_command(CS::cRrcurveto);
     }
 }
 
@@ -548,7 +605,7 @@ MakeType1CharstringInterp::char_flex(int cmd, double dx1, double dy1, double dx2
     // generate flex commands
     if (v_ok || h_ok) {
 	Point p_reference = (h_ok ? Point(p3.x, p0.y) : Point(p0.x, p3.y));
-	
+
 	_csgen.gen_number(1);
 	_csgen.gen_command(CS::cCallsubr);
 	
@@ -601,14 +658,14 @@ MakeType1CharstringInterp::char_flex(int cmd, double dx1, double dy1, double dx2
 void
 MakeType1CharstringInterp::char_closepath(int)
 {
-    _csgen.gen_command(CS::cClosepath);
+    gen_command(CS::cClosepath);
     _state = S_CLOSED;
 }
 
 
 // subroutines
 
-inline MakeType1CharstringInterp::Subr *
+MakeType1CharstringInterp::Subr *
 MakeType1CharstringInterp::csr_subr(CsRef csr, bool force) const
 {
     Vector<Subr *> *vp;
@@ -616,6 +673,8 @@ MakeType1CharstringInterp::csr_subr(CsRef csr, bool force) const
 	vp = &_subrs;
     else if ((csr & CSR_TYPE) == CSR_GSUBR)
 	vp = &_gsubrs;
+    else if ((csr & CSR_TYPE) == CSR_GLYPH)
+	vp = &_glyphs;
     else
 	return 0;
     
@@ -625,44 +684,190 @@ MakeType1CharstringInterp::csr_subr(CsRef csr, bool force) const
 
     Subr *&what = (*vp)[n];
     if (!what && force)
-	what = new Subr;
+	what = new Subr(csr);
     return what;
 }
 
-void
-MakeType1CharstringInterp::dfs_subrs(Subr *s, CsRef csr, Vector<CsRef> &output) const
+Type1Charstring *
+MakeType1CharstringInterp::Subr::charstring(const MakeType1CharstringInterp *mcsi) const
 {
-    if (s && !s->colored()) {
-	s->color();
-	for (int i = 0; i < s->_calls.size(); i++) {
-	    CsRef ncsr = s->_calls[i];
-	    Subr *ns = csr_subr(ncsr, false);
-	    if (ns && !ns->colored())
-		dfs_subrs(ns, ncsr, output);
-	}
-	output.push_back(csr);
+    int n = (_csr & CSR_NUM);
+    switch (_csr & CSR_TYPE) {
+      case CSR_SUBR:
+      case CSR_GSUBR:
+	if (_output_subrno >= 0)
+	    return static_cast<Type1Charstring *>(mcsi->output()->subr(_output_subrno));
+	return 0;
+      case CSR_GLYPH:
+	return static_cast<Type1Charstring *>(mcsi->output()->glyph(n));
+      default:
+	return 0;
     }
 }
 
 void
-MakeType1CharstringInterp::topologically_ordered_csrs(Vector<CsRef> &output) const
+MakeType1CharstringInterp::Subr::transfer_nested_calls(int pos, int length, Subr *new_callee) const
 {
-    output.clear();
-    for (int i = 0; i < _subrs.size(); i++)
-	dfs_subrs(csr_subr(CSR_SUBR | i, false), CSR_SUBR | i, output);
-    for (int i = 0; i < _gsubrs.size(); i++)
-	dfs_subrs(csr_subr(CSR_GSUBR | i, false), CSR_GSUBR | i, output);
+    int right = pos + length;
+    for (int i = 0; i < _calls.size(); i++) {
+	Subr *cs = _calls[i];
+	for (int j = 0; j < cs->_callees.size(); j++) {
+	    Callee &c = cs->_callees[j];
+	    if (c.subr == this && pos <= c.pos && c.pos + c.len <= right) {
+		c.subr = new_callee;
+		c.pos -= pos;
+		new_callee->add_call(cs);
+	    }
+	}
+    }
+}
+
+void
+MakeType1CharstringInterp::Subr::change_callees(Subr *callee, int pos, int length, int new_length)
+{
+    if (up_to_date())
+	return;
+    update();
+
+    int right = pos + length;
+    int delta = new_length - length;
+    for (int i = 0; i < _callees.size(); i++) {
+	Callee &c = _callees[i];
+	if (c.subr != callee)
+	    /* nada */;
+	else if (pos <= c.pos && c.pos + c.len <= right) {
+	    // erase
+	    //fprintf(stderr, "  ERASE callee %08x:%d+%d\n", c.subr->_csr, c.pos, c.len);
+	    c.subr = 0;
+	} else if (right <= c.pos) {
+	    //fprintf(stderr, "  ADJUST callee %08x:%d+%d -> %d+%d\n", c.subr->_csr, c.pos, c.len, c.pos+delta, c.len);
+	    c.pos += delta;
+	} else if (c.pos <= pos && right <= c.pos + c.len) {
+	    c.len += delta;
+	} else
+	    c.subr = 0;
+    }
+}
+
+void
+MakeType1CharstringInterp::Subr::callee_data(bool assign, MakeType1CharstringInterp *mcsi)
+{
+    for (int i = 0; i < _callees.size(); i++) {
+	Callee &c = _callees[i];
+	if (!c.subr)
+	    continue;
+	String s = c.subr->charstring(mcsi)->substring(c.pos, c.len);
+	if (assign)
+	    c.s = s;
+	else if (c.s != s) {
+	    //fprintf(stderr, "FAIL %08x callee %08x:%d+%d\n", _csr, c.subr->_csr, c.pos, c.len);
+	    //assert(0);
+	}
+	assert(c.subr->has_call(this));
+    }
+}
+
+bool
+MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
+{
+    // clean up callee list
+    for (int i = 0; i < _callees.size(); i++)
+	if (!_callees[i].subr) {
+	    _callees[i] = _callees.back();
+	    _callees.pop_back();
+	    i--;
+	}
+    
+    if (!_callees.size())
+	return false;
+    assert(!_calls.size());
+
+    // Find the smallest shared substring.
+    String substr = _callees[0].charstring(mcsi);
+    int suboff = 0;
+    for (int i = 1; i < _callees.size(); i++) {
+	String substr1 = _callees[i].charstring(mcsi);
+	const char *d = substr.data() + suboff, *d1 = substr1.data();
+	const char *dx = substr.data() + substr.length(), *d1x = d1 + substr1.length();
+	while (dx > d && d1x > d1 && dx[-1] == d1x[-1])
+	    dx--, d1x--;
+	suboff = dx - substr.data();
+    }
+    substr = substr.substring(Type1Charstring(substr).first_caret_after(suboff));
+    if (!substr.length())
+	return false;
+    for (int i = 0; i < _callees.size(); i++) {
+	Callee &c = _callees[i];
+	if (int delta = c.len - substr.length()) {
+	    c.pos += delta;
+	    c.len -= delta;
+	}
+    }
+
+    // otherwise, success
+    _output_subrno = mcsi->output()->nsubrs();
+    mcsi->output()->set_subr(_output_subrno, Type1Charstring(substr + "\013"));
+
+    // note calls
+    _callees[0].subr->transfer_nested_calls(_callees[0].pos, _callees[0].len, this);
+    
+    // adapt callers
+    String callsubr_string = Type1CharstringGen::callsubr_string(_output_subrno);
+    for (int i = 0; i < _callees.size(); i++)
+	if (_callees[i].subr != this) {
+	    Subr::Callee c = _callees[i];
+	    //fprintf(stderr, " SUBSTRING %08x:%d+%d\n", c.subr->_csr, c.pos, c.len);
+	    c.subr->charstring(mcsi)->assign_substring(c.pos, c.len, callsubr_string);
+	    Subr::bump_date();
+	    for (int j = 0; j < c.subr->ncalls(); j++)
+		c.subr->call(j)->change_callees(c.subr, c.pos, c.len, callsubr_string.length());
+	    assert(!_callees[i].subr);
+	}
+
+    // this subr is no longer "called"/interpolated from anywhere
+    _callees.clear();
+
+    //fprintf(stderr, "Succeeded %x\n", _csr);
+    return true;
 }
 
 
 // running
 
-#if 0
 bool
-MakeType1CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
+MakeType1CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 {
+    switch (cmd) {
+    
+      case CS::cCallsubr:
+      case CS::cCallgsubr:
+	if (subr_depth() < MAX_SUBR_DEPTH && size() == 1) {
+	    //fprintf(stderr, "succeeded %d\n", (int) top());
+	    bool g = (cmd == CS::cCallgsubr);
+	    CsRef csref = ((int)top() + program()->xsubr_bias(g)) | (g ? CSR_GSUBR : CSR_SUBR);
+	    Subr *callee = csr_subr(csref, true);
+	    if (callee)
+		_cur_subr->add_call(callee);
+
+	    int left = _csgen.length();
+	    
+	    bool more = callxsubr_command(g);
+
+	    int right = _csgen.length();
+	    if (error() >= 0 && callee)
+		callee->add_callee(_cur_subr, left, right - left);
+	    return more;
+	} else {
+	    //fprintf(stderr, "failed %d\n", (int) top());
+	    goto normal;
+	}
+
+      normal:
+      default:
+	return CharstringInterp::type2_command(cmd, data, left);
+    
+    }
 }
-#endif
 
 void
 MakeType1CharstringInterp::run(const Charstring &cs, Type1Charstring &out)
@@ -690,17 +895,31 @@ MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer)
     _hr_firstsubr = output->nsubrs();
 
     const EfontProgram *p = program();
+    _glyphs.assign(p->nglyphs(), 0);
     _subrs.assign(p->nsubrs(), 0);
     _subr_bias = p->subr_bias();
     _gsubrs.assign(p->ngsubrs(), 0);
     _gsubr_bias = p->gsubr_bias();
-    
+
+    // run over the glyphs
     int nglyphs = p->nglyphs();
     Type1Charstring receptacle;
     for (int i = 0; i < nglyphs; i++) {
+	_cur_subr = _glyphs[i] = new Subr(CSR_GLYPH | i);
 	run(*p->glyph(i), receptacle);
 	output->add_glyph(Type1Subr::make_glyph(p->glyph_name(i), receptacle, glyph_definer));
     }
+
+    // unify Subrs
+    for (int i = 0; i < _subrs.size(); i++)
+	if (_subrs[i] && _subrs[i]->unify(this))
+	    //fprintf(stderr,"==== %s\n", CharstringUnparser::unparse(*_glyphs[0x237]->charstring(this)).cc())
+	    ;
+
+    for (int i = 0; i < _gsubrs.size(); i++)
+	if (_gsubrs[i] && _gsubrs[i]->unify(this))
+	    /*fprintf(stderr,"==== %s\n", CharstringUnparser::unparse(*_glyphs[0x237]->charstring(this)).cc())*/
+	    ;
 }
 
 
@@ -914,3 +1133,5 @@ cleartomark"));
     
     return output;
 }
+
+#include "vector.cc"
