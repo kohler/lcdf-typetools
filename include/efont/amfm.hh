@@ -123,8 +123,10 @@ class AmfmReader {
 
   void check_mmspace();
   
+  void lwarning(const char *, ...) const;
+  void lerror(const char *, ...) const;
   void no_match_warning(const char *context = 0) const;
-  
+    
   bool read_simple_array(Vector<double> &) const;
   void read_positions() const;
   void read_normalize() const;

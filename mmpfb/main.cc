@@ -32,6 +32,7 @@
 #define PFB_OPT		312
 #define OUTPUT_OPT	313
 #define QUIET_OPT	314
+#define PRECISION_OPT	315
 
 Clp_Option options[] = {
   { "1", '1', N1_OPT, Clp_ArgDouble, 0 },
@@ -44,6 +45,7 @@ Clp_Option options[] = {
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "pfa", 'a', PFA_OPT, 0, 0 },
   { "pfb", 'b', PFB_OPT, 0, 0 },
+  { "precision", 'p', PRECISION_OPT, Clp_ArgUnsigned, 0 },
   { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
   { "style", 0, STYLE_OPT, Clp_ArgDouble, 0 },
   { "version", 0, VERSION_OPT, 0, 0 },
@@ -54,6 +56,7 @@ Clp_Option options[] = {
 };
 
 
+static const char *program_name;
 static ErrorHandler *errh;
 static MyFont *font;
 static Type1MMSpace *mmspace;
@@ -71,7 +74,7 @@ usage_error(char *error_message, ...)
   if (!error_message)
     errh->message("Usage: %s [OPTION]... FONT", program_name);
   else
-    errh->verror(ErrorHandler::ErrorKind, Landmark(), error_message, val);
+    errh->verror(ErrorHandler::Error, String(), error_message, val);
   errh->message("Type %s --help for more information.", program_name);
   exit(1);
 }
@@ -95,6 +98,7 @@ General options:\n\
   -a, --pfa                    Output PFA font.\n\
   -b, --pfb                    Output PFB font. This is the default.\n\
   -o, --output=FILE            Write output to FILE.\n\
+  -p, --precision=N            Set precision to N (larger means more precise).\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
@@ -216,7 +220,6 @@ main(int argc, char **argv)
 {
   PsresDatabase *psres = new PsresDatabase;
   psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
-  psres->add_psres_path(getenv("FONTPATH"), 0, false);
   
   Clp_Parser *clp =
     Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
@@ -224,8 +227,10 @@ main(int argc, char **argv)
   
   bool write_pfb = true;
   bool amcp_info = false;
+  int precision = 5;
   FILE *outfile = 0;
-  errh = new ErrorHandler;
+  ErrorHandler *default_errh = new FileErrorHandler(stderr);
+  errh = default_errh;
   
   while (1) {
     int opt = Clp_Next(clp);
@@ -265,10 +270,18 @@ main(int argc, char **argv)
      case PFB_OPT:
       write_pfb = true;
       break;
+
+     case PRECISION_OPT:
+      if (clp->val.i > 107) {
+	errh->warning("precision lowered to 107");
+	precision = 107;
+      } else
+	precision = clp->val.i;
+      break;
       
      case QUIET_OPT:
       if (clp->negated)
-	errh = new ErrorHandler;
+	errh = default_errh;
       else
 	errh = ErrorHandler::silent_handler();
       break;
@@ -342,7 +355,7 @@ particular purpose.\n");
     exit(1);
   
   font->interpolate_dicts(errh);
-  font->interpolate_charstrings(errh);
+  font->interpolate_charstrings(precision, errh);
 
   { // Add an identifying comment.
 #if HAVE_CTIME

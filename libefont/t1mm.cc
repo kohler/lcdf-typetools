@@ -94,7 +94,7 @@ Type1MMSpace::error(ErrorHandler *errh, const char *s, ...) const
     assert(strlen(s) < 800);
     sprintf(buf, (s[0] == ' ' ? "%.200s%s" : "%.200s: %s"),
 	    _font_name.cc(), s);
-    errh->verror(ErrorHandler::ErrorKind, Landmark(), buf, val);
+    errh->verror(ErrorHandler::Error, String(), buf, val);
     va_end(val);
   }
   return false;

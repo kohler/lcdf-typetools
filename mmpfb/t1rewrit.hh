@@ -11,7 +11,7 @@ class Type1CharstringGen {
   
  public:
   
-  Type1CharstringGen();
+  Type1CharstringGen(int precision = 5);
 
   void clear()				{ _ncs.clear(); }
   int length() const			{ return _ncs.length(); }
@@ -30,23 +30,25 @@ class Type1MMRemover {
   
   Type1Font *_font;
   Vector<double> *_weight_vector;
+  int _precision;
   
   int _subr_count;
   Vector<int> _subr_done;
   Vector<Type1Charstring *> _subr_prefix;
   Vector<int> _subr_contains_mm;
-
+  
   bool _contains_mm_warned;
   ErrorHandler *_errh;
   
  public:
   
-  Type1MMRemover(Type1Font *, Vector<double> *, ErrorHandler *);
+  Type1MMRemover(Type1Font *, Vector<double> *, int, ErrorHandler *);
   ~Type1MMRemover();
   
   Type1Program *program() const		{ return _font; }
   Vector<double> *weight_vector() const	{ return _weight_vector; }
   int nmasters() const			{ return _weight_vector->size(); }
+  int precision() const			{ return _precision; }
   
   Type1Charstring *subr_prefix(int);
   Type1Charstring *subr(int);

@@ -25,7 +25,7 @@ class MyFont: public Type1Font {
 			 ErrorHandler * = 0);
   
   void interpolate_dicts(ErrorHandler * = 0);
-  void interpolate_charstrings(ErrorHandler * = 0);
+  void interpolate_charstrings(int precision, ErrorHandler * = 0);
   
 };
 

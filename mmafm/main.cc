@@ -45,7 +45,8 @@ Clp_Option options[] = {
 };
 
 
-static ErrorHandler errh;
+static const char *program_name;
+static ErrorHandler *errh;
 static AmfmMetrics *amfm;
 
 static Vector<PermString> ax_names;
@@ -72,7 +73,7 @@ static void
 set_amfm(AmfmMetrics *a)
 {
   if (a) {
-    if (amfm) errh.fatal("already read one AMFM file");
+    if (amfm) errh->fatal("already read one AMFM file");
     amfm = a;
   }
 }
@@ -95,20 +96,20 @@ read_file(char *fn, MetricsFinder *finder)
   
   if (!file) {
     // look for a font by name
-    AmfmMetrics *new_amfm = finder->find_amfm(fn, &errh);
+    AmfmMetrics *new_amfm = finder->find_amfm(fn, errh);
     if (new_amfm) {
       set_amfm(new_amfm);
       return;
     }
-    if (finder->find_metrics(fn, &errh))
+    if (finder->find_metrics(fn, errh))
       return;
     
     // check for instance name. don't use InstanceMetricsFinder.
     char *underscore = strchr(fn, '_');
     if (underscore)
-      new_amfm = finder->find_amfm(PermString(fn, underscore - fn), &errh);
+      new_amfm = finder->find_amfm(PermString(fn, underscore - fn), errh);
     if (!new_amfm)
-      errh.fatal("%s: %s", fn, strerror(save_errno));
+      errh->fatal("%s: %s", fn, strerror(save_errno));
     set_amfm(new_amfm);
     
     int i = 0;
@@ -129,10 +130,10 @@ read_file(char *fn, MetricsFinder *finder)
   }
   
   if (is_afm) {
-    Metrics *afm = AfmReader::read(slurper, &errh);
+    Metrics *afm = AfmReader::read(slurper, errh);
     if (afm) finder->record(afm);
   } else
-    set_amfm(AmfmReader::read(slurper, finder, &errh));
+    set_amfm(AmfmReader::read(slurper, finder, errh));
 }
 
 
@@ -142,10 +143,10 @@ usage_error(char *error_message, ...)
   va_list val;
   va_start(val, error_message);
   if (!error_message)
-    errh.message("Usage: %s [OPTION | FONT]...", program_name);
+    errh->message("Usage: %s [OPTION | FONT]...", program_name);
   else
-    errh.verror(ErrorHandler::ErrorKind, Landmark(), error_message, val);
-  errh.message("Type %s --help for more information.", program_name);
+    errh->verror(ErrorHandler::Error, String(), error_message, val);
+  errh->message("Type %s --help for more information.", program_name);
   exit(1);
 }
 
@@ -185,13 +186,14 @@ main(int argc, char **argv)
   
   PsresDatabase *psres = new PsresDatabase;
   psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
-  psres->add_psres_path(getenv("FONTPATH"), 0, false);
   PsresMetricsFinder *psres_finder = new PsresMetricsFinder(psres);
   finder->add_finder(psres_finder);
   
   Clp_Parser *clp =
     Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
   program_name = Clp_ProgramName(clp);
+
+  errh = new FileErrorHandler(stderr);
   
   char *output_name = "<stdout>";
   FILE *output_file = 0;
@@ -223,13 +225,13 @@ main(int argc, char **argv)
       break;
       
      case OUTPUT_OPT:
-      if (output_file) errh.fatal("output file already specified");
+      if (output_file) errh->fatal("output file already specified");
       if (strcmp(clp->arg, "-") == 0) {
 	output_file = stdout;
 	output_name = "<stdout>";
       } else {
 	output_file = fopen(clp->arg, "wb");
-	if (!output_file) errh.fatal("can't open `%s' for writing", clp->arg);
+	if (!output_file) errh->fatal("can't open `%s' for writing", clp->arg);
       }
       break;
       
@@ -274,7 +276,7 @@ particular purpose.\n");
     if (f) {
       Filename fake("<mmpfb output>");
       Slurper slurpy(fake, f);
-      AmfmReader::add_amcp_file(slurpy, amfm, &errh);
+      AmfmReader::add_amcp_file(slurpy, amfm, errh);
       pclose(f);
     }
     
@@ -285,21 +287,21 @@ particular purpose.\n");
   Vector<double> design = mmspace->default_design_vector();
   for (int i = 0; i < values.size(); i++)
     if (ax_names[i])
-      mmspace->set_design(design, ax_names[i], values[i], &errh);
+      mmspace->set_design(design, ax_names[i], values[i], errh);
     else
-      mmspace->set_design(design, ax_nums[i], values[i], &errh);
+      mmspace->set_design(design, ax_nums[i], values[i], errh);
   
   Vector<double> weight;
-  if (!mmspace->design_to_weight(design, weight, &errh)) {
+  if (!mmspace->design_to_weight(design, weight, errh)) {
     if (!mmspace->check_intermediate()) {
-      errh.error("(I can't interpolate font programs with intermediate masters on my own.");
+      errh->message("(I can't interpolate font programs with intermediate masters on my own.");
 #if MMAFM_RUN_MMPFB
-      errh.error("I tried to run `mmpfb --amcp-info %s', but it didn't work.", amfm->font_name().cc());
-      errh.error("Maybe your PSRESOURCEPATH environment variable is not set?");
+      errh->message("I tried to run `mmpfb --amcp-info %s', but it didn't work.", amfm->font_name().cc());
+      errh->message("Maybe your PSRESOURCEPATH environment variable is not set?");
 #endif
-      errh.fatal("See the manual page for more information.)");
+      errh->fatal("See the manual page for more information.)");
     } else
-      errh.fatal("can't create weight vector");
+      errh->fatal("can't create weight vector");
   }
   
   // Need to check for case when all design coordinates are unspecified. The
@@ -308,10 +310,10 @@ particular purpose.\n");
   // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
   // components are unknown.
   if (!KNOWN(design[0]))
-    errh.fatal("must specify %s's %s coordinate", amfm->font_name().cc(),
-	       mmspace->axis_type(0).cc());
+    errh->fatal("must specify %s's %s coordinate", amfm->font_name().cc(),
+		mmspace->axis_type(0).cc());
   
-  Metrics *m = amfm->interpolate(design, weight, &errh);
+  Metrics *m = amfm->interpolate(design, weight, errh);
   if (m) {
     
     // Add a comment identifying this as interpolated by mmafm

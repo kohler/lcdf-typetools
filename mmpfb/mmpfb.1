@@ -129,6 +129,20 @@ Set the style axis to
 Set the first (second, third, fourth) axis to
 .IR N .
 '
+.TP
+.OY \-\-precision N \-p N
+'
+Set the output precision to
+.IR N .
+Higher values mean the control points in the output font will be more
+exactly aligned; lower values (1 or 2) create smaller output font
+files, and are close enough for most purposes. A precision of
+.IR N
+means that each point will be within
+.RI 1/ N
+font units of the exact interpolated value. (A font unit is generally
+1/7200 inch for a 10-point font.) The default is 5.
+'
 .SH SEE ALSO
 .BR mmafm (1)
 '

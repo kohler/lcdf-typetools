@@ -244,8 +244,8 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
 }
 
 void
-MyFont::interpolate_charstrings(ErrorHandler *errh)
+MyFont::interpolate_charstrings(int precision, ErrorHandler *errh)
 {
-  Type1MMRemover remover(this, &_weight_vector, errh);
+  Type1MMRemover remover(this, &_weight_vector, precision, errh);
   remover.run();
 }

@@ -27,6 +27,8 @@ class AfmReader {
   mutable bool _metrics_sets_warned;
   mutable int _y_width_warned;
   
+  void lwarning(const char *, ...) const;
+  void lerror(const char *, ...) const;
   void composite_warning() const;
   void metrics_sets_warning() const;
   void y_width_warning() const;

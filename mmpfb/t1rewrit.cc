@@ -7,11 +7,13 @@
 #include <stdio.h>
 
 
-Type1CharstringGen::Type1CharstringGen()
-  : _precision(5)
+Type1CharstringGen::Type1CharstringGen(int precision = 5)
 {
+  if (precision >= 0 && precision <= 107)
+    _precision = precision;
+  else
+    _precision = 5;
 }
-
 
 void
 Type1CharstringGen::gen_number(double float_val)
@@ -90,8 +92,9 @@ Type1CharstringGen::output(Type1Charstring &cs)
  **/
 
 Type1MMRemover::Type1MMRemover(Type1Font *font, Vector<double> *wv,
-			       ErrorHandler *errh)
-  : _font(font), _weight_vector(wv), _subr_count(font->subr_count()),
+			       int precision, ErrorHandler *errh)
+  : _font(font), _weight_vector(wv), _precision(precision),
+    _subr_count(font->subr_count()),
     _subr_done(_subr_count, 0),
     _subr_prefix(_subr_count, (Type1Charstring *)0),
     _subr_contains_mm(_subr_count, 0),
@@ -209,7 +212,8 @@ Type1MMRemover::run()
 
 Type1OneMMRemover::Type1OneMMRemover(Type1MMRemover *remover)
   : Type1Interp(remover->program(), remover->weight_vector()),
-    _remover(remover)
+    _remover(remover), _prefix_gen(remover->precision()),
+    _main_gen(remover->precision())
 {
 }
 

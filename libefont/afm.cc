@@ -42,45 +42,59 @@ AfmReader::read(const Filename &fn, ErrorHandler *errh)
 }
 
 
+void
+AfmReader::lwarning(const char *format, ...) const
+{
+  va_list val;
+  va_start(val, format);
+  _errh->verror(ErrorHandler::Warning, _l.landmark(), format, val);
+  va_end(val);
+}
+
+void
+AfmReader::lerror(const char *format, ...) const
+{
+  va_list val;
+  va_start(val, format);
+  _errh->verror(ErrorHandler::Error, _l.landmark(), format, val);
+  va_end(val);
+}
+
 GlyphIndex
 AfmReader::find_err(PermString name, const char *) const
 {
   GlyphIndex gi = _afm->find(name);
   if (gi < 0)
-    _errh->error(_l, "character `%s' doesn't exist", name.cc());
+    lerror("character `%s' doesn't exist", name.cc());
   return gi;
 }
-
 
 void
 AfmReader::composite_warning() const
 {
   if (!_composite_warned)
-    _errh->warning(_l, "composite fonts not supported");
+    lwarning("composite fonts not supported");
   _composite_warned = 1;
 }
-
 
 void
 AfmReader::metrics_sets_warning() const
 {
   if (!_metrics_sets_warned)
-    _errh->warning(_l, "only metrics set 0 is supported");
+    lwarning("only metrics set 0 is supported");
   _metrics_sets_warned = 1;
 }
-
 
 void
 AfmReader::y_width_warning() const
 {
   if (_y_width_warned < 40) {
-    _errh->warning(_l, "character has a nonzero Y width");
+    lwarning("character has a nonzero Y width");
     _y_width_warned++;
     if (_y_width_warned == 40)
-      _errh->warning(_l, "I won't warn you again.");
+      lwarning("I won't warn you again.");
   }
 }
-
 
 void
 AfmReader::no_match_warning(const char *context = 0) const
@@ -90,11 +104,11 @@ AfmReader::no_match_warning(const char *context = 0) const
   PermString keyword = _l.keyword();
   if (!keyword) return;
   if (_l.key_matched()) {
-    _errh->warning(_l, context ? "bad `%s' command in %s:"
+    lwarning(context ? "bad `%s' command in %s:"
 		   : "bad `%s' command:", keyword.cc(), context);
-    _errh->warning(_l, "field %d %s", _l.fail_field(), _l.message().cc());
+    lwarning("field %d %s", _l.fail_field(), _l.message().cc());
   } else
-    _errh->warning(_l, context ? "unknown command `%s' in %s"
+    lwarning(context ? "unknown command `%s' in %s"
 		   : "unknown command `%s'", keyword.cc(), context);
   _l.clear_message();
 }
@@ -331,7 +345,7 @@ AfmReader::read_char_metric_data() const
      case 'L':
       if (l.is("L %/s %/s", &ligright, &ligresult)) {
 	if (!n)
-	  _errh->error(_l, "ligature given, but character has no name");
+	  lerror("ligature given, but character has no name");
 	else {
 	  ligature_left.push_back(n);
 	  ligature_right.push_back(ligright);
@@ -378,10 +392,10 @@ AfmReader::read_char_metric_data() const
   
   // create the character
   if (!n)
-    _errh->warning(_l, "character without a name ignored");
+    lwarning("character without a name ignored");
   else {
     if (_afm->find(n) != -1)
-      _errh->warning(_l, "character %s defined twice", n.cc());
+      lwarning("character %s defined twice", n.cc());
     
     GlyphIndex gi = _afm->add_glyph(n);
     
@@ -434,7 +448,7 @@ AfmReader::read_char_metrics() const
     GlyphIndex resultgi = find_err(ligature_result[i], "ligature");
     if (leftgi >= 0 && rightgi >= 0 && resultgi >= 0)
       if (_afm->add_lig(leftgi, rightgi, resultgi))
-	_errh->warning(_l, "duplicate ligature; first ignored");
+	lwarning("duplicate ligature; first ignored");
   }
   ligature_left.clear();
   ligature_right.clear();
@@ -484,7 +498,7 @@ AfmReader::read_kerns() const
       }
       if (l.isall("KPH <%x> <%x> %g %g", (int *)0, (int *)0,
 		  (double *)0, (double *)0)) {
-	_errh->warning(_l, "KPH not supported");
+	lwarning("KPH not supported");
 	break;
       }
       goto invalid;
@@ -496,7 +510,7 @@ AfmReader::read_kerns() const
 	// A kern with 0 amount is NOT useless!
 	// (Because of multiple masters.)
 	if (_afm->add_kern(leftgi, rightgi, _afm->add_kv(kx)))
-	  _errh->warning(l, "duplicate kern; first pair ignored");
+	  lwarning("duplicate kern; first pair ignored");
       break;
       
      case 'S':

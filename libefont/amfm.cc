@@ -226,7 +226,7 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
    * Interpolate the old AFM data into the new. */
   
   afm->interpolate_dimens(*_masters[m].afm, weight_vector[m], false);
-    
+  
   for (m++; m < _nmasters; m++)
     if (weight_vector[m])
       afm->interpolate_dimens(*_masters[m].afm, weight_vector[m], true);
@@ -278,6 +278,24 @@ AmfmReader::add_amcp_file(Slurper &slurper, AmfmMetrics *amfm, ErrorHandler *err
 
 
 void
+AmfmReader::lwarning(const char *format, ...) const
+{
+  va_list val;
+  va_start(val, format);
+  _errh->verror(ErrorHandler::Warning, _l.landmark(), format, val);
+  va_end(val);
+}
+
+void
+AmfmReader::lerror(const char *format, ...) const
+{
+  va_list val;
+  va_start(val, format);
+  _errh->verror(ErrorHandler::Error, _l.landmark(), format, val);
+  va_end(val);
+}
+
+void
 AmfmReader::no_match_warning(const char *context = 0) const
 {
   // keyword() will fail (and a warning won't get printed) only if the string
@@ -285,11 +303,11 @@ AmfmReader::no_match_warning(const char *context = 0) const
   PermString keyword = _l.keyword();
   if (!keyword) return;
   if (_l.key_matched()) {
-    _errh->warning(_l, context ? "bad `%s' command in %s:"
+    lwarning(context ? "bad `%s' command in %s:"
 		   : "bad `%s' command:", keyword.cc(), context);
-    _errh->warning(_l, "field %d %s", _l.fail_field(), _l.message().cc());
+    lwarning("field %d %s", _l.fail_field(), _l.message().cc());
   } else
-    _errh->warning(_l, context ? "unknown command `%s' in %s"
+    lwarning(context ? "unknown command `%s' in %s"
 		   : "unknown command `%s'", keyword.cc(), context);
   _l.clear_message();
 }
@@ -450,7 +468,7 @@ AmfmReader::read()
       if (l.is("WeightVector")) {
 	Vector<double> wv;
 	if (!read_simple_array(wv) || !_mmspace)
-	  _errh->error(_l, "bad WeightVector");
+	  lerror("bad WeightVector");
 	else
 	  _mmspace->set_weight_vector(wv);
 	break;
@@ -474,9 +492,9 @@ AmfmReader::read()
     return false;
   }
   
-  PinnedErrorHandler pin_errh(_l, _errh);
+  PinnedErrorHandler pin_errh(_l.landmark(), _errh);
   if (!_amfm->sanity(&pin_errh)) {
-    _errh->error(_l.landmark().whole_file(),
+    _errh->lerror(_l.landmark().whole_file(),
 		 "bad AMFM file (missing or inconsistent information)");
     return false;
   }
@@ -520,7 +538,7 @@ AmfmReader::read_amcp_file()
   }
   
   if (_mmspace && !_mmspace->ndv() && !_mmspace->cdv() && lines_read)
-    _errh->warning(_l, "no conversion programs in .amcp file");
+    lwarning("no conversion programs in .amcp file");
 }
 
 
@@ -556,7 +574,7 @@ AmfmReader::read_positions() const
   return;
   
  error:
-  _errh->error(_l, "bad BlendDesignPositions");
+  lerror("bad BlendDesignPositions");
 }
 
 
@@ -584,7 +602,7 @@ AmfmReader::read_normalize() const
   return;
   
  error:
-  _errh->error(_l, "bad BlendDesignPositions");
+  lerror("bad BlendDesignPositions");
 }
 
 
@@ -605,7 +623,7 @@ AmfmReader::read_axis_types() const
   return;
   
  error:
-  _errh->error(_l, "bad BlendAxisTypes");
+  lerror("bad BlendAxisTypes");
 }
 
 
@@ -614,7 +632,7 @@ AmfmReader::read_axis(int ax) const
 {
   bool ok = _mmspace && ax < naxes();
   if (!ok)
-    _errh->error(_l, "bad axis number %d", ax);
+    lerror("bad axis number %d", ax);
   else
     _mmspace->check();
   
@@ -660,7 +678,7 @@ AmfmReader::read_master(int m) const
   AmfmMaster *amfmm;
   AmfmMaster dummy;
   if (m >= nmasters()) {
-    _errh->error(_l, "too many masters");
+    lerror("too many masters");
     amfmm = &dummy;
   } else {
     if (!_amfm->_masters)
@@ -700,7 +718,7 @@ AmfmReader::read_master(int m) const
       if (_l.is("WeightVector")) {
 	if (!(read_simple_array(amfmm->weight_vector) &&
 	      amfmm->weight_vector.size() == nmasters())) {
-	  _errh->error(_l, "bad WeightVector");
+	  lerror("bad WeightVector");
 	  amfmm->weight_vector.clear();
 	}
 	break;
