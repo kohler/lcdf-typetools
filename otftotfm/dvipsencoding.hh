@@ -28,10 +28,11 @@ class DvipsEncoding { public:
     
     void apply_ligkern(GsubEncoding &, ErrorHandler *) const;
     
+    enum { J_BAD = -1, J_NOKERN = 100, J_NOLIG = 101, J_NOLIGKERN = 102,
+	   J_ALL = 0x7FFFFFFF };
+    
   private:
 
-    enum { J_BAD = -1, J_NOKERN = 100, J_ALL = 0x7FFFFFFF };
-    
     struct Ligature {
 	int c1, c2, join, d;
     };

@@ -258,9 +258,25 @@ nothing to remove that glyph from the input encoding; for instance:
 As with LIGKERN comments, you can specify multiple UNICODINGs per line;
 separate them with spaced semicolons.
 .PP
-Otftopl will use any unused spaces in the encoding for ligatures. Ligatures
-are mapped to their usual locations in the input encoding when possible.
-Ligatures and kerns can be inhibited by LIGKERN comments, as in
+Glyphs used by ligatures are added to the encoding in any empty spaces,
+using their original locations when possible.
+.PP
+Ligatures can be added and kerns inhibited by LIGKERN comments in the
+encoding, as in
+.M afm2tfm 1 .
+Otftopl also supports extended syntax for inhibiting ligatures.
+This command:
+.nf
+  % LIGKERN \fIglyph1\fR {L} \fIglyph2\fR ;
+.fi
+inhibits any ligature between
+.I glyph1
+and
+.IR glyph2 .
+"{K}", like "{}", inhibits kerns only, and "{LK}" and "{KL}" inhibit both
+ligatures and kerns. Otftopl parses "% LIGKERNX" comments as well as "%
+LIGKERN" comments; it's probably better to put the extended commands in
+LIGKERNX blocks, since that avoids confusing
 .M afm2tfm 1 .
 '
 .SH "BUGS"

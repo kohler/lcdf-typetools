@@ -166,6 +166,18 @@ GsubEncoding::simplify_ligatures(bool add_fake)
     }
 }
 
+void
+GsubEncoding::simplify_kerns()
+{
+    if (_kerns.size()) {
+	// given two kerns for the same set of characters, prefer the first,
+	// since it came from an earlier lookup
+	std::stable_sort(_kerns.begin(), _kerns.end());
+	Kern *end = std::unique(_kerns.begin(), _kerns.end());
+	_kerns.resize(end - _kerns.begin());
+    }
+}
+
 namespace {
 struct Slot { int position, new_position, value; };
 
@@ -294,6 +306,18 @@ GsubEncoding::add_twoligature(int code1, int code2, int outcode)
     l.out = outcode;
     l.skip = 0;
     _ligatures.push_back(l);
+}
+
+void
+GsubEncoding::remove_ligatures(int code1, int code2)
+{
+    for (int i = 0; i < _ligatures.size(); i++) {
+	Ligature &l = _ligatures[i];
+	if (l.in.size() == 2
+	    && (code1 == CODE_ALL || l.in[0] == code1)
+	    && (code2 == CODE_ALL || l.in[1] == code2))
+	    l.in[0] = -1;
+    }
 }
 
 void

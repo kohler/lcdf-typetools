@@ -694,8 +694,8 @@ do_file(const OpenType::Font &otf, String outfile,
 	    encoding.apply(subs[i], !dvipsenc_literal);
 	encoding.apply_substitutions();
     }
-
     encoding.simplify_ligatures(false);
+    
     if (dvipsenc_literal)
 	encoding.cut_encoding(256);
     else
@@ -711,6 +711,7 @@ do_file(const OpenType::Font &otf, String outfile,
 	for (int i = 0; i < poss.size(); i++)
 	    encoding.apply(poss[i]);
     }
+    encoding.simplify_kerns();
 
     // apply LIGKERN commands to the result
     dvipsenc.apply_ligkern(encoding, errh);

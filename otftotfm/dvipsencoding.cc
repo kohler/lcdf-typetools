@@ -245,42 +245,53 @@ comment_tokenize(const String &s, int &pos_in, int &line)
     }
 }
 
-static const char * const ligops[] = {
-    "=:", "|=:", "|=:>", "=:|", "=:|>", "|=:|", "|=:|>", "|=:|>>"
+
+static struct { const char *s; int v; } ligkern_ops[] = {
+    { "=:", 0 }, { "|=:", 1 }, { "|=:>", 2 }, { "=:|", 3 },
+    { "=:|>", 4 },{ "|=:|", 5 }, { "|=:>", 6 }, { "|=:|>>", 7 },
+    { "{}", DvipsEncoding::J_NOKERN }, { "{K}", DvipsEncoding::J_NOKERN },
+    { "{L}", DvipsEncoding::J_NOLIG }, { "{LK}", DvipsEncoding::J_NOLIGKERN },
+    { "{KL}", DvipsEncoding::J_NOLIGKERN }, { "{k}", DvipsEncoding::J_NOKERN },
+    { "{l}", DvipsEncoding::J_NOLIG }, { "{lk}", DvipsEncoding::J_NOLIGKERN },
+    { "{kl}", DvipsEncoding::J_NOLIGKERN }, { 0, 0 }
 };
+
+static int
+find_ligkern_op(const String &s)
+{
+    for (int i = 0; ligkern_ops[i].s; i++)
+	if (ligkern_ops[i].s == s)
+	    return ligkern_ops[i].v;
+    return -1;
+}
 
 int
 DvipsEncoding::parse_ligkern(const Vector<String> &v)
 {
+    int op;
     if (v.size() == 3) {
 	if (v[0] == "||" && v[1] == "=") {
 	    String data = v[2];
 	    char *endptr;
 	    _boundary_char = strtol(data.c_str(), &endptr, 10);
 	    return (*endptr == 0 && _boundary_char < _e.size() ? 0 : -1);
-	} else if (v[1] == "{}") {
+	} else if ((op = find_ligkern_op(v[1])) >= J_NOKERN) {
 	    int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
 	    int bv = (v[2] == "*" ? J_ALL : encoding_of(v[2]));
 	    if (av < 0 || bv < 0)
 		return -1;
-	    else {
-		Ligature lig = { av, bv, J_NOKERN, 0 };
-		_lig.push_back(lig);
-		return 0;
-	    }
+	    Ligature lig = { av, bv, op, 0 };
+	    _lig.push_back(lig);
+	    return 0;
 	} else
 	    return -1;
-    } else if (v.size() == 4) {
+    } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= 0 && op < 8) {
 	int av = encoding_of(v[0]), bv = encoding_of(v[1]), cv = encoding_of(v[3]);
 	if (av < 0 || bv < 0 || cv < 0)
 	    return -1;
-	for (int i = 0; i < 8; i++)
-	    if (ligops[i] == v[2]) {
-		Ligature lig = { av, bv, i, cv };
-		_lig.push_back(lig);
-		return 0;
-	    }
-	return -1;
+	Ligature lig = { av, bv, op, cv };
+	_lig.push_back(lig);
+	return 0;
     } else
 	return -1;
 }
@@ -373,6 +384,12 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 	    if (parse_words(token.substring(8), &DvipsEncoding::parse_ligkern) < 0)
 		errh->lerror(landmark(filename, line), "parse error in LIGKERN");
 	    
+	} else if (token.length() >= 9
+		   && memcmp(token.data(), "LIGKERNX", 8) == 0
+		   && isspace(token[8])) {
+	    if (parse_words(token.substring(8), &DvipsEncoding::parse_ligkern) < 0)
+		errh->lerror(landmark(filename, line), "parse error in LIGKERNX");
+	    
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace(token[9])) {
@@ -446,7 +463,12 @@ DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh) co
 	    /* nada */;
 	else if (l.join == J_NOKERN)
 	    gsub_encoding.remove_kerns(l.c1, l.c2);
-	else if (l.join == 0)
+	else if (l.join == J_NOLIG)
+	    gsub_encoding.remove_ligatures(l.c1, l.c2);
+	else if (l.join == J_NOLIGKERN) {
+	    gsub_encoding.remove_ligatures(l.c1, l.c2);
+	    gsub_encoding.remove_kerns(l.c1, l.c2);
+	} else if (l.join == 0)
 	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d);
 	else {
 	    static int complex_join_warning = 0;
