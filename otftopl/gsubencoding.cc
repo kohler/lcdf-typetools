@@ -83,10 +83,26 @@ GsubEncoding::apply(const Substitution &s)
 void
 GsubEncoding::apply_substitutions()
 {
-    // in reverse order, for earlier substitutions must take precedence
+    // in reverse order, so earlier substitutions take precedence
     for (int i = _substitutions.size() - 2; i >= 0; i -= 2)
 	_encoding[_substitutions[i]] = _substitutions[i+1];
     _substitutions.clear();
+}
+
+void
+GsubEncoding::apply(const Positioning &p)
+{
+    if (p.is_pairkern()) {
+	int code1 = encoding(p.left_glyph());
+	int code2 = encoding(p.right_glyph());
+	if (code1 >= 0 && code2 >= 0) {
+	    Kern k;
+	    k.left = code1;
+	    k.right = code2;
+	    k.amount = p.left().adx;
+	    _kerns.push_back(k);
+	}
+    }
 }
 
 int
@@ -207,6 +223,12 @@ GsubEncoding::shrink_encoding(int size)
     for (int i = 0; i < _fake_ligatures.size(); i++)
 	reassign_ligature(_fake_ligatures[i], reassignment);
 
+    // reassign code points in kern vector
+    for (int i = 0; i < _kerns.size(); i++) {
+	_kerns[i].left = reassignment[_kerns[i].left + 1];
+	_kerns[i].right = reassignment[_kerns[i].right + 1];
+    }
+
     // finally, shrink encoding for real
     _encoding.resize(size, 0);
 }
@@ -225,6 +247,23 @@ GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, 
 	    code2.push_back(l.in[1]);
 	    outcode.push_back(l.out);
 	    skip.push_back(l.skip);
+	    n++;
+	}
+    }
+    return n;
+}
+
+int
+GsubEncoding::kerns(int code1, Vector<int> &code2, Vector<int> &amount) const
+{
+    int n = 0;
+    code2.clear();
+    amount.clear();
+    for (int i = 0; i < _kerns.size(); i++) {
+	const Kern &k = _kerns[i];
+	if (k.left == code1) {
+	    code2.push_back(k.right);
+	    amount.push_back(k.amount);
 	    n++;
 	}
     }

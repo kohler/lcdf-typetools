@@ -204,7 +204,7 @@ output_vpl(EfontCFF::Font *cff, const GsubEncoding &gse, FILE *f)
     Vector<PermString> glyph_names;
     cff->glyph_names(glyph_names);
     Vector<String> glyph_ids;
-    Vector<String> glyph_comments;
+    Vector<String> glyph_comments(256, String());
     for (int i = 0; i < 256; i++)
 	if (OpenType::Glyph g = gse.glyph(i)) {
 	    PermString name = glyph_names[g];
@@ -213,30 +213,24 @@ output_vpl(EfontCFF::Font *cff, const GsubEncoding &gse, FILE *f)
 		expected_name = digit_names[i - '0'];
 	    else if ((i >= 'A' && i <= 'Z') || (i >= 'a' && i <= 'z'))
 		expected_name = PermString((char)i);
-	    if (expected_name
-		&& name.length() >= expected_name.length()
-		&& memcmp(name.c_str(), expected_name.c_str(), expected_name.length()) == 0) {
+	    if (expected_name && name.length() >= expected_name.length()
+		&& memcmp(name.c_str(), expected_name.c_str(), expected_name.length()) == 0)
 		glyph_ids.push_back("C " + String((char)i));
-		if (name.length() == expected_name.length())
-		    glyph_comments.push_back(String());
-		else
-		    glyph_comments.push_back(" (COMMENT " + String(name) + ")");
-	    } else {
+	    else
 		glyph_ids.push_back("D " + String(i));
-		glyph_comments.push_back(" (COMMENT " + String(name) + ")");
-	    }
-	} else {
+	    if (name != expected_name)
+		glyph_comments[i] = " (COMMENT " + String(name) + ")";
+	} else
 	    glyph_ids.push_back("X");
-	    glyph_comments.push_back(String());
-	}
 
     // LIGTABLE
     fprintf(f, "(LIGTABLE\n");
-    Vector<int> lig_code2, lig_outcode, lig_skip;
+    Vector<int> lig_code2, lig_outcode, lig_skip, kern_code2, kern_amt;
     for (int i = 0; i < 256; i++)
 	if (gse.glyph(i)) {
 	    int any_lig = gse.twoligatures(i, lig_code2, lig_outcode, lig_skip);
-	    if (any_lig) {
+	    int any_kern = gse.kerns(i, kern_code2, kern_amt);
+	    if (any_lig || any_kern) {
 		fprintf(f, "   (LABEL %s)%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
 		for (int j = 0; j < lig_code2.size(); j++)
 		    fprintf(f, "   (LIG %s %s)%s%s\n",
@@ -244,6 +238,11 @@ output_vpl(EfontCFF::Font *cff, const GsubEncoding &gse, FILE *f)
 			    glyph_ids[lig_outcode[j]].c_str(),
 			    glyph_comments[lig_code2[j]].c_str(),
 			    glyph_comments[lig_outcode[j]].c_str());
+		for (int j = 0; j < kern_code2.size(); j++)
+		    fprintf(f, "   (KRN %s R %d)%s\n",
+			    glyph_ids[kern_code2[j]].c_str(),
+			    kern_amt[j],
+			    glyph_comments[kern_code2[j]].c_str());
 		fprintf(f, "   (STOP)\n");
 	    }
 	}
@@ -319,6 +318,7 @@ do_file(const char *infn, const char *outfn,
     
     // XXX
     OpenType::Gsub gsub(otf.table("GSUB"), &cerrh);
+    OpenType::Gpos gpos(otf.table("GPOS"), &cerrh);
 
     // get the list of available features for our script
     Vector<int> fids;
@@ -326,7 +326,7 @@ do_file(const char *infn, const char *outfn,
     gsub.script_list().features("latn", 0U, required_fid, fids, &cerrh);
 
     // print out available feature tags
-    const OpenType::FeatureList &flist = gsub.feature_list();
+    const OpenType::FeatureList &flist = gpos.feature_list();
     if (required_fid >= 0)
 	fprintf(stderr, "<%s>! ", flist.feature_tag(required_fid).text().cc());
     for (int i = 0; i < fids.size(); i++)
@@ -343,23 +343,31 @@ do_file(const char *infn, const char *outfn,
     Vector<PermString> glyph_names;
     font.glyph_names(glyph_names);
 
-    // get lookups
+    // get lookups for GSUB
     Vector<int> lookups;
     gsub.feature_list().lookups(required_fid, fids, interesting_features, lookups, errh);
     Vector<OpenType::Substitution> subs;
     for (int i = 0; i < lookups.size(); i++) {
-	fprintf(stderr, "Lookup %d:\n", lookups[i]);
 	OpenType::GsubLookup l = gsub.lookup(lookups[i]);
 	l.unparse_automatics(subs);
-	for (int i = 0; i < subs.size(); i++) {
+	for (int i = 0; i < subs.size(); i++)
 	    encoding.apply(subs[i]);
-	    fprintf(stderr, "  %s\n", subs[i].unparse(&glyph_names).c_str());
-	}
 	encoding.apply_substitutions();
     }
 
     encoding.simplify_ligatures(false);
     encoding.shrink_encoding(256);
+    
+    // get lookups for GPOS
+    gpos.feature_list().lookups(required_fid, fids, interesting_features, lookups, errh);
+    Vector<OpenType::Positioning> poss;
+    for (int i = 0; i < lookups.size(); i++) {
+	OpenType::GposLookup l = gpos.lookup(lookups[i]);
+	l.unparse_automatics(poss);
+	for (int i = 0; i < poss.size(); i++)
+	    encoding.apply(poss[i]);
+    }
+
     //encoding.unparse(&glyph_names);
 
     if (!outfn || strcmp(outfn, "-") == 0) {

@@ -1,11 +1,13 @@
 #ifndef T1SICLE_GSUBENCODING_HH
 #define T1SICLE_GSUBENCODING_HH
 #include <efont/otfgsub.hh>
+#include <efont/otfgpos.hh>
 
 class GsubEncoding { public:
 
     typedef Efont::OpenType::Glyph Glyph;
     typedef Efont::OpenType::Substitution Substitution;
+    typedef Efont::OpenType::Positioning Positioning;
 
     GsubEncoding();
     // default destructor
@@ -18,11 +20,13 @@ class GsubEncoding { public:
 
     void apply(const Substitution &);
     void apply_substitutions();
+    void apply(const Positioning &);
 
     void simplify_ligatures(bool add_fake);
     void shrink_encoding(int size);
 
     int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const;
+    int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
     
     void unparse(const Vector<PermString> * = 0) const;
     
@@ -40,6 +44,13 @@ class GsubEncoding { public:
     };
     Vector<Ligature> _ligatures;
     Vector<Ligature> _fake_ligatures;
+
+    struct Kern {
+	Glyph left;
+	Glyph right;
+	int amount;
+    };
+    Vector<Kern> _kerns;
     
     void apply_single_substitution(Glyph, Glyph);
     static void reassign_ligature(Ligature &, const Vector<int> &);
