@@ -31,7 +31,8 @@ class GsubLookup { public:
     GsubLookup(const Data &) throw (Error);
     int type() const			{ return _d.u16(0); }
     uint16_t flags() const		{ return _d.u16(2); }
-    void unparse_automatics(Vector<Substitution> &) const;
+    void unparse_automatics(const Gsub &, Vector<Substitution> &) const;
+    bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum {
 	HEADERSIZE = 6, RECSIZE = 2,
 	L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
@@ -47,6 +48,7 @@ class GsubSingle { public:
     Coverage coverage() const throw ();
     Glyph map(Glyph) const;
     void unparse(Vector<Substitution> &) const;
+    bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum { HEADERSIZE = 6, FORMAT2_RECSIZE = 2 };
   private:
     Data _d;
@@ -58,6 +60,7 @@ class GsubMultiple { public:
     Coverage coverage() const throw ();
     bool map(Glyph, Vector<Glyph> &) const;
     void unparse(Vector<Substitution> &, bool alternate = false) const;
+    bool apply(const Glyph *, int pos, int n, Substitution &, bool alternate = false) const;
     enum { HEADERSIZE = 6, RECSIZE = 2,
 	   SEQ_HEADERSIZE = 2, SEQ_RECSIZE = 2 };
   private:
@@ -70,9 +73,34 @@ class GsubLigature { public:
     Coverage coverage() const throw ();
     bool map(const Vector<Glyph> &, Glyph &, int &) const;
     void unparse(Vector<Substitution> &) const;
+    bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum { HEADERSIZE = 6, RECSIZE = 2,
 	   SET_HEADERSIZE = 2, SET_RECSIZE = 2,
 	   LIG_HEADERSIZE = 4, LIG_RECSIZE = 2 };
+  private:
+    Data _d;
+};
+
+class GsubContext { public:
+    GsubContext(const Data &) throw (Error);
+    // default destructor
+    Coverage coverage() const throw ();
+    void unparse(const Gsub &, Vector<Substitution> &) const;
+    enum { F3_HSIZE = 6, SUBRECSIZE = 4 };
+  private:
+    Data _d;
+    static void f3_unparse(const Data &, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &, Vector<Substitution> &);
+    friend class GsubChainContext;
+};
+
+class GsubChainContext { public:
+    GsubChainContext(const Data &) throw (Error);
+    // default destructor
+    Coverage coverage() const throw ();
+    void unparse(const Gsub &, Vector<Substitution> &) const;
+    enum { F1_HEADERSIZE = 6, F1_RECSIZE = 2,
+	   F1_SRS_HSIZE = 2, F1_SRS_RSIZE = 2,
+	   F3_HSIZE = 4, F3_INPUT_HSIZE = 2, F3_LOOKAHEAD_HSIZE = 2, F3_SUBST_HSIZE = 2 };
   private:
     Data _d;
 };
@@ -91,6 +119,7 @@ class Substitution { public:
     // ligature substitution
     Substitution(Glyph in1, Glyph in2, Glyph out);
     Substitution(const Vector<Glyph> &in, Glyph out);
+    Substitution(int nin, const Glyph *in, Glyph out);
     
     ~Substitution();
     
@@ -101,6 +130,7 @@ class Substitution { public:
 
     // types
     operator bool() const;
+    bool is_noop() const;
     bool is_single() const;
     bool is_multiple() const;
     bool is_alternate() const;
@@ -109,15 +139,23 @@ class Substitution { public:
     // extract data
     Glyph in_glyph() const;
     bool in_glyphs(Vector<Glyph> &) const;
+    int in_nglyphs() const;
+    bool in_matches(int pos, Glyph) const;
     Glyph out_glyph() const;
     bool out_glyphs(Vector<Glyph> &) const;
+    const Glyph *out_glyphptr() const;
+    int out_nglyphs() const;
+
+    // alter
+    Substitution in_out_append_glyph(Glyph) const;
+    bool out_alter(const Substitution &, int) throw ();
     
-    void unparse(StringAccum &, const Vector<PermString> * = 0) const;
-    String unparse(const Vector<PermString> * = 0) const;
+    void unparse(StringAccum &, const Vector<PermString> * = &debug_glyph_names) const;
+    String unparse(const Vector<PermString> * = &debug_glyph_names) const;
     
   private:
 
-    enum { T_NONE = 0, T_GLYPH, T_COVERAGE, T_GLYPHS };
+    enum { T_NONE = 0, T_GLYPH, T_GLYPHS, T_COVERAGE };
     typedef union {
 	Glyph gid;
 	Glyph *gids;	// first entry is a count
@@ -141,11 +179,15 @@ class Substitution { public:
     static void assign(Substitute &, uint8_t &, int, const Glyph *);
     static void assign(Substitute &, uint8_t &, const Coverage &);
     static void assign(Substitute &, uint8_t &, const Substitute &, uint8_t);
+    static void assign_append(Substitute &, uint8_t &, const Substitute &, uint8_t, Glyph);
     static bool substitute_in(const Substitute &, uint8_t, const Coverage &);
     static bool substitute_in(const Substitute &, uint8_t, const GlyphSet &);
 
-    static Glyph extract_glyph(const Substitute &, uint8_t);
-    static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &);
+    static Glyph extract_glyph(const Substitute &, uint8_t) throw ();
+    static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &) throw ();
+    static const Glyph *extract_glyphptr(const Substitute &, uint8_t) throw ();
+    static int extract_nglyphs(const Substitute &, uint8_t, bool coverage_ok) throw ();
+    static bool matches(const Substitute &, uint8_t, int pos, Glyph) throw ();
     
 };
 
@@ -208,6 +250,18 @@ Substitution::in_glyphs(Vector<Glyph> &v) const
     return extract_glyphs(_in, _in_is, v);
 }
 
+inline int
+Substitution::in_nglyphs() const
+{
+    return extract_nglyphs(_in, _in_is, true);
+}
+
+inline bool
+Substitution::in_matches(int pos, Glyph g) const
+{
+    return matches(_in, _in_is, pos, g);
+}
+
 inline Glyph
 Substitution::out_glyph() const
 {
@@ -218,6 +272,25 @@ inline bool
 Substitution::out_glyphs(Vector<Glyph> &v) const
 {
     return extract_glyphs(_out, _out_is, v);
+}
+
+inline const Glyph *
+Substitution::out_glyphptr() const
+{
+    return extract_glyphptr(_out, _out_is);
+}
+
+inline int
+Substitution::out_nglyphs() const
+{
+    return extract_nglyphs(_out, _out_is, false);
+}
+
+inline StringAccum &
+operator<<(StringAccum &sa, const Substitution &sub)
+{
+    sub.unparse(sa);
+    return sa;
 }
 
 }}
