@@ -33,7 +33,7 @@ void
 Type1CharstringGen::gen_number(double float_val)
 {
     int val = (int)floor(float_val);
-    int frac = (int)(float_val * _precision) - (val * _precision);
+    int frac = (int)floor(float_val * _f_precision) - (val * _precision);
     if (frac == _precision)
 	val++, frac = 0;
     fprintf(stderr, "%.12g %d %d\n", float_val, val, frac);

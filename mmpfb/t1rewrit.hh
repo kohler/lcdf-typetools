@@ -6,24 +6,26 @@
 
 class Type1CharstringGen {
   
-  StringAccum _ncs;
-  int _precision;
+    StringAccum _ncs;
+    int _precision;
+    double _f_precision;
+    double _f_rounder;
   
- public:
+  public:
   
-  Type1CharstringGen(int precision = 5);
+    Type1CharstringGen(int precision = 5);
 
-  void clear()				{ _ncs.clear(); }
-  char *data() const			{ return _ncs.data(); }
-  int length() const			{ return _ncs.length(); }
-  
-  void gen_number(double);
-  void gen_command(int);
-  void gen_stack(Type1Interp &);
-  
-  Type1Charstring *output();
-  void output(Type1Charstring &);
-  
+    void clear()			{ _ncs.clear(); }
+    char *data() const			{ return _ncs.data(); }
+    int length() const			{ return _ncs.length(); }
+
+    void gen_number(double);
+    void gen_command(int);
+    void gen_stack(Type1Interp &);
+
+    Type1Charstring *output();
+    void output(Type1Charstring &);
+
 };
 
 
