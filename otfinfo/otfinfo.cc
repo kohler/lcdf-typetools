@@ -48,12 +48,13 @@ using namespace Efont;
 
 #define VERSION_OPT		301
 #define HELP_OPT		302
-#define QUERY_SCRIPTS_OPT	303
-#define QUERY_FEATURES_OPT	304
+#define QUIET_OPT		303
+#define VERBOSE_OPT		304
 #define SCRIPT_OPT		305
 
-#define QUIET_OPT		333
-#define VERBOSE_OPT		338
+#define QUERY_SCRIPTS_OPT	320
+#define QUERY_FEATURES_OPT	321
+#define QUERY_SIZE_OPT		322
 
 Clp_Option options[] = {
     
@@ -256,7 +257,7 @@ collect_feature_descriptions(const OpenType::ScriptList &script_list, const Open
 	for (int i = -1; i < fids.size(); i++) {
 	    int fid = (i < 0 ? required_fid : fids[i]);
 	    if (fid >= 0) {
-		OpenType::Tag tag = feature_list.feature_tag(fid);
+		OpenType::Tag tag = feature_list.tag(fid);
 		const char *s = tag.feature_description();
 		output.push_back(tag.text() + String("\t") + (s ? s : "<unknown feature>"));
 	    }

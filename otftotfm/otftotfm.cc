@@ -649,7 +649,7 @@ find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &f
 	// mark features as having been used
 	for (int j = (required < 0 ? 0 : -1); j < fids.size(); j++) {
 	    int fid = (j < 0 ? required : fids[j]);
-	    OpenType::Tag ftag = features.feature_tag(fid);
+	    OpenType::Tag ftag = features.tag(fid);
 	    if (features.lookups(fid, lookupids, errh) < 0)
 		lookupids.clear();
 	    for (int k = 0; k < lookupids.size(); k++) {
@@ -1264,7 +1264,7 @@ collect_feature_descriptions(const OpenType::ScriptList &script_list, const Open
 	for (int i = -1; i < fids.size(); i++) {
 	    int fid = (i < 0 ? required_fid : fids[i]);
 	    if (fid >= 0) {
-		OpenType::Tag tag = feature_list.feature_tag(fid);
+		OpenType::Tag tag = feature_list.tag(fid);
 		const char *s = tag.feature_description();
 		output.push_back(tag.text() + String("\t") + (s ? s : "<unknown feature>"));
 	    }
