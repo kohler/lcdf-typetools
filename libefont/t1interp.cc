@@ -92,7 +92,7 @@ CharstringInterp::interpret(const CharstringProgram *program, const Charstring *
 	initialize();
 	_program = program;
 	cs->process(*this);
-	return _error != errOK;
+	return _error == errOK;
     } else
 	return error(errGlyph, 0);
 }
