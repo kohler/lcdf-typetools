@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
-Version 0.1
+Version 0.2   3.Jun.2003
+
+* Fix CFF parsing bugs and configure errors reported by Vladimir Volovich
+  <vvv@vsu.ru>.
+
+
+Version 0.1   2.Jun.2003
 
 * Initial release.
