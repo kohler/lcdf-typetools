@@ -1,10 +1,22 @@
 LCDF Typetools NEWS
 
-Version 1.50b3   
+Version 1.50   26.Aug.2003
+
+* Minor compilation fix; problem reported by Nelson H.F. Beebe.
+
+
+Version 1.50b4   26.Aug.2003
+
+* otfinfo: Minor compilation fix from Tom Kacvinsky.
+
+
+Version 1.50b3   25.Aug.2003 
 
 * cfftot1: Emit UniqueID as an integer. Reported by Tom Kacvinsky.
 
 * otftotfm: '--without-kpathsea' fix. Patch provided by Adam Lindsay.
+
+* More compilation fixes provided by Tom Kacvinsky.
 
 
 Version 1.50b2   24.Aug.2003

@@ -1,4 +1,4 @@
-LCDF-TYPETOOLS 1.50b2
+LCDF-TYPETOOLS 1.50
 ===================
 
 USAGE
@@ -24,8 +24,8 @@ program in PFA or PFB format.  See MMINSTANCE NOTES, below, and the manual
 page 'mmpfb/mmpfb.1' for more information.
 
    Otfinfo reports information about OpenType fonts, such as the features
-they support and the contents of the 'size' optical size feature.  See the
-manual page 'otfinfo/otfinfo.1' for more information.
+they support and the contents of their 'size' optical size features.  See
+the manual page 'otfinfo/otfinfo.1' for more information.
 
    Otftotfm creates TeX font metrics and encodings that correspond to a
 PostScript-flavored OpenType font.  It will interpret glyph positionings,

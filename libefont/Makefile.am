@@ -31,6 +31,9 @@ libefont_a_SOURCES = \
 	t1rw.cc \
 	t1unparser.cc
 
+libefont_a_LIBADD = @TEMPLATE_OBJS@
+CLEANFILES = @TEMPLATE_OBJS@
+
 INCLUDES = -I$(top_srcdir)/include
 
 srclinks:

@@ -401,7 +401,7 @@ particular purpose.\n");
 	    continue;
 
 	PrefixErrorHandler stdout_cerrh(&stdout_errh, input_file + ":");
-	ErrorHandler *result_errh = (input_files.size() > 1 ? &stdout_cerrh : &stdout_errh);
+	ErrorHandler *result_errh = (input_files.size() > 1 ? static_cast<ErrorHandler *>(&stdout_cerrh) : static_cast<ErrorHandler *>(&stdout_errh));
 	if (query == QUERY_SCRIPTS_OPT)
 	    do_query_scripts(otf, &cerrh, result_errh);
 	else if (query == QUERY_FEATURES_OPT)

@@ -10,5 +10,6 @@ cfftot1_SOURCES = cfftot1.cc \
 cfftot1_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
+CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = cfftot1.1

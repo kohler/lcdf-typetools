@@ -18,5 +18,6 @@ otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@ @
 otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@
 
 INCLUDES = -I$(top_srcdir)/include
+CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otftotfm.1

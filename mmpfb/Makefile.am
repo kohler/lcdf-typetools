@@ -12,5 +12,6 @@ mmpfb_SOURCES = myfont.cc myfont.hh \
 mmpfb_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
+CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = mmpfb.1

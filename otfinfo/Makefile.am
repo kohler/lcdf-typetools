@@ -11,5 +11,6 @@ otfinfo_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 otfinfo_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
+CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otfinfo.1
