@@ -6,6 +6,10 @@
 #include <lcdf/straccum.hh>
 #include <cstdio>
 #include <cerrno>
+#if defined(_MSDOS) || defined(_WIN32)
+# include <fcntl.h>
+# include <io.h>
+#endif
 
 String
 read_file(String filename, ErrorHandler *errh, bool warning)
@@ -14,6 +18,10 @@ read_file(String filename, ErrorHandler *errh, bool warning)
     if (!filename || filename == "-") {
 	filename = "<stdin>";
 	f = stdin;
+#if defined(_MSDOS) || defined(_WIN32)
+	// Set the file mode to binary
+	_setmode(_fileno(f), _O_BINARY);
+#endif
     } else if (!(f = fopen(filename.c_str(), "rb"))) {
 	errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, strerror(errno));
 	return String();
