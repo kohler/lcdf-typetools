@@ -3,8 +3,7 @@
 #endif
 #include "strtonum.h"
 #include <stdlib.h>
-#ifdef BROKEN_STRTOARITH
-# define strtol good_strtol
+#ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif
 #ifdef __cplusplus
@@ -27,12 +26,7 @@ strtonumber(const char *f, char **endf)
   v = strtol((char *)f, endf, 10);
 
   // handle any possible decimal part
-  if (**endf == '.') {
-    if (v < 0)
-      return v - strtod(*endf, endf);
-    else
-      return v + strtod(*endf, endf);
-  } else if (**endf == 'E' || **endf == 'e')
+  if (**endf == '.' || **endf == 'E' || **endf == 'e')
     return strtod((char *)f, endf);
   else
     return v;
