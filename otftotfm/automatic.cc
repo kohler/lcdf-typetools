@@ -161,7 +161,7 @@ getodir(int o, ErrorHandler *errh)
 		slash = dir.length();
 	    String subdir = dir.substring(0, slash);
 	    if (access(subdir.c_str(), F_OK) < 0
-		&& !nocreate
+		&& !no_create
 		&& mkdir(subdir.c_str(), 0777) < 0)
 		goto kpathsea_done;
 	}
@@ -242,7 +242,7 @@ update_odir(int o, String file, ErrorHandler *errh)
 	return;
 
     // return if nocreate
-    if (nocreate) {
+    if (no_create) {
 	errh->message("would update %sls-R for %s/%s", writable_texdir.c_str(), directory.c_str(), file.c_str());
 	return;
     } else if (verbose)
@@ -392,8 +392,8 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
     if (map_file == "" || map_file == "-")
 	fputs(mapline.c_str(), stdout);
     else {
-	// report nocreate/verbose
-	if (nocreate) {
+	// report no_create/verbose
+	if (no_create) {
 	    errh->message("would update %s for %s", map_file.c_str(), String(fontname).c_str());
 	    return 0;
 	} else if (verbose)

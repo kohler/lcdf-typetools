@@ -7,7 +7,7 @@ enum { O_ENCODING = 0, O_TFM, O_PL, O_VF, O_VPL, O_TYPE1, O_MAP, O_MAP_PARENT,
        NUMODIR };
 
 extern bool automatic;
-extern bool nocreate;
+extern bool no_create;
 String getodir(int o, ErrorHandler *);
 bool setodir(int o, const String &);
 bool set_vendor(const String &);

@@ -3,7 +3,7 @@
 #include <lcdf/string.hh>
 class ErrorHandler;
 
-extern bool nocreate;
+extern bool no_create;
 extern bool verbose;
 String read_file(String filename, ErrorHandler *, bool warn = false);
 String printable_filename(const String &);

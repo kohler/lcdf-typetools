@@ -79,7 +79,7 @@ pathname_filename(const String &path)
 int
 mysystem(const char *command, ErrorHandler *errh)
 {
-    if (nocreate) {
+    if (no_create) {
 	errh->message("would run %s", command);
 	return 0;
     } else {

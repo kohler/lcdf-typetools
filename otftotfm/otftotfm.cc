@@ -209,7 +209,7 @@ int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 
 
 bool automatic = false;
 bool verbose = false;
-bool nocreate = false;
+bool no_create = false;
 bool quiet = false;
 
 
@@ -628,7 +628,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	  const OpenType::Font &family_otf, const Cff::Font *family_cff,
 	  bool vpl, String filename, ErrorHandler *errh)
 {
-    if (nocreate)
+    if (no_create)
 	errh->message("would create %s", filename.c_str());
     else {
 	if (verbose)
@@ -689,7 +689,7 @@ write_encoding_file(String &filename, const String &encoding_name,
     FILE *f;
     int ok_retval = (access(filename.c_str(), R_OK) >= 0 ? 0 : 1);
 
-    if (nocreate) {
+    if (no_create) {
 	errh->message((ok_retval ? "would create encoding file %s" : "would update encoding file %s"), filename.c_str());
 	return ok_retval;
     } else if (verbose)
@@ -853,7 +853,7 @@ output_encoding(const Metrics &metrics,
 static int
 temporary_file(String &filename, ErrorHandler *errh)
 {
-    if (nocreate)
+    if (no_create)
 	return 0;		// random number suffices
     
 #ifdef HAVE_MKSTEMP
@@ -899,7 +899,7 @@ output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
 
     bool vpl = vf_filename;
 
-    if (nocreate) {
+    if (no_create) {
 	errh->message("would write %s to temporary file", (vpl ? "VPL" : "PL"));
 	pl_filename = "<temporary>";
     } else {
@@ -918,7 +918,7 @@ output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
     
     int status = mysystem(command.c_str(), errh);
 
-    if (!nocreate)
+    if (!no_create)
 	unlink(pl_filename.c_str());
     
     if (status != 0)
@@ -954,11 +954,11 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	if (automatic) {
 	    // erase old virtual font
 	    String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
-	    if (nocreate)
+	    if (no_create)
 		errh->message("would remove potential VF file '%s'", vf.c_str());
 	    else if (verbose)
 		errh->message("removing potential VF file '%s'", vf.c_str());
-	    if (!nocreate && unlink(vf.c_str()) < 0 && errno != ENOENT)
+	    if (!no_create && unlink(vf.c_str()) < 0 && errno != ENOENT)
 		errh->error("removing %s: %s", vf.c_str(), strerror(errno));
 	}
     } else {
@@ -1555,7 +1555,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case NOCREATE_OPT:
-	    nocreate = clp->negated;
+	    no_create = clp->negated;
 	    break;
 
 	  case KPATHSEA_DEBUG_OPT:
