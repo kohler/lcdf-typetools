@@ -487,11 +487,11 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 	    "(FONTDIMEN\n", design_size, design_units, design_units);
 
     // figure out font dimensions
-    CharstringBounds boundser(cff);
+    Transform font_xform;
     if (extend)
-	boundser.extend(extend);
+	font_xform.scale(1, extend);
     if (slant)
-	boundser.shear(slant);
+	font_xform.shear(slant);
     int bounds[4], width;
     double du = (design_units == 1000 ? 1. : design_units / 1000.);
     
@@ -605,7 +605,6 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
     // CHARACTERs
     Vector<Setting> settings;
     StringAccum sa;
-    Transform start_transform = boundser.transform();
     
     for (int i = 0; i < 256; i++)
 	if (metrics.setting(i, settings)) {
@@ -613,11 +612,11 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 
 	    // unparse settings into DVI commands
 	    sa.clear();
-	    boundser.init(start_transform);
+	    CharstringBounds boundser(font_xform);
 	    for (int j = 0; j < settings.size(); j++) {
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
-		    boundser.run_incr(*(cff->glyph(metrics.base_glyph(s.x))));
+		    boundser.char_bounds(cff->glyph_context(metrics.base_glyph(s.x)));
 		    sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
 		} else if (s.op == Setting::MOVE && vpl) {
 		    boundser.translate(s.x, s.y);
@@ -634,7 +633,7 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 	    }
 
 	    // output information
-	    boundser.bounds(bounds, width);
+	    boundser.output(bounds, width);
 	    fprint_real(f, "   (CHARWD", width, du);
 	    if (bounds[3] > 0)
 		fprint_real(f, "   (CHARHT", bounds[3], du);

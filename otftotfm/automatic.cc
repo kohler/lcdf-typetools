@@ -103,7 +103,6 @@ manual for more information. The current TEXMF path is\n\
     }
     writable_texdir_tried = true;
 }
-#endif
 
 static String
 get_vendor()
@@ -111,18 +110,19 @@ get_vendor()
     return (vendor ? vendor : String(DEFAULT_VENDOR));
 }
 
+static String
+get_typeface()
+{
+    return (typeface ? typeface : String(DEFAULT_TYPEFACE));
+}
+#endif
+
 bool
 set_vendor(const String &s)
 {
     bool had = (bool) vendor;
     vendor = s;
     return !had;
-}
-
-static String
-get_typeface()
-{
-    return (typeface ? typeface : String(DEFAULT_TYPEFACE));
 }
 
 bool

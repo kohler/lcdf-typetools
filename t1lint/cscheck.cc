@@ -25,29 +25,16 @@ using namespace Efont;
 #define CHECK_STACK_CP(numargs)	do { CHECK_STACK(numargs); if (!_cp_exists) return error(errCurrentPoint, cmd); } while (0)
 
 
-CharstringChecker::CharstringChecker(EfontProgram *program)
-  : CharstringInterp(program), _errh(0)
+CharstringChecker::CharstringChecker()
+  : CharstringInterp(), _errh(0)
 {
 }
 
-CharstringChecker::CharstringChecker(EfontProgram *program, const Vector<double> &weight)
-  : CharstringInterp(program, weight), _errh(0)
+CharstringChecker::CharstringChecker(const Vector<double> &weight)
+  : CharstringInterp(weight), _errh(0)
 {
 }
 
-
-void
-CharstringChecker::init()
-{
-  CharstringInterp::init();
-  _started = false;
-  _flex = false;
-  _hstem = _hstem3 = _vstem = _vstem3 = false;
-  _h_hstem.clear();
-  _h_vstem.clear();
-  _h_hstem3.clear();
-  _h_vstem3.clear();
-}
 
 void
 CharstringChecker::stem(double y, double dy, const char *cmd_name)
@@ -449,11 +436,20 @@ CharstringChecker::type1_command(int cmd)
 }
 
 bool
-CharstringChecker::check(Charstring &cs, ErrorHandler *errh)
+CharstringChecker::check(const CharstringContext &g, ErrorHandler *errh)
 {
   _errh = errh;
   int old_errors = errh->nerrors();
-  init();
-  cs.run(*this);
+
+  _started = false;
+  _flex = false;
+  _hstem = _hstem3 = _vstem = _vstem3 = false;
+  _h_hstem.clear();
+  _h_vstem.clear();
+  _h_hstem3.clear();
+  _h_vstem3.clear();
+
+  CharstringInterp::interpret(g);
+  
   return errh->nerrors() == old_errors;
 }

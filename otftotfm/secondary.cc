@@ -123,11 +123,8 @@ char_bounds(int bounds[4], int &width,
 	    const Efont::Cff::Font *cff, const Efont::OpenType::Cmap &cmap,
 	    uint32_t uni)
 {
-    if (Efont::OpenType::Glyph g = cmap.map_uni(uni)) {
-	Efont::Charstring *cs = cff->glyph(g);
-	Efont::CharstringBounds boundser(cff);
-	boundser.run(*cs, bounds, width);
-	return true;
-    } else
+    if (Efont::OpenType::Glyph g = cmap.map_uni(uni))
+	return Efont::CharstringBounds::bounds(cff->glyph_context(g), bounds, width);
+    else
 	return false;
 }

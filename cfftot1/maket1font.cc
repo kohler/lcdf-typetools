@@ -217,13 +217,13 @@ enum { CSR_GLYPH = 0x00000000, CSR_SUBR = 0x80000000,
 
 class MakeType1CharstringInterp : public CharstringInterp { public:
 
-    MakeType1CharstringInterp(EfontProgram *program, int precision = 5);
+    MakeType1CharstringInterp(int precision = 5);
     ~MakeType1CharstringInterp();
 
     Type1Font *output() const			{ return _output; }
     
-    void run(Type1Font *, PermString glyph_definer, ErrorHandler *);
-    void run(const Charstring &, Type1Charstring &, ErrorHandler *);
+    void run(const CharstringProgram *, Type1Font *, PermString glyph_definer, ErrorHandler *);
+    void run(const CharstringContext &, Type1Charstring &, ErrorHandler *);
 
     bool type2_command(int, const uint8_t *, int *);
     
@@ -256,7 +256,7 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     // current glyph
     Point _sidebearing;
     Point _width;
-    enum State { S_INITIAL, S_OPEN, S_CLOSED };
+    enum State { S_INITIAL, S_OPEN, S_CLOSED, S_SEAC };
     State _state;
 
     Vector<double> _stem_pos;
@@ -366,8 +366,8 @@ MakeType1CharstringInterp::Subr::has_call(Subr *s) const
  * MakeType1CharstringInterp
  **/
 
-MakeType1CharstringInterp::MakeType1CharstringInterp(EfontProgram *program, int precision)
-    : CharstringInterp(program), _csgen(precision), _errh(0),
+MakeType1CharstringInterp::MakeType1CharstringInterp(int precision)
+    : _csgen(precision), _errh(0),
       _hr_csgen(precision), _hr_firstsubr(-1), _max_flex_height(0),
       _flex_message(0), _cur_glyph(-1)
 {
@@ -440,9 +440,17 @@ MakeType1CharstringInterp::act_width(int, const Point &p)
 }
 
 void
-MakeType1CharstringInterp::act_seac(int, double, double, double, int, int)
+MakeType1CharstringInterp::act_seac(int, double asb, double adx, double ady, int bchar, int achar)
 {
-    assert(0);
+    if (_state == S_INITIAL)
+	gen_sbw(false);
+    gen_number(asb);
+    gen_number(adx);
+    gen_number(ady);
+    gen_number(bchar);
+    gen_number(achar);
+    gen_command(CS::cSeac);
+    _state = S_SEAC;
 }
 
 void
@@ -872,7 +880,7 @@ MakeType1CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left
 }
 
 void
-MakeType1CharstringInterp::run(const Charstring &cs, Type1Charstring &out, ErrorHandler *errh)
+MakeType1CharstringInterp::run(const CharstringContext &g, Type1Charstring &out, ErrorHandler *errh)
 {
     _sidebearing = _width = Point(0, 0);
     _state = S_INITIAL;
@@ -881,45 +889,45 @@ MakeType1CharstringInterp::run(const Charstring &cs, Type1Charstring &out, Error
     _stem_width.clear();
     _nhstem = 0;
     _errh = errh;
-    CharstringInterp::init();
     
-    cs.run(*this);
+    CharstringInterp::interpret(g);
+    
     if (_state == S_INITIAL)
 	gen_sbw(false);
-    _csgen.gen_command(CS::cEndchar);
+    if (_state != S_SEAC)
+	_csgen.gen_command(CS::cEndchar);
     
     _csgen.output(out);
     _errh = 0;
 }
 
 void
-MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer, ErrorHandler *errh)
+MakeType1CharstringInterp::run(const CharstringProgram *program, Type1Font *output, PermString glyph_definer, ErrorHandler *errh)
 {
     _output = output;
     _hr_firstsubr = output->nsubrs();
 
-    const EfontProgram *p = program();
-    _glyphs.assign(p->nglyphs(), 0);
-    _subrs.assign(p->nsubrs(), 0);
-    _subr_bias = p->subr_bias();
-    _gsubrs.assign(p->ngsubrs(), 0);
-    _gsubr_bias = p->gsubr_bias();
+    _glyphs.assign(program->nglyphs(), 0);
+    _subrs.assign(program->nsubrs(), 0);
+    _subr_bias = program->subr_bias();
+    _gsubrs.assign(program->ngsubrs(), 0);
+    _gsubr_bias = program->gsubr_bias();
 
     // run over the glyphs
-    int nglyphs = p->nglyphs();
+    int nglyphs = program->nglyphs();
     Type1Charstring receptacle;
     for (int i = 0; i < nglyphs; i++) {
 	_cur_subr = _glyphs[i] = new Subr(CSR_GLYPH | i);
 	_cur_glyph = i;
-	run(*p->glyph(i), receptacle, errh);
+	run(program->glyph_context(i), receptacle, errh);
 #if 0
-	PermString n = p->glyph_name(i);
-	if (n == "one") {
-	    fprintf(stderr, "%s was %s\n", n.c_str(), CharstringUnparser::unparse(*p->glyph(i)).c_str());
+	PermString n = program->glyph_name(i);
+	if (1 || n == "one") {
+	    fprintf(stderr, "%s was %s\n", n.c_str(), CharstringUnparser::unparse(*program->glyph(i)).c_str());
 	    fprintf(stderr, "%s == %s\n", n.c_str(), CharstringUnparser::unparse(receptacle).c_str());
 	}
 #endif
-	output->add_glyph(Type1Subr::make_glyph(p->glyph_name(i), receptacle, glyph_definer));
+	output->add_glyph(Type1Subr::make_glyph(program->glyph_name(i), receptacle, glyph_definer));
     }
 
     // unify Subrs
@@ -1115,8 +1123,8 @@ cleartomark"));
     output->add_dict_size(Type1Font::dPrivate, 3);
 
     // add glyphs
-    MakeType1CharstringInterp maker(font, 5);
-    maker.run(output, " |-", errh);
+    MakeType1CharstringInterp maker(5);
+    maker.run(font, output, " |-", errh);
     
     return output;
 }

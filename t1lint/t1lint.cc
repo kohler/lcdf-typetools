@@ -329,12 +329,12 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     if (mmspace)
 	weight_vector = mmspace->default_weight_vector();
     int gc = font->nglyphs();
-    CharstringChecker cc(font, weight_vector);
+    CharstringChecker cc(weight_vector);
     
     for (int i = 0; i < gc; i++) {
       ContextErrorHandler derrh
 	(&cerrh, String("While interpreting `") + font->glyph_name(i) + "':");
-      cc.check(*font->glyph(i), &derrh);
+      cc.check(font->glyph_context(i), &derrh);
     }
   }
     

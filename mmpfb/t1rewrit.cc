@@ -31,13 +31,12 @@ class HintReplacementDetector : public CharstringInterp { public:
     HintReplacementDetector(Type1Font *, int);
     HintReplacementDetector(Type1Font *, const Vector<double> &, int);
 
-    bool is_hint_replacement(int i) const	{ return _hint_replacements[i]; }
+    bool is_hint_replacement(int i) const { return _hint_replacements[i]; }
     int call_count(int i) const		{ return _call_counts[i]; }
 
-    void init();
     bool type1_command(int);
 
-    bool run(Type1Charstring &);
+    bool run(Type1Font *, Type1Charstring &);
 
   private:
 
@@ -49,24 +48,17 @@ class HintReplacementDetector : public CharstringInterp { public:
 };
 
 HintReplacementDetector::HintReplacementDetector(Type1Font *f, int b)
-    : CharstringInterp(f),
+    : CharstringInterp(),
       _hint_replacements(f->nsubrs(), 0), _call_counts(f->nsubrs(), 0),
       _count_calls_below(b)
 {
 }
 
 HintReplacementDetector::HintReplacementDetector(Type1Font *f, const Vector<double> &wv, int b)
-    : CharstringInterp(f, wv),
+    : CharstringInterp(wv),
       _hint_replacements(f->nsubrs(), 0), _call_counts(f->nsubrs(), 0),
       _count_calls_below(b)
 {
-}
-
-void
-HintReplacementDetector::init()
-{
-    _subr_level = 0;
-    CharstringInterp::init();
 }
 
 bool
@@ -108,7 +100,7 @@ HintReplacementDetector::type1_command(int cmd)
 	      return error(errSubr, which);
 
 	  _subr_level++;
-	  subr_cs->run(*this);
+	  subr_cs->process(*this);
 	  _subr_level--;
      
 	  if (error() != errOK)
@@ -156,10 +148,10 @@ HintReplacementDetector::type1_command(int cmd)
 }
 
 bool
-HintReplacementDetector::run(Type1Charstring &cs)
+HintReplacementDetector::run(Type1Font *f, Type1Charstring &cs)
 {
-    init();
-    cs.run(*this);
+    _subr_level = 0;
+    CharstringInterp::interpret(f, &cs);
     return error() == errOK;
 }
 
@@ -168,7 +160,20 @@ HintReplacementDetector::run(Type1Charstring &cs)
  * Type1OneMMRemover
  **/
 
-class Type1OneMMRemover: public CharstringInterp {
+class Type1OneMMRemover: public CharstringInterp { public:
+
+    Type1OneMMRemover(Type1MMRemover *);
+
+    bool type1_command(int);
+  
+    inline bool run_fresh_subr(const Type1Charstring &, bool);
+    inline bool run_fresh_glyph(const Type1Charstring &);
+    inline bool rerun_subr(const Type1Charstring &);
+  
+    Type1Charstring *output_prefix();
+    void output_main(Type1Charstring &);
+  
+  private:
   
     Type1MMRemover *_remover;
     Type1CharstringGen _prefix_gen;
@@ -183,20 +188,6 @@ class Type1OneMMRemover: public CharstringInterp {
     bool itc_command(int command, int on_stack);
 
     bool run(const Type1Charstring &, bool, bool, bool);
-  
-  public:
-  
-    Type1OneMMRemover(Type1MMRemover *);
-
-    void init();
-    bool type1_command(int);
-  
-    inline bool run_fresh_subr(const Type1Charstring &, bool);
-    inline bool run_fresh_glyph(const Type1Charstring &);
-    inline bool rerun_subr(const Type1Charstring &);
-  
-    Type1Charstring *output_prefix();
-    void output_main(Type1Charstring &);
   
 };
 
@@ -228,25 +219,17 @@ class Type1OneMMRemover: public CharstringInterp {
 
 
 Type1OneMMRemover::Type1OneMMRemover(Type1MMRemover *remover)
-    : CharstringInterp(remover->program(), remover->weight_vector()),
+    : CharstringInterp(remover->weight_vector()),
       _remover(remover), _prefix_gen(remover->precision()),
       _main_gen(remover->precision())
 {
-}
-
-void
-Type1OneMMRemover::init()
-{
-    Vector<double> *scratch = scratch_vector();
-    scratch->assign(scratch->size(), UNKDOUBLE);
-    CharstringInterp::init();
 }
 
 inline void
 Type1OneMMRemover::run_subr(Type1Charstring *cs)
 {
     _subr_level++;
-    cs->run(*this);
+    cs->process(*this);
     _subr_level--;
 }
 
@@ -453,9 +436,10 @@ Type1OneMMRemover::run(const Type1Charstring &cs,
     _in_prefix = do_prefix;
     _subr_level = (fresh ? 0 : 1);
     _must_expand = false;
-    init();
+    Vector<double> *scratch = scratch_vector();
+    scratch->assign(scratch->size(), UNKDOUBLE);
   
-    cs.run(*this);
+    CharstringInterp::interpret(_remover->program(), &cs);
 
     if (in_subr) {
 	_main_gen.gen_stack(*this, CS::cReturn);
@@ -510,23 +494,24 @@ Type1OneMMRemover::output_main(Type1Charstring &cs)
  * Type1BadCallRemover
  **/
 
-class Type1BadCallRemover: public CharstringInterp {
-
-    Type1CharstringGen _gen;
-  
-  public:
+class Type1BadCallRemover: public CharstringInterp { public:
   
     Type1BadCallRemover(Type1MMRemover *);
 
     bool type1_command(int);
 
     bool run(Type1Charstring &);
+
+  private:
+
+    Type1CharstringGen _gen;
+    Type1MMRemover *_remover;
   
 };
 
 Type1BadCallRemover::Type1BadCallRemover(Type1MMRemover *remover)
-    : CharstringInterp(remover->program(), remover->weight_vector()),
-      _gen(remover->precision())
+    : CharstringInterp(remover->weight_vector()),
+      _gen(remover->precision()), _remover(remover)
 {
 }
 
@@ -559,8 +544,7 @@ bool
 Type1BadCallRemover::run(Type1Charstring &cs)
 {
     _gen.clear();
-    init();
-    cs.run(*this);
+    CharstringInterp::interpret(_remover->program(), &cs);
     _gen.output(cs);
     return error() == errOK;
 }
@@ -586,7 +570,7 @@ Type1MMRemover::Type1MMRemover(Type1Font *font, const Vector<double> &wv,
     HintReplacementDetector hr(font, wv, 0);
     for (int i = 0; i < _font->nglyphs(); i++)
 	if (Type1Subr *g = _font->glyph_x(i))
-	    hr.run(g->t1cs());
+	    hr.run(font, g->t1cs());
     for (int i = 0; i < _nsubrs; i++)
 	if (hr.is_hint_replacement(i))
 	    _hint_replacement_subr[i] = 1;
@@ -684,7 +668,7 @@ Type1MMRemover::run()
     HintReplacementDetector hr(_font, _weight_vector, 0);
     for (int i = 0; i < _font->nglyphs(); i++)
 	if (Type1Subr *g = _font->glyph_x(i))
-	    hr.run(g->t1cs());
+	    hr.run(_font, g->t1cs());
     // don't remove first four subroutines!
     for (int subrno = 4; subrno < _nsubrs; subrno++)
 	if (hr.call_count(subrno) || _hint_replacement_subr[subrno]) {
@@ -733,14 +717,13 @@ Type1MMRemover::run()
 
 class SubrExpander : public CharstringInterp { public:
 
-    SubrExpander(Type1Font *);
+    SubrExpander();
   
     void set_renumbering(const Vector<int> *v) { _renumbering = v; }
 
-    void init();
     bool type1_command(int);
   
-    bool run(Type1Charstring &);
+    bool run(Type1Font *, Type1Charstring &);
 
   private:
   
@@ -750,16 +733,9 @@ class SubrExpander : public CharstringInterp { public:
   
 };
 
-SubrExpander::SubrExpander(Type1Font *font)
-    : CharstringInterp(font), _gen(0), _renumbering(0)
+SubrExpander::SubrExpander()
+    : CharstringInterp(), _gen(0), _renumbering(0)
 {
-}
-
-void
-SubrExpander::init()
-{
-    _subr_level = 0;
-    CharstringInterp::init();
 }
 
 bool
@@ -779,7 +755,7 @@ SubrExpander::type1_command(int cmd)
 	  pop();
 	  if (Charstring *subr_cs = get_subr(subrno)) {
 	      _subr_level++;
-	      subr_cs->run(*this);
+	      subr_cs->process(*this);
 	      _subr_level--;
 	  }
 	  return !done();
@@ -810,11 +786,11 @@ SubrExpander::type1_command(int cmd)
 }
 
 bool
-SubrExpander::run(Type1Charstring &cs)
+SubrExpander::run(Type1Font *font, Type1Charstring &cs)
 {
     _gen.clear();
-    init();
-    cs.run(*this);
+    _subr_level = 0;
+    CharstringInterp::interpret(font, &cs);
     _gen.output(cs);
     return error() == errOK;
 }
@@ -834,7 +810,7 @@ Type1SubrRemover::Type1SubrRemover(Type1Font *font, ErrorHandler *errh)
     for (int i = 0; i < _font->nglyphs(); i++) {
 	Type1Subr *g = _font->glyph_x(i);
 	if (g)
-	    hr.run(g->t1cs());
+	    hr.run(_font, g->t1cs());
     }
 
     // save necessary subroutines
@@ -896,7 +872,6 @@ Type1SubrRemover::run(int lower_to)
     qsort(&permute[0], _nsubrs, sizeof(int), sort_permute_compare);
     
     // mark first portion of `permute' to be removed    
-    SubrExpander rem0(_font);
     int removed = 0;
     for (int i = 0; i < _nsubrs; i++) {
 	int p = permute[i];
@@ -914,17 +889,18 @@ Type1SubrRemover::run(int lower_to)
 		renumber_pos++;
 	    _renumbering[i] = renumber_pos++;
 	}
+    SubrExpander rem0;
     rem0.set_renumbering(&_renumbering);
 
     // go through and change them all
     for (int i = 0; i < _nsubrs; i++) {
 	Type1Subr *s = _font->subr_x(i);
 	if (s && _renumbering[i] >= 0)
-	    rem0.run(s->t1cs());
+	    rem0.run(_font, s->t1cs());
     }
     for (int i = 0; i < _font->nglyphs(); i++)
 	if (Type1Subr *g = _font->glyph_x(i))
-	    rem0.run(g->t1cs());
+	    rem0.run(_font, g->t1cs());
 
     // actually remove subroutines
     _font->renumber_subrs(_renumbering);

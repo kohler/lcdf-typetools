@@ -7,15 +7,14 @@ class ErrorHandler;
 
 class CharstringChecker : public Efont::CharstringInterp { public:
   
-    CharstringChecker(Efont::EfontProgram *);
-    CharstringChecker(Efont::EfontProgram *, const Vector<double> &weight_vec);
+    CharstringChecker();
+    CharstringChecker(const Vector<double> &weight_vec);
   
-    void init();
     bool error(int, int);
     bool callothersubr();
     bool type1_command(int);
   
-    bool check(Efont::Charstring &, ErrorHandler *);
+    bool check(const Efont::CharstringContext &, ErrorHandler *);
   
   private:
     

@@ -51,12 +51,17 @@ EXTRA_DIST = \
 	glyphlist.txt \
 	7t.enc
 
+liblcdf libefont cfftot1:
+	cd $@ && $(MAKE)
+libefont: liblcdf
+cfftot1: liblcdf libefont
+
 srclinks:
 	cd liblcdf && $(MAKE) srclinks
 	cd libefont && $(MAKE) srclinks
 
 versionize:
-	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/mmafm/mmafm.1 $(top_srcdir)/mmpfb/mmpfb.1 $(top_srcdir)/otftotfm/otftotfm.1 $(top_srcdir)/t1lint/t1lint.1
+	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/mmafm/mmafm.1 $(top_srcdir)/mmpfb/mmpfb.1 $(top_srcdir)/otfinfo/otfinfo.1 $(top_srcdir)/otftotfm/otftotfm.1 $(top_srcdir)/t1lint/t1lint.1 $(top_srcdir)/t1testpage/t1testpage.1
 	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(top_srcdir)/README
 
-.PHONY: srclinks rpm
+.PHONY: srclinks rpm liblcdf libefont cfftot1

@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.60   7.Oct.2003
+
+* cfftot1: Support fonts using the 'seac' operator. Requested by Ralf
+  Koenig.
+
+
 Version 1.52   4.Sep.2003
 
 * otftotfm: Add --design-size option requested by Johannes Kuester.
