@@ -2,7 +2,9 @@
 #define VECTOR_HH
 #include <assert.h>
 #include <stdlib.h>
-#ifdef HAVE_NEW_H
+#ifdef HAVE_NEW
+# include <new>
+#elif defined(HAVE_NEW_H)
 # include <new.h>
 #else
 static inline void *operator new(size_t, void *v) { return v; }
