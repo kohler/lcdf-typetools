@@ -17,7 +17,7 @@
 
 namespace Efont {
 
-const char * const EfontCFF::operator_names[] = {
+const char * const Cff::operator_names[] = {
     "version", "Notice", "FullName", "FamilyName",
     "Weight", "FontBBox", "BlueValues", "OtherBlues",
     "FamilyBlues", "FamilyOtherBlues", "StdHW", "StdVW",
@@ -38,7 +38,7 @@ const char * const EfontCFF::operator_names[] = {
     "FDArray", "FDSelect", "FontName"
 };
 
-const int EfontCFF::operator_types[] = {
+const int Cff::operator_types[] = {
     tSID, tSID, tSID, tSID,	// version, Notice, FullName, FamilyName
     tSID, tArray4, tP+tArray, tP+tArray, // Weight, FontBBox, BlueValues, OtherBlues
     tP+tArray, tP+tArray, tP+tNumber, tP+tNumber, // FamBlues, FamOthBlues, StdHW, StdVW
@@ -131,7 +131,7 @@ static const char *standard_strings[] = {
     "Ydieresissmall", "001.000", "001.001", "001.002", "001.003", "Black",
     "Bold", "Book", "Light", "Medium", "Regular", "Roman", "Semibold"
 };
-static PermString standard_permstrings[EfontCFF::NSTANDARD_STRINGS];
+static PermString standard_permstrings[Cff::NSTANDARD_STRINGS];
 static HashMap<PermString, int> standard_permstrings_map(-1);
 
 static const int standard_encoding[] = {
@@ -264,7 +264,7 @@ static const int expert_subset_charset[] = {
 #define POS_GT(pos1, pos2)	((unsigned)(pos1) > (unsigned)(pos2))
 
 
-EfontCFF::EfontCFF(const String &s, ErrorHandler *errh)
+Cff::Cff(const String &s, ErrorHandler *errh)
     : _data_string(s), _data(reinterpret_cast<const uint8_t *>(_data_string.data())), _len(_data_string.length()),
       _strings_map(-2)
 {
@@ -274,7 +274,7 @@ EfontCFF::EfontCFF(const String &s, ErrorHandler *errh)
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
-EfontCFF::~EfontCFF()
+Cff::~Cff()
 {
     for (int i = 0; i < _gsubrs_cs.size(); i++)
 	delete _gsubrs_cs[i];
@@ -285,7 +285,7 @@ EfontCFF::~EfontCFF()
  */
 
 int
-EfontCFF::parse_header(ErrorHandler *errh)
+Cff::parse_header(ErrorHandler *errh)
 {
     if (_gsubrs_index.error() >= 0) // already done
 	return 0;
@@ -342,7 +342,7 @@ EfontCFF::parse_header(ErrorHandler *errh)
 }
 
 int
-EfontCFF::sid(PermString s)
+Cff::sid(PermString s)
 {
     // check standard strings
     if (standard_permstrings_map["a"] < 0)
@@ -372,7 +372,7 @@ EfontCFF::sid(PermString s)
 }
 
 String
-EfontCFF::sid_string(int sid) const
+Cff::sid_string(int sid) const
 {
     if (sid < 0)
 	return String();
@@ -390,7 +390,7 @@ EfontCFF::sid_string(int sid) const
 }
 
 PermString
-EfontCFF::sid_permstring(int sid) const
+Cff::sid_permstring(int sid) const
 {
     if (sid < 0)
 	return PermString();
@@ -414,7 +414,7 @@ EfontCFF::sid_permstring(int sid) const
 }
 
 int
-EfontCFF::font_offset(int findex, int &offset, int &length) const
+Cff::font_offset(int findex, int &offset, int &length) const
 {
     if (findex < 0 || findex >= nfonts())
 	return -ENOENT;
@@ -424,7 +424,7 @@ EfontCFF::font_offset(int findex, int &offset, int &length) const
 }
 
 int
-EfontCFF::font_offset(PermString name, int &offset, int &length) const
+Cff::font_offset(PermString name, int &offset, int &length) const
 {
     for (int i = 0; i < _name_index.size(); i++)
 	if (_name_index[i] == name && name)
@@ -446,7 +446,7 @@ subr_bias(int charstring_type, int nsubrs)
 }
 
 Charstring *
-EfontCFF::gsubr(int i)
+Cff::gsubr(int i)
 {
     i += subr_bias(2, ngsubrs());
     if (i < 0 || i >= ngsubrs())
@@ -465,16 +465,16 @@ EfontCFF::gsubr(int i)
 
 
 /*****
- * EfontCFF::Charset
+ * Cff::Charset
  **/
 
-EfontCFF::Charset::Charset(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
+Cff::Charset::Charset(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
     assign(cff, pos, nglyphs, errh);
 }
 
 void
-EfontCFF::Charset::assign(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
+Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
     if (!errh)
 	errh = ErrorHandler::silent_handler();
@@ -503,7 +503,7 @@ EfontCFF::Charset::assign(const EfontCFF *cff, int pos, int nglyphs, ErrorHandle
 }
 
 void
-EfontCFF::Charset::assign(const int *data, int size, int nglyphs)
+Cff::Charset::assign(const int *data, int size, int nglyphs)
 {
     if (size < nglyphs)
 	size = nglyphs;
@@ -513,7 +513,7 @@ EfontCFF::Charset::assign(const int *data, int size, int nglyphs)
 }
 
 int
-EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
+Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
     const uint8_t *data = cff->data();
     int len = cff->length();
@@ -571,10 +571,10 @@ EfontCFF::Charset::parse(const EfontCFF *cff, int pos, int nglyphs, ErrorHandler
 
 
 /*****
- * EfontCFF::IndexIterator
+ * Cff::IndexIterator
  **/
 
-EfontCFF::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, ErrorHandler *errh, const char *index_name)
+Cff::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, ErrorHandler *errh, const char *index_name)
     : _contents(0), _offset(0), _last_offset(0)
 {
     if (!errh)
@@ -620,7 +620,7 @@ EfontCFF::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, Er
 }
 
 const uint8_t *
-EfontCFF::IndexIterator::index_end() const
+Cff::IndexIterator::index_end() const
 {
     if (_offsize <= 0)
 	return _contents;
@@ -629,7 +629,7 @@ EfontCFF::IndexIterator::index_end() const
 }
 
 int
-EfontCFF::IndexIterator::nitems() const
+Cff::IndexIterator::nitems() const
 {
     if (_offsize <= 0)
 	return 0;
@@ -640,21 +640,21 @@ EfontCFF::IndexIterator::nitems() const
 
 
 /*****
- * EfontCFF::Dict
+ * Cff::Dict
  **/
 
-EfontCFF::Dict::Dict()
+Cff::Dict::Dict()
     : _cff(0), _pos(0), _error(-ENOENT)
 {
 }
 
-EfontCFF::Dict::Dict(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
+Cff::Dict::Dict(Cff *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
 {
     assign(cff, pos, dict_len, errh, dict_name);
 }
 
 int
-EfontCFF::Dict::assign(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
+Cff::Dict::assign(Cff *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
 {
     _cff = cff;
     _pos = pos;
@@ -801,7 +801,7 @@ EfontCFF::Dict::assign(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh,
 }
 
 int
-EfontCFF::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) const
+Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) const
 {
     if (!errh)
 	errh = ErrorHandler::silent_handler();
@@ -900,7 +900,7 @@ EfontCFF::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name
 }
 
 bool
-EfontCFF::Dict::has(DictOperator op) const
+Cff::Dict::has(DictOperator op) const
 {
     for (int i = 0; i < _operators.size(); i++)
 	if (_operators[i] == op)
@@ -909,7 +909,7 @@ EfontCFF::Dict::has(DictOperator op) const
 }
 
 bool
-EfontCFF::Dict::value(DictOperator op, Vector<double> &out) const
+Cff::Dict::value(DictOperator op, Vector<double> &out) const
 {
     out.clear();
     for (int i = 0; i < _operators.size(); i++)
@@ -922,7 +922,7 @@ EfontCFF::Dict::value(DictOperator op, Vector<double> &out) const
 }
 
 bool
-EfontCFF::Dict::value(DictOperator op, int def, int *val) const
+Cff::Dict::value(DictOperator op, int def, int *val) const
 {
     *val = def;
     for (int i = 0; i < _operators.size(); i++)
@@ -934,7 +934,7 @@ EfontCFF::Dict::value(DictOperator op, int def, int *val) const
 }
 
 bool
-EfontCFF::Dict::value(DictOperator op, double def, double *val) const
+Cff::Dict::value(DictOperator op, double def, double *val) const
 {
     *val = def;
     for (int i = 0; i < _operators.size(); i++)
@@ -946,7 +946,7 @@ EfontCFF::Dict::value(DictOperator op, double def, double *val) const
 }
 
 void
-EfontCFF::Dict::unparse(ErrorHandler *errh, const char *dict_name) const
+Cff::Dict::unparse(ErrorHandler *errh, const char *dict_name) const
 {
     StringAccum sa;
     for (int i = 0; i < _operators.size(); i++) {
@@ -966,10 +966,10 @@ EfontCFF::Dict::unparse(ErrorHandler *errh, const char *dict_name) const
 
 
 /*****
- * EfontCFFFont
+ * CffFont
  **/
 
-EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
+Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
     : _cff(cff), _font_name(font_name), _t1encoding(0)
 {
     if (!errh)
@@ -1011,7 +1011,7 @@ EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
     
     int charstrings_offset;
     _top_dict.value(oCharStrings, 0, &charstrings_offset);
-    _charstrings_index = EfontCFF::IndexIterator(cff->data(), charstrings_offset, cff->length(), errh, "CharStrings INDEX");
+    _charstrings_index = Cff::IndexIterator(cff->data(), charstrings_offset, cff->length(), errh, "CharStrings INDEX");
     if (_charstrings_index.error() < 0) {
 	_error = _charstrings_index.error();
 	return;
@@ -1048,7 +1048,7 @@ EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
     if (_private_dict.has(oSubrs)) {
 	int subrs_offset;
 	_private_dict.value(oSubrs, 0, &subrs_offset);
-	_subrs_index = EfontCFF::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
+	_subrs_index = Cff::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
 	if ((_error = _subrs_index.error()) < 0)
 	    return;
     }
@@ -1058,7 +1058,7 @@ EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
     _error = 0;
 }
 
-EfontCFF::Font::~Font()
+Cff::Font::~Font()
 {
     for (int i = 0; i < _charstrings_cs.size(); i++)
 	delete _charstrings_cs[i];
@@ -1068,7 +1068,7 @@ EfontCFF::Font::~Font()
 }
 
 int
-EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
+Cff::Font::parse_encoding(int pos, ErrorHandler *errh)
 {
     _encoding_pos = pos;
     for (int i = 0; i < 256; i++)
@@ -1147,7 +1147,7 @@ EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
 }
 
 int
-EfontCFF::Font::assign_standard_encoding(const int *standard_encoding)
+Cff::Font::assign_standard_encoding(const int *standard_encoding)
 {
     for (int i = 0; i < 256; i++)
 	_encoding[i] = _charset.sid_to_gid(standard_encoding[i]);
@@ -1155,7 +1155,7 @@ EfontCFF::Font::assign_standard_encoding(const int *standard_encoding)
 }
 
 Charstring *
-EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
+Cff::Font::charstring(const IndexIterator &iiter, int which) const
 {
     const uint8_t *s1 = iiter[which];
     int slen = iiter[which + 1] - s1;
@@ -1169,7 +1169,7 @@ EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 }
 
 void
-EfontCFF::Font::font_matrix(double matrix[6]) const
+Cff::Font::font_matrix(double matrix[6]) const
 {
     Vector<double> t1d_matrix;
     if (dict_value(oFontMatrix, t1d_matrix) && t1d_matrix.size() == 6)
@@ -1181,7 +1181,7 @@ EfontCFF::Font::font_matrix(double matrix[6]) const
 }
 
 Charstring *
-EfontCFF::Font::subr(int i) const
+Cff::Font::subr(int i) const
 {
     i += Efont::subr_bias(_charstring_type, nsubrs_x());
     if (i < 0 || i >= nsubrs_x())
@@ -1192,25 +1192,25 @@ EfontCFF::Font::subr(int i) const
 }
 
 int
-EfontCFF::Font::subr_bias() const
+Cff::Font::subr_bias() const
 {
     return Efont::subr_bias(_charstring_type, nsubrs_x());
 }
 
 Charstring *
-EfontCFF::Font::gsubr(int i) const
+Cff::Font::gsubr(int i) const
 {
     return _cff->gsubr(i);
 }
 
 int
-EfontCFF::Font::gsubr_bias() const
+Cff::Font::gsubr_bias() const
 {
     return Efont::subr_bias(2, ngsubrs_x());
 }
 
 PermString
-EfontCFF::Font::glyph_name(int gid) const
+Cff::Font::glyph_name(int gid) const
 {
     if (gid >= 0 && gid < nglyphs())
 	return _cff->sid_permstring(_charset.gid_to_sid(gid));
@@ -1219,7 +1219,7 @@ EfontCFF::Font::glyph_name(int gid) const
 }
 
 void
-EfontCFF::Font::glyph_names(Vector<PermString> &gnames) const
+Cff::Font::glyph_names(Vector<PermString> &gnames) const
 {
     gnames.resize(nglyphs());
     for (int i = 0; i < nglyphs(); i++)
@@ -1227,7 +1227,7 @@ EfontCFF::Font::glyph_names(Vector<PermString> &gnames) const
 }
 
 Charstring *
-EfontCFF::Font::glyph(int gid) const
+Cff::Font::glyph(int gid) const
 {
     if (gid < 0 || gid >= nglyphs())
 	return 0;
@@ -1237,7 +1237,7 @@ EfontCFF::Font::glyph(int gid) const
 }
 
 Charstring *
-EfontCFF::Font::glyph(PermString name) const
+Cff::Font::glyph(PermString name) const
 {
     int gid = _charset.sid_to_gid(_cff->sid(name));
     if (gid < 0)
@@ -1248,13 +1248,13 @@ EfontCFF::Font::glyph(PermString name) const
 }
 
 int
-EfontCFF::Font::glyphid(PermString name) const
+Cff::Font::glyphid(PermString name) const
 {
     return _charset.sid_to_gid(_cff->sid(name));
 }
 
 Type1Encoding *
-EfontCFF::Font::type1_encoding() const
+Cff::Font::type1_encoding() const
 {
     if (_encoding_pos == 0)
 	return Type1Encoding::standard_encoding();
@@ -1264,7 +1264,7 @@ EfontCFF::Font::type1_encoding() const
 }
 
 Type1Encoding *
-EfontCFF::Font::type1_encoding_copy() const
+Cff::Font::type1_encoding_copy() const
 {
     if (_encoding_pos == 0)
 	return Type1Encoding::standard_encoding();
@@ -1276,19 +1276,19 @@ EfontCFF::Font::type1_encoding_copy() const
 }
 
 double
-EfontCFF::Font::global_width_x(bool is_nominal) const
+Cff::Font::global_width_x(bool is_nominal) const
 {
     return (is_nominal ? _nominal_width_x : _default_width_x);
 }
 
 bool
-EfontCFF::Font::dict_has(DictOperator op) const
+Cff::Font::dict_has(DictOperator op) const
 {
     return dict_of(op).has(op);
 }
 
 String
-EfontCFF::Font::dict_string(DictOperator op) const
+Cff::Font::dict_string(DictOperator op) const
 {
     Vector<double> vec;
     dict_of(op).value(op, vec);

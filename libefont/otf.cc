@@ -426,16 +426,39 @@ Coverage::Coverage() throw ()
 {
 }
 
+Coverage::Coverage(Glyph first, Glyph last) throw ()
+{
+    if (first <= last) {
+	_str = String("\000\002\000\001\000\000\000\000\000\000", 10);
+	uint8_t *data = _str.mutable_udata();
+	data[4] = first >> 8;
+	data[5] = first & 255;
+	data[6] = last >> 8;
+	data[7] = last & 255;
+	_str.align(2);
+    }
+}
+
 Coverage::Coverage(const String &str, ErrorHandler *errh, bool do_check) throw ()
     : _str(str)
 {
     _str.align(2);
-    if (do_check && check(errh ? errh : ErrorHandler::silent_handler()) < 0)
-	_str = String();
+    if (do_check) {
+	if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	    _str = String();
+    } else {			// check()'s shorten-string side effect
+	const uint8_t *data = _str.udata();
+	int count = USHORT_AT(data + 2);
+	if (data[1] == T_LIST)
+	    _str = _str.substring(0, HEADERSIZE + count*LIST_RECSIZE);
+	else
+	    _str = _str.substring(0, HEADERSIZE + count*RANGES_RECSIZE);
+    }
 }
 
 int
 Coverage::check(ErrorHandler *errh)
+    // side effect: shorten string to cover coverage
 {
     // HEADER FORMAT:
     // USHORT	coverageFormat
@@ -449,13 +472,13 @@ Coverage::check(ErrorHandler *errh)
     int len;
     switch (coverageFormat) {
       case T_LIST:
-	len = HEADERSIZE + LIST_RECSIZE * count;
+	len = HEADERSIZE + count*LIST_RECSIZE;
 	if (_str.length() < len)
 	    return errh->error("OTF coverage table too short (format 1)");
 	// XXX don't check sorting
 	break;
       case T_RANGES:
-	len = HEADERSIZE + RANGES_RECSIZE * count;
+	len = HEADERSIZE + count*RANGES_RECSIZE;
 	if (_str.length() < len)
 	    return errh->error("OTF coverage table too short (format 2)");
 	// XXX don't check sorting
@@ -522,6 +545,37 @@ Coverage::lookup(Glyph g) const throw ()
 	return -1;
     } else
 	return -1;
+}
+
+void
+Coverage::unparse(StringAccum &sa) const throw ()
+{
+    const uint8_t *data = _str.udata();
+    if (_str.length() == 0)
+	sa << "@*#!";
+    else if (data[1] == T_LIST) {
+	int count = USHORT_AT(data + 2);
+	for (int i = 0; i < count; i++) {
+	    if (i) sa << ',';
+	    sa << USHORT_AT(data + HEADERSIZE + i*LIST_RECSIZE);
+	}
+    } else {
+	for (int pos = HEADERSIZE; pos < _str.length(); pos += RANGES_RECSIZE) {
+	    Glyph start = USHORT_AT(data + pos);
+	    Glyph end = USHORT_AT(data + pos + 2);
+	    if (pos > HEADERSIZE) sa << ',';
+	    sa << start;
+	    if (end != start) sa << '.' << '.' << end;
+	}
+    }
+}
+
+String
+Coverage::unparse() const throw ()
+{
+    StringAccum sa;
+    unparse(sa);
+    return sa.take_string();
 }
 
 Coverage
@@ -620,6 +674,8 @@ Coverage::iterator::operator++(int)
 bool
 Coverage::iterator::forward_to(Glyph find)
 {
+    // XXX really should check that this works
+    
     if (find <= _value)
 	return find == _value;
     else if (_pos >= _str.length())
@@ -628,14 +684,16 @@ Coverage::iterator::forward_to(Glyph find)
     const uint8_t *data = _str.udata();
     if (data[1] == T_LIST) {
 	// check for "common" case: next element
-	if (find <= USHORT_AT(data + _pos + LIST_RECSIZE)) {
-	    _pos += LIST_RECSIZE;
+	_pos += LIST_RECSIZE;
+	if (_pos >= _str.length())
+	    return false;
+	else if (find <= USHORT_AT(data + _pos)) {
 	    _value = USHORT_AT(data + _pos);
 	    return find == _value;
 	}
 	
 	// otherwise, binary search over remaining area
-	int l = (_pos - HEADERSIZE) / LIST_RECSIZE;
+	int l = ((_pos - HEADERSIZE) / LIST_RECSIZE) + 1;
 	int r = (_str.length() - HEADERSIZE) / LIST_RECSIZE - 1;
 	data += HEADERSIZE;
 	while (l <= r) {
@@ -656,27 +714,29 @@ Coverage::iterator::forward_to(Glyph find)
 	    assert(find >= USHORT_AT(data + _pos));
 	    _value = find;
 	    return true;
-	} else if (_pos + RANGES_RECSIZE < _str.length()
-		   && find <= USHORT_AT(data + _pos + RANGES_RECSIZE + 2)) {
-	    _pos += RANGES_RECSIZE;
+	}
+	_pos += RANGES_RECSIZE;
+	if (_pos >= _str.length())
+	    return false;
+	else if (find <= USHORT_AT(data + _pos + 2)) {
 	    _value = (find >= USHORT_AT(data + _pos) ? find : USHORT_AT(data + _pos));
 	    return find == _value;
 	}
 
 	// otherwise, binary search over remaining area
-	int l = (_pos - HEADERSIZE) / RANGES_RECSIZE;
+	int l = ((_pos - HEADERSIZE) / RANGES_RECSIZE) + 1;
 	int r = (_str.length() - HEADERSIZE) / RANGES_RECSIZE - 1;
 	data += HEADERSIZE;
 	while (l <= r) {
 	    int m = (l + r) >> 1;
 	    if (find < USHORT_AT(data + m * RANGES_RECSIZE))
-		l = m + 1;
+		r = m - 1;
 	    else if (find <= USHORT_AT(data + m * RANGES_RECSIZE + 2)) {
 		_pos = HEADERSIZE + m * RANGES_RECSIZE;
 		_value = find;
 		return true;
 	    } else
-		r = m - 1;
+		l = m + 1;
 	}
 	_pos = HEADERSIZE + l * LIST_RECSIZE;
 	_value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
@@ -694,6 +754,16 @@ Coverage::iterator::forward_to(Glyph find)
 GlyphSet::GlyphSet()
 {
     memset(_v, 0, sizeof(_v));
+}
+
+GlyphSet::GlyphSet(const GlyphSet &o)
+{
+    for (int i = 0; i < VLEN; i++)
+	if (o._v[i]) {
+	    _v[i] = new uint32_t[VULEN];
+	    memcpy(_v[i], o._v[i], sizeof(uint32_t) * VULEN);
+	} else
+	    _v[i] = 0;
 }
 
 GlyphSet::~GlyphSet()
@@ -720,6 +790,21 @@ GlyphSet::change(Glyph g, bool value)
     return 0;
 }
 
+GlyphSet &
+GlyphSet::operator=(const GlyphSet &o)
+{
+    if (&o != this) {
+	for (int i = 0; i < VLEN; i++)
+	    if (o._v[i]) {
+		if (!_v[i])
+		    _v[i] = new uint32_t[VULEN];
+		memcpy(_v[i], o._v[i], sizeof(uint32_t) * VULEN);
+	    } else if (_v[i])
+		memset(_v[i], 0, sizeof(uint32_t) * VULEN);
+    }
+    return *this;
+}
+
 
 /**************************
  * ClassDef               *
@@ -740,28 +825,31 @@ ClassDef::check(ErrorHandler *errh)
     // HEADER FORMAT:
     // USHORT	coverageFormat
     // USHORT	glyphCount
-    int len = _str.length();
     const uint8_t *data = _str.udata();
-    if (len < 6)		// NB: prevents empty format-2 tables
+    if (_str.length() < 6)	// NB: prevents empty format-2 tables
 	return errh->error("OTF class def table too small for header");
     int classFormat = USHORT_AT(data);
-    
+
+    int len;
     if (classFormat == T_LIST) {
 	int count = USHORT_AT(data + 4);
-	if (len < LIST_HEADERSIZE + count * LIST_RECSIZE)
-	    return errh->error("OTF class def table (format 1) too short");
+	len = LIST_HEADERSIZE + count*LIST_RECSIZE;
 	// XXX don't check sorting
     } else if (classFormat == T_RANGES) {
 	int count = USHORT_AT(data + 2);
-	if (len < RANGES_HEADERSIZE + count * RANGES_RECSIZE)
-	    return errh->error("OTF class def table (format 2) too short");
+	len = RANGES_HEADERSIZE + count*RANGES_RECSIZE;
 	// XXX don't check sorting
     } else
 	return errh->error("OTF class def table has unknown format %d", classFormat);
 
-    return 0;
+    if (len > _str.length())
+	return errh->error("OTF class def table too short");
+    else {
+	_str = _str.substring(0, len);
+	return 0;
+    }
 }
-	
+
 int
 ClassDef::lookup(Glyph g) const throw ()
 {
@@ -796,75 +884,177 @@ ClassDef::lookup(Glyph g) const throw ()
 	return 0;
 }
 
+void
+ClassDef::unparse(StringAccum &sa) const throw ()
+{
+    const uint8_t *data = _str.udata();
+    if (_str.length() == 0)
+	sa << "@*#!";
+    else if (data[1] == T_LIST) {
+	Glyph start = USHORT_AT(data + 2);
+	int count = USHORT_AT(data + 4);
+	for (int i = 0; i < count; i++) {
+	    if (i) sa << ',';
+	    sa << start + i << '=' << USHORT_AT(data + LIST_HEADERSIZE + i*LIST_RECSIZE);
+	}
+    } else {
+	for (int pos = RANGES_HEADERSIZE; pos < _str.length(); pos += RANGES_RECSIZE) {
+	    Glyph start = USHORT_AT(data + pos);
+	    Glyph end = USHORT_AT(data + pos + 2);
+	    if (pos > RANGES_HEADERSIZE) sa << ',';
+	    sa << start;
+	    if (end != start) sa << '.' << '.' << end;
+	    sa << '=' << USHORT_AT(data + pos + 4);
+	}
+    }
+}
+
+String
+ClassDef::unparse() const throw ()
+{
+    StringAccum sa;
+    unparse(sa);
+    return sa.take_string();
+}
+
 
 /******************************
  * ClassDef::class_iterator   *
  *                            *
  ******************************/
 
-ClassDef::class_iterator::class_iterator(const String &str, int pos, int the_class)
-    : _str(str), _pos(pos), _value(0), _class(the_class)
+ClassDef::class_iterator::class_iterator(const String &str, int pos, int the_class, const Coverage::iterator &coviter)
+    : _str(str), _pos(pos), _class(the_class), _coviter(coviter)
 {
     // XXX assume _str has been checked
 
-    // shrink _str to fit the coverage table
+    // cannot handle the_class == 0 when coviter doesn't exist
+    if (_class == 0 && !_coviter)
+	throw Error("cannot iterate over ClassDef class 0");
+
+    // shrink _str to fit the coverage table, and create a fake coverage
+    // iterator if necessary
     const uint8_t *data = _str.udata();
     if (_str.length()) {
 	switch (USHORT_AT(data)) {
-	  case T_LIST:
-	    _str = _str.substring(0, LIST_HEADERSIZE + USHORT_AT(data + 4) * LIST_RECSIZE);
-	    break;
-	  case T_RANGES:
-	    _str = _str.substring(0, RANGES_HEADERSIZE + USHORT_AT(data + 2) * RANGES_RECSIZE);
-	    break;
+	  case T_LIST: {
+	      Glyph start = USHORT_AT(data + 2);
+	      int nglyphs = USHORT_AT(data + 4);
+	      _str = _str.substring(0, LIST_HEADERSIZE + nglyphs*LIST_RECSIZE);
+	      if (!_coviter)
+		  _coviter = Coverage(start, start + nglyphs - 1).begin();
+	      if (_class)
+		  _coviter.forward_to(start);
+	      break;
+	  }
+	  case T_RANGES: {
+	      Glyph start = USHORT_AT(data + RANGES_HEADERSIZE);
+	      int nranges = USHORT_AT(data + 2);
+	      _str = _str.substring(0, RANGES_HEADERSIZE + nranges*RANGES_RECSIZE);
+	      if (!_coviter) {
+		  Glyph end = USHORT_AT(data + RANGES_HEADERSIZE + 2 + (nranges - 1)*RANGES_RECSIZE);
+		  _coviter = Coverage(start, end).begin();
+	      }
+	      if (_class)
+		  _coviter.forward_to(start);
+	      break;
+	  }
 	  default:
 	    _str = String();
 	    break;
 	}
     }
+
+    // move to the first relevant glyph
     if (_pos >= _str.length())
 	_pos = _str.length();
-    else if (USHORT_AT(data) == T_LIST) {
-	// now, move _pos into the classdef table
-	_pos = LIST_HEADERSIZE - LIST_RECSIZE;
-	(*this)++;
-    } else {
-	_pos = RANGES_HEADERSIZE - RANGES_RECSIZE;
-	_value = 0x10000;	// *** see header
+    else {
+	_pos = 0;
 	(*this)++;
     }
 }
 
-int
-ClassDef::class_iterator::class_value() const
+void
+ClassDef::class_iterator::increment_class0()
 {
     const uint8_t *data = _str.udata();
-    assert(_pos < _str.length());
-    if (data[1] == T_LIST)
-	return USHORT_AT(data + _pos);
+    int len = _str.length();
+    bool is_list = (data[1] == T_LIST);
+    
+    if (_pos != 0)
+	_coviter++;
     else
-	return USHORT_AT(data + _pos + 4);
+	_pos = FIRST_POS;
+
+    if (_pos == FIRST_POS && _coviter) {
+	if (*_coviter < USHORT_AT(data + (is_list ? 2 : RANGES_HEADERSIZE)))
+	    return;
+	_pos = (is_list ? LIST_HEADERSIZE : RANGES_HEADERSIZE);
+    }
+
+    while (_pos > 0 && _pos < len && _coviter) {
+	Glyph g = *_coviter;
+	if (is_list) {
+	    _pos = LIST_HEADERSIZE + LIST_RECSIZE*(g - USHORT_AT(data + 2));
+	    if (_pos >= len)
+		break;
+	    else if (USHORT_AT(data + _pos) == 0) // _class == 0
+		return;
+	    _coviter++;
+	} else {
+	    if (g < USHORT_AT(data + _pos)) // in a zero range
+		return;
+	    else if (g > USHORT_AT(data + _pos + 2))
+		_pos += RANGES_RECSIZE;
+	    else if (USHORT_AT(data + _pos + 4) == 0) // _class == 0
+		return;
+	    else
+		_coviter.forward_to(USHORT_AT(data + _pos + 2) + 1);
+	}
+    }
+
+    if (_coviter)
+	_pos = LAST_POS;
+    else
+	_pos = len;
 }
 
 void
 ClassDef::class_iterator::operator++(int)
 {
+    if (_class == 0) {
+	increment_class0();
+	return;
+    }
+    
     const uint8_t *data = _str.udata();
     int len = _str.length();
     bool is_list = (data[1] == T_LIST);
-    if (_pos >= len
-	|| (!is_list && ++_value <= USHORT_AT(data + _pos + 2)))
-	return;
-    do {
+
+    if (_pos != 0)
+	_coviter++;
+    else
+	_pos = (is_list ? LIST_HEADERSIZE : RANGES_HEADERSIZE);
+
+    while (_pos < len && _coviter) {
+	Glyph g = *_coviter;
 	if (is_list) {
-	    _pos += LIST_RECSIZE;
-	    _value = (_pos >= len ? 0 : _value + 1);
+	    _pos = LIST_HEADERSIZE + LIST_RECSIZE*(g - USHORT_AT(data + 2));
+	    if (_pos >= len || USHORT_AT(data + _pos) == _class)
+		return;
+	    _coviter++;
 	} else {
-	    _pos += RANGES_RECSIZE;
-	    _value = (_pos >= len ? 0 : USHORT_AT(data + _pos));
+	    while (_pos < len && (g > USHORT_AT(data + _pos + 2)
+				  || USHORT_AT(data + _pos + 4) != _class))
+		_pos += RANGES_RECSIZE;
+	    // now, _pos >= len, or g <= rec.end && class == rec.class
+	    if (_pos >= len || g >= USHORT_AT(data + _pos))
+		return;
+	    _coviter.forward_to(USHORT_AT(data + _pos));
 	}
-    } while (_pos < len
-	     && (is_list ? USHORT_AT(data + _pos) : USHORT_AT(data + _pos + 4)) != _class);
+    }
+
+    _pos = len;
 }
 
 

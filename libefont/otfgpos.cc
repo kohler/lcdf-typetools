@@ -132,7 +132,6 @@ GposSingle::unparse(Vector<Positioning> &v) const
 GposPair::GposPair(const Data &d) throw (Error)
     : _d(d)
 {
-    fprintf(stderr, "--%d\n", _d[1]);
     if (_d[0] != 0
 	|| (_d[1] != 1 && _d[1] != 2))
 	throw Format("GPOS Pair Positioning");
@@ -172,6 +171,7 @@ GposPair::unparse(Vector<Positioning> &v) const
 	int recsize = f2_pos + GposValue::size(format2);
 	ClassDef class1(_d.offset_subtable(8));
 	ClassDef class2(_d.offset_subtable(10));
+	Coverage coverage = this->coverage(); 
 	int nclass1 = _d.u16(12);
 	int nclass2 = _d.u16(14);
 	int offset = F2_HEADERSIZE;
@@ -180,7 +180,8 @@ GposPair::unparse(Vector<Positioning> &v) const
 		Position p1(format1, _d.subtable(offset)); 
 		Position p2(format2, _d.subtable(offset + f2_pos));
 		if (p1 || p2) {
-		    for (ClassDef::class_iterator c1i = class1.begin(c1); c1i; c1i++)
+		    //fprintf(stderr, "%d %d  %s %s\nCOVERAGE (%s)\nCLASS1DEF (%s)\nCLASS2DEF (%s)\n ", c1, c2, p1.unparse().c_str(), p2.unparse().c_str(), coverage.unparse().c_str(), class1.unparse().c_str(), class2.unparse().c_str());
+		    for (ClassDef::class_iterator c1i = class1.begin(c1, coverage); c1i; c1i++)
 			for (ClassDef::class_iterator c2i = class2.begin(c2); c2i; c2i++)
 			    v.push_back(Positioning(Position(*c1i, p1), Position(*c2i, p2)));
 		}
@@ -194,6 +195,34 @@ GposPair::unparse(Vector<Positioning> &v) const
  *                        *
  **************************/
 
+static void
+unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
+{
+    if (gid && gns && gns->size() > gid && (*gns)[gid])
+	sa << (*gns)[gid];
+    else
+	sa << "g" << gid;
+}
+
+void
+Position::unparse(StringAccum &sa, const Vector<PermString> *gns) const
+{
+    unparse_glyphid(sa, g, gns);
+    if (placed())
+	sa << '@' << pdx << ',' << pdy;
+    sa << '+' << adx;
+    if (ady)
+	sa << '/' << ady;
+}
+
+String
+Position::unparse(const Vector<PermString> *gns) const
+{
+    StringAccum sa;
+    unparse(sa, gns);
+    return sa.take_string();
+}
+
 bool
 Positioning::context_in(const Coverage &c) const
 {
@@ -206,26 +235,6 @@ Positioning::context_in(const GlyphSet &gs) const
     return (gs.covers(_left.g) || !_left.g) && (!_right.g || gs.covers(_right.g));
 }
 
-static void
-unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
-{
-    if (gid && gns && gns->size() > gid && (*gns)[gid])
-	sa << (*gns)[gid];
-    else
-	sa << "g" << gid;
-}
-
-static void
-unparse_position(StringAccum &sa, const Position &pos, const Vector<PermString> *gns)
-{
-    unparse_glyphid(sa, pos.g, gns);
-    if (pos.placed())
-	sa << '@' << pos.pdx << ',' << pos.pdy;
-    sa << '+' << pos.adx;
-    if (pos.ady)
-	sa << '/' << pos.ady;
-}
-
 void
 Positioning::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 {
@@ -233,7 +242,7 @@ Positioning::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 	sa << "NULL[]";
     else if (is_single()) {
 	sa << "SINGLE[";
-	unparse_position(sa, _left, gns);
+	_left.unparse(sa, gns);
 	sa << ']';
     } else if (is_pairkern()) {
 	sa << "KERN[";
@@ -243,9 +252,9 @@ Positioning::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 	sa << "+" << _left.adx << ']';
     } else if (is_pair()) {
 	sa << "PAIR[";
-	unparse_position(sa, _left, gns);
+	_left.unparse(sa, gns);
 	sa << ' ';
-	unparse_position(sa, _right, gns);
+	_right.unparse(sa, gns);
 	sa << ']';
     } else
 	sa << "UNKNOWN[]";

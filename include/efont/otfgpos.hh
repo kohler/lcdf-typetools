@@ -96,6 +96,8 @@ struct Position {
     operator bool() const	{ return !empty(); }
     bool h_empty() const	{ return pdx == 0 && pdy == 0 && adx == 0; }
     bool placed() const		{ return pdx != 0 || pdy != 0; }
+    void unparse(StringAccum &, const Vector<PermString> * = 0) const;
+    String unparse(const Vector<PermString> * = 0) const;
 };
 
 class Positioning { public:

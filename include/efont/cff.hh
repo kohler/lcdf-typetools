@@ -7,10 +7,10 @@ class ErrorHandler;
 namespace Efont {
 class Type1Encoding;
 
-class EfontCFF { public:
+class Cff { public:
 
-    EfontCFF(const String &, ErrorHandler * = 0);
-    ~EfontCFF();
+    Cff(const String &, ErrorHandler * = 0);
+    ~Cff();
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
@@ -70,7 +70,7 @@ class EfontCFF { public:
     static const int operator_types[];
 
 
-    class EfontCFF::IndexIterator { public:
+    class Cff::IndexIterator { public:
 
 	IndexIterator()		: _offset(0), _last_offset(0), _offsize(-1) { }
 	IndexIterator(const uint8_t *, int, int, ErrorHandler * = 0, const char *index_name = "INDEX");
@@ -125,11 +125,11 @@ class EfontCFF { public:
 };
 
 
-class EfontCFF::Dict { public:
+class Cff::Dict { public:
 
     Dict();
-    Dict(EfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
-    int assign(EfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
+    Dict(Cff *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
+    int assign(Cff *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
     
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
@@ -145,7 +145,7 @@ class EfontCFF::Dict { public:
 
   private:
 
-    EfontCFF *_cff;
+    Cff *_cff;
     int _pos;
     Vector<int> _operators;
     Vector<int> _pointers;
@@ -154,11 +154,11 @@ class EfontCFF::Dict { public:
 
 };
 
-class EfontCFF::Charset { public:
+class Cff::Charset { public:
 
     Charset()				: _error(-1) { }
-    Charset(const EfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
-    void assign(const EfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
+    Charset(const Cff *, int pos, int nglyphs, ErrorHandler * = 0);
+    void assign(const Cff *, int pos, int nglyphs, ErrorHandler * = 0);
 
     int error() const			{ return _error; }
     
@@ -175,14 +175,14 @@ class EfontCFF::Charset { public:
     int _error;
 
     void assign(const int *, int, int);
-    int parse(const EfontCFF *, int pos, int nglyphs, ErrorHandler *);
+    int parse(const Cff *, int pos, int nglyphs, ErrorHandler *);
     
 };
 
 
-class EfontCFF::Font : public EfontProgram { public:
+class Cff::Font : public EfontProgram { public:
 
-    Font(EfontCFF *, PermString = PermString(), ErrorHandler * = 0);
+    Font(Cff *, PermString = PermString(), ErrorHandler * = 0);
     ~Font();
 
     bool ok() const			{ return _error >= 0; }
@@ -221,14 +221,14 @@ class EfontCFF::Font : public EfontProgram { public:
     
   private:
 
-    EfontCFF *_cff;
+    Cff *_cff;
     PermString _font_name;
     int _charstring_type;
 
     Dict _top_dict;
     Dict _private_dict;
 
-    EfontCFF::Charset _charset;
+    Cff::Charset _charset;
 
     IndexIterator _charstrings_index;
     mutable Vector<Charstring *> _charstrings_cs;
@@ -255,7 +255,7 @@ class EfontCFF::Font : public EfontProgram { public:
 
 
 inline uint32_t
-EfontCFF::IndexIterator::offset_at(const uint8_t *x) const
+Cff::IndexIterator::offset_at(const uint8_t *x) const
 {
     switch (_offsize) {
       case 0:
@@ -272,21 +272,21 @@ EfontCFF::IndexIterator::offset_at(const uint8_t *x) const
 }
 
 inline const uint8_t *
-EfontCFF::IndexIterator::operator*() const
+Cff::IndexIterator::operator*() const
 {
     assert(live());
     return _contents + offset_at(_offset);
 }
 
 inline const uint8_t *
-EfontCFF::IndexIterator::operator[](int which) const
+Cff::IndexIterator::operator[](int which) const
 {
     assert(live() && _offset + which * _offsize <= _last_offset);
     return _contents + offset_at(_offset + which * _offsize);
 }
 
 inline int
-EfontCFF::Charset::gid_to_sid(int gid) const
+Cff::Charset::gid_to_sid(int gid) const
 {
     if (gid >= 0 && gid < _sids.size())
 	return _sids[gid];
@@ -295,7 +295,7 @@ EfontCFF::Charset::gid_to_sid(int gid) const
 }
 
 inline int
-EfontCFF::Charset::sid_to_gid(int sid) const
+Cff::Charset::sid_to_gid(int sid) const
 {
     if (sid >= 0 && sid < _gids.size())
 	return _gids[sid];
@@ -303,20 +303,20 @@ EfontCFF::Charset::sid_to_gid(int sid) const
 	return -1;
 }
 
-inline const EfontCFF::Dict &
-EfontCFF::Font::dict_of(DictOperator op) const
+inline const Cff::Dict &
+Cff::Font::dict_of(DictOperator op) const
 {
     return (op >= 0 && op <= oLastOperator && (operator_types[op] & tP) ? _private_dict : _top_dict);
 }
 
 inline bool
-EfontCFF::Font::dict_value(DictOperator op, double def, double *val) const
+Cff::Font::dict_value(DictOperator op, double def, double *val) const
 {
     return dict_of(op).value(op, def, val);
 }
 
 inline bool
-EfontCFF::Font::dict_value(DictOperator op, Vector<double> &val) const
+Cff::Font::dict_value(DictOperator op, Vector<double> &val) const
 {
     return dict_of(op).value(op, val);
 }

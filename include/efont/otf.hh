@@ -115,6 +115,7 @@ class FeatureList { public:
 class Coverage { public:
 
     Coverage() throw ();		// empty coverage
+    Coverage(Glyph first, Glyph last) throw ();	// range coverage
     Coverage(const String &, ErrorHandler * = 0, bool check = true) throw ();
     // default destructor
 
@@ -125,7 +126,11 @@ class Coverage { public:
     int operator[](Glyph g) const throw () { return lookup(g); }
     bool covers(Glyph g) const throw ()	{ return lookup(g) >= 0; }
 
+    void unparse(StringAccum &) const throw ();
+    String unparse() const throw ();
+    
     class iterator { public:
+	iterator()			: _pos(0), _value(0) { }
 	// private constructor
 	// default destructor
 
@@ -141,12 +146,12 @@ class Coverage { public:
 	bool forward_to(Glyph);
 
 	// XXX should check iterators are of same type
-	bool operator<(const iterator &o) { return _pos < o._pos || (_pos == o._pos && _value < o._value); }
-	bool operator<=(const iterator &o) { return _pos < o._pos || (_pos == o._pos && _value <= o._value); }
-	bool operator>=(const iterator &o) { return _pos > o._pos || (_pos == o._pos && _value >= o._value); }
-	bool operator>(const iterator &o) { return _pos > o._pos || (_pos == o._pos && _value > o._value); }
-	bool operator==(const iterator &o) { return _pos == o._pos && _value == o._value; }
-	bool operator!=(const iterator &o) { return _pos != o._pos || _value != o._value; }
+	bool operator<(const iterator &o) { return _value < o._value; }
+	bool operator<=(const iterator &o) { return _value <= o._value; }
+	bool operator>=(const iterator &o) { return _value >= o._value; }
+	bool operator>(const iterator &o) { return _value > o._value; }
+	bool operator==(const iterator &o) { return _value == o._value; }
+	bool operator!=(const iterator &o) { return _value != o._value; }
 	
       private:
 	String _str;
@@ -181,6 +186,7 @@ operator>=(const Coverage &a, const Coverage &b)
 class GlyphSet { public:
 
     GlyphSet();
+    GlyphSet(const GlyphSet &);
     ~GlyphSet();
 
     bool covers(Glyph g) const;
@@ -188,6 +194,8 @@ class GlyphSet { public:
     int change(Glyph, bool);
     void insert(Glyph g)		{ change(g, true); }
     void remove(Glyph g)		{ change(g, false); }
+    
+    GlyphSet &operator=(const GlyphSet &);
     
   private:
 
@@ -198,9 +206,6 @@ class GlyphSet { public:
     };
 
     uint32_t *_v[VLEN];
-
-    GlyphSet(const GlyphSet &);
-    GlyphSet &operator=(const GlyphSet &);
 
 };
 
@@ -215,6 +220,9 @@ class ClassDef { public:
     int lookup(Glyph) const throw ();
     int operator[](Glyph g) const throw () { return lookup(g); }
 
+    void unparse(StringAccum &) const throw ();
+    String unparse() const throw ();
+        
     class class_iterator { public:
 	// private constructor
 	// default destructor
@@ -222,33 +230,36 @@ class ClassDef { public:
 	bool ok() const			{ return _pos < _str.length(); }
 	operator bool() const		{ return ok(); }
 	
-	Glyph operator*() const		{ return _value; }
-	Glyph value() const		{ return _value; }
-	int class_value() const;
+	Glyph operator*() const		{ return *_coviter; }
+	Glyph value() const		{ return *_coviter; }
+	int class_value() const		{ return _class; }
 	
 	void operator++(int);
 	void operator++()		{ (*this)++; }
 
 	// XXX should check iterators are of same type
-	bool operator<(const class_iterator &o) { return _pos < o._pos || (_pos == o._pos && _value < o._value); }
-	bool operator<=(const class_iterator &o) { return _pos < o._pos || (_pos == o._pos && _value <= o._value); }
-	bool operator>=(const class_iterator &o) { return _pos > o._pos || (_pos == o._pos && _value >= o._value); }
-	bool operator>(const class_iterator &o) { return _pos > o._pos || (_pos == o._pos && _value > o._value); }
-	bool operator==(const class_iterator &o) { return _pos == o._pos && _value == o._value; }
-	bool operator!=(const class_iterator &o) { return _pos != o._pos || _value != o._value; }
+	bool operator<(const class_iterator &o) { return _coviter < o._coviter; }
+	bool operator<=(const class_iterator &o) { return _coviter <= o._coviter; }
+	bool operator>=(const class_iterator &o) { return _coviter >= o._coviter; }
+	bool operator>(const class_iterator &o) { return _coviter > o._coviter; }
+	bool operator==(const class_iterator &o) { return _coviter == o._coviter; }
+	bool operator!=(const class_iterator &o) { return _coviter != o._coviter; }
 	
       private:
 	String _str;
 	int _pos;
-	int _value;		// not a USHORT to avoid overflow at ***
 	int _class;
+	Coverage::iterator _coviter;
 	friend class ClassDef;
-	class_iterator(const String &, int, int);
+	class_iterator(const String &, int, int, const Coverage::iterator &);
+	void increment_class0();
+	enum { FIRST_POS = -1, LAST_POS = -2 };
     };
 
     // XXX does not work correctly for class 0
-    class_iterator begin(int c) const	{ return class_iterator(_str, 0, c); }
-    class_iterator end(int c) const	{ return class_iterator(_str, _str.length(), c); }
+    class_iterator begin(int c) const	{ return class_iterator(_str, 0, c, Coverage::iterator()); }
+    class_iterator begin(int c, const Coverage &coverage) const { return class_iterator(_str, 0, c, coverage.begin()); }
+    class_iterator end(int c) const	{ return class_iterator(_str, _str.length(), c, Coverage::iterator()); }
 
     enum { T_LIST = 1, T_RANGES = 2,
 	   LIST_HEADERSIZE = 6, LIST_RECSIZE = 2,
