@@ -972,21 +972,9 @@ create_type1_font(EfontCFF::Font *font)
     sa << nfont_dict << " dict begin";
     output->add_item(new Type1CopyItem(sa.take_string()));
     output->add_definition(Type1Font::dF, new Type1Definition("FontName", "/" + String(font->font_name()), "def"));
-		     
+    
     // FontInfo dictionary
-    int nfont_info_dict = ((bool)version)
-	+ font->dict_has(EfontCFF::oNotice)
-	+ font->dict_has(EfontCFF::oCopyright)
-	+ font->dict_has(EfontCFF::oFullName)
-	+ font->dict_has(EfontCFF::oFamilyName)
-	+ font->dict_has(EfontCFF::oWeight)
-	+ font->dict_has(EfontCFF::oIsFixedPitch)
-	+ font->dict_has(EfontCFF::oItalicAngle)
-	+ font->dict_has(EfontCFF::oUnderlinePosition)
-	+ font->dict_has(EfontCFF::oUnderlineThickness)
-	+ 2;			// padding
-    sa << "/FontInfo " << nfont_info_dict << " dict dup begin";
-    output->add_item(new Type1CopyItem(sa.take_string()));
+    output->add_item(new Type1CopyItem("/FontInfo 0 dict dup begin"));
     if (version)
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("version", version, "readonly def"));
     if (String s = font->dict_string(EfontCFF::oNotice))
@@ -1040,26 +1028,7 @@ create_type1_font(EfontCFF::Font *font)
     output->add_item(new Type1EexecItem(true));
 
     // Private dictionary
-    int nprivate_dict = 4	// CharStrings, Subrs, lenIV, password
-	+ 5			// MinFeature, |-, -|, |, OtherSubrs
-	+ font->dict_has(EfontCFF::oUniqueID)
-	+ font->dict_has(EfontCFF::oBlueValues)
-	+ font->dict_has(EfontCFF::oOtherBlues)
-	+ font->dict_has(EfontCFF::oFamilyBlues)
-	+ font->dict_has(EfontCFF::oFamilyOtherBlues)
-	+ font->dict_has(EfontCFF::oBlueScale)
-	+ font->dict_has(EfontCFF::oBlueShift)
-	+ font->dict_has(EfontCFF::oBlueFuzz)
-	+ font->dict_has(EfontCFF::oStdHW)
-	+ font->dict_has(EfontCFF::oStdVW)
-	+ font->dict_has(EfontCFF::oStemSnapH)
-	+ font->dict_has(EfontCFF::oStemSnapV)
-	+ font->dict_has(EfontCFF::oForceBold)
-	+ font->dict_has(EfontCFF::oLanguageGroup)
-	+ font->dict_has(EfontCFF::oExpansionFactor)
-	+ 2;			// padding
-    sa << "dup /Private " << nprivate_dict << " dict dup begin";
-    output->add_item(new Type1CopyItem(sa.take_string()));
+    output->add_item(new Type1CopyItem("dup /Private 0 dict dup begin"));
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("-|", "{string currentfile exch readstring pop}", "executeonly def"));
     output->set_charstring_definer(" -| ");
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("|-", "{noaccess def}", "executeonly def"));

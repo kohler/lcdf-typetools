@@ -235,11 +235,10 @@ CharstringChecker::type1_command(int cmd)
     return callothersubr();
   } else if (cmd == CS::cReturn) {
     return false;
-  } else if (cmd == CS::cPop) {
+  } else if (cmd == CS::cPop || cmd == CS::cDiv) {
     return arith_command(cmd);
   }
 
-  
   if (cmd != CS::cHsbw && cmd != CS::cSbw) {
     if (!_started)
       _errh->warning("first command not `hsbw' or `sbw'");

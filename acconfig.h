@@ -11,9 +11,8 @@
 /* Define if you have the strerror function. */
 #undef HAVE_STRERROR 
 
-/* Define to 1 since we have PermStrings and Strings. */
+/* Define to 1 since we have PermStrings. */
 #define HAVE_PERMSTRING 1
-#define HAVE_STRING 1
 
 /* Define if <new> exists and works. */
 #undef HAVE_NEW_HDR
