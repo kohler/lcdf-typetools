@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <kpathsea/progname.h>
 #include <kpathsea/expand.h>
+#include <kpathsea/variable.h>
 #include <kpathsea/c-pathch.h>
 #include <kpathsea/tex-file.h>
 #include "kpseinterface.h"
@@ -22,19 +23,25 @@
 int kpsei_env_sep_char = ENV_SEP;
 
 void
-kpsei_init(const char *argv0)
+kpsei_init(const char* argv0)
 {
     kpse_set_progname(argv0);
 }
 
-char *
-kpsei_path_expand(const char *path)
+char*
+kpsei_path_expand(const char* path)
 {
     return kpse_path_expand(path);
 }
 
-char *
-kpsei_find_file(const char *name, int format)
+char*
+kpsei_var_value(const char* var)
+{
+    return kpse_var_value(var);
+}
+
+char*
+kpsei_find_file(const char* name, int format)
 {
     switch (format) {
       case KPSEI_FMT_WEB2C:
