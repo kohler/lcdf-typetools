@@ -130,7 +130,7 @@ apply_kern_precision(Metrics *m, double kern_precision)
 
 
 static void
-read_file(char *fn, MetricsFinder *finder)
+read_file(const char *fn, MetricsFinder *finder)
 {
   Filename filename;
   FILE *file;
@@ -225,7 +225,7 @@ Interpolation settings:\n\
       --style=N                 Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N    Set first (second, third, fourth) axis to N.\n\
   -p, --precision=N             Allow N digits of fraction (default 3).\n\
-  -k, --kern-precision=N        Remove kerns smaller than N (default 5).\n\
+  -k, --kern-precision=N        Remove kerns smaller than N (default 2).\n\
 \n\
 Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 }
