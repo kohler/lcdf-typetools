@@ -276,6 +276,8 @@ class ClassDef { public:
 
 };
 
+extern Vector<PermString> debug_glyph_names;
+
 
 inline bool
 operator==(Tag t1, uint32_t t2)

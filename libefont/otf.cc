@@ -21,6 +21,8 @@
 
 namespace Efont { namespace OpenType {
 
+Vector<PermString> debug_glyph_names;
+
 Font::Font(const String &s, ErrorHandler *errh)
     : _str(s)
 {
@@ -564,15 +566,15 @@ Coverage::lookup(Glyph g) const throw ()
 	while (l <= r) {
 	    int m = (l + r) >> 1;
 	    int mval = USHORT_AT(data + m * LIST_RECSIZE);
-	    if (g == mval)
-		return m;
-	    else if (g < mval)
+	    if (g < mval)
 		r = m - 1;
+	    else if (g == mval)
+		return m;
 	    else
 		l = m + 1;
 	}
 	return -1;
-    } else if (data[2] == T_RANGES) {
+    } else if (data[1] == T_RANGES) {
 	int l = 0, r = count - 1;
 	data += HEADERSIZE;
 	while (l <= r) {
