@@ -5,9 +5,36 @@
 class ErrorHandler;
 namespace Efont {
 
-class EfontOTF { public:
+class OpenTypeTag { public:
+    
+    enum { FIRST_VALID_TAG = 0x20202020U, LAST_VALID_TAG = 0x7E7E7E7EU };
 
-    EfontOTF(const String &, ErrorHandler * = 0);
+    OpenTypeTag()			: _tag(FIRST_VALID_TAG) { }
+    OpenTypeTag(uint32_t tag)		: _tag(tag) { }
+    OpenTypeTag(const char *);
+    OpenTypeTag(const String &);
+    // default destructor
+
+    bool ok() const			{ return _tag != 0; }
+    bool check_valid() const;
+    uint32_t value() const		{ return _tag; }
+    String text() const;
+
+    const uint8_t *table_entry(const uint8_t *table, int n, int entry_size) const;
+
+    const char *script_description() const;
+    const char *language_description() const;
+    const char *feature_description() const;
+    
+  private:
+
+    uint32_t _tag;
+
+};
+
+class OpenTypeFont { public:
+
+    OpenTypeFont(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _error >= 0; }
@@ -17,7 +44,7 @@ class EfontOTF { public:
     const uint8_t *data() const		{ return _str.udata(); }
     int length() const			{ return _str.length(); }
 
-    String table(const char *) const;
+    String table(OpenTypeTag) const;
 
   private:
 
@@ -29,6 +56,60 @@ class EfontOTF { public:
     int parse_header(ErrorHandler *);
     
 };
+
+inline bool
+operator==(OpenTypeTag t1, uint32_t t2)
+{
+    return t1.value() == t2;
+}
+
+inline bool
+operator!=(OpenTypeTag t1, uint32_t t2)
+{
+    return t1.value() != t2;
+}
+
+inline bool
+operator<(OpenTypeTag t1, uint32_t t2)
+{
+    return t1.value() < t2;
+}
+
+inline bool
+operator>(OpenTypeTag t1, uint32_t t2)
+{
+    return t1.value() > t2;
+}
+
+inline bool
+operator<=(OpenTypeTag t1, uint32_t t2)
+{
+    return t1.value() <= t2;
+}
+
+inline bool
+operator>=(OpenTypeTag t1, uint32_t t2)
+{
+    return t1.value() >= t2;
+}
+
+inline bool
+operator==(OpenTypeTag t1, OpenTypeTag t2)
+{
+    return t1.value() == t2.value();
+}
+
+inline bool
+operator!=(OpenTypeTag t1, OpenTypeTag t2)
+{
+    return t1.value() != t2.value();
+}
+
+inline bool
+operator<(OpenTypeTag t1, OpenTypeTag t2)
+{
+    return t1.value() < t2.value();
+}
 
 }
 #endif

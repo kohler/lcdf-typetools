@@ -22,10 +22,6 @@ EfontOTF_cmap::EfontOTF_cmap(const String &s, ErrorHandler *errh)
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
-EfontOTF_cmap::~EfontOTF_cmap()
-{
-}
-
 int
 EfontOTF_cmap::parse_header(ErrorHandler *errh)
 {
