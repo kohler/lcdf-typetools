@@ -5,9 +5,11 @@
 #include "t1rw.hh"
 #include "t1font.hh"
 #include "t1item.hh"
-#include "t1mm.hh"
 #include "clp.h"
 #include "error.hh"
+#include "maket1font.hh"
+#include "cff.hh"
+#include "otf.hh"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -83,7 +85,7 @@ Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 // MAIN
 
 static void
-do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
+do_file(const char *filename, PsresDatabase *, ErrorHandler *errh)
 {
     FILE *f;
     if (strcmp(filename, "-") == 0) {
@@ -92,42 +94,36 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     } else
 	f = fopen(filename, "rb");
   
-    if (!f) {
-	// check for PostScript name
-	Filename fn = psres->filename_value("FontOutline", filename);
-	f = fn.open_read();
-    }
-  
     if (!f)
 	errh->fatal("%s: %s", filename, strerror(errno));
   
-    Type1Reader *reader;
     int c = getc(f);
     ungetc(c, f);
+
+    EfontCFF::Font *font = 0;
+    
     if (c == EOF)
 	errh->fatal("%s: empty file", filename);
-    if (c == 128)
-	reader = new Type1PFBReader(f);
-    else
-	reader = new Type1PFAReader(f);
-  
-    Type1Font *font = new Type1Font(*reader);
-  
-    if (font) {
-	PinnedErrorHandler cerrh(errh, filename);
-    
-	EfontMMSpace *mmspace = font->create_mmspace(&cerrh);
-	Vector<double> *weight_vector = 0;
-	if (mmspace) {
-	    weight_vector = new Vector<double>;
-	    *weight_vector = mmspace->default_weight_vector();
+    if (c == 1 || c == 'O') {
+	StringAccum sa(150000);
+	while (!feof(f)) {
+	    int forward = fread(sa.reserve(32768), 1, 32768, f);
+	    sa.forward(forward);
 	}
-    
-	delete weight_vector;
-    }
-    
-    delete font;
-    delete reader;
+
+	PinnedErrorHandler cerrh(errh, filename);
+	String data = sa.take_string();
+	if (c == 'O')
+	    data = EfontOTF(data, errh).table("CFF");
+	
+	font = new EfontCFF::Font(new EfontCFF(data, errh), PermString(), errh);
+    } else
+	errh->fatal("%s: not a CFF or OpenType/CFF font", filename);
+  
+    Type1Font *font1 = create_type1_font(font);
+
+    Type1PFAWriter t1w(stdout);
+    font1->write(t1w);
 }
 
 int
