@@ -374,53 +374,112 @@ Metrics::add_single_positioning(Code c, int pdx, int pdy, int adx)
 /*****************************************************************************/
 /* changed_context structure						     */
 
-enum { CH_NO = 0, CH_SOME = 1, CH_ALL = 2 };
+namespace {
+class ChangedContext { public:
+    ChangedContext(int ncodes);
+    ~ChangedContext();
+    typedef Metrics::Code Code;
 
-static void
-assign_changed_context(Vector<int> &changed, Vector<int *> &changed_context, int e1, int e2)
+    enum Context { CH_NONE = 0, CH_SOME = 1, CH_ALL = 2 };
+    bool allowed(Code, bool left_context) const;
+    bool pair_allowed(Code, Code) const;
+    bool virgin(Code) const;
+    void disallow(Code);
+    void disallow_pair(Code, Code);
+  private:
+    Vector<Vector<uint32_t> *> _v;
+    int _initial_ncodes;
+    mutable Vector<uint32_t> _all_sentinel;
+    ChangedContext(const ChangedContext &);
+    ChangedContext &operator=(const ChangedContext &);
+    static inline bool bit(const Vector<uint32_t> &, Code);
+    inline void ensure_all(Code) const;
+};
+
+ChangedContext::ChangedContext(int ncodes)
+    : _v(ncodes, 0), _initial_ncodes(ncodes), _all_sentinel(((ncodes - 1) >> 5) + 1, 0xFFFFFFFFU)
 {
-    int n = changed_context.size();
-    if (e1 >= 0 && e2 >= 0 && e1 < n && e2 < n) {
-	int *v = changed_context[e1];
-	if (!v) {
-	    v = changed_context[e1] = new int[((n - 1) >> 5) + 1];
-	    memset(v, 0, sizeof(int) * (((n - 1) >> 5) + 1));
-	}
-	v[e2 >> 5] |= (1 << (e2 & 0x1F));
-	assert(changed[e1] != CH_ALL);
-	changed[e1] = CH_SOME;
+}
+
+ChangedContext::~ChangedContext()
+{
+    for (Vector<uint32_t> **v = _v.begin(); v != _v.end(); v++)
+	if (*v != &_all_sentinel)
+	    delete *v;
+}
+
+inline void
+ChangedContext::ensure_all(Code c) const
+{
+    if (c >= 0 && (c >> 5) >= _all_sentinel.size())
+	_all_sentinel.resize((c >> 5) + 1, 0xFFFFFFFFU);
+}
+
+inline bool
+ChangedContext::bit(const Vector<uint32_t> &v, Code c)
+{
+    if (c < 0 || (c >> 5) >= v.size())
+	return false;
+    else
+	return (v[c >> 5] & (1 << (c & 0x1F))) != 0;
+}
+
+bool
+ChangedContext::allowed(Code c, bool left_context) const
+{
+    if (c < 0)
+	return false;
+    else if (c >= _v.size())
+	return left_context;
+    else
+	return (_v[c] != &_all_sentinel);
+}
+
+bool
+ChangedContext::pair_allowed(Code c1, Code c2) const
+{
+    ensure_all(c2);
+    if (c1 < 0 || c2 < 0)
+	return false;
+    else if (c1 >= _v.size() || c2 >= _v.size() || !_v[c1])
+	return true;
+    else
+	return !bit(*_v[c1], c2);
+}
+
+bool
+ChangedContext::virgin(Code c) const
+{
+    return (c >= 0 && (c >= _v.size() || _v[c] == 0));
+}
+
+void
+ChangedContext::disallow(Code c)
+{
+    assert(c >= 0);
+    if (c >= _v.size())
+	_v.resize(c + 1, 0);
+    if (_v[c] != &_all_sentinel) {
+	delete _v[c];
+	_v[c] = &_all_sentinel;
     }
 }
 
-static bool
-in_changed_context(Vector<int> &changed, Vector<int *> &changed_context, int e1, int e2)
+void
+ChangedContext::disallow_pair(Code c1, Code c2)
 {
-    int n = changed_context.size();
+    assert(c1 >= 0 && c2 >= 0);
+    if (c1 >= _v.size())
+	_v.resize(c1 + 1, 0);
+    if (!_v[c1])
+	_v[c1] = new Vector<uint32_t>;
+    if (_v[c1] != &_all_sentinel) {
+	if ((c2 >> 5) >= _v[c1]->size())
+	    _v[c1]->resize((c2 >> 5) + 1, 0);
+	(*_v[c1])[c2 >> 5] |= 1 << (c2 & 0x1F);
+    }
+}
 
-    // grow vectors if necessary
-    if (e1 >= n || e2 >= n) {
-	int new_n = (e1 > e2 ? e1 : e2) + 256;
-	assert(e1 < new_n && e2 < new_n);
-	changed.resize(new_n, CH_NO);
-	changed_context.resize(new_n, 0);
-	for (int i = 0; i < n; i++)
-	    if (int *v = changed_context[i]) {
-		int *nv = new int[((new_n - 1) >> 5) + 1];
-		memcpy(nv, v, sizeof(int) * (((n - 1) >> 5) + 1));
-		memset(nv + (((n - 1) >> 5) + 1), 0, sizeof(int) * (((new_n - 1) >> 5) - ((n - 1) >> 5)));
-		delete[] v;
-		changed_context[i] = nv;
-	    }
-	n = new_n;
-    }
-    
-    if (e1 >= 0 && e2 >= 0 && e1 < n && e2 < n) {
-	if (changed[e1] == CH_ALL)
-	    return true;
-	else if (const int *v = changed_context[e1])
-	    return (v[e2 >> 5] & (1 << (e2 & 0x1F))) != 0;
-    }
-    return false;
 }
 
 
@@ -431,8 +490,7 @@ int
 Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 {
     // keep track of what substitutions we have performed
-    Vector<int> changed(_encoding.size(), CH_NO);
-    Vector<int *> changed_context(_encoding.size(), 0);
+    ChangedContext ctx(_encoding.size());
 
     // XXX does not handle multiply-encoded glyphs
     
@@ -442,48 +500,48 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 	bool is_single = s->is_single() || s->is_alternate();
 	if (is_single && allow_single) {
 	    Code e = encoding(s->in_glyph());
-	    if (e < 0 || e >= changed.size())
-		/* not encoded before this substitution began, ignore */;
-	    else if (changed[e] == CH_NO) {
+	    if (!ctx.allowed(e, false))
+		/* not encoded before this substitution began, or completely
+		   changed; ignore */;
+	    else if (ctx.virgin(e)) {
 		// no one has changed this glyph yet, change it unilaterally
 		assign_emap(s->in_glyph(), -2);
 		assign_emap(s->out_glyph_0(), e);
 		assert(!_encoding[e].virtual_char);
 		_encoding[e].glyph = s->out_glyph_0();
-		changed[e] = CH_ALL;
-	    } else if (changed[e] == CH_SOME) {
+		ctx.disallow(e);
+	    } else {
 		// some contextual substitutions have changed this glyph, add
 		// contextual substitutions for the remaining possibilities
 		Code out = force_encoding(s->out_glyph_0(), lookup);
-		const int *v = changed_context[e];
-		for (Code j = 0; j < changed.size(); j++)
-		    if (_encoding[j].glyph > 0 && !(v[j >> 5] & (1 << (j & 0x1F)))) {
-			Code pair = pair_code(out, j, lookup);
+		for (Code right = 0; right < _encoding.size(); right++)
+		    if (_encoding[right].visible() && !_encoding[right].flag(Char::BUILT) && ctx.pair_allowed(e, right)) {
+			Code pair = pair_code(out, right, lookup);
 			_encoding[out].flags &= ~Char::INTERMEDIATE;
-			add_ligature(e, j, pair);
+			add_ligature(e, right, pair);
 		    }
-		changed[e] = CH_ALL;
+		ctx.disallow(e);
 	    }
 
 	} else if (!is_single && !s->is_multiple() && s->is_simple_context()) {
 	    // find a list of 'in' codes
 	    Vector<Glyph> in;
 	    s->all_in_glyphs(in);
+	    int nleft = s->left_nglyphs(), nin = s->in_nglyphs();
 	    assert(in.size() >= 2);
 	    bool ok = true;
 	    for (Glyph *inp = in.begin(); inp < in.end(); inp++) {
 		*inp = encoding(*inp);
-		if (*inp < 0 || *inp >= changed.size() || changed[*inp] == CH_ALL)
+		if (!ctx.allowed(*inp, inp - in.begin() < nleft))
 		    ok = false;
 	    }
 
 	    // check if any part of the combination has already changed
-	    int nleft = s->left_nglyphs(), nin = s->in_nglyphs();
 	    int ncheck = nleft + (nin > 2 ? 2 : nin);
 	    if (ncheck == in.size())
 		ncheck--;
 	    for (Glyph *inp = in.begin(); inp < in.begin() + ncheck; inp++)
-		if (in_changed_context(changed, changed_context, inp[0], inp[1]))
+		if (!ctx.pair_allowed(inp[0], inp[1]))
 		    ok = false;
 
 	    // if not ok, continue
@@ -492,7 +550,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 
 	    // mark this combination as changed if appropriate
 	    if (in.size() == 2 && nin == 1)
-		assign_changed_context(changed, changed_context, in[0], in[1]);
+		ctx.disallow_pair(in[0], in[1]);
 
 	    // build up the character pair
 	    int cin1 = in[0];
@@ -519,6 +577,8 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 	    // make the final ligature
 	    add_ligature(cin1, cin2, cout);
 
+	    //fprintf(stderr, "%s : %d/%s %d/%s => %d/%s\n", s->unparse().c_str(), cin1, code_str(cin1), cin2, code_str(cin2), cout, code_str(cout));
+
 	    // if appropriate, swap old ligatures to point to the new result
 	    if (old_out >= 0)
 		for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
@@ -530,8 +590,6 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 	    failures++;
     }
 
-    for (int i = 0; i < changed_context.size(); i++)
-	delete[] changed_context[i];
     return sv.size() - failures;
 }
 
@@ -1135,10 +1193,11 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
     for (Code c = 0; c < _encoding.size(); c++)
 	if (_encoding[c].glyph) {
 	    const Char &ch = _encoding[c];
-	    fprintf(stderr, "%4d/%s%s%s%s%s\n", c, code_str(c, glyph_names),
+	    fprintf(stderr, "%4d/%s%s%s%s%s%s\n", c, code_str(c, glyph_names),
 		    (ch.flag(Char::LIVE) ? " [L]" : ""),
 		    (ch.flag(Char::BASE_LIVE) ? " [B]" : ""),
 		    (ch.flag(Char::CONTEXT_ONLY) ? " [C]" : ""),
+		    (ch.flag(Char::BUILT) ? " [!]" : ""),
 		    (ch.base_code >= 0 ? " <BC>" : ""));
 	    if (ch.base_code >= 0 && ch.base_code != c)
 		fprintf(stderr, "\tBASE %d/%s\n", ch.base_code, code_str(ch.base_code, glyph_names));
