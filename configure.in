@@ -163,7 +163,25 @@ dnl ntohs, ntohl (need them in C++ code)
 dnl
 
 AC_LANG_CPLUSPLUS
-AC_CHECK_HEADERS(netinet/in.h sys/param.h)
+AC_CHECK_HEADERS(byteorder.h netinet/in.h sys/param.h)
+AC_MSG_CHECKING([whether ntohs and ntohl are defined])
+AC_COMPILE_IFELSE(
+	[AC_LANG_PROGRAM([[#if HAVE_BYTEORDER_H
+# include <byteorder.h>
+#elif HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+]], [[(void) ntohs(0x0020), (void) ntohl(0x03040020);]])],
+	[AC_MSG_RESULT(yes)],
+	[AC_MSG_RESULT(no)
+    AC_MSG_ERROR([
+=========================================
+
+Cannot find a definition for ntohs and/or ntohl!
+
+=========================================])])
 AC_LANG_C
 
 
