@@ -39,7 +39,7 @@ mmpfb: $(OBJS)
 	$(CXXLINKER) $(CFLAGS) -o mmpfb $(OBJS) $(LDFLAGS)
 
 t1mm.o: ../t1lib/t1mm.cc ../t1lib/t1mm.hh
-	$(CXX) $(CPPFLAGS) -DT1FONT $(CXXFLAGS) -c $<
+	$(CXX) $(CPPFLAGS) -DT1FONT $(CXXFLAGS) -c ../t1lib/t1mm.cc -o t1mm.o
 
 main.o: main.cc
 	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc

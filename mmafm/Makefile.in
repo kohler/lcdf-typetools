@@ -41,7 +41,7 @@ mmafm: $(OBJS)
 	$(CXXLINKER) $(CFLAGS) -o mmafm $(OBJS) $(LDFLAGS)
 
 t1mm.o: ../t1lib/t1mm.cc ../t1lib/t1mm.hh
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c ../t1lib/t1mm.cc -o t1mm.o
 
 main.o: main.cc
 	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
