@@ -309,8 +309,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   Type1Font *font = new Type1Font(*reader);
   
   if (font) {
-    String context = String(filename) + ": ";
-    PinnedErrorHandler cerrh(String(filename) + ": ", errh);
+    PinnedErrorHandler cerrh(filename, errh);
     
     check_blues(font, &cerrh);
     check_stems(font, &cerrh);
@@ -330,7 +329,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 				+ "':", &cerrh);
       cc.check(t1s->t1cs(), &derrh);
     }
-
+    
     delete weight_vector;
   }
     
