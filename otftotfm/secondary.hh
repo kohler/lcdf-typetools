@@ -19,6 +19,7 @@ class Secondary { public:
 
 class T1Secondary : public Secondary { public:
     T1Secondary(const Efont::Cff::Font *, const Efont::OpenType::Cmap &);
+    bool encode_uni(int code, PermString name, uint32_t uni, const DvipsEncoding &, Metrics &);
     bool setting(uint32_t uni, Vector<Setting> &, const DvipsEncoding &);
   private:
     int _xheight;

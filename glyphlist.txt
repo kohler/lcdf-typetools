@@ -4303,6 +4303,8 @@ Germandbls;D800
 Ng;014A
 Omega;2126;03A9
 Rfractur;211C
+# altselector: invalid Unicode
+altselector;D802
 angbracketleft;27E8;2329
 angbracketright;27E9;232A
 arrowbothv;2195

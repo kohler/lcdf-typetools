@@ -56,6 +56,7 @@ class DvipsEncoding { public:
 
     Vector<PermString> _e;
     int _boundary_char;
+    int _altselector_char;
 
     Vector<Ligature> _lig;
     HashMap<PermString, int> _unicoding_map;

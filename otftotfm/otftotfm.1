@@ -1,5 +1,5 @@
 '\"t
-.ds V 1.75
+.ds V 1.80
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -36,10 +36,8 @@ the spacing of capital letters, whether numbers are lining or old-style,
 and so forth. (You can see what features a font supports using
 "\fBotfinfo\fR \-f"; see
 .M otfinfo 1 .)
-.LP
-OpenType features can be more complex than TeX can handle, but many
-features useful for Western scripts (Latin, Greek, and Cyrillic, for
-example) are supported by TeX, including:
+Many simple features used for alphabetic scripts are supported by TeX,
+including:
 .IP * 3
 Glyph substitutions, such as replacing 'a' with small caps 
 .SM 'A'.
@@ -51,10 +49,10 @@ glyph.
 .IP * 3
 Simple glyph positionings, such as adding extra space on either side of 'W'.
 .LP
-Otftotfm reads an OpenType font, turns on any font features you choose, and
+Otftotfm reads an OpenType font, turns on the font features you choose, and
 generates font metrics and a dvips encoding file that, together, implement
-as much of those features as possible. By default otftotfm creates TFM and
-VF files using the
+those features as far as possible. By default otftotfm creates TFM and VF
+files using the
 .M pltotf 1
 and
 .M vptovf 1
@@ -343,6 +341,64 @@ Sets the font's boundary character to
 .IR char ,
 which should be a number between -1 and 255. The default is taken from the
 encoding.
+'
+.Sp
+.TP 5
+.BI \-\-altselector\-char= char
+Sets the font's alternate-selector character to
+.IR char ,
+which should be a number between -1 and 255. Use an alternate selector if
+you want to choose between different versions of a character from within a
+TeX file. For instance, say that your font provides three versions of
+"A". If you want to access them all, pick a character to be your alternate
+selector -- say "*", which is ASCII 42. Then give otftotfm the
+.BR --altselector-char= 42
+option. In TeX, "A" will produce the normal version, "A*" will produce the
+first alternate, and "A**" will produce the second alternate. Furthermore,
+"s*t" will activate any discretionary "s_t" ligature in the font.
+.Sp
+The
+.B \-\-altselector
+mechanism uses the font's "aalt" and "dlig" features. You don't need to
+turn on those features if you use
+.BR \-\-altselector .
+See Sivan Toledo's article, cited in the See Also section, for more
+information.
+'
+.Sp
+.TP 5
+.BI \-\-include\-alternates= pattern
+Only include alternate characters whose names match
+.IR pattern ,
+which uses the glob matching rules common from filename matches (where
+"*" matches any number of characters, "?" matches any single character, and
+"[...]" matches any character in a set).
+.Sp
+OpenType fonts can have many alternates per character, most of which aren't
+interesting. For example, the character "a" in WarnockPro-Regular has five
+alternates, "ordfeminine", "Asmall", "asuperior", "a.end", and
+"orn.013". The
+.B \-\-altselector\-char
+option lets you cycle through these alternates, but it's better to leave
+out the ones you don't want, to avoid overfull encodings. Thus, if you were
+only interested in ".end" variants, you might run otftotfm with a
+.BR \-\-include\-alternates= "'*.end'"
+option.
+'
+.Sp
+.TP 5
+.BI \-\-exclude\-alternates= pattern
+Do not include alternate characters whose names match
+.IR pattern ,
+which uses the glob matching rules common from filename matches.
+.Sp
+You can give any number of
+.B \-\-include\-
+and
+.B \-\-exclude\-alternates
+options. Otftotfm will use an alternate if it matches at least one of the
+include patterns, and none of the exclude patterns.
+'
 .PD
 '
 '
@@ -358,7 +414,7 @@ Select automatic mode.
 .BI \-v " vendor\fR, " \-\-vendor= vendor
 Set the font vendor name, which is used to locate files within the TDS.
 Defaults to "lcdftools".
-.IP
+.Sp
 In automatic mode, TeX and friends will generally find required font files
 independently of the vendor you select. However, you will need to
 explicitly tell
@@ -607,6 +663,15 @@ and
 "{K}", like "{}", inhibits kerns only, and "{LK}" and "{KL}" inhibit both
 ligatures and kerns.
 .PP
+You can set the 
+.B --boundary-char
+and
+.B --altselector-char
+from an encoding file with commands like this:
+.nf
+  % LIGKERN || = \fIboundarychar\fR ;
+  % LIGKERNX ^^ = \fIaltselectorchar\fR ;
+.PP
 As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
 commands, separated by spaced semicolons.
 .PP
@@ -662,10 +727,10 @@ feature incorrectly.
 .IR aalt ", Access All Alternates"
 Lets the user choose between all available alternate forms for a character.
 This includes things like superscript and subscript variants, as well as
-different styles (swash, for example). This is not likely useful for TeX,
-since a TeX user can't interactively choose a given alternate form. Not
-well supported. See also
-.IR salt .
+different styles (swash, for example). The
+.B \-\-altselector
+option provides useful access to this feature. See also
+.IR salt " and " calt .
 .TP 5
 .IR c2sc ", Small Capitals From Capitals"
 Replaces capital letters with small capitals: a sort of converse of the
@@ -928,6 +993,11 @@ http://www.tug.org/tds/
 .LP
 .IR "Kpathsea: A library for path searching" ,
 http://www.tug.org/kpathsea/
+.LP
+Sivan Toledo,
+.IR "Exploiting Rich Fonts" ,
+TUGboat 21(2), 2000,
+http://www.tug.org/TUGboat/Articles/tb21-2/tb67tole.pdf
 '
 .SH AUTHOR
 Eddie Kohler (kohler@icir.org)

@@ -73,6 +73,9 @@ using namespace Efont;
 #define BOUNDARY_CHAR_OPT	321
 #define DESIGN_SIZE_OPT		322
 #define MINIMUM_KERN_OPT	323
+#define ALTSELECTOR_CHAR_OPT	324
+#define INCLUDE_ALTERNATES_OPT	325
+#define EXCLUDE_ALTERNATES_OPT	326
 
 #define AUTOMATIC_OPT		331
 #define FONT_NAME_OPT		332
@@ -121,7 +124,10 @@ static Clp_Option options[] = {
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
     { "boundary-char", 0, BOUNDARY_CHAR_OPT, Clp_ArgInt, 0 },
+    { "altselector-char", 0, ALTSELECTOR_CHAR_OPT, Clp_ArgInt, 0 },
     { "design-size", 0, DESIGN_SIZE_OPT, Clp_ArgDouble, 0 },
+    { "include-alternates", 0, INCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
+    { "exclude-alternates", 0, EXCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -178,6 +184,9 @@ static PermString dot_notdef(".notdef");
 
 static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
+
+static Vector<String> include_alternates;
+static Vector<String> exclude_alternates;
 
 static String font_name;
 static String encoding_file;
@@ -241,6 +250,9 @@ Encoding options:\n\
       --unicoding=COMMAND      Add a UNICODING command.\n\
       --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
+      --altselector-char=CHAR  Set the alternate selector character to CHAR.\n\
+      --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
+      --include-alternates=PAT Include only alternate characters matching PAT.\n\
 \n");
     printf("\
 Automatic mode options:\n\
@@ -1115,7 +1127,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
 	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%5d\t%s\n", i, subs[subno].unparse().c_str());
 	    
-	    int nunderstood = encoding.apply(subs, !dvipsenc_literal, i);
+	    int nunderstood = encoding.apply(subs, !dvipsenc_literal, i, include_alternates, exclude_alternates, glyph_names);
 
 	    // mark as used
 	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;
@@ -1123,6 +1135,25 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
 
+    // apply 'aalt' feature if we have variant selectors
+    if (encoding.altselectors() && !dvipsenc_literal) {
+	Vector<OpenType::Tag> alt_features;
+	alt_features.push_back(OpenType::Tag("aalt"));
+	alt_features.push_back(OpenType::Tag("dlig"));
+	alt_features.swap(interesting_features);
+	Vector<Lookup> alt_lookups(gsub.nlookups(), Lookup());
+	find_lookups(gsub.script_list(), gsub.feature_list(), alt_lookups, ErrorHandler::silent_handler());
+	Vector<OpenType::Substitution> alt_subs;
+	for (int i = 0; i < alt_lookups.size(); i++)
+	    if (alt_lookups[i].used) {
+		OpenType::GsubLookup l = gsub.lookup(i);
+		alt_subs.clear();
+		(void) l.unparse_automatics(gsub, alt_subs);
+		encoding.apply_alternates(alt_subs, i, include_alternates, exclude_alternates, glyph_names);
+	    }
+	alt_features.swap(interesting_features);
+    }
+    
     // apply LIGKERN ligature commands to the result
     dvipsenc.apply_ligkern_lig(encoding, errh);
 
@@ -1386,6 +1417,26 @@ main(int argc, char *argv[])
 	  case BOUNDARY_CHAR_OPT:
 	    ligkern.push_back(String("|| = ") + clp->arg);
 	    break;
+
+	  case ALTSELECTOR_CHAR_OPT:
+	    ligkern.push_back(String("^^ = ") + clp->arg);
+	    break;
+
+	  case EXCLUDE_ALTERNATES_OPT:
+	  case INCLUDE_ALTERNATES_OPT: {
+	      Vector<String> *v = (opt == EXCLUDE_ALTERNATES_OPT ? &exclude_alternates : &include_alternates);
+	      const char *s = clp->arg;
+	      while (*s) {
+		  const char *start = s;
+		  while (*s && !isspace(*s))
+		      s++;
+		  if (s > start)
+		      v->push_back(String(start, s - start));
+		  while (isspace(*s))
+		      s++;
+	      }
+	      break;
+	  }
 	    
 	  case UNICODING_OPT:
 	    unicoding.push_back(clp->arg);

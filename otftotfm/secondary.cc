@@ -22,6 +22,11 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_VISIBLESPACE = 0x2423,	// U+2423 OPEN BOX
        U_SS = 0xD800,		// invalid Unicode
        U_EMPTYSLOT = 0xD801,	// invalid Unicode (not handled by Secondary)
+       U_ALTSELECTOR = 0xD802,	// invalid Unicode
+       U_VS1 = 0xFE00,
+       U_VS16 = 0xFE0F,
+       U_VS17 = 0xE0100,
+       U_VS256 = 0xE01FF,
        U_IJ = 0x0132,
        U_ij = 0x0133 };
 
@@ -80,11 +85,26 @@ T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, 
 }
 
 bool
+T1Secondary::encode_uni(int code, PermString name, uint32_t uni, const DvipsEncoding &dvipsenc, Metrics &m)
+{
+    if (uni == U_ALTSELECTOR || (uni >= U_VS1 && uni <= U_VS16) || (uni >= U_VS17 && uni <= U_VS256)) {
+	Vector<Setting> v;
+	setting(uni, v, dvipsenc);
+	int which = (uni == U_ALTSELECTOR ? 0 : (uni <= U_VS16 ? uni - U_VS1 + 1 : uni - U_VS17 + 17));
+	m.encode_virtual(code, (which ? permprintf("<vs%d>", which) : PermString("<altselector>")), v);
+	m.add_altselector_code(code, which);
+	return true;
+    } else
+	return Secondary::encode_uni(code, name, uni, dvipsenc, m);
+}
+
+bool
 T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvipsenc)
 {
     switch (uni) {
 	
       case U_CWM:
+      case U_ALTSELECTOR:
 	v.push_back(Setting(Setting::RULE, 0, _xheight));
 	return true;
 
@@ -112,6 +132,10 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	break;
 
     }
+
+    // variant selectors get the same setting as VSCHOICE
+    if ((uni >= U_VS1 && uni <= U_VS16) || (uni >= U_VS17 && uni <= U_VS256))
+	return setting(U_ALTSELECTOR, v, dvipsenc);
 
     // otherwise, try other secondaries
     return Secondary::setting(uni, v, dvipsenc);

@@ -46,6 +46,9 @@ class Metrics { public:
     void encode(Code, Glyph);
     void encode_virtual(Code, PermString, const Vector<Setting> &);
 
+    void add_altselector_code(Code, int altselector_type);
+    bool altselectors() const		{ return _altselectors.size() > 0; }
+    
     inline Code base_code(Code) const;
     inline Glyph base_glyph(Code) const;
     void base_glyphs(Vector<Glyph> &) const;
@@ -60,7 +63,8 @@ class Metrics { public:
     void remove_kerns(Code in1, Code in2);
     int reencode_right_ligkern(Code old_in2, Code new_in2);
     
-    int apply(const Vector<Substitution> &, bool allow_single, int lookup);
+    int apply(const Vector<Substitution> &, bool allow_single, int lookup, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names);
+    void apply_alternates(const Vector<Substitution> &, int lookup, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names);
     int apply(const Vector<Positioning> &);
 
     void cut_encoding(int size);
@@ -132,6 +136,8 @@ class Metrics { public:
     Glyph _boundary_glyph;
     Glyph _emptyslot_glyph;
 
+    Vector<Kern> _altselectors;
+
     String _coding_scheme;
 
     bool _liveness_marked : 1;
@@ -151,7 +157,9 @@ class Metrics { public:
     void all_ligatures(Vector<Ligature3> &) const;
     void mark_liveness(int size, const Vector<Ligature3> &);
     void reencode(const Vector<Code> &);
-    
+
+    void apply_ligature(const Vector<Code> &, const Substitution *, int lookup);
+
 };
 
 

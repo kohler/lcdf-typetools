@@ -149,7 +149,7 @@ DvipsEncoding::glyphname_unicode(const String &gn, bool *more)
 
 
 DvipsEncoding::DvipsEncoding()
-    : _boundary_char(-1), _unicoding_map(-1)
+    : _boundary_char(-1), _altselector_char(-1), _unicoding_map(-1)
 {
 }
 
@@ -317,6 +317,13 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 		return 0;
 	    else
 		return errh->error("parse error in boundary character assignment");
+	} else if (v[0] == "^^" && v[1] == "=") {
+	    char *endptr;
+	    _altselector_char = strtol(v[2].c_str(), &endptr, 10);
+	    if (*endptr == 0 && _altselector_char < _e.size())
+		return 0;
+	    else
+		return errh->error("parse error in altselector character assignment");
 	} else if ((op = find_ligkern_op(v[1])) >= J_NOKERN) {
 	    int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
 	    if (av < 0)
@@ -523,46 +530,51 @@ map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const Metrics &m)
 void
 DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary)
 {
-    for (int i = 0; i < _e.size(); i++)
-	if (_e[i] != dot_notdef) {
-	    Efont::OpenType::Glyph gid = 0;
-	    
-	    // check UNICODING map
-	    int m = _unicoding_map[_e[i]];
-	    if (m >= 0) {
-		for (; _unicoding[m] >= 0 && !gid; m++)
-		    gid = map_uni(_unicoding[m], cmap, metrics);
-	    } else {
-		// otherwise, try to map this glyph name to Unicode
-		bool more;
-		if ((m = glyphname_unicode(_e[i], &more)) >= 0)
-		    gid = map_uni(m, cmap, metrics);
-		// might be multiple possibilities
-		if (!gid && more) {
-		    String gn = _e[i];
-		    do {
-			gn += String("/");
-			if ((m = glyphname_unicode(gn, &more)) >= 0)
-			    gid = map_uni(m, cmap, metrics);
-		    } while (!gid && more);
-		}
-		// if that didn't work, try the glyph name
-		if (!gid && font)
-		    gid = font->glyphid(_e[i]);
-		// as a last resort, try adding it with secondary
-		if (gid <= 0 && secondary
-		    && (m = glyphname_unicode(_e[i])) >= 0
-		    && secondary->encode_uni(i, _e[i], m, *this, metrics))
-		    continue;
-		// map unknown glyphs to 0
-		if (gid < 0)
-		    gid = 0;
+    for (int i = 0; i < _e.size(); i++) {
+	PermString chname = _e[i];
+	if (i == _altselector_char)
+	    chname = "altselector";
+	else if (chname == dot_notdef)
+	    continue;
+	
+	Efont::OpenType::Glyph gid = 0;
+	
+	// check UNICODING map
+	int m = _unicoding_map[chname];
+	if (m >= 0) {
+	    for (; _unicoding[m] >= 0 && !gid; m++)
+		gid = map_uni(_unicoding[m], cmap, metrics);
+	} else {
+	    // otherwise, try to map this glyph name to Unicode
+	    bool more;
+	    if ((m = glyphname_unicode(chname, &more)) >= 0)
+		gid = map_uni(m, cmap, metrics);
+	    // might be multiple possibilities
+	    if (!gid && more) {
+		String gn = chname;
+		do {
+		    gn += String("/");
+		    if ((m = glyphname_unicode(gn, &more)) >= 0)
+			gid = map_uni(m, cmap, metrics);
+		} while (!gid && more);
 	    }
-
-	    metrics.encode(i, gid);
-	    if (gid == 0)
-		bad_codepoint(i);
+	    // if that didn't work, try the glyph name
+	    if (!gid && font)
+		gid = font->glyphid(chname);
+	    // as a last resort, try adding it with secondary
+	    if (gid <= 0 && secondary
+		&& (m = glyphname_unicode(chname)) >= 0
+		&& secondary->encode_uni(i, chname, m, *this, metrics))
+		continue;
+	    // map unknown glyphs to 0
+	    if (gid < 0)
+		gid = 0;
 	}
+
+	metrics.encode(i, gid);
+	if (gid == 0)
+	    bad_codepoint(i);
+    }
     metrics.set_coding_scheme(_coding_scheme);
 }
 

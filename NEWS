@@ -1,5 +1,14 @@
 LCDF Typetools NEWS
 
+Version 1.80   4.Dec.2003
+
+* otftotfm: Add --altselector option, and --include-alternates and
+  --exclude-alternates options.  These options support access to alternate
+  characters through ligatures, using a mechanism originally planned by
+  Sivan Toledo ("Exploiting Rich Fonts", TUGboat 21(2), 2000).  Requested
+  by Martin Budaj.
+
+
 Version 1.75   3.Dec.2003
 
 * cfftot1: Handle the case when 'hintmask' is the first operator in a Type 2
