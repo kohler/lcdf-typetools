@@ -953,8 +953,10 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     assert(cmap.ok());
     if (dvipsenc_literal)
 	dvipsenc.make_literal_gsub_encoding(encoding, &font);
-    else
-	dvipsenc.make_gsub_encoding(encoding, cmap, &font, new T1Secondary(&font, cmap));
+    else {
+	T1Secondary secondary(&font, cmap);
+	dvipsenc.make_gsub_encoding(encoding, cmap, &font, &secondary);
+    }
     // encode boundary glyph at 256
     encoding.encode(256, encoding.boundary_glyph());
     
