@@ -1,5 +1,16 @@
 LCDF Typetools NEWS
 
+Version 0.14   2.Jul.2003
+
+* otftotfm: Add '-L/--letterspacing' option at Bruce D'Arcus's request.
+
+* otftotfm: Hypothetically supports the contextual substitutions necessary
+  for the 'init' (Initial Forms) feature.
+
+* otftotfm: When you make a virtual font named "foo", remove any entries
+  for "foo" from VENDOR.map.
+
+
 Version 0.13   27.Jun.2003
 
 * --without-kpathsea works. Problem reported by Adam Lindsay.
