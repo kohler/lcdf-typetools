@@ -13,7 +13,7 @@ static ErrorHandler *itc_errh;
 void
 itc_complain()
 {
-  itc_errh->warning("strange `callothersubr'; is this an ITC font?");
+  //itc_errh->warning("strange `callothersubr'; is this an ITC font?");
   itc_complained = true;
 }
 
@@ -497,8 +497,8 @@ Type1OneMMRemover::command(int cmd)
 
 
 bool
-Type1OneMMRemover::run(const Type1Charstring &cs, bool in_subr, bool do_prefix,
-		       bool fresh)
+Type1OneMMRemover::run(const Type1Charstring &cs,
+		       bool in_subr, bool do_prefix, bool fresh)
 {
   _prefix_gen.clear();
   _main_gen.clear();
@@ -556,6 +556,66 @@ void
 Type1OneMMRemover::output_main(Type1Charstring &cs)
 {
   _main_gen.output(cs);
+}
+
+
+/*****
+ * Type1BadCallRemover
+ **/
+
+class Type1BadCallRemover: public Type1Interp {
+
+  Type1CharstringGen _gen;
+  
+ public:
+  
+  Type1BadCallRemover(Type1MMRemover *);
+
+  bool command(int);
+
+  bool run(Type1Charstring &);
+  
+};
+
+Type1BadCallRemover::Type1BadCallRemover(Type1MMRemover *remover)
+  : Type1Interp(remover->program(), remover->weight_vector()),
+    _gen(remover->precision())
+{
+}
+
+bool
+Type1BadCallRemover::command(int cmd)
+{
+  switch (cmd) {
+    
+   case cCallsubr: {
+     if (size() < 1) goto normal;
+     int subrno = (int)top();
+     if (!get_subr(subrno)) {
+       pop();
+       return false;
+     } else
+       goto normal;
+     break;
+   }
+   
+   normal:
+   default:
+    _gen.gen_stack(*this);
+    _gen.gen_command(cmd);
+    return (cmd != cEndchar && cmd != cReturn);
+    
+  }
+}
+
+bool
+Type1BadCallRemover::run(Type1Charstring &cs)
+{
+  _gen.clear();
+  init();
+  cs.run(*this);
+  _gen.output(cs);
+  return errno() == errOK;
 }
 
 
@@ -688,6 +748,16 @@ Type1MMRemover::run()
       one.output_main(*cs);
     } else
       _font->remove_subr(i);
+  
+  // remove calls to removed subroutines
+  Type1BadCallRemover bcr(this);
+  for (int i = 0; i < _font->nglyphs(); i++)
+    if (Type1Subr *g = _font->glyph(i))
+      bcr.run(g->t1cs());
+  for (int i = 4; i < _nsubrs; i++)
+    if (Type1Charstring *cs = _font->subr(i))
+      bcr.run(*cs);
+  
   
   // report warnings
   if (bad_glyphs.size()) {
