@@ -3,7 +3,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "permstr.hh"
+#ifdef HAVE_PERMSTRING
+# include "permstr.hh"
+#endif
+#ifdef HAVE_STRING
+# include "string.hh"
+#endif
 
 class StringAccum {
   
@@ -114,12 +119,23 @@ operator<<(StringAccum &sa, const char *s)
   return sa;
 }
 
+#ifdef HAVE_PERMSTRING
 inline StringAccum &
 operator<<(StringAccum &sa, PermString s)
 {
   memcpy(sa.extend(s.length()), s.cc(), s.length());
   return sa;
 }
+#endif
+
+#ifdef HAVE_STRING
+inline StringAccum &
+operator<<(StringAccum &sa, const String &s)
+{
+  memcpy(sa.extend(s.length()), s.data(), s.length());
+  return sa;
+}
+#endif
 
 inline unsigned char *
 StringAccum::take_bytes()

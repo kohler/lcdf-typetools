@@ -1,6 +1,7 @@
 #ifndef LANDMARK_HH
 #define LANDMARK_HH
 #include "permstr.hh"
+#include "string.hh"
 
 class Landmark {
   
@@ -8,7 +9,7 @@ class Landmark {
   unsigned _line;
   
  public:
-  
+
   Landmark()				: _file(0), _line(~0U) { }
   explicit Landmark(PermString f)	: _file(f), _line(~0U) { }
   Landmark(PermString f, unsigned l)	: _file(f), _line(l) { }
@@ -21,6 +22,8 @@ class Landmark {
   
   Landmark next_line() const;
   Landmark whole_file() const		{ return Landmark(_file); }
+  
+  operator String() const;
   
 };
 

@@ -2,166 +2,257 @@
 # include <config.h>
 #endif
 #include "error.hh"
-#include "landmark.hh"
-#include "operator.hh"
-#include "expr.hh"
-#include <stdarg.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
+#include "straccum.hh"
+#include <assert.h>
 #include <stdio.h>
 
-static bool need_error_context;
-static const char *error_context_msg;
-int num_errors;
-int num_warnings;
-
-static void
-print_error_context(const Landmark &l)
+void
+ErrorHandler::message(const String &message)
 {
-  if (need_error_context && error_context_msg) {
-    fprintf(stderr, "%s: %s\n", l.file().cc(), error_context_msg);
-    need_error_context = false;
-  }
+  vmessage(Message, message);
 }
 
-static void
-verror(const Landmark &l, bool iswarning, const char *errfmt, va_list val)
+void
+ErrorHandler::message(const char *format, ...)
 {
-  print_error_context(l);
+  va_list val;
+  va_start(val, format);
+  verror(Message, String(), format, val);
+  va_end(val);
+}
 
-  String s = l;
-  fputs(s.cc(), stderr);
-  if (iswarning) fputs("warning: ", stderr);
+int
+ErrorHandler::warning(const char *format, ...)
+{
+  va_list val;
+  va_start(val, format);
+  verror(Warning, String(), format, val);
+  va_end(val);
+  return -1;
+}
+
+int
+ErrorHandler::error(const char *format, ...)
+{
+  va_list val;
+  va_start(val, format);
+  verror(Error, String(), format, val);
+  va_end(val);
+  return -1;
+}
+
+int
+ErrorHandler::fatal(const char *format, ...)
+{
+  va_list val;
+  va_start(val, format);
+  verror(Fatal, String(), format, val);
+  va_end(val);
+  return -1;
+}
+
+int
+ErrorHandler::lwarning(const String &where, const char *format, ...)
+{
+  va_list val;
+  va_start(val, format);
+  verror(Warning, where, format, val);
+  va_end(val);
+  return -1;
+}
+
+int
+ErrorHandler::lerror(const String &where, const char *format, ...)
+{
+  va_list val;
+  va_start(val, format);
+  verror(Error, where, format, val);
+  va_end(val);
+  return -1;
+}
+
+int
+ErrorHandler::lfatal(const String &where, const char *format, ...)
+{
+  va_list val;
+  va_start(val, format);
+  verror(Fatal, where, format, val);
+  va_end(val);
+  return -1;
+}
+
+
+int
+ErrorHandler::verror(Seriousness seriousness, const String &where,
+		     const char *s, va_list val)
+{
+  StringAccum msg;
+
+  if (where) msg << where;
+  if (seriousness == Warning) msg << "warning: ";
   
-  while (*errfmt) {
+  while (1) {
     
-    const char *nx = strchr(errfmt, '%');
-    if (!nx) nx = strchr(errfmt, 0);
-    fwrite(errfmt, nx - errfmt, 1, stderr);
-    errfmt = nx;
-    if (!*errfmt) break;
+    const char *pct = strchr(s, '%');
+    if (!pct) {
+      if (*s) msg << s;
+      break;
+    }
+    if (pct != s) {
+      memcpy(msg.extend(pct - s), s, pct - s);
+      s = pct;
+    }
     
-    int dashes = 0;
-    
-   reswitch:
-    switch (*++errfmt) {
+    switch (*++s) {
       
-     case '-':
-      dashes++;
-      goto reswitch;
-      
-     case 'd': {
-       int x = va_arg(val, int);
-       fprintf(stderr, "%d", x);
-       break;
-     }
-       
-     case 'u': {
-       unsigned x = va_arg(val, unsigned);
-       fprintf(stderr, "%u", x);
+     case 's': {
+       const char *x = va_arg(val, const char *);
+       if (!x) x = "(null)";
+       msg << x;
        break;
      }
      
      case 'c': {
-       int x = va_arg(val, int) & 0xFF;
-       if (x >= 32 && x <= 126)
-	 fprintf(stderr, "%c", x);
-       else if (x < 32)
-	 fprintf(stderr, "^%c", x+64);
-       else
-	 fprintf(stderr, "\\%03o", x);
+       int c = va_arg(val, char);
+       if (c == 0)
+	 msg << "\\0";
+       else if (c == '\n')
+	 msg << "\\n";
+       else if (c == '\r')
+	 msg << "\\r";
+       else if (c == '\t')
+	 msg << "\\t";
+       else if (c == '\\')
+	 msg << "\\\\";
+       else if (c >= ' ' && c <= '~')
+	 msg << (char)c;
+       else {
+	 int len;
+	 sprintf(msg.reserve(256), "\\%03d%n", c, &len);
+	 msg.forward(len);
+       }
        break;
      }
      
-     case 's': {
-       const char *x = va_arg(val, const char *);
-       fputs((x ? x : "(null)"), stderr);
-       break;
-     }
-     
-     case 'p': {
-       void *p = va_arg(val, void *);
-       fprintf(stderr, "%p", p);
-       break;
-     }
-     
-     case 'o': {
-       int op = va_arg(val, int);
-       fputs((op == 0 ? "(null)" : Operator(op).name().cc()), stderr);
-       break;
-     }
-     
-     /*case 'e':
-       {
-	 Expr *e = va_arg(val, Expr *);
-	 if (e)
-	   errwriter << e->unparse();
-	 else
-	   errwriter << "(null)";
-	 break;
-	 } */
-       
-     case 'S': {
-       int x = va_arg(val, int);
-       if (x != 1) fprintf(stderr, "s");
-       break;
-     }
-     
-     case '%':
-      fputc('%', stderr);
+     case 'd':
+      msg << va_arg(val, int);
       break;
       
-     case 0:
+     case 'u':
+      msg << va_arg(val, unsigned);
+      break;
+      
+     case 'g':
+      msg << va_arg(val, double);
+      break;
+       
      default:
-      fprintf(stderr, "<BAD %% `%c'>", *errfmt);
-      if (!*errfmt) errfmt--;
+      assert(0 && "Bad % in error");
       break;
       
     }
     
-    errfmt++;
+    s++;
   }
 
-  fprintf(stderr, "\n");
+  int len = msg.length();
+  String msg_str = String::claim_string(msg.take(), len);
+  vmessage(seriousness, msg_str);
+
+  return (seriousness == Message ? 0 : -1);
 }
 
 
-void
-fatal_error(const Landmark &l, const char *errfmt, ...)
-{
-  va_list val;
-  va_start(val, errfmt);
-  verror(l, false, errfmt, val);
-  va_end(val);
-  exit(1);
-}
+/*****
+ * CountingErrorHandler
+ **/
 
-bool
-error(const Landmark &l, const char *errfmt, ...)
+CountingErrorHandler::CountingErrorHandler()
+  : _nwarnings(0), _nerrors(0)
 {
-  va_list val;
-  va_start(val, errfmt);
-  verror(l, false, errfmt, val);
-  va_end(val);
-  num_errors++;
-  return false;
-}
-
-bool
-warning(const Landmark &l, const char *errfmt, ...)
-{
-  va_list val;
-  va_start(val, errfmt);
-  verror(l, true, errfmt, val);
-  va_end(val);
-  num_warnings++;
-  return false;
 }
 
 void
-set_error_context(const char *errmsg)
+CountingErrorHandler::count(Seriousness seriousness)
 {
-  need_error_context = true;
-  error_context_msg = errmsg;
+  if (seriousness == Warning)
+    _nwarnings++;
+  else if (seriousness == Error)
+    _nerrors++;
+  else if (seriousness == Fatal)
+    exit(1);
+}
+
+
+/*****
+ * FileErrorHandler
+ **/
+
+FileErrorHandler::FileErrorHandler(FILE *f, const String &context)
+  : _f(f), _context(context)
+{
+}
+
+void
+FileErrorHandler::vmessage(Seriousness seriousness, const String &msg)
+{
+  String s = _context + msg + "\n";
+  fputs(s.cc(), _f);
+  count(seriousness);
+}
+
+
+/*****
+ * PinnedErrorHandler
+ **/
+
+PinnedErrorHandler::PinnedErrorHandler(const String &null_context,
+				       ErrorHandler *errh)
+  : _null_context(null_context), _errh(errh)
+{
+}
+
+int
+PinnedErrorHandler::verror(Seriousness seriousness, const String &where,
+			   const char *format, va_list val)
+{
+  if (!where)
+    return _errh->verror(seriousness, _null_context, format, val);
+  else
+    return _errh->verror(seriousness, where, format, val);
+}
+
+void
+PinnedErrorHandler::vmessage(Seriousness seriousness, const String &message)
+{
+  _errh->vmessage(seriousness, message);
+}
+
+
+/*****
+ * SilentErrorHandler
+ **/
+
+class SilentErrorHandler : public CountingErrorHandler {
+  
+ public:
+  
+  SilentErrorHandler()				{ }
+  
+  void vmessage(Seriousness, const String &);
+  
+};
+
+void
+SilentErrorHandler::vmessage(Seriousness seriousness, const String &)
+{
+  count(seriousness);
+}
+
+ErrorHandler *
+ErrorHandler::silent_handler()
+{
+  static ErrorHandler *errh = 0;
+  if (!errh) errh = new SilentErrorHandler;
+  return errh;
 }

@@ -2,12 +2,17 @@
 # include <config.h>
 #endif
 #include "string.hh"
-#include <string.h>
-#include <stdio.h>
+#ifdef __KERNEL__
+# include "straccum.hh"
+#else
+# include <stdio.h>
+#endif
+#include <assert.h>
 
-String::Memo *String::null_memo;
-String::Memo *String::permanent_memo;
-static String::Initializer initializer;
+String::Memo *String::null_memo = 0;
+String::Memo *String::permanent_memo = 0;
+String *String::null_string_p = 0;
+static int out_of_memory_flag = 0;
 
 
 String::Memo::Memo()
@@ -24,8 +29,10 @@ String::Memo::Memo(int dirty, int capacity)
 
 String::Memo::~Memo()
 {
-  assert(_capacity >= _dirty);
-  delete[] _real_data;
+  if (_capacity) {
+    assert(_capacity >= _dirty);
+    delete[] _real_data;
+  }
 }
 
 
@@ -41,6 +48,61 @@ String::String(unsigned u)
   char buf[128];
   sprintf(buf, "%u", u);
   assign(buf, -1);
+}
+
+#ifdef __KERNEL__
+
+String::String(unsigned long long u)
+{
+  StringAccum sa;
+  // Implemented a lovely unsigned long long converter in StringAccum
+  sa << u;
+  assign(sa.data(), sa.length());
+}
+
+#else
+
+String::String(unsigned long long u)
+{
+  char buf[128];
+  sprintf(buf, "%Lu", u);
+  assign(buf, -1);
+}
+
+#endif
+
+String
+String::claim_string(const char *cc, int cclen)
+{
+  if (!cc)
+    cclen = 0;
+  else if (cclen < 0)
+    cclen = strlen(cc);
+  if (cclen == 0)
+    return String();
+  else {
+    Memo *memo = new Memo;
+    memo->_refcount = 0;
+    memo->_capacity = cclen;
+    memo->_dirty = cclen;
+    memo->_real_data = const_cast<char *>(cc);
+    return String(cc, cclen, memo);
+  }
+}
+
+void
+String::out_of_memory()
+{
+  if (_memo) deref();
+  _memo = null_memo;
+  _memo->_refcount++;
+  out_of_memory_flag++;
+}
+
+int
+String::out_of_memory_count()
+{
+  return out_of_memory_flag;
 }
 
 void
@@ -59,6 +121,10 @@ String::assign(const char *cc, int cclen)
     // Make `capacity' a multiple of 16 characters at least as big as `cclen'.
     int capacity = (cclen + 16) & ~15;
     _memo = new Memo(cclen, capacity);
+    if (!_memo || !_memo->_real_data) {
+      out_of_memory();
+      return;
+    }
     memcpy(_memo->_real_data, cc, cclen);
   }
   
@@ -69,9 +135,7 @@ String::assign(const char *cc, int cclen)
 void
 String::append(const char *cc, int cclen)
 {
-  if (!cc)
-    cclen = 0;
-  else if (cclen < 0)
+  if (cclen < 0)
     cclen = strlen(cc);
   
   if (cclen == 0)
@@ -83,7 +147,7 @@ String::append(const char *cc, int cclen)
   if (_memo->_capacity > _memo->_dirty + cclen) {
     char *real_dirty = _memo->_real_data + _memo->_dirty;
     if (real_dirty == _data + _length) {
-      memcpy(real_dirty, cc, cclen);
+      if (cc) memcpy(real_dirty, cc, cclen);
       _length += cclen;
       _memo->_dirty += cclen;
       assert(_memo->_dirty < _memo->_capacity);
@@ -97,10 +161,14 @@ String::append(const char *cc, int cclen)
   while (new_capacity < _length + cclen)
     new_capacity *= 2;
   Memo *new_memo = new Memo(_length + cclen, new_capacity);
+  if (!new_memo || !new_memo->_real_data) {
+    out_of_memory();
+    return;
+  }
   
   char *new_data = new_memo->_real_data;
   memcpy(new_data, _data, _length);
-  memcpy(new_data + _length, cc, cclen);
+  if (cc) memcpy(new_data + _length, cc, cclen);
   
   deref();
   _data = new_data;
@@ -121,6 +189,14 @@ String::mutable_data()
   assert(_memo->_refcount > 1);
   deref();
   assign(_data, _length);
+  return const_cast<char *>(_data);
+}
+
+char *
+String::mutable_c_str()
+{
+  (void) mutable_data();
+  (void) cc();
   return const_cast<char *>(_data);
 }
 
@@ -179,28 +255,49 @@ String::substring(int left, int len) const
     return String(_data + left, len, _memo);
 }
 
-bool
-operator==(const String &s1, const String &s2)
+int
+String::hashcode() const
 {
-  if (s1._length != s2._length) return false;
-  if (s1._data == s2._data) return true;
-  return memcmp(s1._data, s2._data, s1._length) == 0;
+  if (!_length)
+    return 0;
+  else if (_length == 1)
+    return _data[0] | (_data[0] << 8);
+  else if (_length < 4)
+    return _data[0] + (_data[1] << 3) + (_length << 12);
+  else
+    return *((const int *)_data) + (_length << 12)
+      + (_data[_length-1] << 15);
 }
 
 bool
-operator!=(const String &s1, const String &s2)
+String::equals(const char *s, int len) const
 {
-  if (s1._length != s2._length) return true;
-  if (s1._data == s2._data) return false;
-  return memcmp(s1._data, s2._data, s1._length) != 0;
+  if (len < 0) len = strlen(s);
+  if (_length != len) return false;
+  if (_data == s) return true;
+  return memcmp(_data, s, len) == 0;
 }
-
 
 String::Initializer::Initializer()
 {
+  String::static_initialize();
+}
+
+void
+String::static_initialize()
+{
   // do-nothing function called simply to initialize static globals
-  if (!String::null_memo) {
-    String::null_memo = new String::Memo();
-    String::permanent_memo = new String::Memo();
+  if (!null_memo) {
+    null_memo = new Memo;
+    permanent_memo = new Memo;
+    null_string_p = new String;
   }
+}
+
+void
+String::static_cleanup()
+{
+  delete String::null_string_p;
+  if (--null_memo->_refcount == 0) delete null_memo;
+  if (--permanent_memo->_refcount == 0) delete permanent_memo;
 }
