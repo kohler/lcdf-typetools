@@ -3,13 +3,13 @@
 #endif
 #include "t1unparser.hh"
 
-Type1Unparser::Type1Unparser()
+CharstringUnparser::CharstringUnparser()
     : CharstringInterp(0, 0),
       _one_command_per_line(false), _start_of_line(true)
 {
 }
 
-Type1Unparser::Type1Unparser(const Type1Unparser &o)
+CharstringUnparser::CharstringUnparser(const CharstringUnparser &o)
     : CharstringInterp(o),
       _one_command_per_line(o._one_command_per_line),
       _start_of_line(o._start_of_line)
@@ -17,14 +17,14 @@ Type1Unparser::Type1Unparser(const Type1Unparser &o)
 }
 
 void
-Type1Unparser::clear()
+CharstringUnparser::clear()
 {
     _sa.clear();
     _start_of_line = true;
 }
 
 bool
-Type1Unparser::number(double n)
+CharstringUnparser::number(double n)
 {
     if (_start_of_line) {
 	_sa << _indent;
@@ -36,7 +36,7 @@ Type1Unparser::number(double n)
 }
 
 bool
-Type1Unparser::type1_command(int cmd)
+CharstringUnparser::type1_command(int cmd)
 {
     if (_start_of_line) {
 	_sa << _indent;
@@ -54,20 +54,66 @@ Type1Unparser::type1_command(int cmd)
     return true;
 }
 
+bool
+CharstringUnparser::type2_command(int cmd, const unsigned char *data, int *left)
+{
+    if (_start_of_line) {
+	_sa << _indent;
+	_start_of_line = false;
+    } else
+	_sa << ' ';
+    
+    if (cmd >= 0 && cmd <= CS::cLastCommand)
+	_sa << CS::command_names[cmd];
+    else
+	_sa << "UNKNOWN_12_" << (cmd - 32);
+
+    switch (cmd) {
+      case CS::cHstem: case CS::cHstemhm: case CS::cVstem: case CS::cVstemhm:
+      case CS::cHintmask: case CS::cCntrmask:
+	CharstringInterp::type2_command(cmd, data, left);
+	break;
+    }
+    
+    if (_one_command_per_line) {
+	_sa << '\n';
+	_start_of_line = true;
+    }
+
+    return true;
+}
+
+void
+CharstringUnparser::char_hintmask(int, const unsigned char *data, int nhints)
+{
+    _sa << '[';
+    for (int i = 0; i < nhints; i++, data++)
+	sprintf(_sa.extend(2), "%02X", *data);
+    _sa << ']';
+}
+
 String
-Type1Unparser::value()
+CharstringUnparser::value()
 {
     _start_of_line = true;
     return _sa.take_string();
 }
 
 String
-Type1Unparser::unparse(const Type1Charstring *cs)
+CharstringUnparser::unparse(const Charstring *cs)
 {
     if (cs) {
-	Type1Unparser u;
+	CharstringUnparser u;
 	cs->run(u);
 	return u.value();
     } else
 	return "(null)";
+}
+
+String
+CharstringUnparser::unparse(const Charstring &cs)
+{
+    CharstringUnparser u;
+    cs.run(u);
+    return u.value();
 }

@@ -4,31 +4,35 @@
 #include "straccum.hh"
 #include "string.hh"
 
-class Type1Unparser : public CharstringInterp {
+class CharstringUnparser : public CharstringInterp { public:
 
-  String _indent;
-  bool _one_command_per_line;
-  bool _start_of_line;
-  StringAccum _sa;
+    CharstringUnparser();
+    CharstringUnparser(const CharstringUnparser &);
 
- public:
+    const String &indent() const		{ return _indent; }
+    void set_indent(const String &s)		{ _indent = s; }
+    void set_one_command_per_line(bool b)	{ _one_command_per_line = b; }
 
-  Type1Unparser();
-  Type1Unparser(const Type1Unparser &);
+    void clear();
 
-  const String &indent() const		{ return _indent; }
-  void set_indent(const String &s)	{ _indent = s; }
-  void set_one_command_per_line(bool b)	{ _one_command_per_line = b; }
+    bool number(double);
+    bool type1_command(int);
+    bool type2_command(int, const unsigned char *, int *);
+    void char_hintmask(int, const unsigned char *, int);
+    void char_cntrmask(int, const unsigned char *, int);
 
-  void clear();
+    String value();
 
-  bool number(double);
-  bool type1_command(int);
-
-  String value();
-
-  static String unparse(const Type1Charstring *);
+    static String unparse(const Charstring *);
+    static String unparse(const Charstring &);
   
+  private:
+
+    String _indent;
+    bool _one_command_per_line;
+    bool _start_of_line;
+    StringAccum _sa;
+
 };
 
 #endif
