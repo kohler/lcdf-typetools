@@ -32,7 +32,7 @@ class Type1CharstringGen { public:
     static String callsubr_string(int subr);
     
   private:
-  
+    
     StringAccum _ncs;
     int _precision;
     double _f_precision;
@@ -53,7 +53,7 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     void set_direct_hint_replacement(bool dhr)	{ _direct_hr = dhr; }
     void set_hint_replacement_storage(Type1Font *);
     
-    int nhints() const			{ return _stem_info.size() >> 1; }
+    int nhints() const			{ return _stem_hstem.size(); }
     double max_flex_height() const	{ return _max_flex_height; }
     bool bad_flex() const		{ return _bad_flex; }
 
@@ -88,8 +88,9 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     State _state;
 
     // hints and hint replacement
-    Vector<double> _stem_info;
-    int _nhstem;
+    Vector<double> _stem_pos;
+    Vector<double> _stem_width;
+    Vector<int> _stem_hstem;
     String _last_hints;
 
     bool _in_hr;
@@ -112,7 +113,9 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
 inline String
 Type1CharstringGen::take_string()
 {
-    return _ncs.take_string();
+    String s = _ncs.take_string();
+    clear();
+    return s;
 }
 
 }
