@@ -7,6 +7,7 @@
 #include <cctype>
 #ifndef __KERNEL__
 # include <cstdio>
+# include <cstdlib>
 #endif
 
 void
@@ -403,9 +404,7 @@ ErrorHandler::verror(Seriousness seriousness, const String &where,
     }
   }
   
-  int len = msg.length();
-  String msg_str = String::claim_string(msg.take(), len);
-  vmessage(seriousness, msg_str);
+  vmessage(seriousness, msg.take_string());
   
   return -1;
 }
@@ -489,6 +488,7 @@ FileErrorHandler::vmessage(Seriousness seriousness, const String &message)
   if (seriousness == Fatal)
     exit(1);
 }
+
 #endif
 
 
