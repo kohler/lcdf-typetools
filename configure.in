@@ -108,10 +108,11 @@ AC_ARG_ENABLE(otfinfo, [  --disable-otfinfo       do not build the otfinfo progr
 AC_ARG_ENABLE(otftotfm, [  --disable-otftotfm      do not build the otftotfm program], :, enable_otftotfm=yes)
 AC_ARG_ENABLE(t1lint, [  --disable-t1dotlessj    do not build the t1dotlessj program], :, enable_t1dotlessj=yes)
 AC_ARG_ENABLE(t1lint, [  --disable-t1lint        do not build the t1lint program], :, enable_t1lint=yes)
+AC_ARG_ENABLE(t1reencode, [  --disable-t1reencode    do not build the t1reencode program], :, enable_t1reencode=yes)
 AC_ARG_ENABLE(t1testpage, [  --disable-t1testpage    do not build the t1testpage program], :, enable_t1testpage=yes)
 
 SELECTED_SUBDIRS=''
-for i in cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1testpage; do
+for i in cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage; do
     y=`eval 'echo $enable_'"$i"`
     if test "x$y" != xno; then SELECTED_SUBDIRS="$SELECTED_SUBDIRS $i"; fi
 done
@@ -447,4 +448,4 @@ dnl
 dnl Output
 dnl
 
-AC_OUTPUT(Makefile liblcdf/Makefile libefont/Makefile t1lint/Makefile t1testpage/Makefile cfftot1/Makefile mmafm/Makefile mmpfb/Makefile otfinfo/Makefile otftotfm/Makefile t1dotlessj/Makefile)
+AC_OUTPUT(Makefile liblcdf/Makefile libefont/Makefile cfftot1/Makefile mmafm/Makefile mmpfb/Makefile otfinfo/Makefile otftotfm/Makefile t1dotlessj/Makefile t1lint/Makefile t1reencode/Makefile t1testpage/Makefile)

@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign check-news
 
 SUBDIRS = liblcdf libefont @SELECTED_SUBDIRS@
-DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1testpage
+DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage
 
 pkgdata_DATA = glyphlist.txt 7t.enc
 
@@ -56,7 +56,7 @@ EXTRA_DIST = \
 liblcdf libefont:
 	cd $@ && $(MAKE)
 libefont: liblcdf
-cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1testpage: liblcdf libefont
+cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage: liblcdf libefont
 	cd $@ && $(MAKE)
 
 srclinks:
@@ -64,7 +64,7 @@ srclinks:
 	cd libefont && $(MAKE) srclinks
 
 versionize:
-	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/mmafm/mmafm.1 $(top_srcdir)/mmpfb/mmpfb.1 $(top_srcdir)/otfinfo/otfinfo.1 $(top_srcdir)/otftotfm/otftotfm.1 $(top_srcdir)/t1dotlessj/t1dotlessj.1 $(top_srcdir)/t1lint/t1lint.1 $(top_srcdir)/t1testpage/t1testpage.1
+	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/mmafm/mmafm.1 $(top_srcdir)/mmpfb/mmpfb.1 $(top_srcdir)/otfinfo/otfinfo.1 $(top_srcdir)/otftotfm/otftotfm.1 $(top_srcdir)/t1dotlessj/t1dotlessj.1 $(top_srcdir)/t1lint/t1lint.1 $(top_srcdir)/t1reencode/t1reencode.1 $(top_srcdir)/t1testpage/t1testpage.1
 	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(top_srcdir)/README
 
-.PHONY: srclinks rpm liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1testpage
+.PHONY: srclinks rpm liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage
