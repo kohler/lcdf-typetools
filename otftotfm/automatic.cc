@@ -175,7 +175,7 @@ getodir(int o, ErrorHandler *errh)
     
     if (!odir[o]) {
 	if (automatic)
-	    errh->warning("%s not specified, using '.' for %s files", odir_info[o].envvar, odir_info[o].name);
+	    errh->warning("%s not specified, placing %s files in '.'", odir_info[o].envvar, odir_info[o].name);
 	odir[o] = ".";
     }
     
@@ -183,7 +183,7 @@ getodir(int o, ErrorHandler *errh)
 	odir[o] = odir[o].substring(0, -1);
     
     if (verbose)
-	errh->message("using '%s' for %s files", odir[o].c_str(), odir_info[o].name);
+	errh->message("placing %s files in '%s'", odir_info[o].name, odir[o].c_str());
     return odir[o];
 }
 
@@ -295,8 +295,7 @@ set_map_file(const String &s)
 String
 installed_type1(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
-    // no font available if not in automatic mode
-    if (!automatic || !ps_fontname)
+    if (!ps_fontname)
 	return String();
 
 #if HAVE_KPATHSEA
@@ -338,8 +337,9 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 String
 installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
-    // no font available if not in automatic mode
-    if (!automatic || !ps_fontname)
+    if (verbose)
+	errh->message("trying to create dotless-j font for %s", String(ps_fontname).c_str());
+    if (!ps_fontname)
 	return String();
     
     String j_ps_fontname = ps_fontname + "LCDFJ";
