@@ -23,8 +23,10 @@ class StringAccum {
   
   StringAccum()				: _s(0), _len(0), _cap(0) { }
   explicit StringAccum(int);
+  StringAccum(const StringAccum &);
   ~StringAccum()			{ if (_s) free(_s); }
-  
+
+  char *cc();
   char *value() const			{ return (char *)_s; }
   int length() const			{ return _len; }
   
@@ -50,13 +52,15 @@ class StringAccum {
   
   char operator[](int i) const	{ assert(i>=0 && i<_len); return (char)_s[i]; }
   char &operator[](int i)	{ assert(i>=0 && i<_len); return (char &)_s[i]; }
+
+  StringAccum &operator=(const StringAccum &);
   
 };
 
 
 inline
 StringAccum::StringAccum(int cap)
-  : _s(new unsigned char[cap]), _len(0), _cap(cap)
+  : _s((unsigned char *)malloc(cap)), _len(0), _cap(cap)
 {
 }
 
