@@ -217,7 +217,8 @@ if test $ac_cv_working_strtod = no; then
 fi
 
 AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate sigaction waitpid)
-AC_CHECK_FUNC(floor, :, AC_CHECK_LIB(m, floor))
+AC_CHECK_FUNC(floor, :, [AC_CHECK_LIB(m, floor)])
+AC_CHECK_FUNC(fabs, :, [AC_CHECK_LIB(m, fabs)])
 AC_CHECK_HEADERS(unistd.h fcntl.h sys/time.h sys/wait.h)
 
 AC_SUBST(FIXLIBC_O)
