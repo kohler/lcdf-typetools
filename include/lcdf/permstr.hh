@@ -24,6 +24,7 @@ class PermString { struct Doodad; public:
     friend bool operator!=(PermString, PermString);
   
     const char *cc() const		{ return _rep; }
+    const char *c_str() const		{ return _rep; }
     operator const char *() const	{ return _rep; }
   
     Capsule capsule() const		{ return doodad(); }
