@@ -1,8 +1,16 @@
 LCDF Typetools NEWS
 
+Version 1.85   10.Dec.2003
+
+* otftotfm: Add --altselector-feature option, so you can specify the
+  features activated by --altselector-char.  Defaults to salt and dlig.
+
+* otftotfm: Fix intermittent hang.
+
+
 Version 1.80   4.Dec.2003
 
-* otftotfm: Add --altselector option, and --include-alternates and
+* otftotfm: Add --altselector-char option, and --include-alternates and
   --exclude-alternates options.  These options support access to alternate
   characters through ligatures, using a mechanism originally planned by
   Sivan Toledo ("Exploiting Rich Fonts", TUGboat 21(2), 2000).  Requested
