@@ -45,7 +45,7 @@ class StringAccum { public:
     inline void append(const unsigned char *, int);
 
     // word joining
-    void append_fill_lines(const Vector<String> &words, int linelen, const String &parindent = String(), const String &leftmargin = String(), const String &wordsep = String(" "), const String &lineend = String("\n"));
+    void append_break_lines(const String& text, int linelen, const String& leftmargin = String());
 
     inline char *reserve(int);
     void set_length(int l)	{ assert(l>=0 && _len<=_cap);	_len = l; }

@@ -24,6 +24,7 @@
 #include <lcdf/vector.hh>
 #include <stdarg.h>
 #include <stdio.h>
+#include <ctype.h>
 
 StringAccum::StringAccum(const char *s)
     : _s(0), _len(0), _cap(0)
@@ -150,25 +151,30 @@ StringAccum::snprintf(int n, const char *format, ...)
 }
 
 void
-StringAccum::append_fill_lines(const Vector<String> &words, int linelen, const String &parindent, const String &leftmargin, const String &wordsep, const String &lineend)
+StringAccum::append_break_lines(const String& text, int linelen, const String &leftmargin)
 {
-    if (!words.size())
+    if (text.length() == 0)
 	return;
-    *this << leftmargin << parindent;
-    int pos = leftmargin.length() + parindent.length();
-    int last_linebreak = 0;
-    for (int w = 0; w < words.size(); w++) {
-	if (w > last_linebreak
-	    && pos + wordsep.length() + words[w].length() > linelen) {
-	    *this << lineend << leftmargin;
-	    pos = leftmargin.length();
-	    last_linebreak = w;
-	} else if (w > last_linebreak) {
-	    *this << wordsep;
-	    pos += wordsep.length();
+    const char* line = text.begin();
+    const char* ends = text.end();
+    linelen -= leftmargin.length();
+    for (const char* s = line; s < ends; s++) {
+	const char* start = s;
+	while (s < ends && isspace(*s))
+	    s++;
+	const char* word = s;
+	while (s < ends && !isspace(*s))
+	    s++;
+	if (s - line > linelen && start > line) {
+	    *this << leftmargin;
+	    append(line, start - line);
+	    *this << '\n';
+	    line = word;
 	}
-	*this << words[w];
-	pos += words[w].length();
     }
-    *this << lineend;
+    if (line < text.end()) {
+	*this << leftmargin;
+	append(line, text.end() - line);
+	*this << '\n';
+    }
 }
