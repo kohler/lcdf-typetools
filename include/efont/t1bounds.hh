@@ -8,29 +8,32 @@ namespace Efont {
 class CharstringBounds : public CharstringInterp { public:
 
     CharstringBounds();
-    CharstringBounds(const Transform &);
-    CharstringBounds(const Transform &, const Vector<double> &weight_vec);
+    CharstringBounds(const Transform&);
+    CharstringBounds(const Transform&, const Vector<double>& weight_vec);
     ~CharstringBounds()				{ }
 
-    const Point &width() const			{ return _width; }
+    const Point& width() const			{ return _width; }
     double x_width() const			{ return _width.x; }
+    bool bb_known() const			{ return KNOWN(_lb.x); }
     double bb_left() const			{ return _lb.x; }
     double bb_top() const			{ return _rt.y; }
     double bb_right() const			{ return _rt.x; }
     double bb_bottom() const			{ return _lb.y; }
+    const Point& bb_bottom_left() const		{ return _lb; }
+    const Point& bb_top_right() const		{ return _rt; }
 
-    void act_width(int, const Point &);
-    void act_line(int, const Point &, const Point &);
-    void act_curve(int, const Point &, const Point &, const Point &, const Point &);
-    inline void mark(const Point &);
+    void act_width(int, const Point&);
+    void act_line(int, const Point&, const Point&);
+    void act_curve(int, const Point&, const Point&, const Point&, const Point&);
+    inline void mark(const Point&);
 
     void clear();
-    bool char_bounds(const CharstringContext &, bool shift = true);
+    bool char_bounds(const CharstringContext&, bool shift = true);
     void translate(double dx, double dy);
-    bool output(int bb[4], int &width, bool use_cur_width = false) const;
+    bool output(int bb[4], int& width, bool use_cur_width = false) const;
 
-    static bool bounds(const CharstringContext &, int bounds[4], int &width);
-    static bool bounds(const Transform &, const CharstringContext &, int bounds[4], int &width);
+    static bool bounds(const CharstringContext&, int bounds[4], int& width);
+    static bool bounds(const Transform&, const CharstringContext&, int bounds[4], int& width);
         
   private:
 
@@ -39,19 +42,19 @@ class CharstringBounds : public CharstringInterp { public:
     Point _width;
     Transform _xf;
     Transform _nonfont_xf;
-    const CharstringProgram *_last_xf_program;
+    const CharstringProgram* _last_xf_program;
 
-    void set_xf(const CharstringProgram *);
+    void set_xf(const CharstringProgram*);
     
-    inline void xf_mark(const Point &);
-    void xf_mark(const Bezier &);
+    inline void xf_mark(const Point&);
+    void xf_mark(const Bezier&);
 
-    inline bool xf_inside(const Point &) const;
-    inline bool xf_controls_inside(const Bezier &) const;
+    inline bool xf_inside(const Point&) const;
+    inline bool xf_controls_inside(const Bezier&) const;
     
 };
 
-inline void CharstringBounds::xf_mark(const Point &p)
+inline void CharstringBounds::xf_mark(const Point& p)
 {
     if (!KNOWN(_lb.x))
 	_lb = _rt = p;
@@ -65,17 +68,17 @@ inline void CharstringBounds::xf_mark(const Point &p)
 	_rt.y = p.y;
 }
 
-inline void CharstringBounds::mark(const Point &p)
+inline void CharstringBounds::mark(const Point& p)
 {
     xf_mark(p * _xf);
 }
 
-inline bool CharstringBounds::xf_inside(const Point &p) const
+inline bool CharstringBounds::xf_inside(const Point& p) const
 {
     return p.x >= _lb.x && p.x <= _rt.x && p.y >= _lb.y && p.y <= _rt.y;
 }
 
-inline bool CharstringBounds::xf_controls_inside(const Bezier &b) const
+inline bool CharstringBounds::xf_controls_inside(const Bezier& b) const
 {
     return xf_inside(b.point(1)) && xf_inside(b.point(2));
 }
