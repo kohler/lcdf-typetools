@@ -25,6 +25,7 @@ class EfontCFF { public:
     enum { NSTANDARD_STRINGS = 391, MAX_SID = 64999 };
     int max_sid() const			{ return NSTANDARD_STRINGS - 1 + _strings.size(); }
     int sid(PermString);
+    String sid_string(int sid) const;
     PermString sid_permstring(int sid) const;
 
     int ngsubrs() const			{ return _gsubrs_index.nitems(); }
@@ -124,8 +125,10 @@ class EfontCFF { public:
 
 class EfontCFF::Dict { public:
 
+    Dict();
     Dict(EfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
-
+    int assign(EfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
+    
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
 
@@ -197,6 +200,12 @@ class EfontCFF::Font : public EfontProgram { public:
     Charstring *glyph(PermString) const;
 
     Type1Encoding *type1_encoding() const;
+    Type1Encoding *type1_encoding_copy() const;
+
+    bool dict_has(DictOperator) const;
+    String dict_string(DictOperator) const;
+    bool dict_value(DictOperator, double, double *) const;
+    bool dict_value(DictOperator, Vector<double> &) const;
 
     double global_width_x(bool) const;
     
@@ -206,6 +215,9 @@ class EfontCFF::Font : public EfontProgram { public:
     PermString _font_name;
     int _charstring_type;
 
+    Dict _top_dict;
+    Dict _private_dict;
+
     EfontCFF::Charset _charset;
 
     IndexIterator _charstrings_index;
@@ -214,6 +226,7 @@ class EfontCFF::Font : public EfontProgram { public:
     IndexIterator _subrs_index;
     mutable Vector<Charstring *> _subrs_cs;
 
+    int _encoding_pos;
     int _encoding[256];
     mutable Type1Encoding *_t1encoding;
 
@@ -225,6 +238,8 @@ class EfontCFF::Font : public EfontProgram { public:
     int parse_encoding(int pos, ErrorHandler *);
     int assign_standard_encoding(const int *standard_encoding);
     Charstring *charstring(const IndexIterator &, int) const;
+
+    const Dict &dict_of(DictOperator) const;
     
 };
 
@@ -276,6 +291,24 @@ EfontCFF::Charset::sid_to_gid(int sid) const
 	return _gids[sid];
     else
 	return -1;
+}
+
+inline const EfontCFF::Dict &
+EfontCFF::Font::dict_of(DictOperator op) const
+{
+    return (op >= 0 && op <= oLastOperator && (operator_types[op] & tP) ? _private_dict : _top_dict);
+}
+
+inline bool
+EfontCFF::Font::dict_value(DictOperator op, double def, double *val) const
+{
+    return dict_of(op).value(op, def, val);
+}
+
+inline bool
+EfontCFF::Font::dict_value(DictOperator op, Vector<double> &val) const
+{
+    return dict_of(op).value(op, val);
 }
 
 #endif

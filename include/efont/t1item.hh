@@ -3,7 +3,7 @@
 #include "t1cs.hh"
 #include "vector.hh"
 #include "permstr.hh"
-class StringAccum;
+#include "straccum.hh"
 class Type1Reader;
 class Type1Writer;
 class CharstringInterp;
@@ -42,14 +42,13 @@ class Type1NullItem : public Type1Item {  public:
 
 class Type1CopyItem : public Type1Item { public:
 
-    Type1CopyItem(char *v, int l)	: _value(v), _length(l) { }
-    ~Type1CopyItem()			{ delete[] _value; }
+    Type1CopyItem(const String &s)	: _value(s) { }
+    ~Type1CopyItem()			{ }
 
-    char *value() const			{ return _value; }
-    int length() const			{ return _length; }
+    const String &value() const		{ return _value; }
+    int length() const			{ return _value.length(); }
   
-    char *take_value();
-    void set_value(char *, int);
+    void set_value(const String &s)	{ _value = s; }
   
     void gen(Type1Writer &);
   
@@ -57,8 +56,7 @@ class Type1CopyItem : public Type1Item { public:
   
   private:
   
-    char *_value;
-    int _length;
+    String _value;
   
 };
 
@@ -78,12 +76,15 @@ class Type1Definition : public Type1Item { public:
   
     typedef Vector<double> NumVector;
   
-    Type1Definition(PermString, char *, PermString);
-    ~Type1Definition();  
+    Type1Definition(PermString, const String &, PermString);
+    ~Type1Definition()			{ }
     static Type1Definition *make(StringAccum &, Type1Reader * = 0, bool force = false);
+    static Type1Definition *make_string(PermString, const String &, PermString);
+    static Type1Definition *make_literal(PermString, const String &, PermString);
+    static Type1Definition *make(PermString, double, PermString);
   
     PermString name() const		{ return _name; }
-    const char *value() const		{ return _val; }
+    const String &value() const		{ return _val; }
     PermString definer() const		{ return _definer; }
   
     bool value_bool(bool &) const;
@@ -99,7 +100,7 @@ class Type1Definition : public Type1Item { public:
     void set_int(int);
     void set_num(double);
     void set_name(PermString, bool name = true);
-    void set_code(const char *s)	{ set_val_copy(s); }
+    void set_code(const char *s)	{ set_val(s); }
     void set_numvec(const NumVector &, bool executable = false);
     void set_numvec_vec(const Vector<NumVector> &);
     void set_normalize(const Vector<NumVector> &, const Vector<NumVector> &);
@@ -113,15 +114,14 @@ class Type1Definition : public Type1Item { public:
   private:
   
     PermString _name;
-    char *_val;
+    String _val;
     PermString _definer;
   
     static int slurp_string(StringAccum &, int, Type1Reader *);
     static int slurp_proc(StringAccum &, int, Type1Reader *);
   
-    inline void set_val(char *);
+    inline void set_val(const String &);
     inline void set_val(StringAccum &);
-    void set_val_copy(const char *);
   
 };
 
@@ -151,8 +151,9 @@ class Type1Encoding : public Type1Item { public:
 
 class Type1Subr : public Type1Item { public:
 
-    static Type1Subr *make(char *, int, int cs_start, int cs_len, int lenIV);
+    static Type1Subr *make(const char *, int, int cs_start, int cs_len, int lenIV);
     static Type1Subr *make_subr(int, PermString, const Type1Charstring &);
+    static Type1Subr *make_glyph(PermString, PermString, const Type1Charstring &);
   
     bool is_subr() const		{ return !_name; }
     PermString name() const		{ return _name; }
@@ -187,15 +188,15 @@ class Type1Subr : public Type1Item { public:
 
 class Type1SubrGroupItem : public Type1Item { public:
 
-    Type1SubrGroupItem(Type1Font *, bool, char *, int);
+    Type1SubrGroupItem(Type1Font *, bool, const String &);
     Type1SubrGroupItem(const Type1SubrGroupItem &, Type1Font *);
-    ~Type1SubrGroupItem();
+    ~Type1SubrGroupItem()			{ }
 
-    void set_end_text(const char *);
-    void add_end_text(const char *);
+    void set_end_text(const String &s)		{ _end_text = s; }
+    void add_end_text(const String &);
 
     bool is_subrs() const			{ return _is_subrs; }
-    char *end_text() const			{ return _end_text; }
+    const String &end_text() const		{ return _end_text; }
   
     void gen(Type1Writer &);
   
@@ -205,10 +206,8 @@ class Type1SubrGroupItem : public Type1Item { public:
     
     Type1Font *_font;
     bool _is_subrs;
-    char *_value;
-    int _length;
-    char *_end_text;
-    int _end_length;
+    String _value;
+    String _end_text;
   
 };
 
@@ -227,5 +226,30 @@ class Type1IncludedFont : public Type1Item { public:
     int _unique_id;
 
 };
+
+
+inline Type1Definition *
+Type1Definition::make_literal(PermString n, const String &v, PermString d)
+{
+    return new Type1Definition(n, v, d);
+}
+
+inline Type1Definition *
+Type1Definition::make(PermString n, double v, PermString d)
+{
+    return new Type1Definition(n, String(v), d);
+}
+
+inline void
+Type1Definition::set_val(const String &v)
+{
+    _val = v;
+}
+
+inline void
+Type1Definition::set_val(StringAccum &sa)
+{
+    _val = sa.take_string();
+}
 
 #endif

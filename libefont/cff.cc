@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include "cff.hh"
 #include "error.hh"
 #include "t1item.hh"
@@ -365,6 +368,24 @@ EfontCFF::sid(PermString s)
     return -1;
 }
 
+String
+EfontCFF::sid_string(int sid) const
+{
+    if (sid < 0)
+	return String();
+    else if (sid < NSTANDARD_STRINGS)
+	return String(sid_permstring(sid));
+    else {
+	sid -= NSTANDARD_STRINGS;
+	if (sid >= _strings.size())
+	    return String();
+	else if (_strings[sid])
+	    return String(_strings[sid]);
+	else
+	    return String(reinterpret_cast<const char *>(_strings_index[sid]), _strings_index[sid + 1] - _strings_index[sid]);
+    }
+}
+
 PermString
 EfontCFF::sid_permstring(int sid) const
 {
@@ -619,9 +640,25 @@ EfontCFF::IndexIterator::nitems() const
  * EfontCFF::Dict
  **/
 
-EfontCFF::Dict::Dict(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
-    : _cff(cff), _pos(pos)
+EfontCFF::Dict::Dict()
+    : _cff(0), _pos(0), _error(-ENOENT)
 {
+}
+
+EfontCFF::Dict::Dict(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
+{
+    assign(cff, pos, dict_len, errh, dict_name);
+}
+
+int
+EfontCFF::Dict::assign(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
+{
+    _cff = cff;
+    _pos = pos;
+    _operators.clear();
+    _pointers.clear();
+    _operands.clear();
+    
     if (!errh)
 	errh = ErrorHandler::silent_handler();
     
@@ -642,9 +679,8 @@ EfontCFF::Dict::Dict(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, c
 	    
 	  case 22: case 23: case 24: case 25: case 26: case 27: case 31:
 	  case 255:		// reserved
-	    _error = -ERANGE;
 	    errh->error("%s: reserved operator %d", dict_name, data[0]);
-	    return;
+	    return (_error = -ERANGE);
 	    
 	  case 12:
 	    if (data + 1 >= end_data)
@@ -751,16 +787,14 @@ EfontCFF::Dict::Dict(EfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, c
 	goto invalid;
     }
 
-    _error = 0;
-    return;
+    return (_error = 0);
 
   runoff:
     errh->error("%s: runoff end of DICT", dict_name);
-    _error = -EFAULT;
-    return;
+    return (_error = -EFAULT);
     
   invalid:
-    _error = -EINVAL;
+    return (_error = -EINVAL);
 }
 
 int
@@ -874,6 +908,7 @@ EfontCFF::Dict::has(DictOperator op) const
 bool
 EfontCFF::Dict::value(DictOperator op, Vector<double> &out) const
 {
+    out.clear();
     for (int i = 0; i < _operators.size(); i++)
 	if (_operators[i] == op) {
 	    for (int j = _pointers[i]; j < _pointers[i+1]; j++)
@@ -957,22 +992,22 @@ EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
     }
 
     // parse top DICT
-    EfontCFF::Dict dict(cff, td_offset, td_length, errh, "Top DICT");
-    if ((_error = dict.error()) < 0)
+    _top_dict.assign(cff, td_offset, td_length, errh, "Top DICT");
+    if ((_error = _top_dict.error()) < 0)
 	return;
     _error = -EINVAL;
-    if (dict.check(false, errh, "Top DICT") < 0 || !dict.has(oCharStrings)
-	|| !dict.has(oPrivate))
+    if (_top_dict.check(false, errh, "Top DICT") < 0
+	|| !_top_dict.has(oCharStrings)	|| !_top_dict.has(oPrivate))
 	return;
-    //dict.unparse(errh, "Top DICT");
+    //_top_dict.unparse(errh, "Top DICT");
 
     // extract offsets and information from TOP DICT
-    dict.value(oCharstringType, 2, &_charstring_type);
+    _top_dict.value(oCharstringType, 2, &_charstring_type);
     if (_charstring_type != 1 && _charstring_type != 2)
 	return;
     
     int charstrings_offset;
-    dict.value(oCharStrings, 0, &charstrings_offset);
+    _top_dict.value(oCharStrings, 0, &charstrings_offset);
     _charstrings_index = EfontCFF::IndexIterator(cff->data(), charstrings_offset, cff->length(), errh, "CharStrings INDEX");
     if (_charstrings_index.error() < 0) {
 	_error = _charstrings_index.error();
@@ -981,7 +1016,7 @@ EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
     _charstrings_cs.assign(_charstrings_index.nitems(), 0);
 
     int charset;
-    dict.value(oCharset, 0, &charset);
+    _top_dict.value(oCharset, 0, &charset);
     _charset.assign(cff, charset, _charstrings_index.nitems(), errh);
     if (_charset.error() < 0) {
 	_error = _charset.error();
@@ -989,27 +1024,27 @@ EfontCFF::Font::Font(EfontCFF *cff, PermString font_name, ErrorHandler *errh)
     }
 
     int Encoding;
-    dict.value(oEncoding, 0, &Encoding);
+    _top_dict.value(oEncoding, 0, &Encoding);
     if (parse_encoding(Encoding, errh) < 0)
 	return;
 
     // extract information from Private DICT
     Vector<double> private_info;
-    dict.value(oPrivate, private_info);
+    _top_dict.value(oPrivate, private_info);
     int private_offset = (int) private_info[1];
-    EfontCFF::Dict pdict(cff, private_offset, (int) private_info[0], errh, "Private DICT");
-    if ((_error = pdict.error()) < 0)
+    _private_dict.assign(cff, private_offset, (int) private_info[0], errh, "Private DICT");
+    if ((_error = _private_dict.error()) < 0)
 	return;
     _error = -EINVAL;
-    if (pdict.check(true, errh, "Private DICT") < 0)
+    if (_private_dict.check(true, errh, "Private DICT") < 0)
 	return;
-    //pdict.unparse(errh, "Private DICT");
+    //_private_dict.unparse(errh, "Private DICT");
 
-    pdict.value(oDefaultWidthX, 0, &_default_width_x);
-    pdict.value(oNominalWidthX, 0, &_nominal_width_x);
-    if (pdict.has(oSubrs)) {
+    _private_dict.value(oDefaultWidthX, 0, &_default_width_x);
+    _private_dict.value(oNominalWidthX, 0, &_nominal_width_x);
+    if (_private_dict.has(oSubrs)) {
 	int subrs_offset;
-	pdict.value(oSubrs, 0, &subrs_offset);
+	_private_dict.value(oSubrs, 0, &subrs_offset);
 	_subrs_index = EfontCFF::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
 	if ((_error = _subrs_index.error()) < 0)
 	    return;
@@ -1032,6 +1067,7 @@ EfontCFF::Font::~Font()
 int
 EfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
 {
+    _encoding_pos = pos;
     for (int i = 0; i < 256; i++)
 	_encoding[i] = 0;
     
@@ -1187,17 +1223,44 @@ EfontCFF::Font::glyph(PermString name) const
 Type1Encoding *
 EfontCFF::Font::type1_encoding() const
 {
-    if (!_t1encoding) {
-	_t1encoding = new Type1Encoding;
-	for (int i = 0; i < 256; i++)
-	    if (_encoding[i])
-		_t1encoding->put(i, _cff->sid_permstring(_charset.gid_to_sid(_encoding[i])));
-    }
+    if (_encoding_pos == 0)
+	return Type1Encoding::standard_encoding();
+    if (!_t1encoding)
+	_t1encoding = type1_encoding_copy();
     return _t1encoding;
+}
+
+Type1Encoding *
+EfontCFF::Font::type1_encoding_copy() const
+{
+    if (_encoding_pos == 0)
+	return Type1Encoding::standard_encoding();
+    Type1Encoding *e = new Type1Encoding;
+    for (int i = 0; i < 256; i++)
+	if (_encoding[i])
+	    e->put(i, _cff->sid_permstring(_charset.gid_to_sid(_encoding[i])));
+    return e;
 }
 
 double
 EfontCFF::Font::global_width_x(bool is_nominal) const
 {
     return (is_nominal ? _nominal_width_x : _default_width_x);
+}
+
+bool
+EfontCFF::Font::dict_has(DictOperator op) const
+{
+    return dict_of(op).has(op);
+}
+
+String
+EfontCFF::Font::dict_string(DictOperator op) const
+{
+    Vector<double> vec;
+    dict_of(op).value(op, vec);
+    if (vec.size() == 1 && vec[0] >= 0 && vec[0] <= _cff->max_sid())
+	return _cff->sid_string((int) vec[0]);
+    else
+	return String();
 }

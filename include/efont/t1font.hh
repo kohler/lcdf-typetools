@@ -1,6 +1,5 @@
 #ifndef T1FONT_HH
 #define T1FONT_HH
-
 #include "t1cs.hh"
 #include "hashmap.hh"
 #include "vector.hh"
@@ -17,7 +16,40 @@ class StringAccum;
 class ErrorHandler;
 
 class Type1Font : public EfontProgram { public:
+
+    Type1Font(PermString);
+    Type1Font(Type1Reader &);
+    ~Type1Font();
+
+    int read(Type1Reader &);
+    
+    bool ok() const;
   
+    PermString font_name() const;
+  
+    int nitems() const			{ return _items.size(); }
+    Type1Item *item(int i) const	{ return _items[i]; }
+    void set_item(int i, Type1Item *it)	{ _items[i] = it; }
+    void add_item(Type1Item *it)	{ _items.push_back(it); }
+    void add_definition(int dict, Type1Definition *);
+
+    int nsubrs() const			{ return _subrs.size(); }
+    Type1Charstring *subr(int) const;
+  
+    int nglyphs() const			{ return _glyphs.size(); }
+    PermString glyph_name(int) const;
+    Type1Charstring *glyph(int) const;
+    Type1Charstring *glyph(PermString) const;
+    void add_glyph(Type1Subr *);
+
+    Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
+    bool set_subr(int, const Type1Charstring &);
+    bool remove_subr(int);
+    
+    Type1Subr *glyph_x(int i) const	{ return _glyphs[i]; }
+
+    Type1Encoding *type1_encoding() const { return _encoding; }
+    
     // note: the order is relevant
     enum Dict {
 	dFont = 0,		dF = dFont,
@@ -29,33 +61,6 @@ class Type1Font : public EfontProgram { public:
 	dLast,
     };
   
-    Type1Font(Type1Reader &);
-    ~Type1Font();
-    bool ok() const;
-  
-    PermString font_name() const;
-  
-    int nitems() const			{ return _items.size(); }
-    Type1Item *item(int i) const	{ return _items[i]; }
-    void set_item(int i, Type1Item *it)	{ _items[i] = it; }
-    void add_item(Type1Item *it)	{ _items.push_back(it); }
-
-    int nsubrs() const			{ return _subrs.size(); }
-    Type1Charstring *subr(int) const;
-  
-    int nglyphs() const			{ return _glyphs.size(); }
-    PermString glyph_name(int) const;
-    Type1Charstring *glyph(int) const;
-    Type1Charstring *glyph(PermString) const;
-
-    Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
-    bool set_subr(int, const Type1Charstring &);
-    bool remove_subr(int);
-    
-    Type1Subr *glyph_x(int i) const	{ return _glyphs[i]; }
-
-    Type1Encoding *type1_encoding() const	{ return _encoding; }
-    
     Type1Definition *dict(int d, PermString s) const { return _dict[d][s]; }
     Type1Definition *dict(PermString s) const	{ return _dict[dF][s]; }
     Type1Definition *p_dict(PermString s) const	{ return _dict[dP][s]; }
@@ -65,7 +70,6 @@ class Type1Font : public EfontProgram { public:
   
     bool dict_each(int dict, int &, PermString &, Type1Definition *&) const;
     int first_dict_item(int d) const		{ return _index[d]; }
-    void set_dict(int dict, PermString, Type1Definition *);
   
     Type1Definition *ensure(Dict, PermString);
     void add_header_comment(const char *);
@@ -74,7 +78,10 @@ class Type1Font : public EfontProgram { public:
     EfontMMSpace *mmspace() const;
 
     void undo_synthetic();
-  
+
+    void set_charstring_definer(PermString d)	{ _charstring_definer = d; }
+    void set_type1_encoding(Type1Encoding *e)	{ assert(!_encoding); _encoding = e; }
+    
     void write(Type1Writer &);
   
   private:
@@ -111,6 +118,10 @@ class Type1Font : public EfontProgram { public:
     Type1Item *dict_size_item(int) const;
     int get_dict_size(int) const;
     void set_dict_size(int, int);
+
+  protected:
+    
+    void set_dict(int dict, PermString, Type1Definition *);
   
 };
 

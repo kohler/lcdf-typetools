@@ -752,6 +752,8 @@ CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
 	CHECK_STACK(2);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 2);
+	else if (_t2state == T2_PATH)
+	    char_closepath(cmd);
 	_t2state = T2_PATH;
 	char_rmoveto(cmd, at(bottom), at(bottom + 1));
 #if DEBUG_TYPE2
@@ -763,6 +765,8 @@ CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
 	CHECK_STACK(1);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 1);
+	else if (_t2state == T2_PATH)
+	    char_closepath(cmd);
 	_t2state = T2_PATH;
 	char_rmoveto(cmd, at(bottom), 0);
 #if DEBUG_TYPE2
@@ -774,6 +778,8 @@ CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
 	CHECK_STACK(1);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 1);
+	else if (_t2state == T2_PATH)
+	    char_closepath(cmd);
 	_t2state = T2_PATH;
 	char_rmoveto(cmd, 0, at(bottom));
 #if DEBUG_TYPE2
@@ -963,6 +969,8 @@ CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
 	    bottom = type2_handle_width(cmd, size() > 0 && size() != 4);
 	if (bottom + 3 < size() && _t2state == T2_INITIAL)
 	    char_seac(cmd, 0, at(bottom), at(bottom + 1), (int)at(bottom + 2), (int)at(bottom + 3));
+	else if (_t2state == T2_PATH)
+	    char_closepath(cmd);
 	set_done();
 	clear();
 	return false;

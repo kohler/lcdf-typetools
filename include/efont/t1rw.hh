@@ -1,7 +1,7 @@
 #ifndef T1RW_HH
 #define T1RW_HH
 #include <cstdio>
-#include "permstr.hh"
+#include "string.hh"
 #include "straccum.hh"
 
 class Type1Reader { public:
@@ -118,8 +118,6 @@ class Type1Writer { public:
   
     Type1Writer &operator<<(char);
     Type1Writer &operator<<(unsigned char);
-    Type1Writer &operator<<(const char *);
-    Type1Writer &operator<<(PermString);
     Type1Writer &operator<<(int);
     Type1Writer &operator<<(double);
   
@@ -198,17 +196,24 @@ Type1Writer::print(int c)
 }
 
 inline Type1Writer &
-Type1Writer::operator<<(const char *cc)
+operator<<(Type1Writer &w, const char *cc)
 {
-    print(cc, strlen(cc));
-    return *this;
+    w.print(cc, strlen(cc));
+    return w;
 }
 
 inline Type1Writer &
-Type1Writer::operator<<(PermString p)
+operator<<(Type1Writer &w, PermString p)
 {
-    print(p, p.length());
-    return *this;
+    w.print(p, p.length());
+    return w;
+}
+
+inline Type1Writer &
+operator<<(Type1Writer &w, const String &s)
+{
+    w.print(s.data(), s.length());
+    return w;
 }
 
 inline Type1Writer &
