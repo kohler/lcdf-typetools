@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = cfftot1
-man_MANS = 
+man_MANS = cfftot1.1
 
 cfftot1_SOURCES = cfftot1.cc \
 	maket1font.cc maket1font.hh \

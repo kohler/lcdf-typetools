@@ -1,7 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <efont/psres.hh>
 #include <efont/t1rw.hh>
 #include <efont/t1font.hh>
 #include <efont/t1item.hh>
@@ -28,11 +27,13 @@ using namespace Efont;
 #define PFB_OPT		304
 #define PFA_OPT		305
 #define OUTPUT_OPT	306
+#define NAME_OPT	307
 
 Clp_Option options[] = {
     { "ascii", 'a', PFA_OPT, 0, 0 },
     { "binary", 'b', PFB_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
+    { "name", 'n', NAME_OPT, Clp_ArgString, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "pfa", 'a', PFA_OPT, 0, 0 },
     { "pfb", 'b', PFB_OPT, 0, 0 },
@@ -51,7 +52,7 @@ usage_error(ErrorHandler *errh, char *error_message, ...)
     va_list val;
     va_start(val, error_message);
     if (!error_message)
-	errh->message("Usage: %s [OPTION]... FONT", program_name);
+	errh->message("Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]", program_name);
     else
 	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
     errh->message("Type %s --help for more information.", program_name);
@@ -62,42 +63,30 @@ void
 usage()
 {
     printf("\
-`Mmpfb' creates a single-master PostScript Type 1 font by interpolating a\n\
-multiple master font at a point you specify. The resulting font does not\n\
-contain multiple master extensions. It is written to the standard output.\n\
+'Cfftot1' translates a PostScript font from the Compact Font Format (CFF) to\n\
+the usual Type 1 format. The input file should be either a raw CFF font or a\n\
+PostScript-flavored OpenType font. The result, which is usually written to the\n\
+standard output, is written in PFB or PFA format.\n\
 \n\
-Usage: %s [OPTION]... FONT\n\
+Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]\n\
 \n\
-FONT is either the name of a PFA or PFB multiple master font file, or a\n\
-PostScript font name. In the second case, mmpfb will find the actual outline\n\
-file using the PSRESOURCEPATH environment variable.\n\
-\n\
-General options:\n\
-      --amcp-info              Print AMCP info, if necessary, and exit.\n\
+Options:\n\
   -a, --pfa                    Output PFA font.\n\
   -b, --pfb                    Output PFB font. This is the default.\n\
+  -n, --name=NAME              Select font NAME from CFF.\n\
   -o, --output=FILE            Write output to FILE.\n\
-  -p, --precision=N            Set precision to N (larger means more precise).\n\
-  -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
+  -h, --help                   Print this message and exit.\n\
       --version                Print version number and exit.\n\
 \n\
-Interpolation settings:\n\
-  -w, --weight=N               Set weight to N.\n\
-  -W, --width=N                Set width to N.\n\
-  -O, --optical-size=N         Set optical size to N.\n\
-      --style=N                Set style axis to N.\n\
-  --1=N, --2=N, --3=N, --4=N   Set first (second, third, fourth) axis to N.\n\
-\n\
-Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
+Report bugs to <kohler@icir.org>.\n", program_name);
 }
 
 
 // MAIN
 
 static void
-do_file(const char *infn, const char *outfn,
-	PsresDatabase *, ErrorHandler *errh)
+do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh)
 {
     FILE *f;
     if (!infn || strcmp(infn, "-") == 0) {
@@ -127,7 +116,7 @@ do_file(const char *infn, const char *outfn,
 	if (c == 'O')
 	    data = Efont::OpenType::Font(data, &cerrh).table("CFF");
 	
-	font = new Cff::Font(new Cff(data, &cerrh), PermString(), &cerrh);
+	font = new Cff::Font(new Cff(data, &cerrh), name, &cerrh);
     } else
 	errh->fatal("%s: not a CFF or OpenType/CFF font", infn);
   
@@ -154,9 +143,6 @@ do_file(const char *infn, const char *outfn,
 int
 main(int argc, char **argv)
 {
-    PsresDatabase *psres = new PsresDatabase;
-    psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
-  
     Clp_Parser *clp =
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
@@ -164,6 +150,7 @@ main(int argc, char **argv)
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     const char *output_file = 0;
+    const char *font_name = 0;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -176,7 +163,13 @@ main(int argc, char **argv)
 	  case PFB_OPT:
 	    binary = true;
 	    break;
-      
+
+	  case NAME_OPT:
+	    if (font_name)
+		usage_error(errh, "font name specified twice");
+	    font_name = clp->arg;
+	    break;
+	    
 	  case QUIET_OPT:
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
@@ -228,7 +221,7 @@ particular purpose.\n");
     }
   
   done:
-    do_file(input_file, output_file, psres, errh);
+    do_file(input_file, output_file, font_name, errh);
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }

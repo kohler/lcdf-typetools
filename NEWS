@@ -1,5 +1,5 @@
-T1sicle NEWS
+LCDF Typetools NEWS
 
-Version 0.2
+Version 0.1
 
-* Fixed serious bug in normalize_vector that resulted in incorrect output.
+* Initial release.

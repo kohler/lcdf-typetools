@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = otftopl
-man_MANS = 
+man_MANS = otftopl.1
 
 otftopl_SOURCES = \
 	dvipsencoding.cc dvipsencoding.hh \
