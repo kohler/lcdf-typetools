@@ -353,7 +353,7 @@ particular purpose.\n");
 	errh->fatal("%s: has no 'j' glyph to make dotless", font->font_name().c_str());
 
     // make new font
-    String actual_font_name = (font_name ? font_name : font->font_name() + String("LCDFJ"));
+    String actual_font_name = (font_name ? String(font_name) : font->font_name() + String("LCDFJ"));
     if (actual_font_name.length() > 29 && !font_name) {
 	errh->warning("derived font name '%s' longer than 29 characters", actual_font_name.c_str());
 	errh->message("(Use the '--name' option to supply your own name.)");
