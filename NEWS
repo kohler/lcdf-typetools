@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 0.5   5.Jun.2003
+
+* Template reorganization so the typetools compile with GCC 3.3.
+
+
 Version 0.4   3.Jun.2003
 
 * otftopl: Added --slant and --extend options.

@@ -9,7 +9,6 @@ otftopl_SOURCES = \
 	gsubencoding.cc gsubencoding.hh \
 	md5.c md5.h \
 	otftopl.cc \
-	templatei.cc \
 	util.cc util.hh
 
 otftopl_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a

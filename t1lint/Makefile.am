@@ -5,8 +5,7 @@ bin_PROGRAMS = t1lint
 man_MANS = 
 
 t1lint_SOURCES = cscheck.hh cscheck.cc \
-	t1lint.cc \
-	templatei.cc
+	t1lint.cc
 
 t1lint_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 

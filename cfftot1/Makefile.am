@@ -5,8 +5,7 @@ bin_PROGRAMS = cfftot1
 man_MANS = cfftot1.1
 
 cfftot1_SOURCES = cfftot1.cc \
-	maket1font.cc maket1font.hh \
-	templatei.cc
+	maket1font.cc maket1font.hh
 
 cfftot1_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 

@@ -85,7 +85,7 @@ Clp_Option options[] = {
     { "list-features", 0, PRINT_FEATURES_OPT, 0, 0 }, // deprecated
     { "list-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 }, // deprecated
     { "help", 'h', HELP_OPT, 0, 0 },
-    { "version", 0, VERSION_OPT, 0, 0 },
+    { "version", 'v', VERSION_OPT, 0, 0 },
 
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     
@@ -172,7 +172,7 @@ Other options:\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
-      --version                Print version number and exit.\n\
+  -v, --version                Print version number and exit.\n\
 \n\
 Report bugs to <kohler@icir.org>.\n", program_name, program_name, program_name);
 }

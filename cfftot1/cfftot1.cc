@@ -42,7 +42,7 @@ Clp_Option options[] = {
     { "pfa", 'a', PFA_OPT, 0, 0 },
     { "pfb", 'b', PFB_OPT, 0, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
-    { "version", 0, VERSION_OPT, 0, 0 },
+    { "version", 'v', VERSION_OPT, 0, 0 },
 };
 
 
@@ -81,7 +81,7 @@ Options:\n\
   -o, --output=FILE            Write output to FILE.\n\
   -q, --quiet                  Do not generate any error messages.\n\
   -h, --help                   Print this message and exit.\n\
-      --version                Print version number and exit.\n\
+  -v, --version                Print version number and exit.\n\
 \n\
 Report bugs to <kohler@icir.org>.\n", program_name);
 }
