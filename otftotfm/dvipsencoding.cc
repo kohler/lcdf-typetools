@@ -355,7 +355,10 @@ landmark(const String &filename, int line)
 int
 DvipsEncoding::parse(String filename, ErrorHandler *errh)
 {
+    int before = errh->nerrors();
     String s = read_file(filename, errh);
+    if (errh->nerrors() != before)
+	return -1;
     filename = printable_filename(filename);
     int pos = 0, line = 1;
 
