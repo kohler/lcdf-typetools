@@ -36,11 +36,11 @@ class Bezier {
   
   ~Bezier();
   
-  const int BBValues	= 0x0FF;
+  static const int BBValues	= 0x0FF;
   
  public:
   
-  const int BBExists	= 0x100;
+  static const int BBExists	= 0x100;
   
   Bezier()				: _flags(0) { }
   Bezier(const point &, const point &, const point &, const point &);

@@ -9,7 +9,7 @@
 
 class Type1Reader {
   
-  const int DataSize = 1024;
+  static const int DataSize = 1024;
   
   unsigned char *_data;
   int _len;
@@ -98,7 +98,7 @@ class Type1PfbReader: public Type1Reader {
 
 class Type1Writer {
   
-  const int BufSize = 1024;
+  static const int BufSize = 1024;
   
   unsigned char *_buf;
   int _pos;

@@ -97,8 +97,8 @@ class Type1Interp {
   
  private:
   
-  const int StackSize	= 24;
-  const int ScratchSize	= 32;
+  static const int StackSize = 24;
+  static const int ScratchSize = 32;
   
   int _error;
   bool _done;
