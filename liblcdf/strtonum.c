@@ -1,8 +1,8 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <string.h>
 #include "strtonum.h"
+#include <stdlib.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,11 +13,16 @@ extern "C" {
 double
 strtonumber(const char *f, char **endf)
 {
+  long v;
+  
   // in case strtol() doesn't return 0 on strange input
   if (*f == '.')
     return strtod((char *)f, endf);
-  
-  int v = strtol((char *)f, endf, 10);
+
+  // get integer part
+  v = strtol((char *)f, endf, 10);
+
+  // handle any possible decimal part
   if (**endf == '.' && v < 0)
     return v - strtod(*endf, endf);
   else if (**endf == '.')
