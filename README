@@ -42,6 +42,10 @@ requirements listed in Adobe Systems' Black Book ("Adobe Type 1 Font
 Format"), and some others.  See the manual page 't1lint/t1lint.1' for more
 information.
 
+   T1reencode reencodes a Type 1 font, replacing its internal encoding with
+one you specify.  See the manual page 't1reencode/t1reencode.1' for more
+information.
+
    The final program is preliminary: t1testpage creates a PostScript test
 page for a given font file.  See the manual page 't1testpage/t1testpage.1'
 for more information.
@@ -117,7 +121,7 @@ for a particular font.
 
 COPYRIGHT/LICENSE
 -----------------
-   All source code is Copyright (c) 1997-2003 Eddie Kohler.
+   All source code is Copyright (c) 1997-2005 Eddie Kohler.
 
    This code is distributed under the GNU General Public License, Version
 2, or, at your discretion, any later version. The GNU General Public
@@ -127,7 +131,7 @@ or in the COPYING file in this directory.
 
 AUTHOR
 ------
-   Eddie Kohler, <kohler@icir.org>
+   Eddie Kohler, <kohler@cs.ucla.edu>
    http://www.lcdf.org/
 
    The current version of the lcdf-typetools package is available on the
