@@ -226,7 +226,7 @@ class Type1IncludedFont : public Type1Item {
   Type1IncludedFont(Type1Font *, int);
   ~Type1IncludedFont();
 
-  Type1Font *included_font() const	{ return _included_font; }
+  Type1Font *included_font() const		{ return _included_font; }
   
   void gen(Type1Writer &);
 

@@ -404,7 +404,7 @@ Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
 void
 Type1Font::undo_synthetic()
 {
-  // A synthetic fonts doesn't share arbitrary code with its base font; it
+  // A synthetic font doesn't share arbitrary code with its base font; it
   // shares just the CharStrings dictionary, according to Adobe Type 1 Font
   // Format. We take advantage of this.
   
