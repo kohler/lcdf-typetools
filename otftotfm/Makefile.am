@@ -7,10 +7,12 @@ man_MANS = otftotfm.1
 otftotfm_SOURCES = \
 	automatic.cc automatic.hh \
 	dvipsencoding.cc dvipsencoding.hh \
+	glyphfilter.cc glyphfilter.hh \
 	md5.c md5.h \
 	metrics.cc metrics.hh \
 	otftotfm.cc otftotfm.hh \
 	secondary.cc secondary.hh \
+	uniprop.cc uniprop.hh \
 	util.cc util.hh
 EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 
