@@ -86,7 +86,7 @@ CharstringUnparser::type2_command(int cmd, const unsigned char *data, int *left)
 }
 
 void
-CharstringUnparser::char_hintmask(int, const unsigned char *data, int nhints)
+CharstringUnparser::act_hintmask(int, const unsigned char *data, int nhints)
 {
     _sa << '[';
     for (int i = 0; i < nhints; i++, data++)

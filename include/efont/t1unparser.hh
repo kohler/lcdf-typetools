@@ -19,8 +19,7 @@ class CharstringUnparser : public CharstringInterp { public:
     bool number(double);
     bool type1_command(int);
     bool type2_command(int, const unsigned char *, int *);
-    void char_hintmask(int, const unsigned char *, int);
-    void char_cntrmask(int, const unsigned char *, int);
+    void act_hintmask(int, const unsigned char *, int);
 
     String value();
 

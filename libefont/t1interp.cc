@@ -1186,9 +1186,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 
 
 void
-CharstringInterp::act_sidebearing(int cmd, const Point &)
+CharstringInterp::act_sidebearing(int, const Point &)
 {
-    error(errUnimplemented, cmd);
 }
 
 void
@@ -1216,12 +1215,13 @@ void
 CharstringInterp::act_seac(int cmd, double asb, double adx, double ady, int bchar, int achar)
 {
     Type1Encoding *adobe = Type1Encoding::standard_encoding();
-    Charstring *acs, *bcs;
+    Charstring *acs = 0, *bcs = 0;
     if (!adobe) {
 	error(errInternal, cmd);
 	return;
-    } else if (achar < 0 || achar >= 256 || !(acs = get_glyph((*adobe)[achar]))
-	       || bchar < 0 || bchar >= 256 || !(bcs = get_glyph((*adobe)[bchar]))) {
+    } else if (achar < 0 || achar >= 256 || bchar < 0 || bchar >= 256
+	       || !(acs = get_glyph((*adobe)[achar]))
+	       || !(bcs = get_glyph((*adobe)[bchar]))) {
 	error(errGlyph, cmd);
 	return;
     }
