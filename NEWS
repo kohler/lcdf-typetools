@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.11   18.Aug.2004
+
+* otftotfm: Adjust TDS 1.1 support thanks to Olaf Weber.
+
+
 Version 2.10   18.Aug.2004
 
 * otftotfm: Add preliminary support for the TeX Directory Structure 1.1

@@ -74,7 +74,7 @@ static String odir_kpathsea[NUMODIR];
 
 static bool writable_texdir_tried = false;
 static String writable_texdir;	// always ends with directory separator
-static int tds_encfonts = -1;
+static int tds_1_1 = -1;
 
 static bool mktexupd_tried = false;
 static String mktexupd;
@@ -165,12 +165,15 @@ getodir(int o, ErrorHandler *errh)
 	// May need to behave differently on TDS 1.1 rather than TDS 1.0. 
 	if (suffix[0] == '#') {
 	    // check type of TDS
-	    if (tds_encfonts < 0) {
-		char* encfonts = kpsei_var_value("ENCFONTS");
-		tds_encfonts = encfonts != 0;
+	    if (tds_1_1 < 0) {
+		// using a procedure suggested by Olaf Weber
+		char* encfonts = kpsei_path_expand("$TEXMFMAIN/fonts/enc");
+		if (!encfonts)
+		    encfonts = kpsei_path_expand("$TEXMFDIST/fonts/enc");
+		tds_1_1 = encfonts != 0;
 		free((void*) encfonts);
 	    }
-	    if (tds_encfonts == 0)
+	    if (tds_1_1 == 0)
 		suffix = suffix.substring(std::find(suffix.begin() + 1, suffix.end(), '#') + 1, suffix.end());
 	    else
 		suffix = suffix.substring(suffix.begin() + 1, std::find(suffix.begin() + 1, suffix.end(), '#'));

@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <kpathsea/progname.h>
 #include <kpathsea/expand.h>
-#include <kpathsea/variable.h>
 #include <kpathsea/c-pathch.h>
 #include <kpathsea/tex-file.h>
 #include "kpseinterface.h"
@@ -32,12 +31,6 @@ char*
 kpsei_path_expand(const char* path)
 {
     return kpse_path_expand(path);
-}
-
-char*
-kpsei_var_value(const char* var)
-{
-    return kpse_var_value(var);
 }
 
 char*

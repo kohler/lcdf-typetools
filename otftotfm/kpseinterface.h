@@ -7,7 +7,6 @@ extern "C" {
 void kpsei_init(const char* argv0);
 extern int kpsei_env_sep_char;
 char* kpsei_path_expand(const char* path); /* free() result */
-char* kpsei_var_value(const char* var);	   /* free() result */
 enum { KPSEI_FMT_WEB2C, KPSEI_FMT_ENCODING, KPSEI_FMT_TYPE1 };
 char* kpsei_find_file(const char* name, int format);
 void kpsei_set_debug_flags(unsigned flags);
