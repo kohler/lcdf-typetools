@@ -17,7 +17,7 @@
 # include <config.h>
 #endif
 #include <lcdf/transform.hh>
-#include <cmath>
+#include <math.h>
 
 Transform::Transform()
 {
