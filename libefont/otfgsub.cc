@@ -75,7 +75,8 @@ Substitution::assign(Substitute &s, uint8_t &t, const Coverage &coverage)
 void
 Substitution::assign(Substitute &s, uint8_t &t, const Substitute &os, uint8_t ot)
 {
-    assert(&s != &os);
+    if (&s == &os)
+	return;
     switch (ot) {
       case T_NONE:
 	clear(s, t);
@@ -177,12 +178,10 @@ Substitution::~Substitution()
 Substitution &
 Substitution::operator=(const Substitution &o)
 {
-    if (&o != this) {
-	assign(_left, _left_is, o._left, o._left_is);
-	assign(_in, _in_is, o._in, o._in_is);
-	assign(_out, _out_is, o._out, o._out_is);
-	assign(_right, _right_is, o._right, o._right_is);
-    }
+    assign(_left, _left_is, o._left, o._left_is);
+    assign(_in, _in_is, o._in, o._in_is);
+    assign(_out, _out_is, o._out, o._out_is);
+    assign(_right, _right_is, o._right, o._right_is);
     return *this;
 }
 
@@ -345,7 +344,6 @@ Substitution::is_noop() const
 void
 Substitution::assign_append(Substitute &s, uint8_t &t, const Substitute &ls, uint8_t lt, const Substitute &rs, uint8_t rt)
 {
-    clear(s, t);
     if (lt == T_NONE)
 	assign(s, t, rs, rt);
     else if (rt == T_NONE)
@@ -353,10 +351,12 @@ Substitution::assign_append(Substitute &s, uint8_t &t, const Substitute &ls, uin
     else if (lt != T_COVERAGE && rt != T_COVERAGE) {
 	int nl = extract_nglyphs(ls, lt, false);
 	int nr = extract_nglyphs(rs, rt, false);
-	s.gids = new Glyph[nl + nr + 1];
-	s.gids[0] = nl + nr;
-	memcpy(&s.gids[1], extract_glyphptr(ls, lt), nl * sizeof(Glyph));
-	memcpy(&s.gids[1 + nl], extract_glyphptr(rs, rt), nr * sizeof(Glyph));
+	Glyph *gids = new Glyph[nl + nr + 1];
+	gids[0] = nl + nr;
+	memcpy(&gids[1], extract_glyphptr(ls, lt), nl * sizeof(Glyph));
+	memcpy(&gids[1 + nl], extract_glyphptr(rs, rt), nr * sizeof(Glyph));
+	clear(s, t);
+	s.gids = gids;
 	t = T_GLYPHS;
     } else
 	throw Error();
@@ -384,23 +384,43 @@ Substitution::in_out_append_glyph(Glyph g) const
 void
 Substitution::add_outer_left(Glyph g)
 {
-    Substitute x = _left;
-    uint8_t x_is = _left_is;
-    _left_is = T_NONE;
     Substitute ls;
     ls.gid = g;
-    assign_append(_left, _left_is, ls, T_GLYPH, x, x_is);
-    clear(x, x_is);
+    assign_append(_left, _left_is, ls, T_GLYPH, _left, _left_is);
+}
+
+void
+Substitution::remove_outer_left()
+{
+    if (_left_is == T_GLYPH)
+	_left_is = T_NONE;
+    else if (_left_is == T_GLYPHS) {
+	if (_left.gids[0] == 2)
+	    assign(_left, _left_is, _left.gids[2]);
+	else {
+	    _left.gids[0]--;
+	    memmove(_left.gids + 1, _left.gids + 2, _left.gids[0] * sizeof(Glyph));
+	}
+    }
 }
 
 void
 Substitution::add_outer_right(Glyph g)
 {
-    Substitute x = _right;
-    uint8_t x_is = _right_is;
-    _right_is = T_NONE;
-    assign_append(_right, _right_is, x, x_is, g);
-    clear(x, x_is);
+    assign_append(_right, _right_is, _right, _right_is, g);
+}
+
+void
+Substitution::remove_outer_right()
+{
+    if (_right_is == T_GLYPH)
+	_right_is = T_NONE;
+    else if (_right_is == T_GLYPHS) {
+	if (_right.gids[0] == 2)
+	    assign(_right, _right_is, _right.gids[1]);
+	else
+	    _right.gids[0]--;
+    }
 }
 
 bool
@@ -433,12 +453,29 @@ Substitution::out_alter(const Substitution &o, int pos) throw ()
 }
 
 static void
-unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
+unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns) throw ()
 {
-    if (gid && gns && gns->size() > gid && (*gns)[gid])
+    if (gid > 0 && gns && gns->size() > gid && (*gns)[gid])
 	sa << (*gns)[gid];
     else
 	sa << "g" << gid;
+}
+
+void
+Substitution::unparse_glyphids(StringAccum &sa, const Substitute &s, uint8_t t, const Vector<PermString> *gns) throw ()
+{
+    if (t == T_GLYPH)
+	unparse_glyphid(sa, s.gid, gns);
+    else if (t == T_GLYPHS) {
+	for (int i = 1; i <= s.gids[0]; i++) {
+	    if (i != 1)
+		sa << ' ';
+	    unparse_glyphid(sa, s.gids[i], gns);
+	}
+    } else if (t == T_COVERAGE)
+	sa << "<coverage>";
+    else
+	sa << "-";
 }
 
 void
@@ -446,48 +483,34 @@ Substitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 {
     if (!*this)
 	sa << "NULL[]";
-    else if (is_single()) {
-	sa << "SINGLE[";
-	unparse_glyphid(sa, _in.gid, gns);
-	sa << " => ";
-	unparse_glyphid(sa, _out.gid, gns);
-	sa << ']';
-    } else if (is_ligature()) {
-	sa << "LIGATURE[";
-	for (int i = 1; i <= _in.gids[0]; i++) {
-	    unparse_glyphid(sa, _in.gids[i], gns);
-	    sa << ' ';
+    else {
+	if (is_single())
+	    sa << "SINGLE[";
+	else if (is_ligature())
+	    sa << "LIGATURE[";
+	else if (is_multiple())
+	    sa << "MULTIPLE[";
+	else if (is_rcontext())
+	    sa << "RCONTEXT[";
+	else if (is_lcontext())
+	    sa << "LCONTEXT[";
+	else
+	    sa << "UNKNOWN[";
+
+	if (_left_is != T_NONE) {
+	    unparse_glyphids(sa, _left, _left_is, gns);
+	    sa << " | ";
 	}
-	sa << "=> ";
-	unparse_glyphid(sa, _out.gid, gns);
-	sa << ']';
-    } else if (is_multiple()) {
-	sa << "MULTIPLE[";
-	unparse_glyphid(sa, _in.gid, gns);
-	sa << " =>";
-	for (int i = 1; i <= _out.gids[0]; i++) {
-	    sa << ' ';
-	    unparse_glyphid(sa, _out.gids[i], gns);
+	unparse_glyphids(sa, _in, _in_is, gns);
+	sa << " => ";
+	unparse_glyphids(sa, _out, _out_is, gns);
+	if (_right_is != T_NONE) {
+	    sa << " | ";
+	    unparse_glyphids(sa, _right, _right_is, gns);
 	}
+
 	sa << ']';
-    } else if (is_single_rcontext()) {
-	sa << "SINGLE_RCONTEXT[";
-	unparse_glyphid(sa, _in.gid, gns);
-	sa << " => ";
-	unparse_glyphid(sa, _out.gid, gns);
-	sa << " | ";
-	unparse_glyphid(sa, _right.gid, gns);
-	sa << ']';
-    } else if (is_single_lcontext()) {
-	sa << "SINGLE_LCONTEXT[";
-	unparse_glyphid(sa, _left.gid, gns);
-	sa << " | ";
-	unparse_glyphid(sa, _in.gid, gns);
-	sa << " => ";
-	unparse_glyphid(sa, _out.gid, gns);
-	sa << ']';
-    } else
-	sa << "UNKNOWN[" << (int)_left_is << ',' << (int)_in_is << ',' << (int)_out_is << ',' << (int)_right_is << "]";
+    }
 }
 
 String
@@ -643,7 +666,7 @@ GsubSingle::coverage() const throw ()
 Glyph
 GsubSingle::map(Glyph g) const
 {
-    int ci = coverage().lookup(g);
+    int ci = coverage().coverage_index(g);
     if (ci < 0)
 	return g;
     else if (_d[1] == 1)
@@ -669,7 +692,7 @@ bool
 GsubSingle::apply(const Glyph *g, int pos, int n, Substitution &s) const
 {
     int ci;
-    if (pos < n	&& (ci = coverage().lookup(g[pos])) >= 0) {
+    if (pos < n	&& (ci = coverage().coverage_index(g[pos])) >= 0) {
 	if (_d[1] == 1)
 	    s = Substitution(g[pos], g[pos] + _d.s16(4));
 	else
@@ -706,7 +729,7 @@ bool
 GsubMultiple::map(Glyph g, Vector<Glyph> &v) const
 {
     v.clear();
-    int ci = coverage().lookup(g);
+    int ci = coverage().coverage_index(g);
     if (ci < 0) {
 	v.push_back(g);
 	return false;
@@ -735,7 +758,7 @@ bool
 GsubMultiple::apply(const Glyph *g, int pos, int n, Substitution &s, bool is_alternate) const
 {
     int ci;
-    if (pos < n	&& (ci = coverage().lookup(g[pos])) >= 0) {
+    if (pos < n	&& (ci = coverage().coverage_index(g[pos])) >= 0) {
 	Vector<Glyph> result;
 	Data seq = _d.offset_subtable(HEADERSIZE + ci*RECSIZE);
 	for (int j = 0; j < seq.u16(0); j++)
@@ -776,7 +799,7 @@ GsubLigature::map(const Vector<Glyph> &gs, Glyph &result, int &consumed) const
     assert(gs.size() > 0);
     result = gs[0];
     consumed = 1;
-    int ci = coverage().lookup(gs[0]);
+    int ci = coverage().coverage_index(gs[0]);
     if (ci < 0)
 	return false;
     Data ligset = _d.offset_subtable(HEADERSIZE + ci*RECSIZE);
@@ -819,7 +842,7 @@ bool
 GsubLigature::apply(const Glyph *g, int pos, int n, Substitution &s) const
 {
     int ci;
-    if (pos < n	&& (ci = coverage().lookup(g[pos])) >= 0) {
+    if (pos < n	&& (ci = coverage().coverage_index(g[pos])) >= 0) {
 	Data ligset = _d.offset_subtable(HEADERSIZE + ci*RECSIZE);
 	int nligset = ligset.u16(0);
 	for (int j = 0; j < nligset; j++) {
@@ -991,6 +1014,22 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
 	bool any = false;
 	for (Coverage::iterator ci = c.begin(); ci; ci++)
 	    any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFT, *ci));
+	return any;
+    } else if (nbacktrack == 2 && ninput == 1 && nlookahead == 0) {
+	Coverage c1(_d.offset_subtable(F3_HSIZE));
+	Coverage c2(_d.offset_subtable(F3_HSIZE + 2));
+	bool any = false;
+	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
+	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
+		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFT, *c1i, *c2i));
+	return any;
+    } else if (nbacktrack == 0 && ninput == 1 && nlookahead == 2) {
+	Coverage c1(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE));
+	Coverage c2(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE + 2));
+	bool any = false;
+	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
+	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
+		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_RIGHT, *c1i, *c2i));
 	return any;
     } else
 	return false;

@@ -122,7 +122,7 @@ class Substitution { public:
     Substitution(const Vector<Glyph> &in, Glyph out);
     Substitution(int nin, const Glyph *in, Glyph out);
 
-    // context marker
+    // context markers (given inside out)
     enum Context { C_LEFT = 0, C_RIGHT = 1 };
     Substitution(Context, Glyph);
     Substitution(Context, Glyph, Glyph);
@@ -143,6 +143,8 @@ class Substitution { public:
     bool is_ligature() const;
     bool is_single_lcontext() const;
     bool is_single_rcontext() const;
+    bool is_lcontext() const;
+    bool is_rcontext() const;
 
     // extract data
     Glyph left_glyph() const;
@@ -159,9 +161,11 @@ class Substitution { public:
 
     // alter
     void add_outer_left(Glyph);
+    void remove_outer_left();
     Substitution in_out_append_glyph(Glyph) const;
     bool out_alter(const Substitution &, int) throw ();
     void add_outer_right(Glyph);
+    void remove_outer_right();
     
     void unparse(StringAccum &, const Vector<PermString> * = &debug_glyph_names) const;
     String unparse(const Vector<PermString> * = &debug_glyph_names) const;
@@ -203,6 +207,8 @@ class Substitution { public:
     static const Glyph *extract_glyphptr(const Substitute &, uint8_t) throw ();
     static int extract_nglyphs(const Substitute &, uint8_t, bool coverage_ok) throw ();
     static bool matches(const Substitute &, uint8_t, int pos, Glyph) throw ();
+
+    static void unparse_glyphids(StringAccum &, const Substitute &, uint8_t, const Vector<PermString> *) throw ();
     
 };
 
@@ -263,6 +269,18 @@ inline bool
 Substitution::is_single_rcontext() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_GLYPH;
+}
+
+inline bool
+Substitution::is_lcontext() const
+{
+    return (_left_is == T_GLYPH || _left_is == T_GLYPHS) && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_NONE;
+}
+
+inline bool
+Substitution::is_rcontext() const
+{
+    return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && (_right_is == T_GLYPH || _right_is == T_GLYPHS);
 }
 
 inline Glyph
