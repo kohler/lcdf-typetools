@@ -93,7 +93,7 @@ class FeatureList { public:
 
     bool ok() const			{ return _str.length() > 0; }
 
-    int feature_tags(const Vector<int> &fids, Vector<Tag> &ftags) const;
+    Tag feature_tag(int) const;
     void filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
@@ -184,6 +184,7 @@ class GlyphSet { public:
     ~GlyphSet();
 
     bool covers(Glyph g) const;
+    bool operator[](Glyph g) const	{ return covers(g); }
     int change(Glyph, bool);
     void insert(Glyph g)		{ change(g, true); }
     void remove(Glyph g)		{ change(g, false); }

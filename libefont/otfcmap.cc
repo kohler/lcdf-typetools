@@ -271,7 +271,7 @@ Cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 	      uint32_t endCount = USHORT_AT(endCounts + (m << 1));
 	      uint32_t startCount = USHORT_AT(startCounts + (m << 1));
 	      if (uni < startCount)
-		  r = l - 1;
+		  r = m - 1;
 	      else if (uni <= endCount) {
 		  int idDelta = SHORT_AT(idDeltas + (m << 1));
 		  int idRangeOffset = USHORT_AT(idRangeOffsets + (m << 1));
@@ -282,7 +282,7 @@ Cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 		      return 0;
 		  return (idDelta + g) & 65535;
 	      } else
-		  l = r + 1;
+		  l = m + 1;
 	  }
 	  return 0;
       }
@@ -304,11 +304,11 @@ Cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 	      uint32_t startCharCode = ULONG_AT(groups + m * 12);
 	      uint32_t endCharCode = ULONG_AT(groups + m * 12 + 4);
 	      if (uni < startCharCode)
-		  r = l - 1;
+		  r = m - 1;
 	      else if (uni <= endCharCode)
 		  return ULONG_AT(groups + m * 12 + 8) + uni - startCharCode;
 	      else
-		  l = r + 1;
+		  l = m + 1;
 	  }
 	  return 0;
       }

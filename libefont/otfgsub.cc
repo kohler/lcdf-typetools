@@ -104,8 +104,9 @@ Substitution::Substitution(Glyph in, Glyph out)
     _out.gid = out;
 }
 
-Substitution::Substitution(Glyph in, const Vector<Glyph> &out)
-    : _left_is(T_NONE), _in_is(T_GLYPH), _out_is(T_NONE), _right_is(T_NONE)
+Substitution::Substitution(Glyph in, const Vector<Glyph> &out, bool is_alternate)
+    : _left_is(T_NONE), _in_is(T_GLYPH), _out_is(T_NONE), _right_is(T_NONE),
+      _alternate(is_alternate)
 {
     assert(out.size() > 0);
     _in.gid = in;
@@ -209,6 +210,32 @@ Substitution::context_in(const GlyphSet &gs) const
     return substitute_in(_left, _left_is, gs)
 	&& substitute_in(_in, _in_is, gs)
 	&& substitute_in(_right, _right_is, gs);
+}
+
+Glyph
+Substitution::extract_glyph(const Substitute &s, uint8_t t)
+{
+    return (t == T_GLYPH ? s.gid : 0);
+}
+
+bool
+Substitution::extract_glyphs(const Substitute &s, uint8_t t, Vector<Glyph> &v)
+{
+    switch (t) {
+      case T_GLYPH:
+	v.push_back(s.gid);
+	return true;
+      case T_GLYPHS:
+	for (int i = 1; i <= s.gids[0]; i++)
+	    v.push_back(s.gids[i]);
+	return true;
+      case T_COVERAGE:
+	for (Coverage::iterator i = s.coverage->begin(); i; i++)
+	    v.push_back(*i);
+	return true;
+      default:
+	return false;
+    }
 }
 
 static void
@@ -319,7 +346,8 @@ GsubLookup::unparse_automatics(Vector<Substitution> &v) const
 	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
 	break;
       case L_ALTERNATE:
-	/* not an automatic feature */
+	for (int i = 0; i < n; i++)
+	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v, true);
 	break;
       case L_LIGATURE:
 	for (int i = 0; i < n; i++)
@@ -420,7 +448,7 @@ GsubMultiple::map(Glyph g, Vector<Glyph> &v) const
 }
 
 void
-GsubMultiple::unparse(Vector<Substitution> &v) const
+GsubMultiple::unparse(Vector<Substitution> &v, bool is_alternate) const
 {
     Vector<Glyph> result;
     for (Coverage::iterator i = coverage().begin(); i; i++) {
@@ -428,7 +456,7 @@ GsubMultiple::unparse(Vector<Substitution> &v) const
 	result.clear();
 	for (int j = 0; j < seq.u16(0); j++)
 	    result.push_back(seq.u16(SEQ_HEADERSIZE + j*SEQ_RECSIZE));
-	v.push_back(Substitution(*i, result));
+	v.push_back(Substitution(*i, result, is_alternate));
     }
 }
 
@@ -472,7 +500,7 @@ GsubLigature::map(const Vector<Glyph> &gs, Glyph &result, int &consumed) const
 	int nlig = lig.u16(2);
 	if (nlig > gs.size() - 1)
 	    goto bad;
-	for (int j = 0; j < nlig; j++)
+	for (int j = 0; j < nlig - 1; j++)
 	    if (lig.u16(LIG_HEADERSIZE + j*LIG_RECSIZE) != gs[j + 1])
 		goto bad;
 	result = lig.u16(0);
@@ -494,7 +522,7 @@ GsubLigature::unparse(Vector<Substitution> &v) const
 	    Data lig = ligset.offset_subtable(SET_HEADERSIZE + j*SET_RECSIZE);
 	    int nlig = lig.u16(2);
 	    components.resize(1);
-	    for (int k = 0; k < nlig; k++)
+	    for (int k = 0; k < nlig - 1; k++)
 		components.push_back(lig.u16(LIG_HEADERSIZE + k*LIG_RECSIZE));
 	    v.push_back(Substitution(components, lig.u16(0)));
 	}

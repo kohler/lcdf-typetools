@@ -291,7 +291,7 @@ int
 FeatureList::assign(const String &str, ErrorHandler *errh)
 {
     _str = str;
-    _str.align(4);
+    _str.align(2);
     int result = check_header(errh ? errh : ErrorHandler::silent_handler());
     if (result < 0)
 	_str = String();
@@ -309,20 +309,17 @@ FeatureList::check_header(ErrorHandler *errh)
     return 0;
 }
 
-int
-FeatureList::feature_tags(const Vector<int> &fids, Vector<Tag> &ftags) const
+Tag
+FeatureList::feature_tag(int fid) const
 {
-    ftags.clear();
     if (_str.length() == 0)
-	return -1;
+	return Tag();
     const uint8_t *data = _str.udata();
     int nfeatures = USHORT_AT(data);
-    for (int i = 0; i < fids.size(); i++)
-	if (fids[i] >= 0 && fids[i] < nfeatures)
-	    ftags.push_back(ULONG_AT2(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE));
-	else
-	    ftags.push_back(Tag());
-    return 0;
+    if (fid >= 0 && fid < nfeatures)
+	return Tag(ULONG_AT2(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE));
+    else
+	return Tag();
 }
 
 void
@@ -376,7 +373,7 @@ FeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler
 	int fid = fids[i];
 	if (fid < 0 || fid >= nfeatures)
 	    return errh->error("OTF feature ID '%d' out of range", fid);
-	int foff = ULONG_AT2(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
+	int foff = USHORT_AT(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
 	int lookupCount;
 	if (len < foff + FEATURE_HEADERSIZE
 	    || (lookupCount = USHORT_AT(data + foff + 2),

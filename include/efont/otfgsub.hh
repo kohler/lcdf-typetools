@@ -22,7 +22,7 @@ class Substitution { public:
     Substitution(Glyph in, Glyph out);
     
     // multiple substitution
-    Substitution(Glyph in, const Vector<Glyph> &out);
+    Substitution(Glyph in, const Vector<Glyph> &out, bool is_alternate = false);
     
     // ligature substitution
     Substitution(Glyph in1, Glyph in2, Glyph out);
@@ -39,7 +39,14 @@ class Substitution { public:
     operator bool() const;
     bool is_single() const;
     bool is_multiple() const;
+    bool is_alternate() const;
     bool is_ligature() const;
+
+    // extract data
+    Glyph in_glyph() const;
+    bool in_glyphs(Vector<Glyph> &) const;
+    Glyph out_glyph() const;
+    bool out_glyphs(Vector<Glyph> &) const;
     
     void unparse(StringAccum &, const Vector<PermString> * = 0) const;
     String unparse(const Vector<PermString> * = 0) const;
@@ -63,6 +70,8 @@ class Substitution { public:
     uint8_t _out_is;
     uint8_t _right_is;
 
+    bool _alternate : 1;
+
     static void clear(Substitute &, uint8_t &);
     static void assign(Substitute &, uint8_t &, Glyph);
     static void assign(Substitute &, uint8_t &, int, const Glyph *);
@@ -70,6 +79,9 @@ class Substitution { public:
     static void assign(Substitute &, uint8_t &, const Substitute &, uint8_t);
     static bool substitute_in(const Substitute &, uint8_t, const Coverage &);
     static bool substitute_in(const Substitute &, uint8_t, const GlyphSet &);
+
+    static Glyph extract_glyph(const Substitute &, uint8_t);
+    static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &);
     
 };
 
@@ -127,7 +139,7 @@ class GsubMultiple { public:
     // default destructor
     Coverage coverage() const throw ();
     bool map(Glyph, Vector<Glyph> &) const;
-    void unparse(Vector<Substitution> &) const;
+    void unparse(Vector<Substitution> &, bool alternate = false) const;
     enum { HEADERSIZE = 6, RECSIZE = 2,
 	   SEQ_HEADERSIZE = 2, SEQ_RECSIZE = 2 };
   private:
@@ -179,13 +191,43 @@ Substitution::is_single() const
 inline bool
 Substitution::is_multiple() const
 {
-    return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPHS && _right_is == T_NONE;
+    return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPHS && _right_is == T_NONE && !_alternate;
+}
+
+inline bool
+Substitution::is_alternate() const
+{
+    return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPHS && _right_is == T_NONE && _alternate;
 }
 
 inline bool
 Substitution::is_ligature() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPHS && _out_is == T_GLYPH && _right_is == T_NONE;
+}
+
+inline Glyph
+Substitution::in_glyph() const
+{
+    return extract_glyph(_in, _in_is);
+}
+
+inline bool
+Substitution::in_glyphs(Vector<Glyph> &v) const
+{
+    return extract_glyphs(_in, _in_is, v);
+}
+
+inline Glyph
+Substitution::out_glyph() const
+{
+    return extract_glyph(_out, _out_is);
+}
+
+inline bool
+Substitution::out_glyphs(Vector<Glyph> &v) const
+{
+    return extract_glyphs(_out, _out_is, v);
 }
 
 }}

@@ -2,6 +2,7 @@
 #ifndef EFONT_OTFCMAP_HH
 #define EFONT_OTFCMAP_HH
 #include <efont/otf.hh>
+#include <lcdf/error.hh>
 namespace Efont { namespace OpenType {
 
 class Cmap { public:
@@ -41,7 +42,7 @@ class Cmap { public:
 inline Glyph
 Cmap::map_uni(uint32_t c) const
 {
-    return map_table(_first_unicode_table, c);
+    return map_table(first_unicode_table(), c, ErrorHandler::default_handler());
 }
 
 }}
