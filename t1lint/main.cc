@@ -101,8 +101,7 @@ get_num_array(Type1Font *font, int dictionary, const char *name,
 
 static bool
 get_integer(Type1Font *font, int dictionary, const char *name,
-	    int &v, ErrorHandler *errh, bool mandatory = false,
-	    bool unsigned = false)
+	    int &v, ErrorHandler *errh, bool mandatory = false)
 {
   Type1Definition *d = font->dict(dictionary, name);
   double scratch;
@@ -170,7 +169,6 @@ static void
 check_blues(Type1Font *font, ErrorHandler *errh)
 {
   Type1Definition *d;
-  double scratch_real;
   
   // BlueScale
   double BlueScale;
