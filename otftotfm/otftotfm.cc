@@ -1654,7 +1654,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case NOCREATE_OPT:
-	    no_create = (clp->negated != 0);
+	    no_create = clp->negated;
 	    break;
 
 	  case FORCE_OPT:
