@@ -30,7 +30,7 @@ enum { CSR_GLYPH = 0x00000000, CSR_SUBR = 0x80000000,
        CSR_GSUBR = 0xC0000000,
        CSR_TYPE = 0xC0000000, CSR_NUM = 0x3FFFFFFF };
 
-class MakeType1CharstringInterp : public CharstringInterp { public:
+class MakeType1CharstringInterp : public Type1CharstringGenInterp { public:
 
     MakeType1CharstringInterp(int precision = 5);
     ~MakeType1CharstringInterp();
@@ -41,22 +41,7 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     void run(const CharstringContext &, Type1Charstring &, ErrorHandler *);
 
     bool type2_command(int, const uint8_t *, int *);
-    
-    void act_sidebearing(int, const Point &);
-    void act_width(int, const Point &);
-    void act_seac(int, double, double, double, int, int);
 
-    void act_hstem(int, double, double);
-    void act_vstem(int, double, double);
-    void act_hintmask(int, const unsigned char *, int);
-
-    void act_line(int, const Point &, const Point &);
-    void act_curve(int, const Point &, const Point &, const Point &, const Point &);
-    void act_closepath(int);
-    virtual void act_flex(int, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, double);
-
-    int nhints() const			{ return _stem_pos.size(); }
-    double max_flex_height() const	{ return _max_flex_height; }
     String landmark() const;
 
     class Subr;
@@ -64,26 +49,7 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
   private:
 
     // output
-    Type1CharstringGen _csgen;
     Type1Font *_output;
-    ErrorHandler *_errh;
-
-    // current glyph
-    Point _sidebearing;
-    Point _width;
-    enum State { S_INITIAL, S_OPEN, S_CLOSED, S_SEAC };
-    State _state;
-
-    Vector<double> _stem_pos;
-    Vector<double> _stem_width;
-    int _nhstem;
-
-    // hint replacement
-    Type1CharstringGen _hr_csgen;
-    int _hr_firstsubr;
-
-    // Flex
-    double _max_flex_height;
     bool _flex_message;
 
     // subroutines
@@ -95,11 +61,6 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
 
     Subr *_cur_subr;
     int _cur_glyph;
-
-    void gen_number(double, int = 0);
-    void gen_command(int);
-    void gen_sbw(bool hints_follow);
-    void gen_hintmask(Type1CharstringGen &, const unsigned char *, int) const;
 
     Subr *csr_subr(CsRef, bool force) const;
     Type1Charstring *csr_charstring(CsRef) const;
@@ -182,9 +143,7 @@ MakeType1CharstringInterp::Subr::has_call(Subr *s) const
  **/
 
 MakeType1CharstringInterp::MakeType1CharstringInterp(int precision)
-    : _csgen(precision), _errh(0),
-      _hr_csgen(precision), _hr_firstsubr(-1), _max_flex_height(0),
-      _flex_message(0), _cur_glyph(-1)
+    : Type1CharstringGenInterp(precision), _flex_message(false)
 {
 }
 
@@ -205,283 +164,6 @@ MakeType1CharstringInterp::landmark() const
 	return String("glyph '") + program()->glyph_name(_cur_glyph) + "'";
     else
 	return String();
-}
-
-
-// generating charstring commands
-
-inline void
-MakeType1CharstringInterp::gen_number(double n, int what)
-{
-    _csgen.gen_number(n, what);
-}
-
-inline void
-MakeType1CharstringInterp::gen_command(int what)
-{
-    _csgen.gen_command(what);
-}
-
-void
-MakeType1CharstringInterp::gen_sbw(bool hints_follow)
-{
-    if (!hints_follow && nhints()) {
-	String s = String::fill_string('\377', ((nhints() - 1) >> 3) + 1);
-	act_hintmask(CS::cHintmask, reinterpret_cast<const unsigned char *>(s.data()), nhints());
-    } else if (_sidebearing.y == 0 && _width.y == 0) {
-	gen_number(_sidebearing.x);
-	gen_number(_width.x);
-	gen_command(CS::cHsbw);
-    } else {
-	gen_number(_sidebearing.x);
-	gen_number(_sidebearing.y);
-	gen_number(_width.x);
-	gen_number(_width.y);
-	gen_command(CS::cSbw);
-    }
-    _state = S_CLOSED;
-}
-
-void
-MakeType1CharstringInterp::act_sidebearing(int, const Point &p)
-{
-    _sidebearing = p;
-}
-
-void
-MakeType1CharstringInterp::act_width(int, const Point &p)
-{
-    _width = p;
-}
-
-void
-MakeType1CharstringInterp::act_seac(int, double asb, double adx, double ady, int bchar, int achar)
-{
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    gen_number(asb);
-    gen_number(adx);
-    gen_number(ady);
-    gen_number(bchar);
-    gen_number(achar);
-    gen_command(CS::cSeac);
-    _state = S_SEAC;
-}
-
-void
-MakeType1CharstringInterp::act_hstem(int, double pos, double width)
-{
-    if (_nhstem == _stem_pos.size()) {
-	_stem_pos.push_back(pos);
-	_stem_width.push_back(width);
-	_nhstem++;
-    }
-}
-
-void
-MakeType1CharstringInterp::act_vstem(int, double pos, double width)
-{
-    _stem_pos.push_back(pos);
-    _stem_width.push_back(width);
-}
-
-void
-MakeType1CharstringInterp::gen_hintmask(Type1CharstringGen &csgen, const unsigned char *data, int nhints) const
-{
-    unsigned char mask = 0x80;
-    for (int i = 0; i < nhints; i++) {
-	if (*data & mask) {
-	    csgen.gen_number(_stem_pos[i]);
-	    csgen.gen_number(_stem_width[i]);
-	    csgen.gen_command(i < _nhstem ? CS::cHstem : CS::cVstem);
-	}
-	if ((mask >>= 1) == 0)
-	    data++, mask = 0x80;
-    }
-}
-
-void
-MakeType1CharstringInterp::act_hintmask(int cmd, const unsigned char *data, int nhints)
-{
-    if (cmd == CS::cCntrmask || nhints > MakeType1CharstringInterp::nhints())
-	return;
-
-    if (_state == S_INITIAL) {
-	gen_sbw(true);
-	gen_hintmask(_csgen, data, nhints);
-    } else if (_hr_firstsubr >= 0) {
-	_hr_csgen.clear();
-	gen_hintmask(_hr_csgen, data, nhints);
-	_hr_csgen.gen_command(CS::cReturn);
-	Type1Charstring hr_subr;
-	_hr_csgen.output(hr_subr);
-
-	int subrno = -1, nsubrs = _output->nsubrs();
-	for (int i = _hr_firstsubr; i < nsubrs; i++)
-	    if (Type1Subr *s = _output->subr_x(i))
-		if (s->t1cs() == hr_subr) {
-		    subrno = i;
-		    break;
-		}
-	
-	if (subrno < 0 && _output->set_subr(nsubrs, hr_subr))
-	    subrno = nsubrs;
-
-	if (subrno >= 0) {
-	    _csgen.gen_number(subrno);
-	    _csgen.gen_number(4);
-	    _csgen.gen_command(CS::cCallsubr);
-	}
-    }
-}
-
-void
-MakeType1CharstringInterp::act_line(int, const Point &a, const Point &b)
-{
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    _csgen.gen_moveto(a, _state == S_OPEN);
-    _state = S_OPEN;
-    if (a.x == b.x) {
-	gen_number(b.y - a.y, 'y');
-	gen_command(CS::cVlineto);
-    } else if (a.y == b.y) {
-	gen_number(b.x - a.x, 'x');
-	gen_command(CS::cHlineto);
-    } else {
-	gen_number(b.x - a.x, 'x');
-	gen_number(b.y - a.y, 'y');
-	gen_command(CS::cRlineto);
-    }
-}
-
-void
-MakeType1CharstringInterp::act_curve(int, const Point &a, const Point &b, const Point &c, const Point &d)
-{
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    _csgen.gen_moveto(a, _state == S_OPEN);
-    _state = S_OPEN;
-    if (b.y == a.y && d.x == c.x) {
-	gen_number(b.x - a.x, 'x');
-	gen_number(c.x - b.x, 'x');
-	gen_number(c.y - b.y, 'y');
-	gen_number(d.y - c.y, 'y');
-	gen_command(CS::cHvcurveto);
-    } else if (b.x == a.x && d.y == c.y) {
-	gen_number(b.y - a.y, 'y');
-	gen_number(c.x - a.x, 'x');
-	gen_number(c.y - b.y, 'y');
-	gen_number(d.x - c.x, 'x');
-	gen_command(CS::cVhcurveto);
-    } else {
-	gen_number(b.x - a.x, 'x');
-	gen_number(b.y - a.y, 'y');
-	gen_number(c.x - b.x, 'x');
-	gen_number(c.y - b.y, 'y');
-	gen_number(d.x - c.x, 'x');
-	gen_number(d.y - c.y, 'y');
-	gen_command(CS::cRrcurveto);
-    }
-}
-
-void
-MakeType1CharstringInterp::act_flex(int cmd, const Point &p0, const Point &p1, const Point &p2, const Point &p3_4, const Point &p5, const Point &p6, const Point &p7, double flex_depth)
-{
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    _csgen.gen_moveto(p0, _state == S_OPEN);
-    _state = S_OPEN;
-
-    // 1. Outer endpoints must have same x (or y) coordinate
-    bool v_ok = (p0.x == p7.x);
-    bool h_ok = (p0.y == p7.y);
-    
-    // 2. Join point and its neighboring controls must be at an extreme
-    if (v_ok && p2.x == p3_4.x && p3_4.x == p5.x) {
-	double distance = fabs(p3_4.x - p0.x);
-	int sign = (p3_4.x < p0.x ? -1 : 1);
-	if (sign * (p1.x - p0.x) < 0 || sign * (p1.x - p0.x) > distance
-	    || sign * (p6.x - p0.x) < 0 || sign * (p6.x - p0.x) > distance)
-	    v_ok = false;
-    } else
-	v_ok = false;
-
-    if (h_ok && p2.y == p3_4.y && p3_4.y == p5.y) {
-	double distance = fabs(p3_4.y - p0.y);
-	int sign = (p3_4.y < p0.y ? -1 : 1);
-	if (sign * (p1.y - p0.y) < 0 || sign * (p1.y - p0.y) > distance
-	    || sign * (p6.y - p0.y) < 0 || sign * (p6.y - p0.y) > distance)
-	    h_ok = false;
-    } else
-	h_ok = false;
-
-    // 3. Flex height <= 20
-    if (v_ok && fabs(p3_4.x - p0.x) > 20)
-	v_ok = false;
-    if (h_ok && fabs(p3_4.y - p0.y) > 20)
-	h_ok = false;
-
-    // generate flex commands
-    if (v_ok || h_ok) {
-	Point p_reference = (h_ok ? Point(p3_4.x, p0.y) : Point(p0.x, p3_4.y));
-
-	_csgen.gen_number(1);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p_reference, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p1, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p2, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p3_4, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p5, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p6, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_moveto(p7, false);
-	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
-
-	_csgen.gen_number(flex_depth);
-	_csgen.gen_number(p7.x, 'X');
-	_csgen.gen_number(p7.y, 'Y');
-	_csgen.gen_number(0);
-	_csgen.gen_command(CS::cCallsubr);
-
-	double flex_height = fabs(h_ok ? p3_4.y - p0.y : p3_4.x - p0.x);
-	if (flex_height > _max_flex_height)
-	    _max_flex_height = flex_height;
-    } else {
-	if (!_flex_message) {
-	    _errh->lwarning(landmark(), "complex flex hint replaced with curves");
-	    _errh->message("(This Type 2 format font contains flex hints prohibited by Type 1.\nI've safely replaced them with ordinary curves.)");
-	    _flex_message = 1;
-	}
-	act_curve(cmd, p0, p1, p2, p3_4);
-	act_curve(cmd, p3_4, p5, p6, p7);
-    }
-}
-
-void
-MakeType1CharstringInterp::act_closepath(int)
-{
-    gen_command(CS::cClosepath);
-    _state = S_CLOSED;
 }
 
 
@@ -674,11 +356,11 @@ MakeType1CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left
 	    if (callee)
 		_cur_subr->add_call(callee);
 
-	    int left = _csgen.length();
+	    int left = csgen().length();
 	    
 	    bool more = callxsubr_command(g);
 
-	    int right = _csgen.length();
+	    int right = csgen().length();
 	    if (error() >= 0 && callee)
 		callee->add_caller(_cur_subr, left, right - left);
 	    return more;
@@ -697,30 +379,20 @@ MakeType1CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left
 void
 MakeType1CharstringInterp::run(const CharstringContext &g, Type1Charstring &out, ErrorHandler *errh)
 {
-    _sidebearing = _width = Point(0, 0);
-    _state = S_INITIAL;
-    _csgen.clear();
-    _stem_pos.clear();
-    _stem_width.clear();
-    _nhstem = 0;
-    _errh = errh;
-    
-    CharstringInterp::interpret(g);
-    
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    if (_state != S_SEAC)
-	_csgen.gen_command(CS::cEndchar);
-    
-    _csgen.output(out);
-    _errh = 0;
+    Type1CharstringGenInterp::run(g, out);
+
+    if (Type1CharstringGenInterp::bad_flex() && !_flex_message) {
+	errh->lwarning(landmark(), "complex flex hint replaced with curves");
+	errh->message("(This Type 2 format font contains flex hints prohibited by Type 1.\nI've safely replaced them with ordinary curves.)");
+	_flex_message = true;
+    }
 }
 
 void
 MakeType1CharstringInterp::run(const CharstringProgram *program, Type1Font *output, PermString glyph_definer, ErrorHandler *errh)
 {
     _output = output;
-    _hr_firstsubr = output->nsubrs();
+    set_hint_replacement_storage(output);
 
     _glyphs.assign(program->nglyphs(), 0);
     _subrs.assign(program->nsubrs(), 0);
