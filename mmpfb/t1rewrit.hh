@@ -49,7 +49,7 @@ class Type1MMRemover {
   Type1MMRemover(Type1Font *, Vector<double> *, int, ErrorHandler *);
   ~Type1MMRemover();
   
-  Type1Program *program() const		{ return _font; }
+  PsfontProgram *program() const	{ return _font; }
   Vector<double> *weight_vector() const	{ return _weight_vector; }
   int nmasters() const			{ return _weight_vector->size(); }
   int precision() const			{ return _precision; }
@@ -79,7 +79,7 @@ class Type1SubrRemover {
   Type1SubrRemover(Type1Font *, ErrorHandler *);
   ~Type1SubrRemover();
   
-  Type1Program *program() const			{ return _font; }
+  PsfontProgram *program() const		{ return _font; }
   ErrorHandler *errh() const			{ return _errh; }
   
   void mark_save(int n);
