@@ -83,7 +83,7 @@ script), and "yi.YIC" (Yi script with classic characters). If
 .I lang
 is not specified, otftopl will use the default language system for that
 script. You can give this option multiple times. Run "otftopl
-\-\-print\-scripts \fIfont\fR" to see the list of scripts and languages a
+\-\-query\-scripts \fIfont\fR" to see the list of scripts and languages a
 font supports. Defaults to "latn".
 '
 .Sp
@@ -96,7 +96,7 @@ meant to correspond to font behaviors, such as kerning or small-capitals.
 Examples include "liga" (default ligatures), "dlig" (discretionary
 ligatures), "kern" (kerning), and "c2sc" (replacing capitals with small
 capitals). Give this option multiple times to apply multiple features. Run
-"otftopl \-\-print\-features [--script options] \fIfont\fR" to see the list
+"otftopl \-\-query\-features [--script options] \fIfont\fR" to see the list
 of features a font supports for the specified collection of scripts.
 Defaults to any features required by the selected scripts.
 '
@@ -195,7 +195,7 @@ variable, or if that's not set, the current directory.
 '
 .Sp
 .TP 5
-.BR \-\-print\-scripts
+.BR \-\-qs ", " \-\-query\-scripts
 Print the scripts and language systems supported by the specified font and
 exit. The scripts are printed one per line, with human-readable
 descriptions; for example:
@@ -208,7 +208,7 @@ descriptions; for example:
 '
 .Sp
 .TP 5
-.BR \-\-print\-features
+.BR \-\-qf ", " \-\-query\-features
 Print the features supported by the specified font, in the specified
 scripts and language systems, and exit. The scripts are printed one per
 line, with human-readable descriptions; for example:

@@ -46,8 +46,8 @@ using namespace Efont;
 #define SCRIPT_OPT		309
 #define ENCODING_DIR_OPT	310
 #define ENCODING_FILE_OPT	312
-#define PRINT_SCRIPTS_OPT	313
-#define PRINT_FEATURES_OPT	314
+#define QUERY_SCRIPTS_OPT	313
+#define QUERY_FEATURES_OPT	314
 #define FONT_NAME_OPT		315
 #define TFM_OPT			316
 #define TFM_DIR_OPT		317
@@ -79,11 +79,13 @@ Clp_Option options[] = {
     { "output-encoding", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
     
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
-    
-    { "print-features", 0, PRINT_FEATURES_OPT, 0, 0 },
-    { "print-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 },
-    { "list-features", 0, PRINT_FEATURES_OPT, 0, 0 }, // deprecated
-    { "list-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 }, // deprecated
+
+    { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
+    { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
+    { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
+    { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
+    { "print-features", 0, QUERY_FEATURES_OPT, 0, 0 }, // deprecated
+    { "print-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 }, // deprecated
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 'v', VERSION_OPT, 0, 0 },
 
@@ -166,8 +168,8 @@ Output options:\n\
       --encoding-directory=DIR Automatic mode: put encoding files in DIR.\n\
 \n\
 Other options:\n\
-      --print-scripts          Print font's supported scripts and exit.\n\
-      --print-features         Print font's supported features for specified\n\
+  --qs, --query-scripts        Print font's supported scripts and exit.\n\
+  --qf, --query-features       Print font's supported features for specified\n\
                                scripts and exit.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -h, --help                   Print this message and exit.\n\
@@ -677,6 +679,7 @@ do_file(const OpenType::Font &otf, String outfile,
 	return;
     Vector<PermString> glyph_names;
     font.glyph_names(glyph_names);
+    OpenType::debug_glyph_names = glyph_names;
 
     // prepare encoding
     DvipsEncoding dvipsenc;
@@ -706,7 +709,7 @@ do_file(const OpenType::Font &otf, String outfile,
     Vector<OpenType::Substitution> subs;
     for (int i = 0; i < lookups.size(); i++) {
 	OpenType::GsubLookup l = gsub.lookup(lookups[i]);
-	l.unparse_automatics(subs);
+	l.unparse_automatics(gsub, subs);
 	for (int i = 0; i < subs.size(); i++)
 	    encoding.apply(subs[i], !dvipsenc_literal);
 	encoding.apply_substitutions();
@@ -852,7 +855,7 @@ collect_script_descriptions(const OpenType::ScriptList &script_list, Vector<Stri
 }
 
 static void
-do_print_scripts(const OpenType::Font &otf, ErrorHandler *errh)
+do_query_scripts(const OpenType::Font &otf, ErrorHandler *errh)
 {
     Vector<String> results;
     if (String gsub_table = otf.table("GSUB")) {
@@ -892,7 +895,7 @@ collect_feature_descriptions(const OpenType::ScriptList &script_list, const Open
 }
 
 static void
-do_print_features(const OpenType::Font &otf, ErrorHandler *errh)
+do_query_features(const OpenType::Font &otf, ErrorHandler *errh)
 {
     Vector<String> results;
     if (String gsub_table = otf.table("GSUB")) {
@@ -934,8 +937,8 @@ main(int argc, char **argv)
     const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
     String tfm_directory, pl_directory, new_encoding_directory;
     bool literal_encoding = false;
-    bool print_scripts = false;
-    bool print_features = false;
+    bool query_scripts = false;
+    bool query_features = false;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -1037,12 +1040,12 @@ main(int argc, char **argv)
 	    glyphlist_file = clp->arg;
 	    break;
 	    
-	  case PRINT_FEATURES_OPT:
-	    print_features = true;
+	  case QUERY_FEATURES_OPT:
+	    query_features = true;
 	    break;
 
-	  case PRINT_SCRIPTS_OPT:
-	    print_scripts = true;
+	  case QUERY_SCRIPTS_OPT:
+	    query_scripts = true;
 	    break;
 	    
 	  case QUIET_OPT:
@@ -1137,11 +1140,11 @@ particular purpose.\n");
 	std::sort(interesting_features.begin(), interesting_features.end());
 
     // read scripts or features
-    if (print_scripts) {
-	do_print_scripts(otf, &cerrh);
+    if (query_scripts) {
+	do_query_scripts(otf, &cerrh);
 	exit(errh->nerrors() > 0);
-    } else if (print_features) {
-	do_print_features(otf, &cerrh);
+    } else if (query_features) {
+	do_query_features(otf, &cerrh);
 	exit(errh->nerrors() > 0);
     }
 
