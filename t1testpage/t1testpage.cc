@@ -267,7 +267,7 @@ particular purpose.\n");
 
     //font->undo_synthetic();
   
-    fprintf(outf, "%%!PS-Adobe-3.0\n%%LanguageLevel: 2\n%%%%BeginProlog\n");
+    fprintf(outf, "%%!PS-Adobe-3.0\n%%%%LanguageLevel: 2\n%%%%BeginProlog\n");
     fprintf(outf, "/magicstr 1 string def\n\
 /magicbox { %% row col char name encoding  magicbox  -\n\
   5 3 roll 54 mul 36 add exch 54 mul neg 702 add moveto currentpoint\n\
