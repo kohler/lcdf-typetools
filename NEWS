@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.50b1   20.Aug.2003
+
+* Integrate mminstance (the mmafm and mmpfb programs), and bump the versoin
+  number to reflect this.
+
+
 Version 0.53   10.Aug.2003
 
 * Fix problem with Type 1 output in '--without-kpathsea' reported by Adam

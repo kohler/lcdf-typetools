@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = t1lint
-man_MANS = 
+man_MANS = t1lint.1
 
 t1lint_SOURCES = cscheck.hh cscheck.cc \
 	t1lint.cc
@@ -10,3 +10,5 @@ t1lint_SOURCES = cscheck.hh cscheck.cc \
 t1lint_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
+
+EXTRA_DIST = t1lint.1

@@ -1,11 +1,13 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign check-news
 
-SUBDIRS = liblcdf libefont cfftot1 otftotfm t1lint t1testpage
+SUBDIRS = liblcdf libefont @SELECTED_SUBDIRS@
+DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otftotfm t1lint t1testpage
 
 pkgdata_DATA = glyphlist.txt 7t.enc
 
 EXTRA_DIST = \
+	ONEWS \
 	include/lcdf/bezier.hh \
 	include/lcdf/clp.h \
 	include/lcdf/error.hh \
@@ -53,7 +55,7 @@ srclinks:
 	cd libefont && $(MAKE) srclinks
 
 versionize:
-	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/otftotfm/otftotfm.1
+	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/mmafm/mmafm.1 $(top_srcdir)/mmpfb/mmpfb.1 $(top_srcdir)/otftotfm/otftotfm.1 $(top_srcdir)/t1lint/t1lint.1
 	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(top_srcdir)/README
 
 .PHONY: srclinks rpm
