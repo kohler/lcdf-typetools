@@ -66,41 +66,32 @@ class Type1MMRemover {
 };
 
 
-class Type1SubrRemover {
+class Type1SubrRemover { public:
   
-  Efont::Type1Font *_font;
+    Type1SubrRemover(Efont::Type1Font *, ErrorHandler *);
+    ~Type1SubrRemover();
   
-  int _nsubrs;
-  Vector<bool> _save;
-  Vector<int> _cost;
-  int _save_count;
-  int _nonexist_count;
+    Efont::EfontProgram *program() const	{ return _font; }
+    ErrorHandler *errh() const			{ return _errh; }
   
-  ErrorHandler *_errh;
+    int save_count() const			{ return _save_count; }
   
- public:
+    bool run(int);
+    
+  private:
   
-  Type1SubrRemover(Efont::Type1Font *, ErrorHandler *);
-  ~Type1SubrRemover();
+    Efont::Type1Font *_font;
   
-  Efont::EfontProgram *program() const		{ return _font; }
-  ErrorHandler *errh() const			{ return _errh; }
+    int _nsubrs;
+    enum { REMOVABLE = -1, DEAD = -2 };
+    Vector<int> _renumbering;
+    Vector<int> _cost;
+    int _save_count;
+    int _nonexist_count;
   
-  void mark_save(int n);
-  int save_count() const			{ return _save_count; }
-  
-  bool run(int);
-  
+    ErrorHandler *_errh;
+
 };
 
-
-inline void
-Type1SubrRemover::mark_save(int n)
-{
-  if (n >= 0 && n < _nsubrs && !_save[n]) {
-    _save[n] = true;
-    _save_count++;
-  }
-}
 
 #endif

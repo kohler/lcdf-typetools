@@ -172,15 +172,8 @@ Type1CharstringGen::output(Type1Charstring &cs)
  * HintReplacementDetector
  **/
 
-class HintReplacementDetector : public CharstringInterp {
+class HintReplacementDetector : public CharstringInterp { public:
 
-    Vector<int> _hint_replacements;
-    Vector<int> _call_counts;
-    int _subr_level;
-    int _count_calls_below;
-  
-  public:
-  
     HintReplacementDetector(Type1Font *, Vector<double> *, int);
 
     bool is_hint_replacement(int i) const	{ return _hint_replacements[i]; }
@@ -190,7 +183,14 @@ class HintReplacementDetector : public CharstringInterp {
     bool type1_command(int);
 
     bool run(Type1Charstring &);
-  
+
+  private:
+
+    Vector<int> _hint_replacements;
+    Vector<int> _call_counts;
+    int _subr_level;
+    int _count_calls_below;
+
 };
 
 HintReplacementDetector::HintReplacementDetector(Type1Font *f, Vector<double> *wv, int b)
@@ -867,28 +867,27 @@ Type1MMRemover::run()
  * SubrExpander
  **/
 
-class SubrExpander : public CharstringInterp {
-  
-    Type1CharstringGen _gen;
-    Vector<bool> _expand;
-    int _subr_level;
-  
-  public:
-  
+class SubrExpander : public CharstringInterp { public:
+
     SubrExpander(Type1Font *);
   
-    void mark_expand(int n)		{ _expand[n] = true; }
-    bool expand(int n) const		{ return _expand[n]; }
+    void set_renumbering(const Vector<int> *v) { _renumbering = v; }
 
     void init();
     bool type1_command(int);
   
     bool run(Type1Charstring &);
 
+  private:
+  
+    Type1CharstringGen _gen;
+    const Vector<int> *_renumbering;
+    int _subr_level;
+  
 };
 
 SubrExpander::SubrExpander(Type1Font *font)
-    : CharstringInterp(font, 0), _gen(0), _expand(font->nsubrs(), false)
+    : CharstringInterp(font, 0), _gen(0), _renumbering(0)
 {
 }
 
@@ -908,13 +907,17 @@ SubrExpander::type1_command(int cmd)
 	  if (size() < 1)
 	      goto unknown;
 	  int which = (int)top(0);
-	  Charstring *subr_cs = get_subr(which);
-	  if (!subr_cs || !_expand[which])
+	  int renumber_which = (which >= 0 && which < _renumbering->size() ? (*_renumbering)[which] : which);
+	  if (renumber_which >= 0) {
+	      top(0) = renumber_which;
 	      goto unknown;
+	  }
 	  pop();
-	  _subr_level++;
-	  subr_cs->run(*this);
-	  _subr_level--;
+	  if (Charstring *subr_cs = get_subr(which)) {
+	      _subr_level++;
+	      subr_cs->run(*this);
+	      _subr_level--;
+	  }
 	  return !done();
       }
    
@@ -959,7 +962,7 @@ SubrExpander::run(Type1Charstring &cs)
 
 Type1SubrRemover::Type1SubrRemover(Type1Font *font, ErrorHandler *errh)
     : _font(font), _nsubrs(font->nsubrs()),
-      _save(_nsubrs, false), _cost(_nsubrs, 0),
+      _renumbering(_nsubrs, REMOVABLE), _cost(_nsubrs, 0),
       _save_count(0), _nonexist_count(0), _errh(errh)
 {
     // find subroutines needed for hint replacement
@@ -969,18 +972,23 @@ Type1SubrRemover::Type1SubrRemover(Type1Font *font, ErrorHandler *errh)
 	if (g)
 	    hr.run(g->t1cs());
     }
-  
+
     // save necessary subroutines
-    for (int i = 0; i < 4; i++)
-	mark_save(i);
-    // "save" subroutines that don't exist
+    for (int i = 0; i < 4; i++) {
+	_renumbering[i] = i;
+	_save_count++;
+    }
+    // save hint-replacement subroutines
     for (int i = 0; i < _nsubrs; i++) {
-	if (!_font->subr(i)) {
-	    mark_save(i);
+	Type1Subr *cs = _font->subr_x(i);
+	if (!cs) {
+	    _renumbering[i] = DEAD;
 	    _nonexist_count++;
-	} else if (hr.is_hint_replacement(i))
-	    mark_save(i);
-	_cost[i] += hr.call_count(i);
+	} else if (hr.is_hint_replacement(i)) {
+	    _renumbering[i] = i;
+	    _save_count++;
+	} else
+	    _cost[i] = hr.call_count(i) * (cs->t1cs().length() - (i <= 107 ? 2 : 3));
     }
 }
 
@@ -991,76 +999,71 @@ Type1SubrRemover::~Type1SubrRemover()
 static Vector<int> *sort_keys;
 
 extern "C" {
-    static int
-    sort_permute_compare(const void *v1, const void *v2)
-    {
-	const int *i1 = (const int *)v1;
-	const int *i2 = (const int *)v2;
-	return (*sort_keys)[*i1] - (*sort_keys)[*i2];
-    }
+static int
+sort_permute_compare(const void *v1, const void *v2)
+{
+    const int *i1 = (const int *)v1;
+    const int *i2 = (const int *)v2;
+    return (*sort_keys)[*i1] - (*sort_keys)[*i2];
+}
 }
 
 bool
 Type1SubrRemover::run(int lower_to)
 {
-    if (lower_to < _save_count - _nonexist_count) {
+    if (lower_to < 0)
+	lower_to = _nsubrs;
+    if (lower_to < _save_count) {
 	_errh->warning("reducing %s to minimum number of subroutines (%d)",
 		       _font->font_name().cc(), _save_count - _nonexist_count);
-	lower_to = _save_count - _nonexist_count;
+	lower_to = _save_count;
     }
-    int to_remove = (_nsubrs - _nonexist_count) - lower_to;
-    if (to_remove <= 0)
-	return true;
+    int to_remove = _nsubrs - _nonexist_count - lower_to;
+    if (to_remove < 0)
+	to_remove = 0;
   
     // multiply by lost bytes per call
     Vector<int> permute;
-    for (int i = 0; i < _nsubrs; i++) {
+    for (int i = 0; i < _nsubrs; i++)
 	permute.push_back(i);
-	Type1Charstring *cs = _font->subr(i);
-	if (cs)
-	    _cost[i] *= cs->length() - (i <= 107 ? 2 : 3);
-    }
-  
+
     // sort them by least frequent use -> most frequent use
     sort_keys = &_cost;
     qsort(&permute[0], _nsubrs, sizeof(int), sort_permute_compare);
-  
-    // mark first portion of `permute' to be removed
+    
+    // mark first portion of `permute' to be removed    
     SubrExpander rem0(_font);
     int removed = 0;
-    for (int i = 0; i < _nsubrs && removed < to_remove; i++)
-	if (!_save[ permute[i] ]) {
-	    rem0.mark_expand(permute[i]);
+    for (int i = 0; i < _nsubrs; i++) {
+	int p = permute[i];
+	if (_renumbering[p] == REMOVABLE && removed < to_remove) {
+	    _renumbering[p] = DEAD;
 	    removed++;
 	}
-    assert(removed == to_remove);
-  
-#if 0
+    }
+
     // renumber the rest
-    Vector<int> renumber(_nsubrs, -1);
     int renumber_pos = 0;
     for (int i = 0; i < _nsubrs; i++)
-	if (!rem0.expand(i))
-	    renumber[i] = renumber_pos++;
-    rem0.set_renumbering(renumber);
-#endif
-  
+	if (_renumbering[i] == REMOVABLE) { // save it
+	    while (_renumbering[renumber_pos] >= 0)
+		renumber_pos++;
+	    _renumbering[i] = renumber_pos++;
+	}
+    rem0.set_renumbering(&_renumbering);
+
     // go through and change them all
     for (int i = 0; i < _nsubrs; i++) {
-	Type1Charstring *cs = _font->subr(i);
-	if (cs && !rem0.expand(i))
-	    rem0.run(*cs);
+	Type1Subr *s = _font->subr_x(i);
+	if (s && _renumbering[i] >= 0)
+	    rem0.run(s->t1cs());
     }
-    for (int i = 0; i < _font->nglyphs(); i++) {
-	Type1Subr *g = _font->glyph_x(i);
-	if (g)
+    for (int i = 0; i < _font->nglyphs(); i++)
+	if (Type1Subr *g = _font->glyph_x(i))
 	    rem0.run(g->t1cs());
-    }
-  
+
     // actually remove subroutines
-    for (int i = 0; i < _nsubrs; i++)
-	if (rem0.expand(i))
-	    _font->remove_subr(i);
-  
+    _font->renumber_subrs(_renumbering);
+    
     return true;
 }
