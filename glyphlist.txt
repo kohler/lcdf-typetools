@@ -4332,6 +4332,8 @@ diamondmath;22C4
 # 0237 is the proposed allocation for dotless j as of Unicode 4.0
 dotlessj;0237;F6BE
 emptyset;2205;F638
+# emptyslot: invalid Unicode; the user explicitly wants this slot empty
+emptyslot;D801
 epsilon1;03F5
 equivasymptotic;224D
 flat;266D

@@ -23,6 +23,7 @@ class GsubEncoding { public:
     // default destructor
 
     Glyph boundary_glyph() const		{ return _boundary_glyph; }
+    Glyph emptyslot_glyph() const		{ return _emptyslot_glyph; }
     String coding_scheme() const		{ return _coding_scheme; }
     void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
 
@@ -32,7 +33,7 @@ class GsubEncoding { public:
     bool setting(int, Vector<Setting> &, bool clear = true) const;
     inline int encoding(Glyph) const;
     int force_encoding(Glyph);
-    
+
     void encode(int code, Glyph g);
 
     Glyph add_fake(PermString, const Vector<Setting> &);
@@ -70,6 +71,7 @@ class GsubEncoding { public:
     Vector<Glyph> _encoding;
     mutable Vector<int> _emap;
     Glyph _boundary_glyph;
+    Glyph _emptyslot_glyph;
     String _coding_scheme;
 
     struct Ligature {

@@ -18,8 +18,27 @@
 #include <efont/t1bounds.hh>
 #include <cstdarg>
 
+enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
+       U_VISIBLESPACE = 0x2423,	// U+2423 OPEN BOX
+       U_SS = 0xD800,		// invalid Unicode
+       U_EMPTYSLOT = 0xD801,	// invalid Unicode (not handled by Secondary)
+       U_IJ = 0x0132,
+       U_ij = 0x0133 };
+
 Secondary::~Secondary()
 {
+}
+
+Secondary::Glyph
+Secondary::encode_uni(PermString name, uint32_t uni, const DvipsEncoding &dvipsenc, GsubEncoding &gse)
+{
+    Vector<Setting> v;
+    if (setting(uni, v, dvipsenc))
+	return gse.add_fake(name, v);
+    else if (_next)
+	return _next->encode_uni(name, uni, dvipsenc, gse);
+    else
+	return false;
 }
 
 T1Secondary::T1Secondary(const Efont::Cff::Font *cff, const Efont::OpenType::Cmap &cmap)
@@ -37,9 +56,12 @@ T1Secondary::T1Secondary(const Efont::Cff::Font *cff, const Efont::OpenType::Cma
 }
 
 bool
-Secondary::setting(uint32_t, Vector<Setting> &, const DvipsEncoding &)
+Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvipsenc)
 {
-    return false;
+    if (_next)
+	return _next->setting(uni, v, dvipsenc);
+    else
+	return false;
 }
 
 bool
@@ -55,12 +77,6 @@ T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, 
     } else
 	return false;
 }
-
-enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
-       U_VISIBLESPACE = 0x2423,	// U+2423 OPEN BOX
-       U_SS = 0xD800,		// invalid Unicode
-       U_IJ = 0x0132,
-       U_ij = 0x0133 };
 
 bool
 T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvipsenc)

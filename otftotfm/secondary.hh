@@ -3,11 +3,18 @@
 #include <efont/otfcmap.hh>
 #include <efont/cff.hh>
 class DvipsEncoding;
+class GsubEncoding;
 class Setting;
 
 class Secondary { public:
+    Secondary()				: _next(0) { }
     virtual ~Secondary();
+    void set_next(Secondary *s)		{ _next = s; }
+    typedef Efont::OpenType::Glyph Glyph;
+    virtual Glyph encode_uni(PermString name, uint32_t uni, const DvipsEncoding &, GsubEncoding &);
     virtual bool setting(uint32_t uni, Vector<Setting> &, const DvipsEncoding &);
+  private:
+    Secondary *_next;
 };
 
 class T1Secondary : public Secondary { public:

@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 0.19
+
+* otftotfm: Add support for 'emptyslot' UNICODINGs. Requested by Marco
+  Kuhlmann.
+
+
 Version 0.18   9.Jul.2003
 
 * Otftotfm will now synthesize characters for some T1 glyphs automatically,

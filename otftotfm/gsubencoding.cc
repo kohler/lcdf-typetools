@@ -44,7 +44,7 @@ GsubEncoding::Ligature::unparse(const GsubEncoding *gse) const
 
 
 GsubEncoding::GsubEncoding(int nglyphs)
-    : _boundary_glyph(nglyphs)
+    : _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1)
 {
     _encoding.assign(256, 0);
     _fake_ptrs.push_back(0);
@@ -60,6 +60,8 @@ GsubEncoding::debug_code_name(int code) const
 	return Efont::OpenType::debug_glyph_names[g].c_str();
     else if (g == _boundary_glyph)
 	return "<boundary>";
+    else if (g == _emptyslot_glyph)
+	return "<emptyslot>";
     else
 	return permprintf("<glyph %d>", g).c_str();
 }
@@ -730,8 +732,13 @@ font, so I've ignored those listed above.)", sa.c_str());
 	reassignment[slots[slotnum].position+1] = slots[slotnum].new_position;
     reassign_codes(reassignment);
 
-    // finally, shrink encoding for real
+    // shrink encoding for real
     _encoding.resize(size, 0);
+
+    // and finally replace emptyslot_glyph() with 0
+    for (int i = 0; i < size; i++)
+	if (_encoding[i] == emptyslot_glyph())
+	    encode(i, 0);
 }
 
 int

@@ -1,5 +1,5 @@
 '\"t
-.ds V 0.18
+.ds V 0.19
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -508,6 +508,15 @@ encoding. This is useful to remove optional characters; for instance:
 .fi
 The f-ligatures will be added back to the encoding, preferably at their
 original locations, if some font feature requires them.
+.LP
+Map a glyph to 'emptyslot' if you don't want otftotfm to use the slot for a
+ligature character. For example, given this UNICODING,
+.nf
+ % UNICODING ff =: ff emptyslot ;
+.fi
+otftotfm will leave the 'ff' encoding slot unused if the font has no 'ff'
+glyph. (Note that most OpenType fonts provide a visible representation for
+unused encoding slots, namely a box with an X inside.)
 .LP
 Each UNICODING line can contain multiple commands, separated by spaced
 semicolons.

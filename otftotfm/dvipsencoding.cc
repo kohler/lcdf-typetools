@@ -26,7 +26,7 @@
 #include "util.hh"
 
 static String::Initializer initializer;
-enum { GLYPHLIST_MORE = 0x40000000 };
+enum { GLYPHLIST_MORE = 0x40000000, U_EMPTYSLOT = 0xD801 };
 static HashMap<String, int> glyphlist(-1);
 static PermString::Initializer perm_initializer;
 PermString DvipsEncoding::dot_notdef(".notdef");
@@ -508,6 +508,15 @@ DvipsEncoding::bad_codepoint(int code)
     }
 }
 
+static inline Efont::OpenType::Glyph
+map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const GsubEncoding &gse)
+{
+    if (uni == U_EMPTYSLOT)
+	return gse.emptyslot_glyph();
+    else
+	return cmap.map_uni(uni);
+}
+
 void
 DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary)
 {
@@ -519,19 +528,19 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 	    int m = _unicoding_map[_e[i]];
 	    if (m >= 0) {
 		for (; _unicoding[m] >= 0 && !gid; m++)
-		    gid = cmap.map_uni(_unicoding[m]);
+		    gid = map_uni(_unicoding[m], cmap, gsub_encoding);
 	    } else {
 		// otherwise, try to map this glyph name to Unicode
 		bool more;
 		if ((m = glyphname_unicode(_e[i], &more)) >= 0)
-		    gid = cmap.map_uni(m);
+		    gid = map_uni(m, cmap, gsub_encoding);
 		// might be multiple possibilities
 		if (!gid && more) {
 		    String gn = _e[i];
 		    do {
 			gn += String("/");
 			if ((m = glyphname_unicode(gn, &more)) >= 0)
-			    gid = cmap.map_uni(m);
+			    gid = map_uni(m, cmap, gsub_encoding);
 		    } while (!gid && more);
 		}
 		// if that didn't work, try the glyph name
@@ -539,11 +548,8 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 		    gid = font->glyphid(_e[i]);
 		// as a last resort, try adding it with secondary
 		if (gid <= 0 && secondary
-		    && (m = glyphname_unicode(_e[i])) >= 0) {
-		    Vector<Setting> vs;
-		    if (secondary->setting(m, vs, *this))
-			gid = gsub_encoding.add_fake(_e[i], vs);
-		}
+		    && (m = glyphname_unicode(_e[i])) >= 0)
+		    gid = secondary->encode_uni(_e[i], m, *this, gsub_encoding);
 		// map unknown glyphs to 0
 		if (gid < 0)
 		    gid = 0;
