@@ -597,7 +597,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    int slash = filename.find_right('\'');
 	    if (slash >= 0)
 		filename = filename.substring(slash + 1);
-	    String command = "updmap --enable Map " + shell_quote(filename);
+	    String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + "; updmap";
 	    if (verbose)
 		command += " 1>&2";
 	    else
