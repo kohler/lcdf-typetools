@@ -23,6 +23,10 @@ class AmfmMetrics;
 template class Vector<AmfmMetrics *>;
 class MetricsXt;
 template class Vector<MetricsXt *>;
+class Type1Subr;
+template class Vector<Type1Subr *>;
+class Type1Item;
+template class Vector<Type1Item *>;
 
 class PsresDatabaseSection;
 template class Vector<PsresDatabaseSection *>;

@@ -22,7 +22,7 @@ MyFont::~MyFont()
 }
 
 void
-MyFont::kill_def(Type1Definition *t1d, int whichd = -1)
+MyFont::kill_def(Type1Definition *t1d, int whichd)
 {
   if (!t1d) return;
   
@@ -136,7 +136,7 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
 
 void
 MyFont::interpolate_dict_int(PermString name, ErrorHandler *errh,
-			     Dict the_dict = dPrivate)
+			     Dict the_dict)
 {
   Type1Definition *def = dict(the_dict, name);
   Type1Definition *blend_def = dict(the_dict + dBlend, name);
@@ -156,7 +156,7 @@ MyFont::interpolate_dict_int(PermString name, ErrorHandler *errh,
 }
 
 void
-MyFont::interpolate_dict_num(PermString name, Dict the_dict = dPrivate)
+MyFont::interpolate_dict_num(PermString name, Dict the_dict)
 {
   Type1Definition *def = dict(the_dict, name);
   Type1Definition *blend_def = dict(the_dict + dBlend, name);
@@ -173,8 +173,8 @@ MyFont::interpolate_dict_num(PermString name, Dict the_dict = dPrivate)
 }
 
 void
-MyFont::interpolate_dict_numvec(PermString name, Dict the_dict = dPrivate,
-				bool executable = false)
+MyFont::interpolate_dict_numvec(PermString name, Dict the_dict,
+				bool executable)
 {
   Type1Definition *def = dict(the_dict, name);
   Type1Definition *blend_def = dict(the_dict + dBlend, name);

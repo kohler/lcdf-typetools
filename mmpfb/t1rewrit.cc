@@ -18,7 +18,7 @@ itc_complain()
 }
 
 
-Type1CharstringGen::Type1CharstringGen(int precision = 5)
+Type1CharstringGen::Type1CharstringGen(int precision)
 {
   if (precision >= 0 && precision <= 107)
     _precision = precision;
@@ -596,7 +596,6 @@ Type1BadCallRemover::command(int cmd)
        return false;
      } else
        goto normal;
-     break;
    }
    
    normal:
