@@ -11,8 +11,8 @@ class Tag { public:
     
     Tag()				: _tag(0U) { }
     explicit Tag(uint32_t tag)		: _tag(tag) { }
-    Tag(const char *);
-    Tag(const String &);
+    Tag(const char*);
+    Tag(const String&);
     // default destructor
 
     bool null() const			{ return _tag == 0; }
@@ -24,11 +24,11 @@ class Tag { public:
     String text() const;
     static String langsys_text(Tag script, Tag langsys = Tag());
 
-    const uint8_t *table_entry(const uint8_t *table, int n, int entry_size) const;
+    const uint8_t* table_entry(const uint8_t* table, int n, int entry_size) const;
 
-    const char *script_description() const;
-    const char *language_description() const;
-    const char *feature_description() const;
+    const char* script_description() const;
+    const char* language_description() const;
+    const char* feature_description() const;
     
   private:
 
@@ -38,14 +38,14 @@ class Tag { public:
 
 class Font { public:
 
-    Font(const String &, ErrorHandler * = 0);
+    Font(const String&, ErrorHandler* = 0);
     // default destructor
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
 
-    const String &data_string() const	{ return _str; }
-    const uint8_t *data() const		{ return _str.udata(); }
+    const String& data_string() const	{ return _str; }
+    const uint8_t* data() const		{ return _str.udata(); }
     int length() const			{ return _str.length(); }
 
     String table(Tag) const;
@@ -57,21 +57,21 @@ class Font { public:
 
     enum { HEADER_SIZE = 12, TABLE_DIR_ENTRY_SIZE = 16 };
 
-    int parse_header(ErrorHandler *);
+    int parse_header(ErrorHandler*);
     
 };
 
 class ScriptList { public:
 
     ScriptList()		{ }
-    inline ScriptList(const String &, ErrorHandler * = 0);
-    int assign(const String &, ErrorHandler * = 0);
+    inline ScriptList(const String&, ErrorHandler* = 0);
+    int assign(const String&, ErrorHandler* = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
 
-    int language_systems(Vector<Tag> &scripts, Vector<Tag> &langsys, ErrorHandler * = 0) const;
-    int features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0, bool clear_fids = true) const;
+    int language_systems(Vector<Tag>& scripts, Vector<Tag>& langsys, ErrorHandler* = 0) const;
+    int features(Tag script, Tag langsys, int& required_fid, Vector<int>& fids, ErrorHandler* = 0, bool clear_fids = true) const;
     
   private:
 
@@ -81,34 +81,34 @@ class ScriptList { public:
     
     String _str;
 
-    int check_header(ErrorHandler *);
+    int check_header(ErrorHandler*);
     int script_offset(Tag) const;
-    int check_script(Tag, int, ErrorHandler *) const;
-    int langsys_offset(Tag, Tag, ErrorHandler * = 0) const;
+    int check_script(Tag, int, ErrorHandler*) const;
+    int langsys_offset(Tag, Tag, ErrorHandler* = 0) const;
     
 };
 
 class FeatureList { public:
 
     FeatureList()		{ }
-    inline FeatureList(const String &, ErrorHandler * = 0);
-    int assign(const String &, ErrorHandler * = 0);
+    inline FeatureList(const String&, ErrorHandler* = 0);
+    int assign(const String&, ErrorHandler* = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
 
     Tag tag(int fid) const;
-    String params(int fid, int length, ErrorHandler * = 0, bool old_style_offset = false) const;
-    int lookups(int fid, Vector<int> &results, ErrorHandler * = 0, bool clear_results = true) const;
+    String params(int fid, int length, ErrorHandler* = 0, bool old_style_offset = false) const;
+    int lookups(int fid, Vector<int>& results, ErrorHandler* = 0, bool clear_results = true) const;
 
-    int find(Tag, const Vector<int> &fids) const;
-    void filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
-    inline void filter(Vector<int> &fids, Tag ftag) const;
+    int find(Tag, const Vector<int>& fids) const;
+    void filter(Vector<int>& fids, const Vector<Tag>& sorted_ftags) const;
+    inline void filter(Vector<int>& fids, Tag ftag) const;
 
-    int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
-    int lookups(const Vector<int> &required_fids, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
-    int lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
-    int lookups(const ScriptList &, Tag script, Tag langsys, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
+    int lookups(const Vector<int>& fids, Vector<int>& results, ErrorHandler* = 0) const;
+    int lookups(const Vector<int>& required_fids, const Vector<int>& fids, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
+    int lookups(int required_fid, const Vector<int>& fids, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
+    int lookups(const ScriptList&, Tag script, Tag langsys, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
     
   private:
 
@@ -117,9 +117,9 @@ class FeatureList { public:
     
     String _str;
 
-    int check_header(ErrorHandler *);
+    int check_header(ErrorHandler*);
     int script_offset(Tag) const;
-    int langsys_offset(Tag, Tag, ErrorHandler * = 0) const;
+    int langsys_offset(Tag, Tag, ErrorHandler* = 0) const;
     
 };
 
@@ -127,7 +127,7 @@ class Coverage { public:
 
     Coverage() throw ();		// empty coverage
     Coverage(Glyph first, Glyph last) throw ();	// range coverage
-    Coverage(const String &, ErrorHandler * = 0, bool check = true) throw ();
+    Coverage(const String&, ErrorHandler* = 0, bool check = true) throw ();
     // default destructor
 
     bool ok() const throw ()		{ return _str.length() > 0; }
@@ -136,7 +136,7 @@ class Coverage { public:
     int coverage_index(Glyph) const throw ();
     bool covers(Glyph g) const throw ()	{ return coverage_index(g) >= 0; }
 
-    void unparse(StringAccum &) const throw ();
+    void unparse(StringAccum&) const throw ();
     String unparse() const throw ();
     
     class iterator { public:
@@ -156,19 +156,19 @@ class Coverage { public:
 	bool forward_to(Glyph);
 
 	// XXX should check iterators are of same type
-	bool operator<(const iterator &o) { return _value < o._value; }
-	bool operator<=(const iterator &o) { return _value <= o._value; }
-	bool operator>=(const iterator &o) { return _value >= o._value; }
-	bool operator>(const iterator &o) { return _value > o._value; }
-	bool operator==(const iterator &o) { return _value == o._value; }
-	bool operator!=(const iterator &o) { return _value != o._value; }
+	bool operator<(const iterator& o) { return _value < o._value; }
+	bool operator<=(const iterator& o) { return _value <= o._value; }
+	bool operator>=(const iterator& o) { return _value >= o._value; }
+	bool operator>(const iterator& o) { return _value > o._value; }
+	bool operator==(const iterator& o) { return _value == o._value; }
+	bool operator!=(const iterator& o) { return _value != o._value; }
 	
       private:
 	String _str;
 	int _pos;
 	Glyph _value;
 	friend class Coverage;
-	iterator(const String &, int);
+	iterator(const String&, int);
     };
     
     iterator begin() const		{ return iterator(_str, 0); }
@@ -182,14 +182,14 @@ class Coverage { public:
 
     String _str;
 
-    int check(ErrorHandler *);
+    int check(ErrorHandler*);
     
 };
 
-Coverage operator&(const Coverage &, const Coverage &);
-bool operator<=(const Coverage &, const Coverage &);
+Coverage operator&(const Coverage&, const Coverage&);
+bool operator<=(const Coverage&, const Coverage&);
 
-inline bool operator>=(const Coverage &a, const Coverage &b)
+inline bool operator>=(const Coverage& a, const Coverage& b)
 {
     return b <= a;
 }
@@ -197,7 +197,7 @@ inline bool operator>=(const Coverage &a, const Coverage &b)
 class GlyphSet { public:
 
     GlyphSet();
-    GlyphSet(const GlyphSet &);
+    GlyphSet(const GlyphSet&);
     ~GlyphSet();
 
     inline bool covers(Glyph g) const;
@@ -206,7 +206,7 @@ class GlyphSet { public:
     void insert(Glyph g)		{ change(g, true); }
     void remove(Glyph g)		{ change(g, false); }
     
-    GlyphSet &operator=(const GlyphSet &);
+    GlyphSet& operator=(const GlyphSet&);
     
   private:
 
@@ -216,13 +216,13 @@ class GlyphSet { public:
 	   VULEN = (1 << UNSHIFT) >> 5
     };
 
-    uint32_t *_v[VLEN];
+    uint32_t* _v[VLEN];
 
 };
 
 class ClassDef { public:
 
-    ClassDef(const String &, ErrorHandler * = 0) throw ();
+    ClassDef(const String&, ErrorHandler* = 0) throw ();
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
@@ -231,7 +231,7 @@ class ClassDef { public:
     int lookup(Glyph) const throw ();
     int operator[](Glyph g) const throw () { return lookup(g); }
 
-    void unparse(StringAccum &) const throw ();
+    void unparse(StringAccum&) const throw ();
     String unparse() const throw ();
         
     class class_iterator { public:
@@ -249,12 +249,12 @@ class ClassDef { public:
 	void operator++()		{ (*this)++; }
 
 	// XXX should check iterators are of same type
-	bool operator<(const class_iterator &o) { return _coviter < o._coviter; }
-	bool operator<=(const class_iterator &o) { return _coviter <= o._coviter; }
-	bool operator>=(const class_iterator &o) { return _coviter >= o._coviter; }
-	bool operator>(const class_iterator &o) { return _coviter > o._coviter; }
-	bool operator==(const class_iterator &o) { return _coviter == o._coviter; }
-	bool operator!=(const class_iterator &o) { return _coviter != o._coviter; }
+	bool operator<(const class_iterator& o) { return _coviter < o._coviter; }
+	bool operator<=(const class_iterator& o) { return _coviter <= o._coviter; }
+	bool operator>=(const class_iterator& o) { return _coviter >= o._coviter; }
+	bool operator>(const class_iterator& o) { return _coviter > o._coviter; }
+	bool operator==(const class_iterator& o) { return _coviter == o._coviter; }
+	bool operator!=(const class_iterator& o) { return _coviter != o._coviter; }
 	
       private:
 	String _str;
@@ -262,14 +262,14 @@ class ClassDef { public:
 	int _class;
 	Coverage::iterator _coviter;
 	friend class ClassDef;
-	class_iterator(const String &, int, int, const Coverage::iterator &);
+	class_iterator(const String&, int, int, const Coverage::iterator&);
 	void increment_class0();
 	enum { FIRST_POS = -1, LAST_POS = -2 };
     };
 
     // XXX does not work correctly for class 0
     class_iterator begin(int c) const	{ return class_iterator(_str, 0, c, Coverage::iterator()); }
-    class_iterator begin(int c, const Coverage &coverage) const { return class_iterator(_str, 0, c, coverage.begin()); }
+    class_iterator begin(int c, const Coverage& coverage) const { return class_iterator(_str, 0, c, coverage.begin()); }
     class_iterator end(int c) const	{ return class_iterator(_str, _str.length(), c, Coverage::iterator()); }
 
     enum { T_LIST = 1, T_RANGES = 2,
@@ -280,7 +280,7 @@ class ClassDef { public:
 
     String _str;
 
-    int check(ErrorHandler *);
+    int check(ErrorHandler*);
 
 };
 
@@ -337,17 +337,17 @@ inline unsigned hashcode(Tag t)
     return t.value();
 }
 
-inline ScriptList::ScriptList(const String &str, ErrorHandler *errh)
+inline ScriptList::ScriptList(const String& str, ErrorHandler* errh)
 {
     assign(str, errh);
 }
 
-inline FeatureList::FeatureList(const String &str, ErrorHandler *errh)
+inline FeatureList::FeatureList(const String& str, ErrorHandler* errh)
 {
     assign(str, errh);
 }
 
-inline void FeatureList::filter(Vector<int> &fids, Tag ftag) const
+inline void FeatureList::filter(Vector<int>& fids, Tag ftag) const
 {
     Vector<Tag> tags;
     tags.push_back(ftag);
@@ -358,7 +358,7 @@ inline bool GlyphSet::covers(Glyph g) const
 {
     if ((unsigned)g > MAXGLYPH)
 	return false;
-    else if (const uint32_t *u = _v[g >> SHIFT])
+    else if (const uint32_t* u = _v[g >> SHIFT])
 	return u[(g & MASK) >> 5] & (1 << (g & 0x1F));
     else
 	return false;

@@ -55,7 +55,7 @@ class PermString { struct Doodad; public:
     friend struct PermString::Initializer;
     static void static_initialize();
 
-    static const int NHASH = 1024; // must be power of 2
+    enum { NHASH = 1024 };	// must be power of 2
     static Doodad zero_char_doodad, one_char_doodad[256], *buckets[NHASH];
   
 };

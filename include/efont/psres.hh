@@ -14,22 +14,22 @@ class PsresDatabase { public:
     PsresDatabase();
     ~PsresDatabase();
   
-    void add_psres_path(const char *path, const char *defaults, bool override);
-    bool add_psres_file(Filename &, bool override);
-    void add_database(PsresDatabase *, bool override);
+    void add_psres_path(const char* path, const char* defaults, bool override);
+    bool add_psres_file(Filename&, bool override);
+    void add_database(PsresDatabase*, bool override);
   
-    inline PsresDatabaseSection *section(PermString section) const;
-    const String &value(PermString section, PermString key) const;
-    const String &unescaped_value(PermString section, PermString key) const;
+    inline PsresDatabaseSection* section(PermString section) const;
+    const String& value(PermString section, PermString key) const;
+    const String& unescaped_value(PermString section, PermString key) const;
     Filename filename_value(PermString section, PermString key) const;
   
   private:
   
     HashMap<PermString, int> _section_map;
-    Vector<PsresDatabaseSection *> _sections;
+    Vector<PsresDatabaseSection*> _sections;
   
-    PsresDatabaseSection *force_section(PermString);
-    bool add_one_psres_file(Slurper &, bool override);
+    PsresDatabaseSection* force_section(PermString);
+    bool add_one_psres_file(Slurper&, bool override);
     void add_psres_directory(PermString);
   
 };
@@ -40,11 +40,11 @@ class PsresDatabaseSection { public:
   
     PermString section_name() const		{ return _section_name; }
   
-    void add_psres_file_section(Slurper &, PermString, bool);
-    void add_section(PsresDatabaseSection *, bool override);
+    void add_psres_file_section(Slurper&, PermString, bool);
+    void add_section(PsresDatabaseSection*, bool override);
   
-    const String &value(PermString key)		{ return value(_map[key]); }
-    inline const String &unescaped_value(PermString key) const;
+    const String& value(PermString key)		{ return value(_map[key]); }
+    inline const String& unescaped_value(PermString key) const;
     Filename filename_value(PermString key);
   
   private:
@@ -55,16 +55,16 @@ class PsresDatabaseSection { public:
     Vector<String> _values;
     Vector<int> _value_escaped;
   
-    const String &value(int index);
+    const String& value(int index);
   
 };
 
-inline PsresDatabaseSection *PsresDatabase::section(PermString n) const
+inline PsresDatabaseSection* PsresDatabase::section(PermString n) const
 {
     return _sections[_section_map[n]];
 }
 
-inline const String &PsresDatabaseSection::unescaped_value(PermString key) const
+inline const String& PsresDatabaseSection::unescaped_value(PermString key) const
 {
     assert(!_value_escaped[_map[key]]);
     return _values[_map[key]];

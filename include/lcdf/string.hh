@@ -5,6 +5,7 @@
 # include <lcdf/permstr.hh>
 #endif
 #include <assert.h>
+class StringAccum;
 
 class String { public:
   
