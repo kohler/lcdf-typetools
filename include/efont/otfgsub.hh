@@ -9,11 +9,12 @@ class Substitution;
 
 class Gsub { public:
 
-    Gsub(const Data &, ErrorHandler * = 0) throw (Error);
+    Gsub(const Data &, const Font *, ErrorHandler * = 0) throw (Error);
     // default destructor
 
     const ScriptList &script_list() const { return _script_list; }
     const FeatureList &feature_list() const { return _feature_list; }
+    bool chaincontext_reverse_backtrack() const { return _chaincontext_reverse_backtrack; }
 
     int nlookups() const;
     GsubLookup lookup(unsigned) const;
@@ -25,6 +26,7 @@ class Gsub { public:
     ScriptList _script_list;
     FeatureList _feature_list;
     Data _lookup_list;
+    bool _chaincontext_reverse_backtrack;
     
 };
 
@@ -121,11 +123,9 @@ class Substitution { public:
     Substitution(Glyph in1, Glyph in2, Glyph out);
     Substitution(const Vector<Glyph> &in, Glyph out);
     Substitution(int nin, const Glyph *in, Glyph out);
-
-    // context markers (given inside out)
-    enum Context { C_LEFT = 0, C_RIGHT = 1, C_LEFTRIGHT = 2 };
-    Substitution(Context, Glyph);
-    Substitution(Context, Glyph, Glyph);
+    
+    // space
+    Substitution(int nleft, int nin, int nout, int nright);
     
     ~Substitution();
     
@@ -150,17 +150,28 @@ class Substitution { public:
     // extract data
     inline Glyph left_glyph() const;
     inline int left_nglyphs() const;
+    inline Glyph *left_glyphptr();
+    inline const Glyph *left_glyphptr() const;
+    
     inline Glyph in_glyph() const;
     inline Glyph in_glyph(int pos) const;
     inline bool in_glyphs(Vector<Glyph> &) const;
     inline int in_nglyphs() const;
+    inline Glyph *in_glyphptr();
+    inline const Glyph *in_glyphptr() const;
+    
     inline bool in_matches(int pos, Glyph) const;
+    
     inline Glyph out_glyph() const;
     inline Glyph out_glyph(int pos) const;
     inline bool out_glyphs(Vector<Glyph> &) const;
+    inline Glyph *out_glyphptr();
     inline const Glyph *out_glyphptr() const;
+    
     inline int out_nglyphs() const;
     inline Glyph right_glyph() const;
+    inline Glyph *right_glyphptr();
+    inline const Glyph *right_glyphptr() const;
 
     bool all_in_glyphs(Vector<Glyph> &) const;
     bool all_out_glyphs(Vector<Glyph> &) const;
@@ -172,7 +183,7 @@ class Substitution { public:
     bool out_alter(const Substitution &, int) throw ();
     void add_outer_right(Glyph);
     void remove_outer_right();
-    
+
     void unparse(StringAccum &, const Vector<PermString> * = &debug_glyph_names) const;
     String unparse(const Vector<PermString> * = &debug_glyph_names) const;
     
@@ -198,6 +209,7 @@ class Substitution { public:
     bool _alternate : 1;
 
     static void clear(Substitute &, uint8_t &);
+    static void assign_space(Substitute &, uint8_t &, int);
     static void assign(Substitute &, uint8_t &, Glyph);
     static void assign(Substitute &, uint8_t &, int, const Glyph *);
     static void assign(Substitute &, uint8_t &, const Coverage &);
@@ -210,7 +222,7 @@ class Substitution { public:
     static Glyph extract_glyph(const Substitute &, uint8_t) throw ();
     static Glyph extract_glyph(const Substitute &, int which, uint8_t) throw ();
     static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &, bool coverage_ok) throw ();
-    static const Glyph *extract_glyphptr(const Substitute &, uint8_t) throw ();
+    static Glyph *extract_glyphptr(const Substitute &, uint8_t) throw ();
     static int extract_nglyphs(const Substitute &, uint8_t, bool coverage_ok) throw ();
     static bool matches(const Substitute &, uint8_t, int pos, Glyph) throw ();
 
@@ -324,11 +336,6 @@ inline bool Substitution::out_glyphs(Vector<Glyph> &v) const
     return extract_glyphs(_out, _out_is, v, false);
 }
 
-inline const Glyph *Substitution::out_glyphptr() const
-{
-    return extract_glyphptr(_out, _out_is);
-}
-
 inline int Substitution::out_nglyphs() const
 {
     return extract_nglyphs(_out, _out_is, false);
@@ -337,6 +344,46 @@ inline int Substitution::out_nglyphs() const
 inline Glyph Substitution::right_glyph() const
 {
     return extract_glyph(_right, _right_is);
+}
+
+inline const Glyph *Substitution::left_glyphptr() const
+{
+    return extract_glyphptr(_left, _left_is);
+}
+
+inline Glyph *Substitution::left_glyphptr()
+{
+    return extract_glyphptr(_left, _left_is);
+}
+
+inline const Glyph *Substitution::in_glyphptr() const
+{
+    return extract_glyphptr(_in, _in_is);
+}
+
+inline Glyph *Substitution::in_glyphptr()
+{
+    return extract_glyphptr(_in, _in_is);
+}
+
+inline const Glyph *Substitution::out_glyphptr() const
+{
+    return extract_glyphptr(_out, _out_is);
+}
+
+inline Glyph *Substitution::out_glyphptr()
+{
+    return extract_glyphptr(_out, _out_is);
+}
+
+inline const Glyph *Substitution::right_glyphptr() const
+{
+    return extract_glyphptr(_right, _right_is);
+}
+
+inline Glyph *Substitution::right_glyphptr()
+{
+    return extract_glyphptr(_right, _right_is);
 }
 
 inline StringAccum &operator<<(StringAccum &sa, const Substitution &sub)

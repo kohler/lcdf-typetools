@@ -49,8 +49,6 @@ class Name { public:
 	int _nameid;
     };
 
-    template <typename PlatformPredicate> String find(int nameid, PlatformPredicate) const;
-
   private:
 
     String _str;

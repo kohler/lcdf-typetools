@@ -17,6 +17,7 @@
 # include <config.h>
 #endif
 #include <efont/otfgsub.hh>
+#include <efont/otfname.hh>
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
 #include <errno.h>
@@ -38,6 +39,19 @@ Substitution::clear(Substitute &s, uint8_t &t)
 	break;
     }
     t = T_NONE;
+}
+
+void
+Substitution::assign_space(Substitute &s, uint8_t &t, int n)
+{
+    clear(s, t);
+    if (n == 1)
+	t = T_GLYPH;
+    else if (n > 1) {
+	s.gids = new Glyph[n + 1];
+	s.gids[0] = n;
+	t = T_GLYPHS;
+    }
 }
 
 void
@@ -147,29 +161,17 @@ Substitution::Substitution(int nin, const Glyph *in, Glyph out)
     _out.gid = out;
 }
 
-Substitution::Substitution(Context c, Glyph g)
+Substitution::Substitution(int nleft, int nin, int nout, int nright)
     : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
 {
-    assert(c == C_LEFT || c == C_RIGHT);
-    if (c == C_LEFT)
-	_left_is = T_GLYPH, _left.gid = g;
-    else
-	_right_is = T_GLYPH, _right.gid = g;
-}
-
-Substitution::Substitution(Context c, Glyph g1, Glyph g2)
-    : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
-{
-    assert(c == C_LEFT || c == C_RIGHT || c == C_LEFTRIGHT);
-    Glyph gs[2] = { g1, g2 };
-    if (c == C_LEFT)
-	assign(_left, _left_is, 2, gs);
-    else if (c == C_RIGHT)
-	assign(_right, _right_is, 2, gs);
-    else {
-	assign(_left, _left_is, g1);
-	assign(_right, _right_is, g2);
-    }
+    if (nleft)
+	assign_space(_left, _left_is, nleft);
+    if (nin)
+	assign_space(_in, _in_is, nin);
+    if (nout)
+	assign_space(_out, _out_is, nout);
+    if (nright)
+	assign_space(_right, _right_is, nright);
 }
 
 Substitution::~Substitution()
@@ -299,12 +301,12 @@ Substitution::extract_glyphs(const Substitute &s, uint8_t t, Vector<Glyph> &v, b
     }
 }
 
-const Glyph *
+Glyph *
 Substitution::extract_glyphptr(const Substitute &s, uint8_t t) throw ()
 {
     switch (t) {
       case T_GLYPH:
-	return &s.gid;
+	return const_cast<Glyph *>(&s.gid);
       case T_GLYPHS:
 	return &s.gids[1];
       default:
@@ -562,7 +564,8 @@ Substitution::unparse(const Vector<PermString> *gns) const
  *                        *
  **************************/
 
-Gsub::Gsub(const Data &d, ErrorHandler *errh) throw (Error)
+Gsub::Gsub(const Data &d, const Font *otf, ErrorHandler *errh) throw (Error)
+    : _chaincontext_reverse_backtrack(false)
 {
     // Fixed	Version
     // Offset	ScriptList
@@ -577,6 +580,45 @@ Gsub::Gsub(const Data &d, ErrorHandler *errh) throw (Error)
     if (_feature_list.assign(d.offset_subtable(6), errh) < 0)
 	throw Format("GSUB feature list");
     _lookup_list = d.offset_subtable(8);
+
+    if (!otf)
+	return;
+
+    // Check for "correct" chaining context rules, as suggested by Adobe's
+    // OpenType FDK
+    try {
+	Name nametable(otf->table("name"), ErrorHandler::silent_handler());
+	String vstr = nametable.name(std::find_if(nametable.begin(), nametable.end(), Name::PlatformPred(Name::N_VERSION, 1, 0, 0)));
+	const char *v = vstr.begin(), *endv = vstr.end();
+	if (v + 20 <= endv) {
+	    if (v[0] != 'O' || v[1] != 'T' || v[2] != 'F' || v[3] == ';')
+		goto try_core;
+	    for (v += 4; v < endv && *v != ';'; v++)
+		/* do nothing */;
+	    if (v + 3 >= endv || v[1] != 'P' || v[2] != 'S' || v[3] == ';')
+		goto try_core;
+	    for (v += 4; v < endv && *v != ';'; v++)
+		/* do nothing */;
+	    if (v + 11 >= endv || memcmp(v + 1, "Core 1.0.", 9) != 0
+		|| (v[10] != '2' && v[10] != '3')
+		|| (v[11] < '0' || v[11] > '9'))
+		goto try_core;
+	    _chaincontext_reverse_backtrack = true;
+	}
+      try_core:
+	v = vstr.begin();
+	if (v + 16 <= endv) {
+	    if (v[0] != 'C' || v[1] != 'o' || v[2] != 'r' || v[3] != 'e')
+		goto done;
+	    for (v += 4; v < endv && *v != ';'; v++)
+		/* do nothing */;
+	    if (v + 12 > endv || memcmp(v, ";makeotf.lib", 12) != 0)
+		goto done;
+	    _chaincontext_reverse_backtrack = true;
+	}
+      done: ;
+    } catch (Error) {
+    }
 }
 
 int
@@ -1038,46 +1080,59 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
     int subst_offset = lookahead_offset + F3_LOOKAHEAD_HSIZE + nlookahead*2;
     int nsubst = _d.u16(subst_offset);
 
-    if (nbacktrack == 0 && nlookahead == 0)
-	return GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution());
-    else if (nbacktrack == 0 && ninput == 1 && nlookahead == 1) {
-	Coverage c(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE));
-	bool any = false;
-	for (Coverage::iterator ci = c.begin(); ci; ci++)
-	    any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_RIGHT, *ci));
-	return any;
-    } else if (nbacktrack == 1 && ninput == 1 && nlookahead == 0) {
-	Coverage c(_d.offset_subtable(F3_HSIZE));
-	bool any = false;
-	for (Coverage::iterator ci = c.begin(); ci; ci++)
-	    any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFT, *ci));
-	return any;
-    } else if (nbacktrack == 2 && ninput == 1 && nlookahead == 0) {
-	Coverage c1(_d.offset_subtable(F3_HSIZE));
-	Coverage c2(_d.offset_subtable(F3_HSIZE + 2));
-	bool any = false;
-	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
-	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
-		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFT, *c1i, *c2i));
-	return any;
-    } else if (nbacktrack == 0 && ninput == 1 && nlookahead == 2) {
-	Coverage c1(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE));
-	Coverage c2(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE + 2));
-	bool any = false;
-	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
-	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
-		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_RIGHT, *c1i, *c2i));
-	return any;
-    } else if (nbacktrack == 1 && ninput == 1 && nlookahead == 1) {
-	Coverage c1(_d.offset_subtable(F3_HSIZE));
-	Coverage c2(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE));
-	bool any = false;
-	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
-	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
-		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFTRIGHT, *c1i, *c2i));
-	return any;
-    } else
-	return false;
+    Vector<Coverage> backtrackc;
+    Vector<Coverage> lookaheadc;
+    if (gsub.chaincontext_reverse_backtrack()) {
+	for (int i = 0; i < nbacktrack; i++)
+	    backtrackc.push_back(Coverage(_d.offset_subtable(F3_HSIZE + i*2)));
+    } else {
+	for (int i = nbacktrack - 1; i >= 0; i--)
+	    backtrackc.push_back(Coverage(_d.offset_subtable(F3_HSIZE + i*2)));
+    }
+    for (int i = 0; i < nlookahead; i++)
+	lookaheadc.push_back(Coverage(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE + i*2)));
+    
+    Vector<Coverage::iterator> backtracki;
+    Vector<Coverage::iterator> lookaheadi;
+    for (int i = 0; i < nbacktrack; i++)
+	backtracki.push_back(backtrackc[i].begin());
+    for (int i = 0; i < nlookahead; i++)
+	lookaheadi.push_back(lookaheadc[i].begin());
+
+    bool any = false;
+    
+    while (1) {
+
+	// run GsubContext
+	Substitution s(nbacktrack, 0, 0, nlookahead);
+	Glyph *left_begin = s.left_glyphptr();
+	for (int i = 0; i < nbacktrack; i++)
+	    left_begin[i] = *backtracki[i];
+	Glyph *right_begin = s.right_glyphptr();
+	for (int i = 0; i < nlookahead; i++)
+	    right_begin[i] = *lookaheadi[i];
+
+	any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, s);
+	
+	// step iterators
+	for (int i = nlookahead - 1; i >= 0; i--) {
+	    lookaheadi[i]++;
+	    if (lookaheadi[i])
+		goto next;
+	    lookaheadi[i] = lookaheadc[i].begin();
+	}
+	for (int i = nbacktrack - 1; i >= 0; i--) {
+	    backtracki[i]++;
+	    if (backtracki[i])
+		goto next;
+	    backtracki[i] = backtrackc[i].begin();
+	}
+	break;
+
+      next: ;
+    }
+
+    return any;
 }
 
 
