@@ -259,24 +259,18 @@ Type1CharstringGenInterp::gen_sbw(bool hints_follow)
 {
     if (!hints_follow && nhints())
 	act_hintmask(CS::cHintmask, 0, nhints());
-    else if (_sidebearing.y == 0 && _width.y == 0) {
-	gen_number(_sidebearing.x, 'X');
+    else if (left_sidebearing().y == 0 && _width.y == 0) {
+	gen_number(left_sidebearing().x, 'X');
 	gen_number(_width.x);
 	gen_command(CS::cHsbw);
     } else {
-	gen_number(_sidebearing.x, 'X');
-	gen_number(_sidebearing.y, 'Y');
+	gen_number(left_sidebearing().x, 'X');
+	gen_number(left_sidebearing().y, 'Y');
 	gen_number(_width.x);
 	gen_number(_width.y);
 	gen_command(CS::cSbw);
     }
     _state = S_CLOSED;
-}
-
-void
-Type1CharstringGenInterp::act_sidebearing(int, const Point &p)
-{
-    _sidebearing = p;
 }
 
 void
@@ -553,7 +547,7 @@ Type1CharstringGenInterp::intermediate_output(Type1Charstring &out)
 void
 Type1CharstringGenInterp::run(const CharstringContext &g, Type1Charstring &out)
 {
-    _sidebearing = _width = Point(0, 0);
+    _width = Point(0, 0);
     _csgen.clear();
     swap_stem_hints();
     _state = S_INITIAL;

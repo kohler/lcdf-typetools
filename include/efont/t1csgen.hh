@@ -59,7 +59,6 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
 
     const Type1CharstringGen &csgen() const	{ return _csgen; }
     
-    void act_sidebearing(int, const Point &);
     void act_width(int, const Point &);
     void act_seac(int, double, double, double, int, int);
 
@@ -82,7 +81,6 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     mutable Type1CharstringGen _hint_csgen;
 
     // current glyph
-    Point _sidebearing;
     Point _width;
     enum State { S_INITIAL, S_OPEN, S_CLOSED, S_SEAC };
     State _state;
