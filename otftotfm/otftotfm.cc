@@ -21,6 +21,7 @@
 #include <efont/t1bounds.hh>
 #include <efont/otfcmap.hh>
 #include <efont/otfgsub.hh>
+#include "glyphfilter.hh"
 #include "metrics.hh"
 #include "dvipsencoding.hh"
 #include "automatic.hh"
@@ -197,8 +198,7 @@ static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
 static Vector<Efont::OpenType::Tag> altselector_features;
 
-static Vector<String> include_alternates;
-static Vector<String> exclude_alternates;
+static GlyphFilter alternate_filter;
 
 static String font_name;
 static String encoding_file;
@@ -1129,14 +1129,14 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     OpenType::Cmap cmap(otf.table("cmap"), errh);
     assert(cmap.ok());
     if (dvipsenc_literal)
-	dvipsenc.make_literal_metrics(metrics, font);
+	dvipsenc.make_metrics(metrics, cmap, font, 0, true, errh);
     else {
 	T1Secondary secondary(font, cmap);
 	secondary.set_font_information(font_name, otf, otf_filename);
-	dvipsenc.make_metrics(metrics, cmap, font, &secondary, errh);
+	dvipsenc.make_metrics(metrics, cmap, font, &secondary, false, errh);
     }
-    // encode boundary glyph at 256
-    metrics.encode(256, metrics.boundary_glyph());
+    // encode boundary glyph at 256; pretend its Unicode value is '\n'
+    metrics.encode(256, '\n', metrics.boundary_glyph());
     
     // maintain statistics about features
     HashMap<uint32_t, int> feature_usage(0);
@@ -1157,7 +1157,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	    OpenType::Tag feature = (lookups[i].features.size() == 1 ? lookups[i].features[0] : OpenType::Tag());
 	    if (feature == OpenType::Tag("fina") || feature == OpenType::Tag("fin2") || feature == OpenType::Tag("fin3")) {
 		if (dvipsenc.boundary_char() < 0)
-		    errh->warning("'-ffina' requires a boundary character\n(The input encoding didn't specify a boundary character, but\nI need one to implement '-ffina' features correctly. Add one\nwith a \"%% LIGKERN || = <slot> ;\" command in the encoding.)");
+		    errh->warning("'-ffina' requires a boundary character\n(The input encoding didn't specify a boundary character, but\nI need one to implement '-ffina' features correctly.  Try\nthe '--boundary-char' option.)");
 		else {
 		    int bg = metrics.boundary_glyph();
 		    for (int j = 0; j < subs.size(); j++)
@@ -1171,7 +1171,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 
 	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%5d\t%s\n", i, subs[subno].unparse().c_str());
 	    
-	    int nunderstood = metrics.apply(subs, !dvipsenc_literal, i, include_alternates, exclude_alternates, glyph_names);
+	    int nunderstood = metrics.apply(subs, !dvipsenc_literal, i, alternate_filter, glyph_names);
 
 	    // mark as used
 	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;
@@ -1196,7 +1196,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 		OpenType::GsubLookup l = gsub.lookup(i);
 		alt_subs.clear();
 		(void) l.unparse_automatics(gsub, alt_subs);
-		metrics.apply_alternates(alt_subs, i, include_alternates, exclude_alternates, glyph_names);
+		metrics.apply_alternates(alt_subs, i, alternate_filter, glyph_names);
 	    }
 	altselector_features.swap(interesting_features);
     }
@@ -1458,14 +1458,15 @@ main(int argc, char *argv[])
 
 	  case EXCLUDE_ALTERNATES_OPT:
 	  case INCLUDE_ALTERNATES_OPT: {
-	      Vector<String> *v = (opt == EXCLUDE_ALTERNATES_OPT ? &exclude_alternates : &include_alternates);
 	      const char *s = clp->arg;
 	      while (*s) {
 		  const char *start = s;
 		  while (*s && !isspace(*s))
 		      s++;
-		  if (s > start)
-		      v->push_back(String(start, s - start));
+		  if (s > start) {
+		      String str(start, s - start);
+		      alternate_filter.add_alternate_filter(str, opt == EXCLUDE_ALTERNATES_OPT, errh);
+		  }
 		  while (isspace(*s))
 		      s++;
 	      }

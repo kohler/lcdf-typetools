@@ -26,9 +26,6 @@ class DvipsEncoding { public:
     inline bool encoded(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
-    const Vector<uint32_t> &unicodes() const;
-    int encoding_of_unicode(uint32_t) const;
-    
     int parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *);
     int parse_ligkern(const String &ligkern_text, ErrorHandler *);
     int parse_unicoding(const String &unicoding_text, ErrorHandler *);
@@ -36,8 +33,7 @@ class DvipsEncoding { public:
     bool file_had_ligkern() const		{ return _file_had_ligkern; }
     
     // also modifies 'this':
-    void make_literal_metrics(Metrics &, Efont::Cff::Font *);
-    void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary *, ErrorHandler *);
+    void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary *, bool literal, ErrorHandler *);
     
     void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
     void apply_ligkern_kern(Metrics &, ErrorHandler *) const;
@@ -75,7 +71,8 @@ class DvipsEncoding { public:
     int parse_unicoding_words(Vector<String> &, ErrorHandler *);
     int parse_words(const String &, int (DvipsEncoding::*)(Vector<String> &, ErrorHandler *), ErrorHandler *);
     void bad_codepoint(int);
-
+    bool x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const;
+    
     static PermString dot_notdef;
 
 };

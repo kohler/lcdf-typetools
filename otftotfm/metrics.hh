@@ -4,6 +4,7 @@
 #include <efont/otfgpos.hh>
 namespace Efont { class CharstringProgram; }
 class DvipsEncoding;
+class GlyphFilter;
 
 struct Setting {
     enum { NONE, FONT, SHOW, KERN, MOVE, RULE, DEAD };
@@ -50,10 +51,12 @@ class Metrics { public:
     inline const char *code_str(Code) const;
 
     inline Glyph glyph(Code) const;
+    inline uint32_t unicode(Code) const;
     inline Code encoding(Glyph) const;
+    Code unicode_encoding(uint32_t) const;
     Code force_encoding(Glyph, int lookup_source = -1);
-    void encode(Code, Glyph);
-    void encode_virtual(Code, PermString, const Vector<Setting> &);
+    void encode(Code, uint32_t uni, Glyph);
+    void encode_virtual(Code, PermString, uint32_t uni, const Vector<Setting> &);
 
     void add_altselector_code(Code, int altselector_type);
     bool altselectors() const		{ return _altselectors.size() > 0; }
@@ -72,8 +75,8 @@ class Metrics { public:
     void remove_kerns(Code in1, Code in2);
     int reencode_right_ligkern(Code old_in2, Code new_in2);
     
-    int apply(const Vector<Substitution> &, bool allow_single, int lookup, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names);
-    void apply_alternates(const Vector<Substitution> &, int lookup, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names);
+    int apply(const Vector<Substitution> &, bool allow_single, int lookup, const GlyphFilter &, const Vector<PermString> &glyph_names);
+    void apply_alternates(const Vector<Substitution> &, int lookup, const GlyphFilter &, const Vector<PermString> &glyph_names);
     int apply(const Vector<Positioning> &);
 
     void cut_encoding(int size);
@@ -118,6 +121,7 @@ class Metrics { public:
     struct Char {
 	Glyph glyph;
 	Code base_code;
+	uint32_t unicode;
 	Vector<Ligature> ligatures;
 	Vector<Kern> kerns;
 	VirtualChar *virtual_char;
@@ -195,6 +199,15 @@ Metrics::glyph(Code code) const
 	return 0;
     else
 	return _encoding[code].glyph;
+}
+
+inline uint32_t
+Metrics::unicode(Code code) const
+{
+    if (code < 0 || code >= _encoding.size())
+	return 0;
+    else
+	return _encoding[code].unicode;
 }
 
 inline Metrics::Glyph

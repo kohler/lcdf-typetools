@@ -31,6 +31,8 @@ static HashMap<String, int> glyphlist(-1);
 static PermString::Initializer perm_initializer;
 PermString DvipsEncoding::dot_notdef(".notdef");
 
+#define NEXT_GLYPH_NAME(gn)	("/" + (gn))
+
 int
 DvipsEncoding::parse_glyphlist(String text)
 {
@@ -71,7 +73,7 @@ DvipsEncoding::parse_glyphlist(String text)
 		    next++;
 	    pos = next - data;
 	    if (*next == ';') {	// read another possibility
-		glyph_name += "/"; // XXX handles "DDDD;DDDD DDDD;DDDD" badly
+		glyph_name = NEXT_GLYPH_NAME(glyph_name); // XXX handles "DDDD;DDDD DDDD;DDDD" badly
 		goto read_uni;
 	    }
 	} else
@@ -158,7 +160,6 @@ DvipsEncoding::encode(int e, PermString what)
     if (e >= _e.size())
 	_e.resize(e + 1, dot_notdef);
     _e[e] = what;
-    _unicodes.clear();		// _unicodes isn't good any more
 }
 
 int
@@ -379,7 +380,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, ErrorHandler *errh)
 	    } else {
 		_unicoding.push_back(uni);
 		while (more) {
-		    v[i] += "/";
+		    v[i] = NEXT_GLYPH_NAME(v[i]);
 		    if ((uni = glyphname_unicode(v[i], &more)) >= 0)
 			_unicoding.push_back(uni);
 		}
@@ -530,14 +531,113 @@ map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const Metrics &m)
 	return cmap.map_uni(uni);
 }
 
+bool
+DvipsEncoding::x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const
+{
+    int i = _unicoding_map[chname];
+    if (i >= 0) {
+	for (; _unicoding[i] >= 0; i++)
+	    unicodes.push_back(_unicoding[i]);
+	return true;
+    } else {
+	bool more;
+	if ((i = glyphname_unicode(chname, &more)) >= 0)
+	    unicodes.push_back(i);
+	if (more) {		// might be multiple possibilities
+	    String gn = chname;
+	    do {
+		gn = NEXT_GLYPH_NAME(gn);
+		if ((i = glyphname_unicode(gn, &more)) >= 0)
+		    unicodes.push_back(i);
+	    } while (more);
+	}
+	return false;
+    }
+}
+
+	
+void
+DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary, bool literal, ErrorHandler *errh)
+{
+    // first pass: without secondaries
+    for (int code = 0; code < _e.size(); code++) {
+	PermString chname = _e[code];
+
+	// the altselector character has its own glyph name
+	if (code == _altselector_char && !literal)
+	    chname = "altselector";
+
+	// common case: skip .notdef
+	if (chname == dot_notdef)
+	    continue;
+
+	// find all Unicodes
+	Vector<uint32_t> unicodes;
+	bool unicodes_explicit = x_unicodes(chname, unicodes);
+
+	// find first Unicode supported by the font
+	Efont::OpenType::Glyph glyph = 0;
+	uint32_t glyph_uni = (unicodes.size() ? unicodes[0] : 0);
+	for (uint32_t *u = unicodes.begin(); u < unicodes.end() && !glyph; u++)
+	    if ((glyph = map_uni(*u, cmap, metrics)) > 0)
+		glyph_uni = *u;
+
+	// do not use a Unicode-mapped glyph if literal
+	if (literal)
+	    glyph = 0;
+	
+	// use named glyph if (1) name contains a dot, or (2) nothing found
+	if (font
+	    && !unicodes_explicit
+	    && (glyph <= 0
+		|| std::find(chname.begin(), chname.end(), '.') < chname.end()))
+	    if (Efont::OpenType::Glyph named_glyph = font->glyphid(chname))
+		glyph = named_glyph;
+
+	// assign slot
+	if (glyph >= 0)
+	    metrics.encode(code, glyph_uni, glyph);
+    }
+
+    // second pass: with secondaries
+    for (int code = 0; secondary && code < _e.size(); code++)
+	if (_e[code] != dot_notdef && metrics.glyph(code) <= 0) {
+	    PermString chname = _e[code];
+
+	    // the altselector character has its own glyph name
+	    if (code == _altselector_char)
+		chname = "altselector";
+	
+	    // loop over all Unicodes
+	    Vector<uint32_t> unicodes;
+	    (void) x_unicodes(chname, unicodes);
+	    for (uint32_t *u = unicodes.begin(); u < unicodes.end(); u++)
+		if (secondary->encode_uni(code, chname, *u, metrics, errh))
+		    break;
+	}
+
+    // final pass: complain
+    for (int code = 0; code < _e.size(); code++)
+	if (_e[code] != dot_notdef && metrics.glyph(code) <= 0)
+	    bad_codepoint(code);
+
+    metrics.set_coding_scheme(_coding_scheme);
+}
+
+
+#if 0
 void
 DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary, ErrorHandler *errh)
 {
     for (int i = 0; i < _e.size(); i++) {
 	PermString chname = _e[i];
+
+	// the altselector character has its own glyph name
 	if (i == _altselector_char)
 	    chname = "altselector";
-	else if (chname == dot_notdef)
+
+	// common case: skip .notdef
+	if (chname == dot_notdef)
 	    continue;
 	
 	Efont::OpenType::Glyph gid = 0;
@@ -593,7 +693,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 }
 
 void
-DvipsEncoding::make_literal_metrics(Metrics &metrics, Efont::Cff::Font *font)
+DvipsEncoding::make_literal_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font)
 {
     for (int i = 0; i < _e.size(); i++)
 	if (_e[i] != dot_notdef) {
@@ -623,16 +723,7 @@ DvipsEncoding::unicodes() const
     }
     return _unicodes;
 }
-
-int
-DvipsEncoding::encoding_of_unicode(uint32_t uni) const
-{
-    (void) unicodes();		// make _unicodes array
-    for (int i = 0; i < _unicodes.size(); i++)
-	if (_unicodes[i] == uni)
-	    return i;
-    return -1;
-}
+#endif
 
 void
 DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const

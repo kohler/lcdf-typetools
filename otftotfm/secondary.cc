@@ -15,7 +15,6 @@
 #include "secondary.hh"
 #include "metrics.hh"
 #include "automatic.hh"
-#include "dvipsencoding.hh"
 #include "otftotfm.hh"
 #include "util.hh"
 #include <efont/t1bounds.hh>
@@ -47,14 +46,14 @@ Secondary::~Secondary()
 }
 
 bool
-Secondary::encode_uni(int code, PermString name, uint32_t uni, const DvipsEncoding &dvipsenc, Metrics &metrics, ErrorHandler *errh)
+Secondary::encode_uni(int code, PermString name, uint32_t uni, Metrics &metrics, ErrorHandler *errh)
 {
     Vector<Setting> v;
-    if (setting(uni, v, dvipsenc, metrics, errh)) {
-	metrics.encode_virtual(code, name, v);
+    if (setting(uni, v, metrics, errh)) {
+	metrics.encode_virtual(code, name, uni, v);
 	return true;
     } else if (_next)
-	return _next->encode_uni(code, name, uni, dvipsenc, metrics, errh);
+	return _next->encode_uni(code, name, uni, metrics, errh);
     else
 	return false;
 }
@@ -82,19 +81,19 @@ T1Secondary::set_font_information(const String &font_name, const Efont::OpenType
 }
 
 bool
-Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvipsenc, Metrics &metrics, ErrorHandler *errh)
+Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHandler *errh)
 {
     if (_next)
-	return _next->setting(uni, v, dvipsenc, metrics, errh);
+	return _next->setting(uni, v, metrics, errh);
     else
 	return false;
 }
 
 bool
-T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, const DvipsEncoding &dvipsenc, Metrics &metrics)
+T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, Metrics &metrics)
 {
-    int c1 = dvipsenc.encoding_of_unicode(uni1);
-    int c2 = dvipsenc.encoding_of_unicode(uni2);
+    int c1 = metrics.unicode_encoding(uni1);
+    int c2 = metrics.unicode_encoding(uni2);
     if (c1 >= 0 && c2 >= 0) {
 	v.push_back(Setting(Setting::SHOW, c1, metrics.base_glyph(c1)));
 	v.push_back(Setting(Setting::KERN));
@@ -105,17 +104,17 @@ T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, 
 }
 
 bool
-T1Secondary::encode_uni(int code, PermString name, uint32_t uni, const DvipsEncoding &dvipsenc, Metrics &metrics, ErrorHandler *errh)
+T1Secondary::encode_uni(int code, PermString name, uint32_t uni, Metrics &metrics, ErrorHandler *errh)
 {
     if (uni == U_ALTSELECTOR || (uni >= U_VS1 && uni <= U_VS16) || (uni >= U_VS17 && uni <= U_VS256)) {
 	Vector<Setting> v;
-	setting(uni, v, dvipsenc, metrics, errh);
+	setting(uni, v, metrics, errh);
 	int which = (uni == U_ALTSELECTOR ? 0 : (uni <= U_VS16 ? uni - U_VS1 + 1 : uni - U_VS17 + 17));
-	metrics.encode_virtual(code, (which ? permprintf("<vs%d>", which) : PermString("<altselector>")), v);
+	metrics.encode_virtual(code, (which ? permprintf("<vs%d>", which) : PermString("<altselector>")), uni, v);
 	metrics.add_altselector_code(code, which);
 	return true;
     } else
-	return Secondary::encode_uni(code, name, uni, dvipsenc, metrics, errh);
+	return Secondary::encode_uni(code, name, uni, metrics, errh);
 }
 
 
@@ -176,7 +175,7 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	Vector<PermString>::iterator g = std::find(glyph_names.begin(), glyph_names.end(), "uni0237");
 	if (g != glyph_names.end()) {
 	    dj_glyph = g - glyph_names.begin();
-	    dj_metrics.encode('j', dj_glyph);
+	    dj_metrics.encode('j', U_DOTLESSJ, dj_glyph);
 	} else {
 	    errh->error("%s: dotless-J font has no 'uni0237' glyph", filename.c_str());
 	    delete font;
@@ -193,7 +192,7 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 }
 
 bool
-T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvipsenc, Metrics &metrics, ErrorHandler *errh)
+T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHandler *errh)
 {
     switch (uni) {
 	
@@ -211,24 +210,24 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	return true;
 
       case U_SS:
-	if (two_char_setting('S', 'S', v, dvipsenc, metrics))
+	if (two_char_setting('S', 'S', v, metrics))
 	    return true;
 	break;
 
       case U_SSSMALL:
-	if (two_char_setting(U_SSMALL, U_SSMALL, v, dvipsenc, metrics))
+	if (two_char_setting(U_SSMALL, U_SSMALL, v, metrics))
 	    return true;
-	else if (two_char_setting('s', 's', v, dvipsenc, metrics))
+	else if (two_char_setting('s', 's', v, metrics))
 	    return true;
 	break;
 
       case U_IJ:
-	if (two_char_setting('I', 'J', v, dvipsenc, metrics))
+	if (two_char_setting('I', 'J', v, metrics))
 	    return true;
 	break;
 
       case U_ij:
-	if (two_char_setting('i', 'j', v, dvipsenc, metrics))
+	if (two_char_setting('i', 'j', v, metrics))
 	    return true;
 	break;
 
@@ -241,9 +240,11 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	      v.push_back(Setting(Setting::SHOW, 'j', dj_glyph));
 	      return true;
 	  } else if (which == J_NODOT) {
-	      int cj = dvipsenc.encoding_of_unicode('j');
-	      if (cj >= 0)
+	      int cj = metrics.unicode_encoding('j');
+	      if (cj >= 0) {
 		  v.push_back(Setting(Setting::SHOW, cj, metrics.base_glyph(cj)));
+		  return true;
+	      }
 	  }
 	  break;
       }
@@ -252,10 +253,10 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 
     // variant selectors get the same setting as ALTSELECTOR
     if ((uni >= U_VS1 && uni <= U_VS16) || (uni >= U_VS17 && uni <= U_VS256))
-	return setting(U_ALTSELECTOR, v, dvipsenc, metrics, errh);
+	return setting(U_ALTSELECTOR, v, metrics, errh);
 
     // otherwise, try other secondaries
-    return Secondary::setting(uni, v, dvipsenc, metrics, errh);
+    return Secondary::setting(uni, v, metrics, errh);
 }
 
 

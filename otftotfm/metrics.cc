@@ -17,6 +17,7 @@
 #include "metrics.hh"
 #include "dvipsencoding.hh"
 #include "util.hh"
+#include "glyphfilter.hh"
 #include <string.h>
 #include <stdio.h>
 #include <algorithm>
@@ -110,6 +111,15 @@ Metrics::code_name(Code code) const
 /* encoding								     */
 
 Metrics::Code
+Metrics::unicode_encoding(uint32_t uni) const
+{
+    for (const Char *ch = _encoding.begin(); ch < _encoding.end(); ch++)
+	if (ch->unicode == uni)
+	    return ch - _encoding.begin();
+    return -1;
+}
+
+Metrics::Code
 Metrics::hard_encoding(Glyph g) const
 {
     if (g < 0)
@@ -145,11 +155,12 @@ Metrics::force_encoding(Glyph g, int lookup_source)
 }
 
 void
-Metrics::encode(Code code, Glyph g)
+Metrics::encode(Code code, uint32_t uni, Glyph g)
 {
     assert(code >= 0 && g >= 0 && g != VIRTUAL_GLYPH);
     if (code >= _encoding.size())
 	_encoding.resize(code + 1, Char());
+    _encoding[code].unicode = uni;
     _encoding[code].glyph = g;
     if (g > 0)
 	_encoding[code].base_code = code;
@@ -158,11 +169,12 @@ Metrics::encode(Code code, Glyph g)
 }
 
 void
-Metrics::encode_virtual(Code code, PermString name, const Vector<Setting> &v)
+Metrics::encode_virtual(Code code, PermString name, uint32_t uni, const Vector<Setting> &v)
 {
     assert(code >= 0 && v.size() > 0);
     if (code >= _encoding.size())
 	_encoding.resize(code + 1, Char());
+    _encoding[code].unicode = uni;
     _encoding[code].glyph = VIRTUAL_GLYPH;
     assert(!_encoding[code].virtual_char);
     VirtualChar *vc = _encoding[code].virtual_char = new VirtualChar;
@@ -532,27 +544,6 @@ ChangedContext::disallow_pair(Code c1, Code c2)
 /*****************************************************************************/
 /* applying GSUB substitutions						     */
 
-static bool
-allow_alternate(Efont::OpenType::Glyph g, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names)
-{
-    if (g < 0 || g >= glyph_names.size())
-	return false;
-    String gn = glyph_names[g];
-    if (includes.size()) {
-	for (const String *s = includes.begin(); s != includes.end(); s++)
-	    if (glob_match(gn, *s))
-		goto done_includes;
-	return false;
-    }
-  done_includes:
-    if (excludes.size()) {
-	for (const String *s = excludes.begin(); s != excludes.end(); s++)
-	    if (glob_match(gn, *s))
-		return false;
-    }
-    return true;
-}
-
 void
 Metrics::apply_ligature(const Vector<Code> &in, const Substitution *s, int lookup)
 {
@@ -595,7 +586,7 @@ Metrics::apply_ligature(const Vector<Code> &in, const Substitution *s, int looku
 }
 
 int
-Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names)
+Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, const GlyphFilter &glyph_filter, const Vector<PermString> &glyph_names)
 {
     // keep track of what substitutions we have performed
     ChangedContext ctx(_encoding.size());
@@ -610,7 +601,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, co
 	    // look for an allowed alternate
 	    Glyph out = -1;
 	    for (int i = 0; out < 0 && i < s->out_nglyphs(); i++)
-		if (allow_alternate(s->out_glyph(i), includes, excludes, glyph_names))
+		if (glyph_filter.allow_alternate(s->out_glyph(i), *this, glyph_names))
 		    out = s->out_glyph(i);
 	    
 	    Code cin = encoding(s->in_glyph());
@@ -677,7 +668,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, co
 }
 
 void
-Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const Vector<String> &includes, const Vector<String> &excludes, const Vector<PermString> &glyph_names)
+Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const GlyphFilter &glyph_filter, const Vector<PermString> &glyph_names)
 {
     for (const Substitution *s = sv.begin(); s != sv.end(); s++)
 	if (s->is_single() || s->is_alternate()) {
@@ -688,7 +679,7 @@ Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const Vect
 		if (as->kern == 0) {
 		    Code last = e;
 		    for (int i = 0; i < s->out_nglyphs(); i++)
-			if (allow_alternate(s->out_glyph(i), includes, excludes, glyph_names)) {
+			if (glyph_filter.allow_alternate(s->out_glyph(i), *this, glyph_names)) {
 			    Code out = force_encoding(s->out_glyph(i), lookup);
 			    add_ligature(last, as->in2, out);
 			    last = out;
@@ -700,7 +691,7 @@ Metrics::apply_alternates(const Vector<Substitution> &sv, int lookup, const Vect
 	} else if (s->is_ligature()) {
 	    // check whether the output character is allowed
 	    bool ok = true;
-	    if (!allow_alternate(s->out_glyph(), includes, excludes, glyph_names))
+	    if (!glyph_filter.allow_alternate(s->out_glyph(), *this, glyph_names))
 		ok = false;
 
 	    // check whether the input characters are encoded
@@ -1043,16 +1034,9 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 
     /* Create an initial set of scores, based on Unicode values. */
     Vector<int> scores(_encoding.size(), NOCHAR_SCORE);
-    {
-	Vector<uint32_t> unicodes = dvipsenc.unicodes();
-	// treat boundary character like newline
-	if (unicodes.size() < _encoding.size() && _encoding[unicodes.size()].glyph == boundary_glyph())
-	    unicodes.push_back('\n');
-	assert(unicodes.size() <= _encoding.size());
-	// set scores
-	for (int i = 0; i < unicodes.size(); i++)
-	    scores[i] = unicode_score(unicodes[i]);
-    }
+    for (int i = 0; i < _encoding.size(); i++)
+	if (_encoding[i].unicode)
+	    scores[i] = unicode_score(_encoding[i].unicode);
 
     /* Repeat these steps until you reach a stable set of scores: Score
        ligatures (ligscore = SUM[char scores]), then score characters touched
