@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.26
+
+* otftotfm: Fix crash tickled by newer versions of MinionPro, reported by
+  Michael Zedler.
+
+
 Version 2.25   10.Mar.2005
 
 * otftotfm: Ignore unencoded default ligkerns (don't try to encode their

@@ -50,21 +50,29 @@ using namespace Efont;
 #define QUERY_OPTICAL_SIZE_OPT	322
 #define QUERY_POSTSCRIPT_NAME_OPT 323
 #define QUERY_GLYPHS_OPT	324
+#define TABLES_OPT		325
 
 Clp_Option options[] = {
     
     { "script", 0, SCRIPT_OPT, Clp_ArgString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
-    { "query-features", 'f', QUERY_FEATURES_OPT, 0, 0 },
+    { "features", 'f', QUERY_FEATURES_OPT, 0, 0 },
+    { "scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
+    { "optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
+    { "postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
+    { "glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
+    { "tables", 0, TABLES_OPT, 0, 0 },
+    { "help", 'h', HELP_OPT, 0, 0 },
+    { "version", 0, VERSION_OPT, 0, 0 },
+    // old synonyms
+    { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "query-scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
     { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "query-optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
     { "query-postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
-    { "query-glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
-    { "help", 'h', HELP_OPT, 0, 0 },
-    { "version", 0, VERSION_OPT, 0, 0 },
+    { "query-glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 }
     
 };
 
@@ -96,20 +104,20 @@ usage()
 {
     printf("\
 'Otfinfo' reports information about an OpenType font to standard output.\n\
-Supply a '--query' to say what information you want.\n\
+Options specify what information to print.\n\
 \n\
 Usage: %s [-sfzpg] [OTFFILES...]\n\n",
 	   program_name);
     printf("\
 Query options:\n\
-  -s, --query-scripts          Report font's supported scripts.\n\
-  -f, --query-features         Report font's GSUB/GPOS features.\n\
-  -z, --query-optical-size     Report font's optical size information.\n\
-  -p, --query-postscript-name  Report font's PostScript name.\n\
-  -g, --query-glyphs           Report font's glyph names.\n\
+  -s, --scripts              Report font's supported scripts.\n\
+  -f, --features             Report font's GSUB/GPOS features.\n\
+  -z, --optical-size         Report font's optical size information.\n\
+  -p, --postscript-name      Report font's PostScript name.\n\
+  -g, --glyphs               Report font's glyph names.\n\
 \n\
 Other options:\n\
-      --script=SCRIPT[.LANG]   Set script used for --query-features [latn].\n\
+      --script=SCRIPT[.LANG]   Set script used for --features [latn].\n\
   -V, --verbose                Print progress information to standard error.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
@@ -329,6 +337,24 @@ do_query_glyphs(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *res
     }
 }
 
+static void
+do_tables(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    try {
+	int n = otf.ntables();
+
+	for (int i = 0; i < n; i++)
+	    if (OpenType::Tag tag = otf.table_tag(i)) {
+		String s = otf.table(tag);
+		result_errh->message("%7u %s\n", s.length(), tag.text().c_str());
+	    }
+    } catch (OpenType::Error) {
+	if (errh->nerrors() == before_nerrors)
+	    result_errh->message("corrupted tables");
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -370,8 +396,9 @@ main(int argc, char *argv[])
 	  case QUERY_OPTICAL_SIZE_OPT:
 	  case QUERY_POSTSCRIPT_NAME_OPT:
 	  case QUERY_GLYPHS_OPT:
+	  case TABLES_OPT:
 	    if (query)
-		usage_error(errh, "supply exactly one --query option");
+		usage_error(errh, "supply exactly one query type option");
 	    query = opt;
 	    break;
 
@@ -450,6 +477,8 @@ particular purpose.\n");
 	    do_query_postscript_name(otf, &cerrh, result_errh);
 	else if (query == QUERY_GLYPHS_OPT)
 	    do_query_glyphs(otf, &cerrh, result_errh);
+	else if (query == TABLES_OPT)
+	    do_tables(otf, &cerrh, result_errh);
     }
     
     return (errh->nerrors() == 0 ? 0 : 1);
