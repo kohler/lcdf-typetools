@@ -261,7 +261,6 @@ particular purpose.\n");
       if (!font) do_file("-");
       goto done;
       
-     short_usage:
      case Clp_BadOption:
       short_usage();
       exit(1);
