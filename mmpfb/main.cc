@@ -333,7 +333,7 @@ main(int argc, char **argv)
       break;
       
      case VERSION_OPT:
-      printf("mmpfb (LCDF mminstance) %s\n", VERSION);
+      printf("mmpfb (LCDF typetools) %s\n", VERSION);
       printf("Copyright (C) 1997-2003 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
