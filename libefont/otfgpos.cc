@@ -33,6 +33,12 @@ Gpos::Gpos(const Data &d, ErrorHandler *errh) throw (Error)
     _lookup_list = d.offset_subtable(8);
 }
 
+int
+Gpos::nlookups() const
+{
+    return _lookup_list.u16(0);
+}
+
 GposLookup
 Gpos::lookup(unsigned i) const
 {
@@ -64,7 +70,7 @@ GposLookup::GposLookup(const Data &d) throw (Error)
 	throw Format("GPOS Lookup table");
 }
 
-void
+bool
 GposLookup::unparse_automatics(Vector<Positioning> &v) const
 {
     int n = _d.u16(4);
@@ -72,14 +78,13 @@ GposLookup::unparse_automatics(Vector<Positioning> &v) const
       case L_SINGLE:
 	for (int i = 0; i < n; i++)
 	    GposSingle(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
-	break;
+	return true;
       case L_PAIR:
 	for (int i = 0; i < n; i++)
 	    GposPair(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
-	break;
+	return true;
       default:
-	/* XXX */
-	break;
+	return false;
     }
 }
 

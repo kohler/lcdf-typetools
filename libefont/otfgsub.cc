@@ -425,6 +425,12 @@ Gsub::Gsub(const Data &d, ErrorHandler *errh) throw (Error)
     _lookup_list = d.offset_subtable(8);
 }
 
+int
+Gsub::nlookups() const
+{
+    return _lookup_list.u16(0);
+}
+
 GsubLookup
 Gsub::lookup(unsigned i) const
 {
@@ -447,7 +453,7 @@ GsubLookup::GsubLookup(const Data &d) throw (Error)
 	throw Format("GSUB Lookup table");
 }
 
-void
+bool
 GsubLookup::unparse_automatics(const Gsub &gsub, Vector<Substitution> &v) const
 {
     int nlookup = _d.u16(4);
@@ -455,30 +461,33 @@ GsubLookup::unparse_automatics(const Gsub &gsub, Vector<Substitution> &v) const
       case L_SINGLE:
 	for (int i = 0; i < nlookup; i++)
 	    GsubSingle(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
-	break;
+	return true;
       case L_MULTIPLE:
 	for (int i = 0; i < nlookup; i++)
 	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
-	break;
+	return true;
       case L_ALTERNATE:
 	for (int i = 0; i < nlookup; i++)
 	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v, true);
-	break;
+	return true;
       case L_LIGATURE:
 	for (int i = 0; i < nlookup; i++)
 	    GsubLigature(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
-	break;
-      case L_CONTEXT:
-	for (int i = 0; i < nlookup; i++)
-	    GsubContext(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(gsub, v);
-	break;
-      case L_CHAIN:
-	for (int i = 0; i < nlookup; i++)
-	    GsubChainContext(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(gsub, v);
-	break;
+	return true;
+      case L_CONTEXT: {
+	  bool understood = true;
+	  for (int i = 0; i < nlookup; i++)
+	      understood &= GsubContext(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(gsub, v);
+	  return understood;
+      }
+      case L_CHAIN: {
+	  bool understood = true;
+	  for (int i = 0; i < nlookup; i++)
+	      understood &= GsubChainContext(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(gsub, v);
+	  return understood;
+      }
       default:
-	/* XXX */
-	break;
+	return false;
     }
 }
 
@@ -770,7 +779,7 @@ GsubContext::coverage() const throw ()
 	return Coverage();
 }
 
-void
+bool
 GsubContext::f3_unparse(const Data &data, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &gsub, Vector<Substitution> &outsubs)
 {
     Vector<Substitution> subs;
@@ -806,16 +815,18 @@ GsubContext::f3_unparse(const Data &data, int nglyph, int glyphtab_offset, int n
 	if (napplied > 0 && !s.is_noop())
 	    outsubs.push_back(s);
     }
+
+    return true;		// XXX
 }
 
-void
+bool
 GsubContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
 {
     if (_d.u16(0) != 3)		// XXX
-	return;
+	return false;
     int nglyph = _d.u16(2);
     int nsubst = _d.u16(4);
-    f3_unparse(_d, nglyph, F3_HSIZE, nsubst, F3_HSIZE + nglyph*2, gsub, v);
+    return f3_unparse(_d, nglyph, F3_HSIZE, nsubst, F3_HSIZE + nglyph*2, gsub, v);
 }
 
 
@@ -857,11 +868,11 @@ GsubChainContext::coverage() const throw ()
     return Coverage(_d.offset_subtable(input_offset + F3_INPUT_HSIZE), 0, false);
 }
 
-void
+bool
 GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
 {
     if (_d.u16(0) != 3)
-	return;
+	return false;
     
     int nbacktrack = _d.u16(2);
     int input_offset = F3_HSIZE + nbacktrack*2;
@@ -872,7 +883,9 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
     int nsubst = _d.u16(subst_offset);
 
     if (nbacktrack == 0 && nlookahead == 0)
-	GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v);
+	return GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v);
+    else
+	return false;
 }
 
 

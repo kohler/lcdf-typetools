@@ -15,6 +15,7 @@ class Gsub { public:
     const ScriptList &script_list() const { return _script_list; }
     const FeatureList &feature_list() const { return _feature_list; }
 
+    int nlookups() const;
     GsubLookup lookup(unsigned) const;
 
     enum { HEADERSIZE = 10 };
@@ -31,7 +32,7 @@ class GsubLookup { public:
     GsubLookup(const Data &) throw (Error);
     int type() const			{ return _d.u16(0); }
     uint16_t flags() const		{ return _d.u16(2); }
-    void unparse_automatics(const Gsub &, Vector<Substitution> &) const;
+    bool unparse_automatics(const Gsub &, Vector<Substitution> &) const;
     bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum {
 	HEADERSIZE = 6, RECSIZE = 2,
@@ -85,11 +86,11 @@ class GsubContext { public:
     GsubContext(const Data &) throw (Error);
     // default destructor
     Coverage coverage() const throw ();
-    void unparse(const Gsub &, Vector<Substitution> &) const;
+    bool unparse(const Gsub &, Vector<Substitution> &) const;
     enum { F3_HSIZE = 6, SUBRECSIZE = 4 };
   private:
     Data _d;
-    static void f3_unparse(const Data &, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &, Vector<Substitution> &);
+    static bool f3_unparse(const Data &, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &, Vector<Substitution> &);
     friend class GsubChainContext;
 };
 
@@ -97,7 +98,7 @@ class GsubChainContext { public:
     GsubChainContext(const Data &) throw (Error);
     // default destructor
     Coverage coverage() const throw ();
-    void unparse(const Gsub &, Vector<Substitution> &) const;
+    bool unparse(const Gsub &, Vector<Substitution> &) const;
     enum { F1_HEADERSIZE = 6, F1_RECSIZE = 2,
 	   F1_SRS_HSIZE = 2, F1_SRS_RSIZE = 2,
 	   F3_HSIZE = 4, F3_INPUT_HSIZE = 2, F3_LOOKAHEAD_HSIZE = 2, F3_SUBST_HSIZE = 2 };
