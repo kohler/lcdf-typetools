@@ -505,7 +505,7 @@ String::printable() const
     return *this;
 }
 
-int
+unsigned
 hashcode(const String &s)
 {
     int length = s.length();

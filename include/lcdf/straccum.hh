@@ -45,7 +45,7 @@ class StringAccum { public:
     void append(const char *, int);
     void append(const unsigned char *, int);
 
-    // word breaking
+    // word joining
     void append_fill_lines(const Vector<String> &words, int linelen, const String &parindent = String(), const String &leftmargin = String(), const String &wordsep = String(" "), const String &lineend = String("\n"));
 
     char *reserve(int);

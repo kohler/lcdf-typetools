@@ -90,10 +90,10 @@ operator!=(const char *a, PermString b)
     return !(b == a);
 }
 
-inline int
+inline unsigned
 hashcode(PermString s)
 {
-    return (int)(s.cc());
+    return (unsigned)(s.cc());
 }
 
 #endif

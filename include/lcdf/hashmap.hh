@@ -9,7 +9,7 @@
 //			and no k with (bool)k == false is stored.
 // K &		K::operator=(const K &)
 // 		k1 == k2
-// int		hashcode(const K &)
+// unsigned	hashcode(const K &)
 //			If hashcode(k1) != hashcode(k2), then k1 != k2.
 //
 //		V::V()
@@ -110,7 +110,7 @@ template <class K, class V>
 inline int
 HashMap<K, V>::bucket(const K &key) const
 {
-    int hc = hashcode(key);
+    unsigned hc = hashcode(key);
     int i =   hc       & (_capacity - 1);
     int j = ((hc >> 6) & (_capacity - 1)) | 1;
 
@@ -158,7 +158,7 @@ HashMap<K, V>::const_iterator::operator!=(const const_iterator &i) const
     return _hm != i._hm || _pos != i._pos;
 }
 
-inline int
+inline unsigned
 hashcode(int i)
 {
     return i;

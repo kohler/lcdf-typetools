@@ -440,6 +440,6 @@ operator+(PermString p1, PermString p2)
 
 #endif
 
-int hashcode(const String &);
+unsigned hashcode(const String &);
 
 #endif
