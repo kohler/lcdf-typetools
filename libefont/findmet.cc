@@ -228,7 +228,7 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
     Vector<double> design = mmspace->default_design_vector();
     int i = 0;
     while (underscore[0] == '_' && underscore[1]) {
-	double x = strtod(underscore + 1, &underscore);
+	double x = strtod(underscore + 1, const_cast<char **>(&underscore));
 	mmspace->set_design(design, i, x, errh);
 	i++;
     }

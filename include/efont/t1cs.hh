@@ -170,32 +170,32 @@ class Type2Charstring : public Charstring { public:
 
 
 class EfontProgram { public:
-  
-    EfontProgram()					{ }
-    virtual ~EfontProgram()				{ }
 
-    virtual PermString font_name() const		{ return PermString();}
+    EfontProgram()				{ }
+    virtual ~EfontProgram()			{ }
+
+    virtual PermString font_name() const	{ return PermString();}
     virtual void font_matrix(double[6]) const;
     
-    virtual int nsubrs() const				{ return 0; }
-    virtual Charstring *subr(int) const			{ return 0; }
-    virtual int subr_bias() const			{ return 0; }
+    virtual int nsubrs() const			{ return 0; }
+    virtual Charstring *subr(int) const		{ return 0; }
+    virtual int subr_bias() const		{ return 0; }
     
-    virtual int ngsubrs() const				{ return 0; }
-    virtual Charstring *gsubr(int) const		{ return 0; }
-    virtual int gsubr_bias() const			{ return 0; }
+    virtual int ngsubrs() const			{ return 0; }
+    virtual Charstring *gsubr(int) const	{ return 0; }
+    virtual int gsubr_bias() const		{ return 0; }
 
     int nxsubrs(bool g) const;
     Charstring *xsubr(bool g, int) const;
     int xsubr_bias(bool g) const;
     
-    virtual int nglyphs() const				{ return 0; }
-    virtual PermString glyph_name(int) const		{ return PermString();}
+    virtual int nglyphs() const			{ return 0; }
+    virtual PermString glyph_name(int) const	{ return PermString();}
     virtual void glyph_names(Vector<PermString> &) const;
-    virtual Charstring *glyph(int) const		{ return 0; }
-    virtual Charstring *glyph(PermString) const		{ return 0; }
+    virtual Charstring *glyph(int) const	{ return 0; }
+    virtual Charstring *glyph(PermString) const	{ return 0; }
 
-    virtual bool is_mm() const				{ return mmspace(); }
+    virtual bool is_mm() const			{ return mmspace() != 0; }
     virtual MultipleMasterSpace *mmspace() const	{ return 0; }
     enum VectorType { VEC_WEIGHT = 0, VEC_NORM_DESIGN = 1, VEC_DESIGN = 2 };
     virtual Vector<double> *mm_vector(VectorType, bool writable) const;
