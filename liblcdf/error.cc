@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
- * Copyright (c) 2001-2004 Eddie Kohler
+ * Copyright (c) 2001-2005 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -558,7 +558,7 @@ ErrorHandler::prepend_lines(const String &prepend, const String &text, bool insi
   const char *end = text.end();
   const char *space, *nl;
   while (begin < end) {
-    nl = find(begin, end, '\n');
+    nl = std::find(begin, end, '\n');
     for (space = begin; inside_space && space < nl && isspace((unsigned char) *space); space++)
       /* do nothing */;
     if (nl < end)
