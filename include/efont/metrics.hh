@@ -9,13 +9,6 @@
 namespace Efont {
 class MetricsXt;
 
-// Allow unknown doubles to have some `fuzz' -- so if an unknown double
-// is a bit off from the canonical Unkdouble value, we'll still recognize
-// it as unknown. (Useful for interpolation.)
-const double Unkdouble		= -9.79797e97;
-const double MinKnowndouble	= -9.69696e97;
-#define KNOWN(d)		((d) >= MinKnowndouble)
-
 class Metrics { public:
 
     Metrics();

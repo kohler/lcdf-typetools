@@ -32,7 +32,7 @@ namespace Efont {
 
 AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
     : _finder(finder),
-      _fdv(fdLast, Unkdouble),
+      _fdv(fdLast, UNKDOUBLE),
       _nmasters(-1), _naxes(-1), _masters(0), _mmspace(0),
       _primary_fonts(0), _sanity_afm(0), _uses(0)
 {

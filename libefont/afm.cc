@@ -18,6 +18,7 @@
 #endif
 #include <efont/afm.hh>
 #include <efont/afmparse.hh>
+#include <efont/t1cs.hh>	/* for UNKDOUBLE */
 #include <lcdf/error.hh>
 #include <ctype.h>
 #include <assert.h>
@@ -327,8 +328,8 @@ void
 AfmReader::read_char_metric_data() const
 {
     int c = -1;
-    double wx = Unkdouble;
-    double bllx = Unkdouble, blly = 0, burx = 0, bury = 0;
+    double wx = UNKDOUBLE;
+    double bllx = UNKDOUBLE, blly = 0, burx = 0, bury = 0;
     PermString n;
     PermString ligright, ligresult;
   

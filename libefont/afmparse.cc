@@ -244,7 +244,7 @@ AfmParser::vis(const char *formatsigned, va_list valist)
 	      case 'g': {
 		  unsigned char *new_str;
 		  double v = strtonumber((char *)str, (char **)&new_str);
-		  if (v < MinKnowndouble) v = MinKnowndouble;
+		  if (v < MIN_KNOWN_DOUBLE) v = MIN_KNOWN_DOUBLE;
 		  if (new_str == str) FAIL("should be a real number");
 	   
 		  str = new_str;

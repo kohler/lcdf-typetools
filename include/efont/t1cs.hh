@@ -7,6 +7,13 @@
 #include <lcdf/inttypes.h>
 namespace Efont {
 
+// Allow unknown doubles to have some `fuzz' -- so if an unknown double
+// is a bit off from the canonical UNKDOUBLE value, we'll still recognize
+// it as unknown. (Useful for interpolation.)
+#define UNKDOUBLE		-9.79797e97
+#define MIN_KNOWN_DOUBLE	-9.69696e97
+#define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
+
 class CharstringInterp;
 class MultipleMasterSpace;
 class Type1Encoding;
@@ -112,6 +119,8 @@ class Charstring { public:
 
     static String command_name(int);
     static const char * const command_names[];
+    
+    static const char * const standard_encoding[256];
     
 };
 

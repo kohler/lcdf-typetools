@@ -17,11 +17,12 @@
 # include <config.h>
 #endif
 #include <efont/metrics.hh>
+#include <efont/t1cs.hh>	/* for UNKDOUBLE */
 namespace Efont {
 
 Metrics::Metrics()
   : _name_map(-1),
-    _scale(1), _fdv(fdLast, Unkdouble),
+    _scale(1), _fdv(fdLast, UNKDOUBLE),
     _xt_map(0),
     _uses(0)
 {
@@ -33,13 +34,13 @@ Metrics::Metrics(PermString font_name, PermString full_name, const Metrics &m)
   : _font_name(font_name),
     _family(m._family), _full_name(full_name), _version(m._version),
     _name_map(m._name_map), _names(m._names), _encoding(m._encoding),
-    _scale(1), _fdv(fdLast, Unkdouble),
+    _scale(1), _fdv(fdLast, UNKDOUBLE),
     _pairp(m._pairp),
     _xt_map(0),
     _uses(0)
 {
   reserve_glyphs(m._wdv.size());
-  _kernv.resize(m._kernv.size(), Unkdouble);
+  _kernv.resize(m._kernv.size(), UNKDOUBLE);
   _xt.push_back((MetricsXt *)0);
 }
 
@@ -64,11 +65,11 @@ void
 Metrics::reserve_glyphs(int amt)
 {
   if (amt <= _wdv.size()) return;
-  _wdv.resize(amt, Unkdouble);
-  _lfv.resize(amt, Unkdouble);
-  _rtv.resize(amt, Unkdouble);
-  _tpv.resize(amt, Unkdouble);
-  _btv.resize(amt, Unkdouble);
+  _wdv.resize(amt, UNKDOUBLE);
+  _lfv.resize(amt, UNKDOUBLE);
+  _rtv.resize(amt, UNKDOUBLE);
+  _tpv.resize(amt, UNKDOUBLE);
+  _btv.resize(amt, UNKDOUBLE);
   _encoding.reserve_glyphs(amt);
   _pairp.reserve_glyphs(amt);
   for (int i = 1; i < _xt.size(); i++)

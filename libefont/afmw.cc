@@ -17,6 +17,7 @@
 # include <config.h>
 #endif
 #include <efont/afmw.hh>
+#include <efont/t1cs.hh>	/* for KNOWN() */
 namespace Efont {
 
 AfmWriter::AfmWriter(Metrics *m, FILE *f)

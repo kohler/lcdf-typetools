@@ -17,7 +17,6 @@
 # include <config.h>
 #endif
 #include <efont/t1interp.hh>
-#include <efont/t1item.hh>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -1246,14 +1245,10 @@ CharstringInterp::act_nominal_width_delta(int cmd, double delta)
 void
 CharstringInterp::act_seac(int cmd, double asb, double adx, double ady, int bchar, int achar)
 {
-    Type1Encoding *adobe = Type1Encoding::standard_encoding();
     Charstring *acs = 0, *bcs = 0;
-    if (!adobe) {
-	error(errInternal, cmd);
-	return;
-    } else if (achar < 0 || achar >= 256 || bchar < 0 || bchar >= 256
-	       || !(acs = get_glyph((*adobe)[achar]))
-	       || !(bcs = get_glyph((*adobe)[bchar]))) {
+    if (achar < 0 || achar >= 256 || bchar < 0 || bchar >= 256
+	|| !(acs = get_glyph(Charstring::standard_encoding[achar]))
+	|| !(bcs = get_glyph(Charstring::standard_encoding[bchar]))) {
 	error(errGlyph, cmd);
 	return;
     }

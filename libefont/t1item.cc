@@ -553,50 +553,6 @@ Type1Definition::set_namevec(const Vector<PermString> &v, bool executable)
 
 static PermString::Initializer initializer;
 static PermString dot_notdef(".notdef");
-static const char *standard_encoding_defs[] = {
-    /* 00x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 01x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 02x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 03x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 04x */ "space", "exclam", "quotedbl", "numbersign", "dollar", "percent",
-    "ampersand", "quoteright",
-    /* 05x */ "parenleft", "parenright", "asterisk", "plus", "comma", "hyphen",
-    "period", "slash",
-    /* 06x */ "zero", "one", "two", "three", "four", "five", "six", "seven",
-    /* 07x */ "eight", "nine", "colon", "semicolon", "less", "equal",
-    "greater", "question",
-    /* 10x */ "at", "A", "B", "C", "D", "E", "F", "G",
-    /* 11x */ "H", "I", "J", "K", "L", "M", "N", "O",
-    /* 12x */ "P", "Q", "R", "S", "T", "U", "V", "W",
-    /* 13x */ "X", "Y", "Z", "bracketleft", "backslash", "bracketright",
-    "asciicircum", "underscore",
-    /* 14x */ "quoteleft", "a", "b", "c", "d", "e", "f", "g",
-    /* 15x */ "h", "i", "j", "k", "l", "m", "n", "o",
-    /* 16x */ "p", "q", "r", "s", "t", "u", "v", "w",
-    /* 17x */ "x", "y", "z", "braceleft", "bar", "braceright", "asciitilde", 0,
-    /* 20x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 21x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 22x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 23x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 24x */ 0, "exclamdown", "cent", "sterling", "fraction", "yen",
-    "florin", "section",
-    /* 25x */ "currency", "quotesingle", "quotedblleft", "guillemotleft",
-    "guilsinglleft", "guilsinglright", "fi", "fl",
-    /* 26x */ 0, "endash", "dagger", "daggerdbl", "periodcentered", 0,
-    "paragraph", "bullet",
-    /* 27x */ "quotesinglbase", "quotedblbase", "quotedblright",
-    "guillemotright", "ellipsis", "perthousand", 0, "questiondown",
-    /* 30x */ 0, "grave", "acute", "circumflex", "tilde", "macron",
-    "breve", "dotaccent",
-    /* 31x */ "dieresis", 0, "ring", "cedilla", 0, "hungarumlaut",
-    "ogonek", "caron",
-    /* 32x */ "emdash", 0, 0, 0, 0, 0, 0, 0,
-    /* 33x */ 0, 0, 0, 0, 0, 0, 0, 0,
-    /* 34x */ 0, "AE", 0, "ordfeminine", 0, 0, 0, 0,
-    /* 35x */ "Lslash", "Oslash", "OE", "ordmasculine", 0, 0, 0, 0,
-    /* 36x */ 0, "ae", 0, 0, 0, "dotlessi", 0, 0,
-    /* 37x */ "lslash", "oslash", "oe", "germandbls", 0, 0, 0, 0,
-};
 
 
 Type1Encoding::Type1Encoding()
@@ -640,8 +596,8 @@ Type1Encoding::standard_encoding()
     if (!canonical_standard_encoding) {
 	canonical_standard_encoding = new Type1Encoding;
 	for (int i = 0; i < 256; i++)
-	    if (standard_encoding_defs[i])
-		canonical_standard_encoding->put(i, standard_encoding_defs[i]);
+	    if (Charstring::standard_encoding[i])
+		canonical_standard_encoding->put(i, Charstring::standard_encoding[i]);
     }
     // Return a copy of the cached encoding. When it's deleted, we won't be.
     return new Type1Encoding(canonical_standard_encoding);
