@@ -368,7 +368,7 @@ FeatureList::check_header(ErrorHandler *errh)
 }
 
 Tag
-FeatureList::feature_tag(int fid) const
+FeatureList::tag(int fid) const
 {
     if (_str.length() == 0)
 	return Tag();
@@ -378,6 +378,31 @@ FeatureList::feature_tag(int fid) const
 	return Tag(ULONG_AT2(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE));
     else
 	return Tag();
+}
+
+String
+FeatureList::params(int fid, int length, ErrorHandler *errh) const
+{
+    if (_str.length() == 0 || length < 0)
+	return String();
+    if (errh == 0)
+	errh = ErrorHandler::silent_handler();
+
+    const uint8_t *data = _str.udata();
+    int len = _str.length();
+    int nfeatures = USHORT_AT(data);
+    if (fid < 0 || fid >= nfeatures)
+	return errh->error("OTF feature ID '%d' out of range", fid), String();
+    int foff = USHORT_AT(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
+    if (len < foff + FEATURE_HEADERSIZE)
+	return errh->error("OTF LookupList for feature ID '%d' too short", fid), String();
+    int poff = USHORT_AT(data + foff);
+    if (poff == 0)
+	return String();
+    else if (len < foff + poff + length)
+	return errh->error("OTF feature parameters for feature ID '%d' out of range", fid), String();
+    else
+	return _str.substring(foff + poff, length);
 }
 
 void
