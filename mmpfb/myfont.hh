@@ -11,7 +11,7 @@ class MyFont : public Efont::Type1Font { public:
   
     bool set_design_vector(Efont::MultipleMasterSpace *, const Vector<double> &, ErrorHandler * = 0);
   
-    void interpolate_dicts(ErrorHandler * = 0);
+    void interpolate_dicts(bool force_integers, ErrorHandler *);
     void interpolate_charstrings(int precision, ErrorHandler * = 0);
 
   private:
@@ -20,10 +20,10 @@ class MyFont : public Efont::Type1Font { public:
   
     int _nmasters;
     Vector<double> _weight_vector;
-  
-    void interpolate_dict_int(PermString, ErrorHandler *, Dict = dPrivate);
-    void interpolate_dict_num(PermString, Dict = dPrivate);
-    void interpolate_dict_numvec(PermString, Dict = dPrivate, bool = false);
+    
+    void interpolate_dict_int(PermString, Dict, ErrorHandler *);
+    void interpolate_dict_num(PermString, Dict, bool round_integer = false);
+    void interpolate_dict_numvec(PermString, Dict, int round_mode = 0, bool executable = false);
     void kill_def(Efont::Type1Definition *, int which_dict = -1); 
   
 };

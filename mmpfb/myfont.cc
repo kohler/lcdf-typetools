@@ -148,96 +148,93 @@ MyFont::set_design_vector(MultipleMasterSpace *mmspace, const Vector<double> &de
 }
 
 void
-MyFont::interpolate_dict_int(PermString name, ErrorHandler *errh,
-			     Dict the_dict)
+MyFont::interpolate_dict_int(PermString name, Dict the_dict, ErrorHandler *errh)
 {
-  Type1Definition *def = dict(the_dict, name);
-  Type1Definition *blend_def = dict(the_dict + dBlend, name);
-  NumVector blend;
+    Type1Definition *def = dict(the_dict, name);
+    Type1Definition *blend_def = dict(the_dict + dBlend, name);
+    NumVector blend;
   
-  if (def && blend_def && blend_def->value_numvec(blend)) {
-    int n = _nmasters;
-    double val = 0;
-    for (int m = 0; m < n; m++)
-      val += blend[m] * _weight_vector[m];
-    int ival = (int)(val + 0.49);
-    if (fabs(val - ival) >= 0.001)
-      errh->warning("interpolated %s should be an integer (it is %g)", name.cc(), val);
-    def->set_num(ival);
-    kill_def(blend_def, the_dict + dBlend);
-  }
-}
-
-void
-MyFont::interpolate_dict_num(PermString name, Dict the_dict)
-{
-  Type1Definition *def = dict(the_dict, name);
-  Type1Definition *blend_def = dict(the_dict + dBlend, name);
-  NumVector blend;
-  
-  if (def && blend_def && blend_def->value_numvec(blend)) {
-    int n = _nmasters;
-    double val = 0;
-    for (int m = 0; m < n; m++)
-      val += blend[m] * _weight_vector[m];
-    def->set_num(val);
-    kill_def(blend_def, the_dict + dBlend);
-  }
-}
-
-void
-MyFont::interpolate_dict_numvec(PermString name, Dict the_dict,
-				bool executable)
-{
-  Type1Definition *def = dict(the_dict, name);
-  Type1Definition *blend_def = dict(the_dict + dBlend, name);
-  Vector<NumVector> blend;
-  
-  if (def && blend_def && blend_def->value_numvec_vec(blend)) {
-    int n = blend.size();
-    NumVector val;
-    for (int i = 0; i < n; i++) {
-      double d = 0;
-      for (int m = 0; m < _nmasters; m++)
-	d += blend[i][m] * _weight_vector[m];
-      val.push_back(d);
+    if (def && blend_def && blend_def->value_numvec(blend)) {
+	int n = _nmasters;
+	double val = 0;
+	for (int m = 0; m < n; m++)
+	    val += blend[m] * _weight_vector[m];
+	int ival = (int)floor(val + 0.50001);
+	if (fabs(val - ival) >= 0.001)
+	    errh->warning("interpolated %s should be an integer (it is %g)", name.cc(), val);
+	def->set_num(ival);
+	kill_def(blend_def, the_dict + dBlend);
     }
-    def->set_numvec(val, executable);
-    kill_def(blend_def, the_dict + dBlend);
-  }
 }
 
 void
-MyFont::interpolate_dicts(ErrorHandler *errh)
+MyFont::interpolate_dict_num(PermString name, Dict the_dict, bool force_integer)
+{
+    Type1Definition *def = dict(the_dict, name);
+    Type1Definition *blend_def = dict(the_dict + dBlend, name);
+    NumVector blend;
+  
+    if (def && blend_def && blend_def->value_numvec(blend)) {
+	int n = _nmasters;
+	double val = 0;
+	for (int m = 0; m < n; m++)
+	    val += blend[m] * _weight_vector[m];
+	if (force_integer)
+	    val = floor(val + 0.50001);
+	def->set_num(val);
+	kill_def(blend_def, the_dict + dBlend);
+    } else if (def && !blend_def && force_integer) {
+	double val;
+	if (def->value_num(val))
+	    def->set_num(floor(val + 0.50001));
+    }
+}
+
+void
+MyFont::interpolate_dict_numvec(PermString name, Dict the_dict, int round_mode, bool executable)
+{
+    Type1Definition *def = dict(the_dict, name);
+    Type1Definition *blend_def = dict(the_dict + dBlend, name);
+    Vector<NumVector> blend;
+  
+    if (def && blend_def && blend_def->value_numvec_vec(blend)) {
+	int n = blend.size();
+	NumVector val;
+	for (int i = 0; i < n; i++) {
+	    double d = 0;
+	    for (int m = 0; m < _nmasters; m++)
+		d += blend[i][m] * _weight_vector[m];
+	    if (round_mode == 2 && i < 2)
+		d = floor(d - 0.50001);
+	    else if (round_mode)
+		d = floor(d + 0.50001);
+	    val.push_back(d);
+	}
+	def->set_numvec(val, executable);
+	kill_def(blend_def, the_dict + dBlend);
+    }
+}
+
+void
+MyFont::interpolate_dicts(bool force_integer, ErrorHandler *errh)
 {
   // Unfortunately, some programs (acroread) expect the FontBBox to consist
   // of integers. Round its elements away from zero (this is what the
   // Acrobat distiller seems to do).
-  interpolate_dict_numvec("FontBBox", dFont, true);
-  {
-    Type1Definition *def = dict("FontBBox");
-    NumVector bbox_vec;
-    if (def && def->value_numvec(bbox_vec) && bbox_vec.size() == 4) {
-      bbox_vec[0] = (int)(bbox_vec[0] - 0.5);
-      bbox_vec[1] = (int)(bbox_vec[1] - 0.5);
-      bbox_vec[2] = (int)(bbox_vec[2] + 0.5);
-      bbox_vec[3] = (int)(bbox_vec[3] + 0.5);
-      def->set_numvec(bbox_vec, true);
-    }
-  }
+  interpolate_dict_numvec("FontBBox", dFont, 2, true);
   
-  interpolate_dict_numvec("BlueValues");
-  interpolate_dict_numvec("OtherBlues");
-  interpolate_dict_numvec("FamilyBlues");
-  interpolate_dict_numvec("FamilyOtherBlues");
-  interpolate_dict_numvec("StdHW");
-  interpolate_dict_numvec("StdVW");
-  interpolate_dict_numvec("StemSnapH");
-  interpolate_dict_numvec("StemSnapV");
+  interpolate_dict_numvec("BlueValues", dPrivate, force_integer);
+  interpolate_dict_numvec("OtherBlues", dPrivate, force_integer);
+  interpolate_dict_numvec("FamilyBlues", dPrivate, force_integer);
+  interpolate_dict_numvec("FamilyOtherBlues", dPrivate, force_integer);
+  interpolate_dict_numvec("StdHW", dPrivate);
+  interpolate_dict_numvec("StdVW", dPrivate);
+  interpolate_dict_numvec("StemSnapH", dPrivate);
+  interpolate_dict_numvec("StemSnapV", dPrivate);
   
-  interpolate_dict_num("BlueScale");
-  interpolate_dict_num("BlueShift");
-  interpolate_dict_int("BlueFuzz", errh);
+  interpolate_dict_num("BlueScale", dPrivate);
+  interpolate_dict_num("BlueShift", dPrivate, force_integer);
+  interpolate_dict_int("BlueFuzz", dPrivate, errh);
   
   {
     Type1Definition *def = p_dict("ForceBold");
