@@ -20,9 +20,9 @@ class GsubEncoding { public:
     GsubEncoding();
     // default destructor
 
-    Glyph glyph(int) const;
+    inline Glyph glyph(int) const;
     bool setting(int, Vector<Setting> &) const;
-    int encoding(Glyph) const;
+    inline int encoding(Glyph) const;
     int force_encoding(Glyph);
     
     void encode(int code, Glyph g);
@@ -55,6 +55,7 @@ class GsubEncoding { public:
 
     Vector<Glyph> _encoding;
     Vector<Glyph> _substitutions;
+    mutable Vector<int> _emap;
 
     struct Ligature {
 	Vector<int> in;
@@ -78,7 +79,9 @@ class GsubEncoding { public:
 	int adx;
     };
     Vector<Vfpos> _vfpos;
-    
+
+    int hard_encoding(Glyph) const;
+    inline void assign_emap(Glyph, int);
     void apply_single_substitution(Glyph, Glyph);
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(const Vector<int> &);
@@ -96,6 +99,23 @@ GsubEncoding::glyph(int code) const
 	return 0;
     else
 	return _encoding[code];
+}
+
+inline int
+GsubEncoding::encoding(Glyph g) const
+{
+    if (g >= 0 && g < _emap.size() && _emap.at_u(g) >= -1)
+	return _emap.at_u(g);
+    else
+	return hard_encoding(g);
+}
+
+inline void
+GsubEncoding::assign_emap(Glyph g, int code)
+{
+    if (g >= _emap.size())
+	_emap.resize(g + 1, -1);
+    _emap[g] = (_emap[g] == -1 || _emap[g] == code ? code : -2);
 }
 
 inline bool

@@ -46,43 +46,53 @@ GsubEncoding::setting(int code, Vector<Setting> &v) const
 }
 
 int
-GsubEncoding::encoding(Glyph g) const
+GsubEncoding::hard_encoding(Glyph g) const
 {
-    for (int i = 0; i < _encoding.size(); i++)
+    if (g < 0)
+	return -1;
+    int answer = -1, n = 0;
+    for (int i = _encoding.size() - 1; i >= 0; i--)
 	if (_encoding[i] == g)
-	    return i;
-    return -1;
+	    answer = i, n++;
+    if (n < 2) {
+	if (g >= _emap.size())
+	    _emap.resize(g + 1, -2);
+	_emap[g] = answer;
+    }
+    return answer;
 }
 
 int
 GsubEncoding::force_encoding(Glyph g)
 {
-    for (int i = 0; i < _encoding.size(); i++)
-	if (_encoding[i] == g)
-	    return i;
-    _encoding.push_back(g);
-    return _encoding.size() - 1;
+    int e = encoding(g);
+    if (e >= 0)
+	return e;
+    else {
+	_encoding.push_back(g);
+	assign_emap(g, _encoding.size() - 1);
+	return _encoding.size() - 1;
+    }
 }
 
 void
 GsubEncoding::encode(int code, Glyph g)
 {
     assert(code >= 0 && g >= 0);
-    if (code >= _encoding.size()) {
+    if (code >= _encoding.size())
 	_encoding.resize(code + 1, 0);
-	_substitutions.resize(code + 1, 0);
-    }
     _encoding[code] = g;
+    assign_emap(g, code);
 }
 
 void
 GsubEncoding::apply_single_substitution(Glyph in, Glyph out)
 {
-    for (int i = 0; i < _encoding.size(); i++)
-	if (_encoding[i] == in) {
-	    _substitutions.push_back(i);
-	    _substitutions.push_back(out);
-	}
+    int e = encoding(in);
+    if (e >= 0) {
+	_substitutions.push_back(e);
+	_substitutions.push_back(out);
+    }
 }
 
 bool
@@ -123,8 +133,11 @@ void
 GsubEncoding::apply_substitutions()
 {
     // in reverse order, so earlier substitutions take precedence
-    for (int i = _substitutions.size() - 2; i >= 0; i -= 2)
+    for (int i = _substitutions.size() - 2; i >= 0; i -= 2) {
+	assign_emap(_encoding[_substitutions[i]], -2);
+	assign_emap(_substitutions[i+1], _substitutions[i]);
 	_encoding[_substitutions[i]] = _substitutions[i+1];
+    }
     _substitutions.clear();
 }
 
@@ -265,6 +278,9 @@ GsubEncoding::reassign_codes(const Vector<int> &reassignment)
     // reassign code points in virtual positioning vector
     for (int i = 0; i < _vfpos.size(); i++)
 	_vfpos[i].in = reassignment[_vfpos[i].in + 1];
+
+    // mark that _emap is worthless
+    _emap.clear();
 }
 
 void

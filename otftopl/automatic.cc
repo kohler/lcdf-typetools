@@ -21,7 +21,7 @@ static String::Initializer initializer;
 static String odir[NUMODIR];
 static String typeface = "unknown";
 static String vendor;
-#define DEFAULT_VENDOR "otftotfm"
+#define DEFAULT_VENDOR "lcdftools"
 
 static const struct {
     const char *name;
@@ -29,11 +29,11 @@ static const struct {
     const char *texdir;
 } odir_info[] = {
     { "encoding", "ENCODINGDESTDIR", "dvips" },
-    { "TFM", "TFMDESTDIR", "fonts/tfm/%t" },
-    { "PL", "PLDESTDIR", "fonts/pl/%t" },
-    { "VF", "VFDESTDIR", "fonts/vf/%t" },
-    { "VPL", "VPLDESTDIR", "fonts/vpl/%t" },
-    { "Type 1", "T1DESTDIR", "fonts/type1/%t" },
+    { "TFM", "TFMDESTDIR", "fonts/tfm/%" },
+    { "PL", "PLDESTDIR", "fonts/pl/%" },
+    { "VF", "VFDESTDIR", "fonts/vf/%" },
+    { "VPL", "VPLDESTDIR", "fonts/vpl/%" },
+    { "Type 1", "T1DESTDIR", "fonts/type1/%" },
     { "DVIPS map", 0, "dvips" }
 };
 
@@ -79,10 +79,10 @@ getodir(int o, ErrorHandler *errh)
     if (!odir[o] && automatic && writable_texdir) {
 	String dir = writable_texdir + odir_info[o].texdir;
 
-	if (dir.substring(-3, 3) == "/%t") {
+	if (dir.back() == '%') {
 	    if (!vendor)
 		vendor = DEFAULT_VENDOR;
-	    dir = dir.substring(0, -2) + vendor + "/" + typeface;
+	    dir = dir.substring(0, -1) + vendor + "/" + typeface;
 	}
 	
 	// create parent directories as appropriate
@@ -199,7 +199,7 @@ installed_type1(const String &opentype_filename, ErrorHandler *errh)
 	else
 	    pfb_filename += opentype_filename.substring(slash) + ".pfb";
 
-	// only run cfftot1 if the file exists
+	// only run cfftot1 if the file doesn't exist
 	if (access(pfb_filename.c_str(), R_OK) < 0) {
 	    String command = "cfftot1 '" + opentype_filename + "' '" + pfb_filename + "'";
 	    int retval = system(command.c_str());
