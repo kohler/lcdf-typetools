@@ -8,7 +8,7 @@ mmafm_SOURCES = vectori.cc \
 	hashmapi.cc \
 	main.cc
 
-mmafm_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
+mmafm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
 

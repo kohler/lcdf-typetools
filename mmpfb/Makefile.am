@@ -10,7 +10,7 @@ mmpfb_SOURCES = hashmapi.cc \
 	main.cc \
 	t1rewrit.cc t1rewrit.hh
 
-mmpfb_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
+mmpfb_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
 
