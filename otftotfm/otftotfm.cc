@@ -1,6 +1,6 @@
 /* otftotfm.cc -- driver for translating OpenType fonts to TeX metrics
  *
- * Copyright (c) 2003-2004 Eddie Kohler
+ * Copyright (c) 2003-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -319,7 +319,7 @@ Other options:\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n");
+Report bugs to <kohler@cs.ucla.edu>.\n");
 }
 
 #ifndef WIN32
@@ -1717,7 +1717,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("otftotfm (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2002-2004 Eddie Kohler\n\
+	    printf("Copyright (C) 2002-2005 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

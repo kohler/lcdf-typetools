@@ -96,7 +96,7 @@ Options:\n\
   -h, --help                   Print this message and exit.\n\
   -v, --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 }
 
 

@@ -1,6 +1,6 @@
 /* t1lint.cc -- driver for checking Type 1 fonts for validity
  *
- * Copyright (c) 1999-2004 Eddie Kohler
+ * Copyright (c) 1999-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -76,14 +76,14 @@ errors, and status 1 otherwise.\n\
 \n\
 Usage: %s [OPTION]... FONT [...]\n\
 \n\
-Each FONT is the name of a PFA or PFB font file; T1lint will check each one.\n\
+Each FONT is the name of a PFA or PFB font file.\n\
 \n\
 Options:\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not report errors to standard error.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 }
 
 
@@ -95,33 +95,33 @@ static bool
 get_num_array(Type1Font *font, int dictionary, const char *name,
 	      Vector<double> &v, ErrorHandler *errh, bool mandatory = false)
 {
-  if (Type1Definition *d = font->dict(dictionary, name)) {
-    if (d->value_numvec(v))
-      return true;
-    errh->error("%s not an array of numbers", name);
-    v.clear();
-  } else if (mandatory)
-    errh->error("%s not defined", name);
-  return false;
+    if (Type1Definition *d = font->dict(dictionary, name)) {
+	if (d->value_numvec(v))
+	    return true;
+	errh->error("%s not an array of numbers", name);
+	v.clear();
+    } else if (mandatory)
+	errh->error("%s not defined", name);
+    return false;
 }
 
 static bool
 get_integer(Type1Font *font, int dictionary, const char *name,
 	    int &v, ErrorHandler *errh, bool mandatory = false)
 {
-  Type1Definition *d = font->dict(dictionary, name);
-  double scratch;
-  if (d && d->value_int(v))
-    return true;
-  else if (d && d->value_num(scratch)) {
-    errh->warning("%s not an integer", name);
-    v = (int)scratch;
-    return true;
-  } else if (d)
-    errh->error("%s not a number", name);
-  else if (mandatory)
-    errh->error("%s not defined", name);
-  return false;
+    Type1Definition *d = font->dict(dictionary, name);
+    double scratch;
+    if (d && d->value_int(v))
+	return true;
+    else if (d && d->value_num(scratch)) {
+	errh->warning("%s not an integer", name);
+	v = (int)scratch;
+	return true;
+    } else if (d)
+	errh->error("%s not a number", name);
+    else if (mandatory)
+	errh->error("%s not defined", name);
+    return false;
 }
 
 // BLUES
@@ -327,6 +327,30 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   
   if (font) {
     LandmarkErrorHandler cerrh(errh, filename);
+
+    // check UniqueID values
+    int UniqueID = -1, UniqueID2 = -1;
+    if (get_integer(font, Type1Font::dF, "UniqueID", UniqueID, errh)
+	&& (UniqueID < 0 || UniqueID > 0xFFFFFF))
+	errh->error("UniqueID not in the range 0-16777215");
+    if (get_integer(font, Type1Font::dP, "UniqueID", UniqueID2, errh)
+	&& (UniqueID2 < 0 || UniqueID2 > 0xFFFFFF))
+	errh->error("Private UniqueID not in the range 0-16777215");
+    if (UniqueID >= 0 && UniqueID2 >= 0 && UniqueID != UniqueID2)
+	errh->error("Private UniqueID does not equal font UniqueID");
+
+    // check XUID values
+    Vector<double> XUID;
+    if (get_num_array(font, Type1Font::dF, "XUID", XUID, errh)) {
+	if (XUID.size() == 0)
+	    errh->error("empty XUID");
+	for (int i = 0; i < XUID.size(); i++) {
+	    if (floor(XUID[i]) != XUID[i] || XUID[i] < 0 || XUID[i] > 0xFFFFFF) {
+		errh->error("element of XUID not an integer in the range 0-16777215");
+		break;
+	    }
+	}
+    }
     
     check_blues(font, &cerrh);
     check_stems(font, &cerrh);
@@ -375,7 +399,7 @@ main(int argc, char *argv[])
       
      case VERSION_OPT:
       printf("t1lint (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1999-2004 Eddie Kohler\n\
+      printf("Copyright (C) 1999-2005 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

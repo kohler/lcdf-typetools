@@ -89,8 +89,8 @@ glyph in the font, including its glyph name and encoding.\n\
 \n\
 Usage: %s [OPTION]... [FONT]\n\
 \n\
-FONT is either the name of a PFA or PFB font file. If omitted, t1testpage will\n\
-read a font file from the standard input.\n\
+FONT is the name of a PFA or PFB font file. If omitted, t1testpage will read\n\
+a font file from the standard input.\n\
 \n\
 Options:\n\
   -g, --glyph=GLYPH            Limit output to one or more GLYPHs.\n\
@@ -99,7 +99,7 @@ Options:\n\
   -h, --help                   Print this message and exit.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 }
 
 

@@ -68,6 +68,145 @@ static String::Initializer initializer2;
 static HashMap<PermString, int> glyph_order(-1);
 static String encoding_name;
 
+static const char ISOLatin1Encoding[] = "/ISOLatin1Encoding [\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quoteright\n\
+  /parenleft /parenright /asterisk /plus /comma /minus /period /slash\n\
+  /zero /one /two /three /four /five /six /seven\n\
+  /eight /nine /colon /semicolon /less /equal /greater /question\n\
+  /at /A /B /C /D /E /F /G\n\
+  /H /I /J /K /L /M /N /O\n\
+  /P /Q /R /S /T /U /V /W\n\
+  /X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore\n\
+  /quoteleft /a /b /c /d /e /f /g\n\
+  /h /i /j /k /l /m /n /o\n\
+  /p /q /r /s /t /u /v /w\n\
+  /x /y /z /braceleft /bar /braceright /asciitilde /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /dotlessi /grave /acute /circumflex /tilde /.notdef /breve /dotaccent\n\
+  /.notdef /.notdef /ring /.notdef /.notdef /hungarumlaut /ogonek /caron\n\
+  /.notdef /exclamdown /cent /sterling /currency /yen /brokenbar /section\n\
+  /dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron\n\
+  /degree /plusminus /twosuperior /threesuperior /.notdef /mu /paragraph /periodcentered\n\
+  /cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown\n\
+  /Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla\n\
+  /Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis\n\
+  /Eth /Ntilde /Ograve /Oacute /Ocircumflex /.notdef /Odieresis /multiply\n\
+  /Oslash /.notdef /.notdef /.notdef /.notdef /Yacute /Thorn /germandbls\n\
+  /agrave /aacute /acircumflex /atilde /.notdef /aring /ae /ccedilla\n\
+  /egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis\n\
+  /eth /ntilde /.notdef /oacute /ocircumflex /otilde /odieresis /.notdef\n\
+  /oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn\n\
+] def\n";
+
+static const char ExpertEncoding[] = "/ExpertEncoding [\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /space /exclamsmall /Hungarumlautsmall /.notdef /dollaroldstyle /dollarsuperior /ampersandsmall /Acutesmall\n\
+  /parenleftsuperior /parenrightsuperior /twodotenleader /onedotenleader /comma /hyphen /period /fraction\n\
+  /zerooldstyle /oneoldstyle /twooldstyle /threeoldstyle /fouroldstyle /fiveoldstyle /sixoldstyle /sevenoldstyle\n\
+  /eightoldstyle /nineoldstyle /colon /semicolon /commasuperior /threequartersemdash /periodsuperior /questionsmall\n\
+  /.notdef /asuperior /bsuperior /centsuperior /dsuperior /esuperior /.notdef /.notdef\n\
+  /.notdef /isuperior /.notdef /.notdef /lsuperior /msuperior /nsuperior /osuperior\n\
+  /.notdef /.notdef /rsuperior /ssuperior /tsuperior /.notdef /ff /fi\n\
+  /fl /ffi /ffl /parenleftinferior /.notdef /parenrightinferior /Circumflexsmall /hyphensuperior\n\
+  /Gravesmall /Asmall /Bsmall /Csmall /Dsmall /Esmall /Fsmall /Gsmall\n\
+  /Hsmall /Ismall /Jsmall /Ksmall /Lsmall /Msmall /Nsmall /Osmall\n\
+  /Psmall /Qsmall /Rsmall /Ssmall /Tsmall /Usmall /Vsmall /Wsmall\n\
+  /Xsmall /Ysmall /Zsmall /colonmonetary /onefitted /rupiah /Tildesmall /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /exclamdownsmall /centoldstyle /Lslashsmall /.notdef /.notdef /Scaronsmall /Zcaronsmall\n\
+  /Dieresissmall /Brevesmall /Caronsmall /.notdef /Dotaccentsmall /.notdef /.notdef /Macronsmall\n\
+  /.notdef /.notdef /figuredash /hypheninferior /.notdef /.notdef /Ogoneksmall /Ringsmall\n\
+  /Cedillasmall /.notdef /.notdef /.notdef /onequarter /onehalf /threequarters /questiondownsmall\n\
+  /oneeighth /threeeighths /fiveeighths /seveneighths /onethird /twothirds /.notdef /.notdef\n\
+  /zerosuperior /onesuperior /twosuperior /threesuperior /foursuperior /fivesuperior /sixsuperior /sevensuperior\n\
+  /eightsuperior /ninesuperior /zeroinferior /oneinferior /twoinferior /threeinferior /fourinferior /fiveinferior\n\
+  /sixinferior /seveninferior /eightinferior /nineinferior /centinferior /dollarinferior /periodinferior /commainferior\n\
+  /Agravesmall /Aacutesmall /Acircumflexsmall /Atildesmall /Adieresissmall /Aringsmall /AEsmall /Ccedillasmall\n\
+  /Egravesmall /Eacutesmall /Ecircumflexsmall /Edieresissmall /Igravesmall /Iacutesmall /Icircumflexsmall /Idieresissmall\n\
+  /Ethsmall /Ntildesmall /Ogravesmall /Oacutesmall /Ocircumflexsmall /Otildesmall /Odieresissmall /OEsmall\n\
+  /Oslashsmall /Ugravesmall /Uacutesmall /Ucircumflexsmall /Udieresissmall /Yacutesmall /Thornsmall\n\
+] def\n";
+
+static const char ExpertSubsetEncoding[] = "/ExpertSubsetEncoding [\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /space /.notdef /.notdef /.notdef /dollaroldstyle /dollarsuperior /.notdef /.notdef\n\
+  /parenleftsuperior /parenrightsuperior /twodotenleader /onedotenleader /comma /hyphen /period /fraction\n\
+  /zerooldstyle /oneoldstyle /twooldstyle /threeoldstyle /fouroldstyle /fiveoldstyle /sixoldstyle /sevenoldstyle\n\
+  /eightoldstyle /nineoldstyle /colon /semicolon /commasuperior /threequartersemdash /periodsuperior /.notdef\n\
+  /.notdef /asuperior /bsuperior /centsuperior /dsuperior /esuperior /.notdef /.notdef\n\
+  /.notdef /isuperior /.notdef /.notdef /lsuperior /msuperior /nsuperior /osuperior\n\
+  /.notdef /.notdef /rsuperior /ssuperior /tsuperior /.notdef /ff /fi\n\
+  /fl /ffi /ffl /parenleftinferior /.notdef /parenrightinferior /.notdef /hyphensuperior\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /colonmonetary /onefitted /rupiah /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /centoldstyle /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /figuredash /hypheninferior /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /onequarter /onehalf /threequarters /.notdef\n\
+  /oneeighth /threeeighths /fiveeighths /seveneighths /onethird /twothirds /.notdef /.notdef\n\
+  /zerosuperior /onesuperior /twosuperior /threesuperior /foursuperior /fivesuperior /sixsuperior /sevensuperior\n\
+  /eightsuperior /ninesuperior /zeroinferior /oneinferior /twoinferior /threeinferior /fourinferior /fiveinferior\n\
+  /sixinferior /seveninferior /eightinferior /nineinferior /centinferior /dollarinferior /periodinferior /commainferior\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+] def\n";
+
+static const char SymbolEncoding[] = "/SymbolEncoding [\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /space /exclam /universal /numbersign /existential /percent /ampersand /suchthat\n\
+  /parenleft /parenright /asteriskmath /plus /comma /minus /period /slash\n\
+  /zero /one /two /three /four /five /six /seven\n\
+  /eight /nine /colon /semicolon /less /equal /greater /question\n\
+  /congruent /Alpha /Beta /Chi /Delta /Epsilon /Phi /Gamma\n\
+  /Eta /Iota /theta1 /Kappa /Lambda /Mu /Nu /Omicron\n\
+  /Pi /Theta /Rho /Sigma /Tau /Upsilon /sigma1 /Omega\n\
+  /Xi /Psi /Zeta /bracketleft /therefore /bracketright /perpendicular /underscore\n\
+  /radicalex /alpha /beta /chi /delta /epsilon /phi /gamma\n\
+  /eta /iota /phi1 /kappa /lambda /mu /nu /omicron\n\
+  /pi /theta /rho /sigma /tau /upsilon /omega1 /omega\n\
+  /xi /psi /zeta /braceleft /bar /braceright /similar /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef\n\
+  /.notdef /Upsilon1 /minute /lessequal /fraction /infinity /florin /club\n\
+  /diamond /heart /spade /arrowboth /arrowleft /arrowup /arrowright /arrowdown\n\
+  /degree /plusminus /second /greaterequal /multiply /proportional /partialdiff /bullet\n\
+  /divide /notequal /equivalence /approxequal /ellipsis /arrowvertex /arrowhorizex /carriagereturn\n\
+  /aleph /Ifraktur /Rfraktur /weierstrass /circlemultiply /circleplus /emptyset /intersection\n\
+  /union /propersuperset /reflexsuperset /notsubset /propersubset /reflexsubset /element /notelement\n\
+  /angle /gradient /registerserif /copyrightserif /trademarkserif /product /radical /dotmath\n\
+  /logicalnot /logicaland /logicalor /arrowdblboth /arrowdblleft /arrowdblup /arrowdblright /arrowdbldown\n\
+  /lozenge /angleleft /registersans /copyrightsans /trademarksans /summation /parenlefttp /parenleftex\n\
+  /parenleftbt /bracketlefttp /bracketleftex /bracketleftbt /bracelefttp /braceleftmid /braceleftbt /braceex\n\
+  /.notdef /angleright /integral /integraltp /integralex /integralbt /parenrighttp /parenrightex\n\
+  /parenrightbt /bracketrighttp /bracketrightex /bracketrightbt /bracerighttp /bracerightmid /bracerightbt\n\
+] def\n";
 
 void
 usage_error(ErrorHandler *errh, const char *error_message, ...)
@@ -86,23 +225,23 @@ void
 usage()
 {
     printf("\
-'T1testpage' creates a PostScript proof document for the specified Type 1\n\
-font file and writes it to the standard output. The proof shows every\n\
-glyph in the font, including its glyph name and encoding.\n\
+'T1reencode' changes a Type 1 font's embedded encoding and writes the\n\
+reencoded font to the standard output.\n\
 \n\
-Usage: %s [OPTION]... [FONT]\n\
-\n\
-FONT is either the name of a PFA or PFB font file. If omitted, t1testpage will\n\
-read a font file from the standard input.\n\
+Usage: %s [OPTION]... [FONTFILE [OUTPUTFILE]]\n\
 \n\
 Options:\n\
-  -g, --glyph=GLYPH            Limit output to one or more GLYPHs.\n\
-  -s, --smoke                  Print smoke proofs, one character per page.\n\
+  -e, --encoding=FILE          Read the encoding from FILE (in DVIPS format).\n\
+  -E, --encoding-text=ENC      The ENC argument is the encoding text.\n\
+  -n, --name=NAME              Set output font's PostScript name.\n\
+  -N, --full-name=NAME         Set output font's full name.\n\
+  -a, --pfa                    Output PFA font.\n\
+  -b, --pfb                    Output PFB font.  This is the default.\n\
   -o, --output=FILE            Write output to FILE instead of standard out.\n\
   -h, --help                   Print this message and exit.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 }
 
 
@@ -163,12 +302,13 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
 	}
     }
     if (t1d) {
-	uint32_t digest[MD5_DIGEST_SIZE / sizeof(uint32_t) + 1];
+	uint8_t digest[MD5_DIGEST_SIZE + 2]; // leave 2 bytes of space
 	md5_final((unsigned char *) digest, &md5);
+	digest[MD5_DIGEST_SIZE] = digest[MD5_DIGEST_SIZE + 1] = 0;
 	
-	// append digest to XUID
-	for (unsigned i = 0; i < MD5_DIGEST_SIZE / sizeof(uint32_t); i++)
-	    xuid.push_back(digest[i]);
+	// append digest to XUID; each element must be less than 2^24
+	for (int i = 0; i < MD5_DIGEST_SIZE; i += 3)
+	    xuid.push_back((digest[i] << 16) | (digest[i+1] << 8) | digest[i+2]);
 	t1d->set_numvec(xuid);
     }
 
@@ -183,7 +323,7 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
     PermString name;
     if (t1d && t1d->value_name(name)) {
 	if (!new_name)
-	    new_name = name + String("-") + encoding_name;
+	    new_name = name + encoding_name;
 	t1d->set_name(new_name.c_str());
 	font->uncache_defs();	// remove cached font name
     }
@@ -193,7 +333,7 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
     t1d = font->fi_dict("FullName");
     if (t1d && t1d->value_string(full_name)) {
 	if (!new_full_name)
-	    new_full_name = full_name + " " + encoding_name + " Enc";
+	    new_full_name = full_name + "_" + encoding_name + " Enc";
 	t1d->set_string(new_full_name.c_str());
     }
 
@@ -435,9 +575,12 @@ particular purpose.\n");
 	    break;
       
 	  case Clp_NotOption:
-	    if (input_file)
+	    if (input_file && output_file)
 		errh->fatal("too many arguments");
-	    input_file = clp->arg;
+	    else if (input_file)
+		output_file = clp->arg;
+	    else
+		input_file = clp->arg;
 	    break;
       
 	  case Clp_Done:
@@ -463,11 +606,20 @@ particular purpose.\n");
     if (!encoding_file && !encoding_text)
 	errh->fatal("missing '-e ENCODING' argument");
     Type1Encoding *t1e = 0;
-    if (encoding_file == "StandardEncoding")
+    if (encoding_file == "StandardEncoding") {
 	t1e = Type1Encoding::standard_encoding();
-    else {
+	encoding_name = encoding_file;
+    } else {
 	String text;
-	if (encoding_text)
+	if (encoding_file == "ISOLatin1Encoding")
+	    text = String::stable_string(ISOLatin1Encoding);
+	else if (encoding_file == "ExpertEncoding")
+	    text = String::stable_string(ExpertEncoding);
+	else if (encoding_file == "ExpertSubsetEncoding")
+	    text = String::stable_string(ExpertSubsetEncoding);
+	else if (encoding_file == "SymbolEncoding")
+	    text = String::stable_string(SymbolEncoding);
+	else if (encoding_text)
 	    text = String::stable_string(encoding_text), encoding_file = "<argument>";
 	else if ((text = read_file(encoding_file, errh)), errh->nerrors() > 0)
 	    exit(1);

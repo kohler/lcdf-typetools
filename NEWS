@@ -1,5 +1,14 @@
 LCDF Typetools NEWS
 
+Version 2.17   4.Jan.2005
+
+* Add t1reencode program.  Requested by Ralph Aichinger.
+
+* otftotfm: Add '--output-encoding' option.
+
+* t1lint: Check that UniqueID and XUID values are in range.
+
+
 Version 2.16   19.Nov.2004
 
 * '--include-alternates' and '--exclude-alternates' options only apply to

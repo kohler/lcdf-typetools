@@ -112,7 +112,7 @@ Other options:\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n");
+Report bugs to <kohler@cs.ucla.edu>.\n");
 }
 
 String
