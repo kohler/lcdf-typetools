@@ -1047,7 +1047,6 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
 
     // switch to eexec
     output->add_item(new Type1CopyItem("currentdict end"));
-    output->add_item(new Type1CopyItem("currentfile eexec"));
     output->add_item(new Type1EexecItem(true));
 
     // Private dictionary

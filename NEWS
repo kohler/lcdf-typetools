@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.66   24.Nov.2003
+
+* cfftot1: Don't generate "currentfile eexec" twice. Bug reported by Adam
+  Lindsay.
+
+
 Version 1.65   24.Nov.2003
 
 * otftotfm: Include default ligatures if user does not specify ligatures.
