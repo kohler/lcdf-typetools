@@ -249,7 +249,7 @@ AfmParser::vis(const char *formatsigned, va_list valist)
 	 
 	      default:
 		assert(0 && "internal error: bad %");
-		FAIL(0);
+		FAIL("");
 	
 	    }
 	    break;
