@@ -22,13 +22,16 @@ class Transform { public:
     void rotate(double);
     void translate(double, double);
     void translate(const Point &p)		{ translate(p.x, p.y); }
+    void shear(double);
+    inline void transform(const Transform &);
 
     inline Transform scaled(double, double) const;
     Transform scaled(const Point &p) const	{ return scaled(p.x, p.y); }
     Transform scaled(double d) const		{ return scaled(d, d); }
-    Transform rotated(double) const;
-    Transform translated(double, double) const;
-    Transform translated(const Point &p) const;
+    inline Transform rotated(double) const;
+    inline Transform translated(double, double) const;
+    inline Transform translated(const Point &p) const;
+    inline Transform sheared(double) const;
     Transform transformed(const Transform &) const;
 
     // Transform operator+(Transform, const Point &);
@@ -84,6 +87,14 @@ Transform::translated(const Point &p) const
     return translated(p.x, p.y);
 }
 
+inline Transform
+Transform::sheared(double s) const
+{
+    Transform t(*this);
+    t.shear(s);
+    return t;
+}
+
 
 inline Transform &
 operator+=(Transform &t, const Point &p)
@@ -122,6 +133,12 @@ operator*=(Transform &t, const Transform &tt)
 {
     t = t.transformed(tt);
     return t;
+}
+
+inline void
+Transform::transform(const Transform &t)
+{
+    *this *= t;
 }
 
 

@@ -98,6 +98,12 @@ Transform::translate(double x, double y)
 	_null = false;
 }
 
+void
+Transform::shear(double s)
+{
+    *this *= Transform(1, 0, s, 1, 0, 0);
+}
+
 Transform
 Transform::transformed(const Transform &t) const
 {
