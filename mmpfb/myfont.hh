@@ -4,28 +4,28 @@
 class Efont::EfontMMSpace;
 class ErrorHandler;
 
-class MyFont: public Efont::Type1Font {
+class MyFont: public Efont::Type1Font { public:
   
-  typedef Vector<double> NumVector;
+    MyFont(Efont::Type1Reader &);
+    ~MyFont();
   
-  int _nmasters;
-  Vector<double> _weight_vector;
+    bool set_design_vector(Efont::EfontMMSpace *, const Vector<double> &,
+			   ErrorHandler * = 0);
   
-  void interpolate_dict_int(PermString, ErrorHandler *, Dict = dPrivate);
-  void interpolate_dict_num(PermString, Dict = dPrivate);
-  void interpolate_dict_numvec(PermString, Dict = dPrivate, bool = false);
-  void kill_def(Efont::Type1Definition *, int which_dict = -1); 
+    void interpolate_dicts(ErrorHandler * = 0);
+    void interpolate_charstrings(int precision, ErrorHandler * = 0);
+
+  private:
   
- public:
+    typedef Vector<double> NumVector;
   
-  MyFont(Efont::Type1Reader &);
-  ~MyFont();
+    int _nmasters;
+    Vector<double> _weight_vector;
   
-  bool set_design_vector(Efont::EfontMMSpace *, const Vector<double> &,
-			 ErrorHandler * = 0);
-  
-  void interpolate_dicts(ErrorHandler * = 0);
-  void interpolate_charstrings(int precision, ErrorHandler * = 0);
+    void interpolate_dict_int(PermString, ErrorHandler *, Dict = dPrivate);
+    void interpolate_dict_num(PermString, Dict = dPrivate);
+    void interpolate_dict_numvec(PermString, Dict = dPrivate, bool = false);
+    void kill_def(Efont::Type1Definition *, int which_dict = -1); 
   
 };
 

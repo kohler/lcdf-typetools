@@ -55,83 +55,97 @@ bool
 MyFont::set_design_vector(EfontMMSpace *mmspace, const Vector<double> &design,
 			  ErrorHandler *errh)
 {
-  Type1Definition *t1d = dict("DesignVector");
-  if (t1d) {
-    t1d->set_numvec(design);
-    kill_def(t1d, dFont);
-  }
-  
-  t1d = dict("NormDesignVector");
-  if (t1d) {
-    NumVector norm_design;
-    if (mmspace->design_to_norm_design(design, norm_design))
-      t1d->set_numvec(norm_design);
-    kill_def(t1d, dFont);
-  }
-  
-  if (!mmspace->design_to_weight(design, _weight_vector, errh))
-    return false;
-  
-  // Need to check for case when all design coordinates are unspecified. The
-  // font file contains a default WeightVector, but possibly NOT a default
-  // DesignVector; we don't want to generate a FontName like
-  // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
-  // components are unknown.
-  if (!KNOWN(design[0])) {
-    errh->error("must specify %s's %s coordinate", font_name().cc(),
-		mmspace->axis_type(0).cc());
-    return false;
-  }
-  
-  t1d = dict("WeightVector");
-  if (t1d) {
-    t1d->set_numvec(_weight_vector);
-    kill_def(t1d, dFont);
-  }
-  
-  int naxes = design.size();
-  _nmasters = _weight_vector.size();
-  
-  PermString name;
-  t1d = dict("FontName");
-  if (t1d && t1d->value_name(name)) {
-    StringAccum sa;
-    sa << name;
-    for (int a = 0; a < naxes; a++)
-      sa << '_' << design[a];
-    // Multiple masters actually require an underscore AFTER the font name too
-    sa << '_' << '\0';
-    t1d->set_name(sa.data());
-  }
-  
-  // save UniqueID, then kill its definition
-  int uniqueid;
-  t1d = dict("UniqueID");
-  bool have_uniqueid = (t1d && t1d->value_int(uniqueid));
-  kill_def(t1d, dFont);  
-  
-  // prepare XUID
-  t1d = dict("XUID");
-  NumVector xuid;
-  if (!t1d || !t1d->value_numvec(xuid)) {
-    if (have_uniqueid) {
-      t1d = ensure(dFont, "XUID");
-      xuid.clear();
-      xuid.push_back(1);
-      xuid.push_back(uniqueid);
-    } else if (t1d) {
-      kill_def(t1d, dFont);
-      t1d = 0;
+    Type1Definition *t1d = dict("DesignVector");
+    if (t1d) {
+	t1d->set_numvec(design);
+	kill_def(t1d, dFont);
     }
-  }
-  if (t1d) {
-    // Append design vector values to the XUID to prevent cache pollution.
-    for (int a = 0; a < naxes; a++)
-      xuid.push_back((int)(design[a] * 100));
-    t1d->set_numvec(xuid);
-  }
+
+    t1d = dict("NormDesignVector");
+    if (t1d) {
+	NumVector norm_design;
+	if (mmspace->design_to_norm_design(design, norm_design))
+	    t1d->set_numvec(norm_design);
+	kill_def(t1d, dFont);
+    }
   
-  return true;
+    if (!mmspace->design_to_weight(design, _weight_vector, errh))
+	return false;
+  
+    // Need to check for case when all design coordinates are unspecified. The
+    // font file contains a default WeightVector, but possibly NOT a default
+    // DesignVector; we don't want to generate a FontName like
+    // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
+    // components are unknown.
+    if (!KNOWN(design[0])) {
+	errh->error("must specify %s's %s coordinate", font_name().cc(),
+		    mmspace->axis_type(0).cc());
+	return false;
+    }
+  
+    t1d = dict("WeightVector");
+    if (t1d) {
+	t1d->set_numvec(_weight_vector);
+	kill_def(t1d, dFont);
+    }
+  
+    int naxes = design.size();
+    _nmasters = _weight_vector.size();
+  
+    PermString name;
+    t1d = dict("FontName");
+    if (t1d && t1d->value_name(name)) {
+	StringAccum sa(name);
+	for (int a = 0; a < naxes; a++)
+	    sa << '_' << design[a];
+	// Multiple masters require an underscore AFTER the font name
+	sa << '_';
+	t1d->set_name(sa.cc());
+	uncache_defs();		// remove cached font name
+    }
+
+    // add a FullName too
+    String full_name;
+    t1d = fi_dict("FullName");
+    if (t1d && t1d->value_string(full_name)) {
+	StringAccum sa(full_name);
+	for (int a = 0; a < naxes; a++) {
+	    sa << (a ? ' ' : '_') << design[a];
+	    PermString label = mmspace->axis_abbreviation(a);
+	    if (label)
+		sa << ' ' << label;
+	}
+	t1d->set_string(sa.cc());
+    }
+    
+    // save UniqueID, then kill its definition
+    int uniqueid;
+    t1d = dict("UniqueID");
+    bool have_uniqueid = (t1d && t1d->value_int(uniqueid));
+    kill_def(t1d, dFont);  
+    
+    // prepare XUID
+    t1d = dict("XUID");
+    NumVector xuid;
+    if (!t1d || !t1d->value_numvec(xuid)) {
+	if (have_uniqueid) {
+	    t1d = ensure(dFont, "XUID");
+	    xuid.clear();
+	    xuid.push_back(1);
+	    xuid.push_back(uniqueid);
+	} else if (t1d) {
+	    kill_def(t1d, dFont);
+	    t1d = 0;
+	}
+    }
+    if (t1d) {
+	// Append design vector values to the XUID to prevent cache pollution.
+	for (int a = 0; a < naxes; a++)
+	    xuid.push_back((int)(design[a] * 100));
+	t1d->set_numvec(xuid);
+    }
+  
+    return true;
 }
 
 void
