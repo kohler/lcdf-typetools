@@ -1207,12 +1207,12 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
 
 int
-main(int argc, char **argv)
+main(int argc, char *argv[])
 {
     handle_sigchld();
     String::static_initialize();
     Clp_Parser *clp =
-	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
+	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
 #if HAVE_KPATHSEA
     kpsei_init(argv[0]);

@@ -293,11 +293,11 @@ do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHan
 }
 
 int
-main(int argc, char **argv)
+main(int argc, char *argv[])
 {
     String::static_initialize();
     Clp_Parser *clp =
-	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
+	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
     
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));

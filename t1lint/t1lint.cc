@@ -343,13 +343,13 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 }
 
 int
-main(int argc, char **argv)
+main(int argc, char *argv[])
 {
   PsresDatabase *psres = new PsresDatabase;
   psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
   
   Clp_Parser *clp =
-    Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
+    Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
   program_name = Clp_ProgramName(clp);
   
   ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));

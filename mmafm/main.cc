@@ -234,7 +234,7 @@ Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 
 
 int
-main(int argc, char **argv)
+main(int argc, char *argv[])
 {
   MetricsFinder *finder = new CacheMetricsFinder;
   
@@ -244,7 +244,7 @@ main(int argc, char **argv)
   finder->add_finder(psres_finder);
   
   Clp_Parser *clp =
-    Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
+    Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
   program_name = Clp_ProgramName(clp);
 
   errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
