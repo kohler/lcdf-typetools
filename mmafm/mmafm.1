@@ -1,5 +1,5 @@
 ' -*-nroff-*-
-.ds V 1.3b1
+.ds V 1.3b2
 .ds E " \-\- 
 .if t .ds E \(em
 .de OP
@@ -34,65 +34,59 @@ mmafm \- creates AFM font metrics for multiple master fonts
 '
 .SH SYNOPSIS
 .B mmafm
-\%[options]
-\%[filenames]
+\%[option | font]...
 '
 .SH DESCRIPTION
-.B mmafm
+.B Mmafm
 creates AFM font metrics for PostScript multiple master fonts by
 interpolation. You pass it an AMFM file (multiple master font metrics) and
-options specifying the design point you want; it writes the resulting AFM
-file to standard output.
+options specifying the design point you want, and it writes the resulting
+AFM file to the standard output.
 .PP
-A multiple master font should be distributed with an AMFM file and an AFM
-file for each master;
+Each
+.I font
+argument is either the filename of an AFM or AMFM font metrics file, or a
+PostScript font name. In the second case,
 .B mmafm
-needs all of these files to function. (For Myriad, for example, the AMFM
-file is MyriadMM.amfm, and the AFM files are MyriadMM-LightCn.afm,
+will look up the actual font metrics file using the PSRESOURCEPATH
+environment variable. This path is searched for `PSres.upr' files, an Adobe
+method for indexing PostScript resources.
+.PP
+Any multiple master font should be distributed with a single AMFM file and
+several AFM files (one for each master). For Myriad, for example, the AMFM
+file is MyriadMM.amfm and the AFM files are MyriadMM-LightCn.afm,
 MyriadMM-LightSemiEx.afm, MyriadMM-BlackCn.afm, and
-MyriadMM-BlackSemiEx.afm. Unfortunately, you may need to make a special
-request to get these files.) You must pass the AMFM filename as an
-argument, but there are three ways
-.B mmafm
-can find the AFM files:
-.TP 3
-1.
-'
-You pass their filenames as arguments.
-'
-.TP 3
-2.
-'
-They are in the same directory as the AMFM file with filenames
-`\fIFontName\fR.afm'. (The Myriad filenames given above fit this
-pattern. The \fIFontName\fR is listed in the AFM file after the
-`\fBFontName\fR' keyword.)
-'
-.TP 3
-3.
-'
-The AFMPATH and/or FONTPATH environment variables are set to a
-colon-separated list of directories. These are searched for `PSres.upr'
-files, an Adobe format for indexing PostScript resources.
-.B mmafm
-looks for the AFM files using these indexes.
-'
+MyriadMM-BlackSemiEx.afm.
+.B Mmafm
+needs to find all these files to function.
 .PP
+You must always supply the AMFM file (or its font name) on the command
+line, but
 .B mmafm
-supports fonts with intermediate masters, like Adobe Jenson and Kepler. For
-these fonts, you must create auxiliary AMCP files using
+will look for any required AFM files you don't supply yourself. It tries
+the PSRESOURCEPATH environment variable, and also looks for files named
+`\fIFontName\fR.afm' or `\fIFontName\fR.AFM' in the directory that
+contained the AMFM file. (The Myriad filenames given above fit this
+pattern.)
+.PP
+.B Mmafm
+supports fonts with intermediate masters, like Adobe Jenson and Kepler. If
+your PSRESOURCEPATH environment variable is set up, it will handle these
+fonts automatically. Otherwise, you must first run 
+.RB ` "mmpfb \-\-amcp\-info" '
+on the font outline files to create auxiliary AMCP files for these fonts.
+Each AMCP file should be in the same directory as its corresponding AMFM
+file and should have the same root filename, but with an `.amcp' extension
+instead of `.amfm'. See
 .BR mmpfb (1)
-before running
-.BR mmafm .
-The AMCP file should have the same base filename as the AMFM file, but with
-an `.amcp' extension instead of `.amfm'.
+for more information.
 '
 '
 .SH EXAMPLE
 '
-.nh
+.nf
 % mmafm --weight=400 --width=600 MyriadMM.amfm > MyriadMM_400_600_.afm
-.hy
+.fi
 '
 .SH OPTIONS
 Long options may be abbreviated to their unique prefixes.
@@ -138,14 +132,8 @@ Set the first (second, third, fourth) axis to
 '
 .SH DIAGNOSTICS
 .TP 5
-mmafm: need intermediate master programs for \fIFont\fR
-\fIFont\fR has intermediate masters, but you haven't run
-.BR mmpfb (1)
-to create the AMCP file. See the manual page for
-.BR mmpfb ,
-particularly the
-.B \-\-amcp\-info
-option.
+\fIFont\fR requires intermediate master conversion programs
+You haven't yet created an AMCP file for \fIFont\fR.
 '
 .SH AUTHOR
 .na

@@ -2,6 +2,7 @@
 # include <config.h>
 #endif
 #include "findmet.hh"
+#include "psres.hh"
 #include "slurper.hh"
 #include "afm.hh"
 #include "afmw.hh"
@@ -11,6 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#ifdef HAVE_CTIME
+# include <time.h>
+#endif
 
 #define WEIGHT_OPT	300
 #define WIDTH_OPT	301
@@ -25,10 +29,10 @@
 #define OUTPUT_OPT	310
 
 Clp_Option options[] = {
-  { "1", 0, N1_OPT, Clp_ArgDouble, 0 },
-  { "2", 0, N2_OPT, Clp_ArgDouble, 0 },
-  { "3", 0, N3_OPT, Clp_ArgDouble, 0 },
-  { "4", 0, N4_OPT, Clp_ArgDouble, 0 },
+  { "1", '1', N1_OPT, Clp_ArgDouble, 0 },
+  { "2", '2', N2_OPT, Clp_ArgDouble, 0 },
+  { "3", '3', N3_OPT, Clp_ArgDouble, 0 },
+  { "4", '4', N4_OPT, Clp_ArgDouble, 0 },
   { "weight", 'w', WEIGHT_OPT, Clp_ArgDouble, 0 },
   { "width", 'W', WIDTH_OPT, Clp_ArgDouble, 0 },
   { "optical-size", 'O', OPSIZE_OPT, Clp_ArgDouble, 0 },
@@ -78,15 +82,17 @@ read_file(char *fn, MetricsFinder *finder)
     filename = Filename(fn);
     file = filename.open_read();
   }
+  int save_errno = errno;
   
   if (!file) {
-    int save_errno = errno;
     AmfmMetrics *new_amfm = finder->find_amfm(fn, &errh);
-    if (new_amfm && amfm)
-      errh.fatal("already read one AMFM file");
-    else if (!new_amfm)
+    if (new_amfm) {
+      if (amfm) errh.fatal("already read one AMFM file");
+      amfm = new_amfm;
+    } else if (finder->find_metrics(fn, &errh))
+      /* nada */;
+    else
       errh.fatal("%s: %s", fn, strerror(save_errno));
-    amfm = new_amfm;
     return;
   }
   
@@ -99,14 +105,11 @@ read_file(char *fn, MetricsFinder *finder)
   }
   
   if (is_afm) {
-    AfmReader reader(slurper, &errh);
-    Metrics *afm = reader.take();
+    Metrics *afm = AfmReader::read(slurper, &errh);
     if (afm) finder->record(afm);
   } else {
-    if (amfm)
-      errh.fatal("already read one AMFM file");
-    AmfmReader reader(slurper, finder, &errh);
-    amfm = reader.take();
+    if (amfm) errh.fatal("already read one AMFM file");
+    amfm = AmfmReader::read(slurper, finder, &errh);
   }
 }
 
@@ -114,7 +117,7 @@ read_file(char *fn, MetricsFinder *finder)
 static void
 short_usage()
 {
-  fprintf(stderr, "Usage: %s [options and filenames]\n\
+  fprintf(stderr, "Usage: %s [OPTION | FONT]...\n\
 Type %s --help for more information.\n",
 	  program_name, program_name);
 }
@@ -124,11 +127,13 @@ usage()
 {
   printf("\
 `Mmafm' creates an AFM font metrics file for a multiple master font by\n\
-interpolating at a point you specify. You pass it an AMFM (multiple master\n\
-font metrics) file; interpolation settings; and optionally, AFM files for the\n\
-master designs. It writes the resulting AFM on standard out.\n\
+interpolating at a point you specify and writes it to the standard output.\n\
 \n\
-Usage: %s [options and filenames]\n\
+Usage: %s [OPTION | FONT]...\n\
+\n\
+Each FONT is either an AFM or AMFM file name, or the font name of a multiple\n\
+master font. In the second case, mmafm will find the actual AMFM file using\n\
+the PSRESOURCEPATH environment variable.\n\
 \n\
 General options:\n\
   --output=FILE, -o FILE        Write output to FILE.\n\
@@ -151,21 +156,10 @@ main(int argc, char **argv)
 {
   MetricsFinder *finder = new CacheMetricsFinder;
   
-  PsresMetricsFinder *psres_finder = new PsresMetricsFinder;
-  Vector<PermString> paths;
-  char *token;
-  if (char *path = getenv("AFMPATH"))
-    while ((token = strtok(path, ":"))) {
-      if (*token) paths.append(token);
-      path = 0;
-    }
-  if (char *path = getenv("FONTPATH"))
-    while ((token = strtok(path, ":"))) {
-      if (*token) paths.append(token);
-      path = 0;
-    }
-  for (int i = paths.count() - 1; i >= 0; i--)
-    psres_finder->read_psres(Filename(paths[i], "PSres.upr"));
+  PsresDatabase *psres = new PsresDatabase;
+  psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
+  psres->add_psres_path(getenv("FONTPATH"), 0, false);
+  PsresMetricsFinder *psres_finder = new PsresMetricsFinder(psres);
   finder->append(psres_finder);
   
   Clp_Parser *clp =
@@ -218,8 +212,8 @@ main(int argc, char **argv)
       break;
       
      case VERSION_OPT:
-      printf("%s version %s\n", program_name, VERSION);
-      printf("Copyright (C) 1997-8 Eddie Kohler\n\
+      printf("mmafm (LCDF mminstance) %s\n", VERSION);
+      printf("Copyright (C) 1997-9 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -246,6 +240,23 @@ particular purpose.\n");
   if (!amfm) exit(1);
   
   Type1MMSpace *mmspace = amfm->mmspace();
+#if MMAFM_RUN_MMPFB
+  if (!mmspace->check_intermediate()) {
+    char *buf = new char[amfm->font_name().length() + 30];
+    sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().cc());
+    
+    FILE *f = popen(buf, "r");
+    if (f) {
+      Filename fake("<mmpfb output>");
+      Slurper slurpy(fake, f);
+      AmfmReader::add_amcp_file(slurpy, amfm, &errh);
+      pclose(f);
+    }
+    
+    delete[] buf;
+  }
+#endif
+  
   Vector<double> design = mmspace->default_design_vector();
   for (int i = 0; i < values.count(); i++)
     if (ax_names[i])
@@ -254,14 +265,56 @@ particular purpose.\n");
       mmspace->set_design(design, ax_nums[i], values[i], &errh);
   
   Vector<double> weight;
-  if (!mmspace->design_to_weight(design, weight, &errh))
-    errh.fatal("can't create weight vector");
+  if (!mmspace->design_to_weight(design, weight, &errh)) {
+    if (!mmspace->check_intermediate()) {
+      errh.error("(I can't interpolate font programs with intermediate masters on my own.");
+#if MMAFM_RUN_MMPFB
+      errh.error("I tried to run `mmpfb --amcp-info %s', but it didn't work.", amfm->font_name().cc());
+      errh.error("Maybe your PSRESOURCEPATH environment variable is not set?");
+#endif
+      errh.fatal("See the manual page for more information.)");
+    } else
+      errh.fatal("can't create weight vector");
+  }
+  
+  // Need to check for case when all design coordinates are unspecified. The
+  // AMFM file contains a default WeightVector, but often NOT a default
+  // DesignVector; we don't want to generate a file with a FontName like
+  // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
+  // components are unknown.
+  if (!KNOWN(design[0]))
+    errh.fatal("must specify %s's %s coordinate", amfm->font_name().cc(),
+	       mmspace->axis_type(0).cc());
   
   Metrics *m = amfm->interpolate(design, weight, &errh);
   if (m) {
+    
+    // Add a comment identifying this as interpolated by mmafm
+    if (MetricsXt *xt = m->find_xt("AFM")) {
+      AfmMetricsXt *afm_xt = (AfmMetricsXt *)xt;
+      
+#if HAVE_CTIME
+      time_t cur_time = time(0);
+      char *time_str = ctime(&cur_time);
+      int time_len = strlen(time_str) - 1;
+      char *buf = new char[strlen(VERSION) + time_len + 100];
+      sprintf(buf, "Interpolated by mmafm-%s on %.*s.", VERSION,
+	      time_len, time_str);
+#else
+      char *buf = new char[strlen(VERSION) + 100];
+      sprintf(buf, "Interpolated by mmafm-%s.", VERSION);
+#endif
+      
+      afm_xt->opening_comments.append(buf);
+      afm_xt->opening_comments.append("Mmafm is free software.  See <http://www.lcdf.org/type/>.");
+      delete[] buf;
+    }
+
+    // write the output file
     if (!output_file) output_file = stdout;
-    AfmWriter(m, output_file).write();
-  }
-  
-  return 0;
+    AfmWriter::write(m, output_file);
+    
+    return 0;
+  } else
+    return 1;
 }
