@@ -126,9 +126,8 @@ class Coverage { public:
     bool ok() const throw ()		{ return _str.length() > 0; }
     int size() const throw ();
 
-    int lookup(Glyph) const throw ();
-    int operator[](Glyph g) const throw () { return lookup(g); }
-    bool covers(Glyph g) const throw ()	{ return lookup(g) >= 0; }
+    int coverage_index(Glyph) const throw ();
+    bool covers(Glyph g) const throw ()	{ return coverage_index(g) >= 0; }
 
     void unparse(StringAccum &) const throw ();
     String unparse() const throw ();
@@ -167,7 +166,8 @@ class Coverage { public:
     
     iterator begin() const		{ return iterator(_str, 0); }
     iterator end() const		{ return iterator(_str, _str.length()); }
-
+    Glyph operator[](int) const throw ();
+    
     enum { T_LIST = 1, T_RANGES = 2,
 	   HEADERSIZE = 4, LIST_RECSIZE = 2, RANGES_RECSIZE = 6 };
     

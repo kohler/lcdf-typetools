@@ -588,7 +588,7 @@ Coverage::size() const throw ()
 }
 
 int
-Coverage::lookup(Glyph g) const throw ()
+Coverage::coverage_index(Glyph g) const throw ()
 {
     if (_str.length() == 0)
 	return -1;
@@ -625,6 +625,35 @@ Coverage::lookup(Glyph g) const throw ()
 	return -1;
     } else
 	return -1;
+}
+
+Glyph
+Coverage::operator[](int cindex) const throw ()
+{
+    if (_str.length() == 0 || cindex < 0)
+	return 0;
+    
+    const uint8_t *data = _str.udata();
+    int count = USHORT_AT(data + 2);
+    if (data[1] == T_LIST)
+	return (cindex < count ? USHORT_AT(data + cindex * LIST_RECSIZE) : 0);
+    else if (data[1] == T_RANGES) {
+	int l = 0, r = count - 1;
+	data += HEADERSIZE;
+	while (l <= r) {
+	    int m = (l + r) >> 1;
+	    const uint8_t *rec = data + m * RANGES_RECSIZE;
+	    int start_cindex = USHORT_AT(rec + 4);
+	    if (cindex < start_cindex)
+		r = m - 1;
+	    else if (cindex < start_cindex + USHORT_AT(rec + 2) - USHORT_AT(rec))
+		return USHORT_AT(rec) + cindex - start_cindex;
+	    else
+		l = m + 1;
+	}
+	return 0;
+    } else
+	return 0;
 }
 
 void
