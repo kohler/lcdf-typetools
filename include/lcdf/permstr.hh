@@ -13,7 +13,6 @@ class PermString { struct Doodad; public:
     struct Initializer { Initializer(); };
   
     PermString()			: _rep(0) { }
-    PermString(int i)			: _rep(0) { assert(!i); }
     explicit PermString(char c);
     PermString(const char *);
     PermString(const char *, int);
