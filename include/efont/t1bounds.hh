@@ -10,7 +10,11 @@ class CharstringBounds : public CharstringInterp { public:
     CharstringBounds(const EfontProgram *, Vector<double> *weight = 0);
     ~CharstringBounds()				{ }
 
+    void transform(const Transform &);
+    void extend(double);
+    void shear(double);
     void ignore_font_transform();
+    
     void init();
 
     const Point &width() const			{ return _width; }

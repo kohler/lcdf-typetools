@@ -25,6 +25,24 @@ CharstringBounds::ignore_font_transform()
 }
 
 void
+CharstringBounds::transform(const Transform &t)
+{
+    _t = _t.transformed(t);
+}
+
+void
+CharstringBounds::extend(double e)
+{
+    _t.scale(e, 1);
+}
+
+void
+CharstringBounds::shear(double s)
+{
+    transform(Transform(1, 0, s, 1, 0, 0));
+}
+
+void
 CharstringBounds::init()
 {
     _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
