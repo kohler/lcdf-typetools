@@ -20,6 +20,9 @@ class GsubEncoding { public:
     GsubEncoding();
     // default destructor
 
+    int boundary_char() const			{ return _boundary_char; }
+    void set_boundary_char(int c)		{ _boundary_char = c; }
+
     inline Glyph glyph(int) const;
     bool setting(int, Vector<Setting> &) const;
     inline int encoding(Glyph) const;
@@ -28,6 +31,7 @@ class GsubEncoding { public:
     void encode(int code, Glyph g);
 
     bool apply(const Substitution &, bool allow_single);
+    int apply(const Vector<Substitution> &, bool allow_single);
     void apply_substitutions();
     void simplify_ligatures(bool add_fake);
     bool apply(const Positioning &);
@@ -41,7 +45,7 @@ class GsubEncoding { public:
     void remove_ligatures(int code1, int code2);
     void remove_kerns(int code1, int code2);
 
-    int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &skip) const;
+    int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &context) const;
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
     int kern(int code1, int code2) const;
     
@@ -56,11 +60,13 @@ class GsubEncoding { public:
     Vector<Glyph> _encoding;
     Vector<Glyph> _substitutions;
     mutable Vector<int> _emap;
+    int _boundary_char;
 
     struct Ligature {
 	Vector<int> in;
 	int out;
 	int skip;
+	int context;
     };
     Vector<Ligature> _ligatures;
     Vector<Ligature> _fake_ligatures;
@@ -82,7 +88,7 @@ class GsubEncoding { public:
 
     int hard_encoding(Glyph) const;
     inline void assign_emap(Glyph, int);
-    void apply_single_substitution(Glyph, Glyph);
+    void add_single_rcontext_substitution(int, int, int);
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(const Vector<int> &);
     int find_skippable_twoligature(int, int, bool add_fake);

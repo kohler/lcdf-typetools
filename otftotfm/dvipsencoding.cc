@@ -474,6 +474,7 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 	    if (gid == 0)
 		bad_codepoint(i);
 	}
+    gsub_encoding.set_boundary_char(_boundary_char);
 }
 
 void

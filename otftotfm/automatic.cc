@@ -308,7 +308,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 #endif
 
     if (map_file == "" || map_file == "-")
-	printf("%s\n", mapline.c_str());
+	fputs(mapline.c_str(), stdout);
     else {
 	// report nocreate/verbose
 	if (nocreate) {

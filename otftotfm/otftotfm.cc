@@ -388,8 +388,11 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     if (xheight < 1000)
 	fprintf(f, "   (XHEIGHT D %d)\n", xheight);
     
-    fprintf(f, "   (QUAD D 1000)\n"
-	    "   )\n");
+    fprintf(f, "   (QUAD D 1000)\n   )\n");
+
+    int boundary_char = gse.boundary_char();
+    if (boundary_char >= 0)
+	fprintf(f, "(BOUNDARYCHAR D %d)\n", gse.boundary_char());
 
     // write MAPFONT
     if (vpl)
@@ -418,15 +421,16 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 
     // LIGTABLE
     fprintf(f, "(LIGTABLE\n");
-    Vector<int> lig_code2, lig_outcode, lig_skip, kern_code2, kern_amt;
+    Vector<int> lig_code2, lig_outcode, lig_context, kern_code2, kern_amt;
     for (int i = 0; i < 256; i++)
 	if (gse.glyph(i)) {
-	    int any_lig = gse.twoligatures(i, lig_code2, lig_outcode, lig_skip);
+	    int any_lig = gse.twoligatures(i, lig_code2, lig_outcode, lig_context);
 	    int any_kern = gse.kerns(i, kern_code2, kern_amt);
 	    if (any_lig || any_kern) {
 		fprintf(f, "   (LABEL %s)%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
 		for (int j = 0; j < lig_code2.size(); j++)
-		    fprintf(f, "   (LIG %s %s)%s%s\n",
+		    fprintf(f, "   (%s %s %s)%s%s\n",
+			    (lig_context[j] ? "LIG/" : "LIG"),
 			    glyph_ids[lig_code2[j]].c_str(),
 			    glyph_ids[lig_outcode[j]].c_str(),
 			    glyph_comments[lig_code2[j]].c_str(),
@@ -901,10 +905,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (lookups[i].used) {
 	    OpenType::GsubLookup l = gsub.lookup(i);
 	    bool understood = l.unparse_automatics(gsub, subs);
-	    int nunderstood = 0;
-	    for (int j = 0; j < subs.size(); j++)
-		nunderstood += encoding.apply(subs[j], !dvipsenc_literal);
-	    encoding.apply_substitutions();
+	    int nunderstood = encoding.apply(subs, !dvipsenc_literal);
 
 	    // mark as used
 	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;

@@ -90,7 +90,7 @@ class GsubContext { public:
     enum { F3_HSIZE = 6, SUBRECSIZE = 4 };
   private:
     Data _d;
-    static bool f3_unparse(const Data &, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &, Vector<Substitution> &);
+    static bool f3_unparse(const Data &, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &, Vector<Substitution> &, const Substitution &prototype_sub);
     friend class GsubChainContext;
 };
 
@@ -121,6 +121,10 @@ class Substitution { public:
     Substitution(Glyph in1, Glyph in2, Glyph out);
     Substitution(const Vector<Glyph> &in, Glyph out);
     Substitution(int nin, const Glyph *in, Glyph out);
+
+    // context marker
+    enum Context { C_LEFT = 0, C_RIGHT = 1 };
+    Substitution(Context, Glyph);
     
     ~Substitution();
     
@@ -136,6 +140,7 @@ class Substitution { public:
     bool is_multiple() const;
     bool is_alternate() const;
     bool is_ligature() const;
+    bool is_single_rcontext() const;
 
     // extract data
     Glyph in_glyph() const;
@@ -143,9 +148,11 @@ class Substitution { public:
     int in_nglyphs() const;
     bool in_matches(int pos, Glyph) const;
     Glyph out_glyph() const;
+    Glyph out_glyph_0() const;
     bool out_glyphs(Vector<Glyph> &) const;
     const Glyph *out_glyphptr() const;
     int out_nglyphs() const;
+    Glyph right_glyph() const;
 
     // alter
     Substitution in_out_append_glyph(Glyph) const;
@@ -185,6 +192,7 @@ class Substitution { public:
     static bool substitute_in(const Substitute &, uint8_t, const GlyphSet &);
 
     static Glyph extract_glyph(const Substitute &, uint8_t) throw ();
+    static Glyph extract_glyph_0(const Substitute &, uint8_t) throw ();
     static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &) throw ();
     static const Glyph *extract_glyphptr(const Substitute &, uint8_t) throw ();
     static int extract_nglyphs(const Substitute &, uint8_t, bool coverage_ok) throw ();
@@ -239,6 +247,12 @@ Substitution::is_ligature() const
     return _left_is == T_NONE && _in_is == T_GLYPHS && _out_is == T_GLYPH && _right_is == T_NONE;
 }
 
+inline bool
+Substitution::is_single_rcontext() const
+{
+    return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_GLYPH;
+}
+
 inline Glyph
 Substitution::in_glyph() const
 {
@@ -269,6 +283,12 @@ Substitution::out_glyph() const
     return extract_glyph(_out, _out_is);
 }
 
+inline Glyph
+Substitution::out_glyph_0() const
+{
+    return extract_glyph_0(_out, _out_is);
+}
+
 inline bool
 Substitution::out_glyphs(Vector<Glyph> &v) const
 {
@@ -285,6 +305,12 @@ inline int
 Substitution::out_nglyphs() const
 {
     return extract_nglyphs(_out, _out_is, false);
+}
+
+inline Glyph
+Substitution::right_glyph() const
+{
+    return extract_glyph(_right, _right_is);
 }
 
 inline StringAccum &

@@ -145,6 +145,16 @@ Substitution::Substitution(int nin, const Glyph *in, Glyph out)
     _out.gid = out;
 }
 
+Substitution::Substitution(Context c, Glyph g)
+    : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
+{
+    assert(c == C_LEFT || c == C_RIGHT);
+    if (c == C_LEFT)
+	_left_is = T_GLYPH, _left.gid = g;
+    else
+	_right_is = T_GLYPH, _right.gid = g;
+}
+
 Substitution::~Substitution()
 {
     clear(_left, _left_is);
@@ -230,6 +240,23 @@ Glyph
 Substitution::extract_glyph(const Substitute &s, uint8_t t) throw ()
 {
     return (t == T_GLYPH ? s.gid : 0);
+}
+
+Glyph
+Substitution::extract_glyph_0(const Substitute &s, uint8_t t) throw ()
+{
+    switch (t) {
+      case T_GLYPH:
+	return s.gid;
+      case T_GLYPHS:
+	return (s.gids[0] >= 1 ? s.gids[1] : 0);
+      case T_COVERAGE:
+	for (Coverage::iterator ci = s.coverage->begin(); ci; ci++)
+	    return *ci;
+	return 0;
+      default:
+	return 0;
+    }
 }
 
 bool
@@ -404,6 +431,14 @@ Substitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 	    sa << ' ';
 	    unparse_glyphid(sa, _out.gids[i], gns);
 	}
+	sa << ']';
+    } else if (is_single_rcontext()) {
+	sa << "SINGLE_RCONTEXT[";
+	unparse_glyphid(sa, _in.gid, gns);
+	sa << " => ";
+	unparse_glyphid(sa, _out.gid, gns);
+	sa << " | ";
+	unparse_glyphid(sa, _right.gid, gns);
 	sa << ']';
     } else
 	sa << "UNKNOWN[]";
@@ -794,10 +829,10 @@ GsubContext::coverage() const throw ()
 }
 
 bool
-GsubContext::f3_unparse(const Data &data, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &gsub, Vector<Substitution> &outsubs)
+GsubContext::f3_unparse(const Data &data, int nglyph, int glyphtab_offset, int nsub, int subtab_offset, const Gsub &gsub, Vector<Substitution> &outsubs, const Substitution &prototype_sub)
 {
     Vector<Substitution> subs;
-    subs.push_back(Substitution());
+    subs.push_back(prototype_sub);
     Vector<Substitution> work_subs;
 
     // get array of possible substitutions including contexts
@@ -826,8 +861,9 @@ GsubContext::f3_unparse(const Data &data, int nglyph, int glyphtab_offset, int n
 		s.out_alter(subtab_sub, seq_index);
 	    }
 	}
-	if (napplied > 0 && !s.is_noop())
-	    outsubs.push_back(s);
+	// 26.Jun.2003 -- always push substitution back, since the no-op might
+	// override a following substitution
+	outsubs.push_back(s);
     }
 
     return true;		// XXX
@@ -840,7 +876,7 @@ GsubContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
 	return false;
     int nglyph = _d.u16(2);
     int nsubst = _d.u16(4);
-    return f3_unparse(_d, nglyph, F3_HSIZE, nsubst, F3_HSIZE + nglyph*2, gsub, v);
+    return f3_unparse(_d, nglyph, F3_HSIZE, nsubst, F3_HSIZE + nglyph*2, gsub, v, Substitution());
 }
 
 
@@ -897,8 +933,14 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
     int nsubst = _d.u16(subst_offset);
 
     if (nbacktrack == 0 && nlookahead == 0)
-	return GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v);
-    else
+	return GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution());
+    else if (nbacktrack == 0 && ninput == 1 && nlookahead == 1) {
+	Coverage c(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE));
+	bool any = false;
+	for (Coverage::iterator ci = c.begin(); ci; ci++)
+	    any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_RIGHT, *ci));
+	return any;
+    } else
 	return false;
 }
 

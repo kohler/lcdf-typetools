@@ -466,12 +466,15 @@ how otftotfm handles them for common fonts.
 .TP 5
 .IR aalt ", Access All Alternates"
 Lets the user choose between all available alternate forms for a character.
-This is not likely useful for TeX, since a TeX user can't interactively
-choose a given alternate form. Not well supported.
+This includes things like superscript and subscript variants, as well as
+different styles (swash, for example). This is not likely useful for TeX,
+since a TeX user can't interactively choose a given alternate form. Not
+well supported. See also
+.IR salt .
 .TP 5
 .IR c2sc ", Small Capitals From Capitals"
 Replaces capital letters with small capitals: a sort of converse of the
-more usual
+more conventional
 .I smcp
 feature, which replaces lower-case letters with small capitals. Supported.
 .TP 5
@@ -480,34 +483,58 @@ Shifts punctuation marks up to a position that works well with
 all-capital-letter sequences. For example, the hyphen character, which
 generally centers vertically on the x-height, is raised up to center
 vertically on a capital letter. Also replaces text figures with lining
-figures. Supported.
+figures, and accent marks with forms more appropriate for capitals.
+Supported.
 .TP 5
 .IR cpsp ", Capital Spacing"
 Adds a bit of space on either side of each capital letter. Supported.
+(However, the OpenType tag registry suggests that
+.I cpsp
+be on by default, but applying to all-caps text only; TeX cannot easily
+implement that contextual intelligence.)
 .TP 5
 .IR cswh ", Contextual Swash"
+Lets the user choose between context-appropriate swash forms for each
+character. For example, in the words "Ab AC", the first "A" might be
+translated to a swash form, while the second might not. There may be more
+than one choice for a given letter, in which case the user should be able
+to select among them. TeX can't support complex contextual swashes, or
+alternate selection, but otftotfm supports some fonts quite well. The input
+encoding should have lots of empty space for swash variants, and it should
+specify a boundary character.
 .TP 5
 .IR dlig ", Discretionary Ligatures"
 Activates uncommon ligatures, such as "c_t", "s_p", and "s_t". Supported.
 .TP 5
 .IR dnom ", Denominators"
+Replaces digits and some punctuation marks with smaller forms sitting on
+the baseline, intended for fraction denominators. Supported, but not
+usually useful.
 .TP 5
 .IR fina ", Terminal Forms"
+Substitutes appropriate forms for letters occurring at the ends of words.
+This feature doesn't select swash variants; it's intended for normal use,
+and the specification recommends that it be on by default. Not supported.
+See
+.IR cswh
+for selecting swash variants active at the ends of words.
 .TP 5
 .IR frac ", Fractions"
 Replaces sequences like "1/2" with nice-looking fractions. The contextual
 lookup is too hard for TeX; not supported.
 .TP 5
 .IR hist ", Historical Forms"
+Replaces characters with historical variants. Usually, this means at least
+translating regular "s" to long "s". Supported.
 .TP 5
 .IR kern ", Kerning"
-Adjusts the space between characters (pair kerning). Otftotfm generally
-supports this feature, and you should generally turn it on.
+Adjusts the space between characters (pair kerning). Generally supported,
+and you should probably turn it on.
 .TP 5
 .IR liga ", Standard Ligatures"
 Activates common ligatures, such as "f_f", "f_i", "f_f_j", and (in some
-Adobe fonts) "T_h". Otftotfm supports this feature, and you should
-generally turn it on.
+Adobe fonts) "T_h". Generally supported, and you should probably turn it
+on.
 .TP 5
 .IR lnum ", Lining Figures"
 Uses lining figures, the set of digits that are all about as high as
@@ -517,6 +544,8 @@ and
 .IR tnum.
 .TP 5
 .IR numr ", Numerators"
+Replaces digits and some punctuation marks with smaller, raised forms
+intended for fraction numerators. Supported, but not usually useful.
 .TP 5
 .IR onum ", Oldstyle Figures"
 Uses old-style, or text, figures, the set of digits that have ascenders and
@@ -526,8 +555,16 @@ and
 .IR tnum.
 .TP 5
 .IR ordn ", Ordinals"
+Designed for Spanish and French. Replaces ordinal numbers, such as "2.o",
+with forms where the "o" is raised, and replaces the sequence "No" with an
+integrated glyph. This contextual intelligence is too hard for TeX; not
+supported.
 .TP 5
 .IR ornm ", Ornaments"
+Replaces some alphabetic characters in the font with ornaments, and links
+the bullet character to a set of all bullet-like ornaments, from which the
+user can choose. Partially supported: TeX can handle alphabetic
+substitutions, but not bullet choice.
 .TP 5
 .IR pnum ", Proportional Figures"
 Digits will have different widths (compare
@@ -538,18 +575,38 @@ and
 .IR onum.
 .TP 5
 .IR salt ", Stylistic Alternates"
+Lets the user choose between stylistic alternate forms for a character.
+Partially supported: A TeX user can't interactively choose a given
+alternate form, so otftotfm takes the first option whenever there's more
+than one choice. See also
+.IR aalt ;
+.IR salt
+is generally more useful than
+.IR aalt
+for TeX, since it refers exclusively to stylistic alternates.
 .TP 5
 .IR sinf ", Scientific Inferiors"
+Replaces digits and some punctuation marks with smaller, lowered forms
+intended for subscripts. Supported.
 .TP 5
 .IR size ", Optical Size"
+This feature stores information about the range of optical sizes for which
+the font was intended. There is no point in selecting it with otftotfm,
+since it should not change the font's appearance in any way.
 .TP 5
 .IR smcp ", Small Capitals"
 Replaces lower-case letters with small capitals. Supported. Compare
 .IR c2sc .
 .TP 5
 .IR sups ", Superscript"
+Replaces digits, some punctuation marks, and some lower-case letters with
+smaller, raised forms intended for superscripts. Supported.
 .TP 5
 .IR swsh ", Swash"
+Activates all swash forms for each character. There may be more than one
+swash form, in which case otftotfm will pick the first one listed.
+Supported, except that swash variants other than the first are
+inaccessible.
 .TP 5
 .IR tnum ", Tabular Figures"
 All digits will have the same width, so that tables and the like will align
