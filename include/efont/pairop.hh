@@ -15,7 +15,7 @@ enum PairOpDefs {
     opLigPast1		= 4,
     opLigPast2		= 8,
   
-    opAllblock		= 0,
+    opAllblock		= 0
   
 };
 

@@ -202,7 +202,7 @@ Metrics *
 InstanceMetricsFinder::find_metrics_instance(PermString name,
 					     MetricsFinder *finder, ErrorHandler *errh)
 {
-    char *underscore = strchr(name.c_str(), '_');
+    const char *underscore = strchr(name.c_str(), '_');
     PermString amfm_name =
 	PermString(name.c_str(), underscore - name.c_str());
   
