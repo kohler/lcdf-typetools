@@ -33,11 +33,10 @@ libefont_a_SOURCES = \
 INCLUDES = -I$(top_srcdir)/include
 
 srclinks:
-	test $(top_srcdir) = ..
-	test -d ../include || mkdir ../include
-	test -d ../include/efont || mkdir ../include/efont
+	test -d $(top_srcdir)/include || mkdir $(top_srcdir)/include
+	test -d $(top_srcdir)/include/efont || mkdir $(top_srcdir)/include/efont
 	I=../../libefont/include/efont S=../../libefont/libefont; \
-	for i in $(libefont_a_SOURCES); do \
+	cd $(srcdir); for i in $(libefont_a_SOURCES); do \
 	j=`echo $$i | sed 's/.cc$$//'`; \
 	test -f $$I/$$j.hh && ln -sf ../$$I/$$j.hh ../include/efont/$$j.hh; \
 	test -f $$S/$$i && ln -sf $$S/$$i $$i; done
