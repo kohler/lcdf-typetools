@@ -1,5 +1,6 @@
 #ifndef OTFTOTFM_UNIPROP_HH
 #define OTFTOTFM_UNIPROP_HH
+#include <efont/otf.hh>
 
 class UnicodeProperty { public:
 
@@ -16,6 +17,7 @@ class UnicodeProperty { public:
     
     static int property(uint32_t uni);
     static const char *property_name(int p);
+    static bool parse_property(const String &, int &prop, int &prop_mask);
 
   private:
 

@@ -103,6 +103,7 @@ print <<"EOD;";
 
 #include <config.h>
 #include "uniprop.hh"
+#include <lcdf/string.hh>
 
 const unsigned char UnicodeProperty::property_pages[] = {
     0, P_Cn,
@@ -191,6 +192,21 @@ static const char property_names[] =
     "Po\\0Pc\\0Pd\\0Ps\\0Pe\\0Pi\\0Pf\\0\\0\\0\\0"
     "So\\0Sm\\0Sc\\0Sk";
 
+static const char * const property_long_names[] = {
+    "Unassigned", "PrivateUse", "Surrogate", "Format", "Control", 0, 0, 0,
+    "SpaceSeparator", "LineSeparator", "ParagraphSeparator", 0, 0, 0, 0, 0,
+    "NonspacingMark", "SpacingMark", "EnclosingMark", 0, 0, 0, 0, 0,
+    "OtherLetter", "UppercaseLetter", "LowercaseLetter", "TitlecaseLetter", "ModifierLetter", 0, 0, 0,
+    "OtherNumber", "DecimalNumber", "LetterNumber", 0, 0, 0, 0, 0,
+    "OtherPunctuation", "ConnectorPunctuation", "DashPunctuation", "OpenPunctuation", "ClosePunctuation", "InitialPunctuation", "FinalPunctuation", 0,
+    "OtherSymbol", "MathSymbol", "CurrencySymbol", "ModifierSymbol"
+};
+
+static const char * const property_category_long_names[] = {
+    "Other", "Separator", "Mark", "Letter", "Number", "Punctuation", "Symbol"
+};
+
+
 const char *
 UnicodeProperty::property_name(int p)
 {
@@ -199,6 +215,48 @@ UnicodeProperty::property_name(int p)
     else
 	return "?";
 }
+
+bool
+UnicodeProperty::parse_property(const String &s, int &prop, int &prop_mask)
+{
+    if (s.length() == 0)
+	return false;
+    else if (s.length() <= 2) {
+	for (int i = 0; i <= P_S; i += 010)
+	    if (property_names[3*i] == s[0]) {
+		if (s.length() == 1) {
+		    prop = i;
+		    prop_mask = P_TMASK;
+		    return true;
+		}
+		for (; property_names[3*i]; i++)
+		    if (property_names[3*i+1] == s[1]) {
+			prop = i;
+			prop_mask = 0377;
+			return true;
+		    }
+		break;
+	    }
+	return false;
+    } else {
+	const char * const *dict = property_category_long_names;
+	for (int i = 0; i <= P_S; i += 010, dict++)
+	    if (s == *dict) {
+		prop = i;
+		prop_mask = P_TMASK;
+		return true;
+	    }
+        dict = property_long_names;
+	for (int i = 0; i <= P_Sk; i++, dict++)
+	    if (*dict && s == *dict) {
+		prop = i;
+		prop_mask = 0377;
+		return true;
+	    }
+	return false;
+    }
+}
+
 EOD;
 
 if (0) {
