@@ -98,31 +98,30 @@ uniparsenumber(const char *a, int len)
 
 void
 DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
-{
-    // first, drop all characters to the right of the first dot
-    int dot = gn.find_left('.');
-    if (dot >= 0)
-	gn = gn.substring(0, dot);
+{    
     if (more)
 	*more = false;
+    
+    // first, drop all characters to the right of the first dot
+    String::iterator dot = std::find(gn.begin(), gn.end(), '.');
+    if (dot < gn.end())
+	gn = gn.substring(gn.begin(), dot);
 
     // then, separate into components
     while (gn) {
-	int underscore = gn.find_left('_');
-	if (underscore < 0)
-	    underscore = gn.length();
-	String component = gn.substring(0, underscore);
-	gn = gn.substring(underscore + 1);
+	String::iterator underscore = std::find(gn.begin(), gn.end(), '_');
+	String component = gn.substring(gn.begin(), underscore);
+	gn = gn.substring(underscore + 1, gn.end());
 
 	// check glyphlist
 	int value = glyphlist[component];
 	if (value >= 0) {
 	    unis.push_back(value & ~GLYPHLIST_MORE);
-	    if (more && (value & GLYPHLIST_MORE) && dot < 0 && underscore < 0)
+	    if (more && (value & GLYPHLIST_MORE) && !gn)
 		*more = true;
 	} else if (component.length() >= 7
-		 && (component.length() % 4) == 3
-		 && memcmp(component.data(), "uni", 3) == 0) {
+		   && (component.length() % 4) == 3
+		   && memcmp(component.data(), "uni", 3) == 0) {
 	    int old_size = unis.size();
 	    for (int i = 3; i < component.length(); i += 4)
 		if ((value = uniparsenumber(component.data() + i, 4)) >= 0)
@@ -487,7 +486,8 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 	    _coding_scheme = token.substring(p, pp - p);
 	    if (_coding_scheme.length() > 39)
 		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");
-	    if (_coding_scheme.find_left('(') >= 0 || _coding_scheme.find_left(')') >= 0) {
+	    if (std::find(_coding_scheme.begin(), _coding_scheme.end(), '(') < _coding_scheme.end()
+		|| std::find(_coding_scheme.begin(), _coding_scheme.end(), ')') < _coding_scheme.end()) {
 		lerrh.lerror(landmark(filename, line), "CODINGSCHEME cannot contain parentheses");
 		_coding_scheme = String();
 	    }
@@ -528,7 +528,7 @@ map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const Metrics &m)
 }
 
 void
-DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary)
+DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary, ErrorHandler *errh)
 {
     for (int i = 0; i < _e.size(); i++) {
 	PermString chname = _e[i];
@@ -564,7 +564,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	    // as a last resort, try adding it with secondary
 	    if (gid <= 0 && secondary
 		&& (m = glyphname_unicode(chname)) >= 0
-		&& secondary->encode_uni(i, chname, m, *this, metrics))
+		&& secondary->encode_uni(i, chname, m, *this, metrics, errh))
 		continue;
 	    // map unknown glyphs to 0
 	    if (gid < 0)

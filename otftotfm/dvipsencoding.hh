@@ -37,7 +37,7 @@ class DvipsEncoding { public:
     
     // also modifies 'this':
     void make_literal_metrics(Metrics &, Efont::Cff::Font *);
-    void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary * = 0);
+    void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary *, ErrorHandler *);
     
     void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
     void apply_ligkern_kern(Metrics &, ErrorHandler *) const;
