@@ -1,6 +1,6 @@
 /* t1lint.cc -- driver for checking Type 1 fonts for validity
  *
- * Copyright (c) 1999-2003 Eddie Kohler
+ * Copyright (c) 1999-2004 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,6 +30,10 @@
 #include <errno.h>
 #ifdef HAVE_CTIME
 # include <time.h>
+#endif
+#if defined(_MSDOS) || defined(_WIN32)
+# include <fcntl.h>
+# include <io.h>
 #endif
 
 using namespace Efont;
@@ -294,6 +298,9 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   if (strcmp(filename, "-") == 0) {
     f = stdin;
     filename = "<stdin>";
+#if defined(_MSDOS) || defined(_WIN32)
+    _setmode(_fileno(f), _O_BINARY);
+#endif
   } else
     f = fopen(filename, "rb");
   
@@ -368,7 +375,7 @@ main(int argc, char *argv[])
       
      case VERSION_OPT:
       printf("t1lint (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1999-2003 Eddie Kohler\n\
+      printf("Copyright (C) 1999-2004 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

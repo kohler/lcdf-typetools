@@ -1,3 +1,16 @@
+/* main.cc -- driver for mmpfb program
+ *
+ * Copyright (c) 1997-2004 Eddie Kohler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -17,6 +30,10 @@
 #include <errno.h>
 #ifdef HAVE_CTIME
 # include <time.h>
+#endif
+#if defined(_MSDOS) || defined(_WIN32)
+# include <fcntl.h>
+# include <io.h>
 #endif
 
 #define WEIGHT_OPT	300
@@ -146,6 +163,9 @@ do_file(const char *filename, PsresDatabase *psres)
   if (strcmp(filename, "-") == 0) {
     f = stdin;
     filename = "<stdin>";
+#if defined(_MSDOS) || defined(_WIN32)
+    _setmode(_fileno(f), _O_BINARY);
+#endif
   } else
     f = fopen(filename, "rb");
   
@@ -334,7 +354,7 @@ main(int argc, char *argv[])
       
      case VERSION_OPT:
       printf("mmpfb (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1997-2003 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2004 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -428,6 +448,9 @@ particular purpose.\n");
   }
   
   if (write_pfb) {
+#if defined(_MSDOS) || defined(_WIN32)
+    _setmode(_fileno(outfile), _O_BINARY);
+#endif
     Type1PFBWriter w(outfile);
     t1font->write(w);
   } else {
