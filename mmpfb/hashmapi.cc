@@ -1,6 +1,9 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "hashmap.hh"
-#pragma implementation "hashmap.cc"
+# pragma implementation "hashmap.hh"
+# pragma implementation "hashmap.cc"
 #endif
 #include "hashmap.cc"
 // Instantiations.

@@ -9,6 +9,10 @@
 #include "t1interp.hh"
 #include <ctype.h>
 #include <string.h>
+#ifdef BROKEN_STRTOARITH
+# define strtol good_strtol
+# define strtod good_strtod
+#endif
 
 
 /*****

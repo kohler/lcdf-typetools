@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "myfont.hh"
+# pragma implementation "myfont.hh"
 #endif
 #include "myfont.hh"
 #include "t1item.hh"

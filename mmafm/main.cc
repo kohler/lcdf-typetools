@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include "findmet.hh"
 #include "slurper.hh"
 #include "afm.hh"
@@ -8,9 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#ifdef NO_STRERROR_DECL
-extern "C" char *strerror(int);
-#endif
 
 #define WEIGHT_OPT	300
 #define WIDTH_OPT	301

@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include "t1rw.hh"
 #include "t1mm.hh"
 #include "myfont.hh"
@@ -9,9 +12,6 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <errno.h>
-#ifdef NO_STRERROR_DECL
-extern "C" char *strerror(int);
-#endif
 
 #define WEIGHT_OPT	300
 #define WIDTH_OPT	301

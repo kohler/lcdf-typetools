@@ -10,6 +10,10 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdlib.h>
+#ifdef BROKEN_STRTOARITH
+# define strtol good_strtol
+# define strtod good_strtod
+#endif
 
 static bool name_enders[256];
 static char xvalue[256];
