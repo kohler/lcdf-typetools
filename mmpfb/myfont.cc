@@ -100,7 +100,7 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
     // Multiple masters actually require an underscore AFTER the font name too
     sa << '_';
     sa.push(0);
-    t1d->set_name(sa.value());
+    t1d->set_name(sa.data());
   }
   
   // save UniqueID, then kill its definition

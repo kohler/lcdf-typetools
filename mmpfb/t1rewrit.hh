@@ -14,6 +14,7 @@ class Type1CharstringGen {
   Type1CharstringGen(int precision = 5);
 
   void clear()				{ _ncs.clear(); }
+  char *data() const			{ return _ncs.data(); }
   int length() const			{ return _ncs.length(); }
   
   void gen_number(double);
@@ -32,12 +33,13 @@ class Type1MMRemover {
   Vector<double> *_weight_vector;
   int _precision;
   
-  int _subr_count;
+  int _nsubrs;
   Vector<int> _subr_done;
   Vector<Type1Charstring *> _subr_prefix;
   Vector<int> _must_expand_subr;
+  Vector<int> _hint_replacement_subr;
   bool _expand_all_subrs;
-  
+ 
   ErrorHandler *_errh;
   
  public:
@@ -50,11 +52,8 @@ class Type1MMRemover {
   int nmasters() const			{ return _weight_vector->size(); }
   int precision() const			{ return _precision; }
   
-  Type1Charstring *subr(int);
-  
+  Type1Charstring *subr_prefix(int);
   Type1Charstring *subr_expander(int);
-  Type1Charstring *subr_all_expander(int);
-  bool need_subr_call(int);
   
   void run();
   
@@ -65,7 +64,7 @@ class Type1SubrRemover {
   
   Type1Font *_font;
   
-  int _subr_count;
+  int _nsubrs;
   Vector<bool> _save;
   Vector<int> _cost;
   int _save_count;
@@ -83,7 +82,6 @@ class Type1SubrRemover {
   
   void mark_save(int n);
   int save_count() const			{ return _save_count; }
-  void add_subr_call(int n);
   
   bool run(int);
   
@@ -93,17 +91,10 @@ class Type1SubrRemover {
 inline void
 Type1SubrRemover::mark_save(int n)
 {
-  if (n >= 0 && n < _subr_count && !_save[n]) {
+  if (n >= 0 && n < _nsubrs && !_save[n]) {
     _save[n] = true;
     _save_count++;
   }
-}
-
-inline void
-Type1SubrRemover::add_subr_call(int n)
-{
-  if (n >= 0 && n < _subr_count)
-    _cost[n]++;
 }
 
 #endif

@@ -13,3 +13,6 @@ mmafm_LDADD = ../metricslib/libmetrics.a ../t1lib/libt1lib.a ../edlib/libedlib.a
 INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib -I$(top_srcdir)/metricslib
 
 EXTRA_DIST = mmafm.1
+
+AUTODEPENDENCIES =
+@AUTODEPENDENCIES@

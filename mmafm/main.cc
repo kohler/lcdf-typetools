@@ -102,10 +102,10 @@ apply_precision(Metrics *m, int precision)
   for (int i = 0; i < precision; i++)
     multiplier *= 10, divider /= 10;
 
-  for (int i = 0; i < m->fd_count(); i++)
+  for (int i = 0; i < m->nfd(); i++)
     pround(m->fd(i), multiplier, divider);
 
-  for (int i = 0; i < m->glyph_count(); i++) {
+  for (int i = 0; i < m->nglyphs(); i++) {
     pround(m->wd(i), multiplier, divider);
     pround(m->lf(i), multiplier, divider);
     pround(m->bt(i), multiplier, divider);
@@ -113,7 +113,7 @@ apply_precision(Metrics *m, int precision)
     pround(m->tp(i), multiplier, divider);
   }
 
-  for (int i = 0; i < m->kv_count(); i++)
+  for (int i = 0; i < m->nkv(); i++)
     pround(m->kv(i), multiplier, divider);
 }
 
@@ -123,7 +123,7 @@ apply_kern_precision(Metrics *m, double kern_precision)
   if (kern_precision <= 0)
     return;
 
-  for (int i = 0; i < m->kv_count(); i++)
+  for (int i = 0; i < m->nkv(); i++)
     if (fabs(m->kv(i)) < kern_precision)
       m->kv(i) = 0;
 }
