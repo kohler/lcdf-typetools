@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign check-news
 
-SUBDIRS = liblcdf libefont cfftot1 otftopl t1lint t1testpage
+SUBDIRS = liblcdf libefont cfftot1 otftotfm t1lint t1testpage
 
 pkgdata_DATA = glyphlist.txt
 
@@ -52,7 +52,7 @@ srclinks:
 	cd libefont && $(MAKE) srclinks
 
 versionize:
-	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' cfftot1/cfftot1.1 otftopl/otftopl.1
+	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' cfftot1/cfftot1.1 otftotfm/otftotfm.1
 	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' README
 
 .PHONY: srclinks rpm

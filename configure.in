@@ -170,4 +170,4 @@ dnl
 dnl Output
 dnl
 
-AC_OUTPUT(Makefile liblcdf/Makefile libefont/Makefile t1lint/Makefile t1testpage/Makefile cfftot1/Makefile otftopl/Makefile)
+AC_OUTPUT(Makefile liblcdf/Makefile libefont/Makefile t1lint/Makefile t1testpage/Makefile cfftot1/Makefile otftotfm/Makefile)
