@@ -183,7 +183,8 @@ CacheMetricsFinder::clear()
  * InstanceMetricsFinder
  **/
 
-InstanceMetricsFinder::InstanceMetricsFinder()
+InstanceMetricsFinder::InstanceMetricsFinder(bool call_mmpfb)
+  : _call_mmpfb(call_mmpfb)
 {
 }
 
@@ -199,6 +200,21 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
   if (!amfm) return 0;
   
   Type1MMSpace *mmspace = amfm->mmspace();
+  if (!mmspace->check_intermediate() && _call_mmpfb) {
+    char *buf = new char[amfm->font_name().length() + 30];
+    sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().cc());
+    
+    FILE *f = popen(buf, "r");
+    if (f) {
+      Filename fake("<mmpfb output>");
+      Slurper slurpy(fake, f);
+      AmfmReader::add_amcp_file(slurpy, amfm, errh);
+      pclose(f);
+    }
+    
+    delete[] buf;
+  }
+  
   Vector<double> design = mmspace->default_design_vector();
   int i = 0;
   while (underscore[0] == '_' && underscore[1]) {

@@ -72,11 +72,13 @@ class CacheMetricsFinder: public MetricsFinder {
 
 class InstanceMetricsFinder: public MetricsFinder {
 
+  bool _call_mmpfb;
+  
   Metrics *find_metrics_instance(PermString, MetricsFinder *, ErrorHandler *);
   
  public:
   
-  InstanceMetricsFinder();
+  InstanceMetricsFinder(bool call_mmpfb = true);
   
   Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
   
