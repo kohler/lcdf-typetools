@@ -57,8 +57,8 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   t1d = dict("WeightVector");
   if (t1d) t1d->set_numvec(_weight_vector);
   
-  int naxes = design.count();
-  _nmasters = _weight_vector.count();
+  int naxes = design.size();
+  _nmasters = _weight_vector.size();
   
   PermString name;
   t1d = dict("FontName");
@@ -80,8 +80,8 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
     if ((t1d = dict("UniqueID")) && t1d->value_int(uniqueid)) {
       t1d = ensure(dFont, "XUID");
       xuid.clear();
-      xuid.append(1);
-      xuid.append(uniqueid);
+      xuid.push_back(1);
+      xuid.push_back(uniqueid);
     } else if (t1d) {
       t1d->kill();
       t1d = 0;
@@ -90,7 +90,7 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   if (t1d) {
     // Append design vector values to the XUID to prevent cache pollution.
     for (int a = 0; a < naxes; a++)
-      xuid.append((int)(design[a] * 100));
+      xuid.push_back((int)(design[a] * 100));
     t1d->set_numvec(xuid);
   }
   
@@ -128,13 +128,13 @@ MyFont::interpolate_dict_numvec(PermString name, bool is_private = true,
   Vector<NumVector> blend;
   
   if (def && blend_def && blend_def->value_numvec_vec(blend)) {
-    int n = blend.count();
+    int n = blend.size();
     NumVector val;
     for (int i = 0; i < n; i++) {
       double d = 0;
       for (int m = 0; m < _nmasters; m++)
 	d += blend[i][m] * _weight_vector[m];
-      val.append(d);
+      val.push_back(d);
     }
     def->set_numvec(val, executable);
     blend_def->kill();
@@ -152,7 +152,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   {
     Type1Definition *def = dict("FontBBox");
     NumVector bbox_vec;
-    if (def && def->value_numvec(bbox_vec) && bbox_vec.count() == 4) {
+    if (def && def->value_numvec(bbox_vec) && bbox_vec.size() == 4) {
       bbox_vec[0] = (int)(bbox_vec[0] - 0.5);
       bbox_vec[1] = (int)(bbox_vec[1] - 0.5);
       bbox_vec[2] = (int)(bbox_vec[2] + 0.5);
@@ -180,7 +180,7 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
     Vector<PermString> namevec;
     double thresh_val;
     if (def && blend_def && thresh && blend_def->value_namevec(namevec)
-	&& thresh->value_num(thresh_val) && namevec.count() == _nmasters) {
+	&& thresh->value_num(thresh_val) && namevec.size() == _nmasters) {
       double v = 0;
       for (int m = 0; m < _nmasters; m++)
 	if (namevec[m] == "true")

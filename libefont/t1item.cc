@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "t1item.hh"
-#endif
 #include "t1item.hh"
 #include "t1rw.hh"
 #include "t1interp.hh"
@@ -216,7 +213,7 @@ strtonumvec(const char *f, char **endf, NumVector &v)
     while (isspace(*s))
       s++;
     if (isdigit(*s) || *s == '.' || *s == '-')
-      v.append( strtonumber(s, &s) );
+      v.push_back( strtonumber(s, &s) );
     else {
       if (endf) *endf = s + 1;
       return (*s == ']' || *s == '}');
@@ -246,7 +243,7 @@ strtonumvec_vec(char *f, char **endf, Vector<NumVector> &v)
       NumVector subv;
       if (!strtonumvec(s, &s, subv))
 	return false;
-      v.append(subv);
+      v.push_back(subv);
     } else {
       if (endf) *endf = s + 1;
       return (*s == ']' || *s == '}');
@@ -280,14 +277,14 @@ Type1Definition::value_normalize(Vector<NumVector> &in,
       
       NumVector subin;
       NumVector subout;
-      for (int i = 0; i < sub.count(); i++)
-	if (sub[i].count() == 2) {
-	  subin.append(sub[i][0]);
-	  subout.append(sub[i][1]);
+      for (int i = 0; i < sub.size(); i++)
+	if (sub[i].size() == 2) {
+	  subin.push_back(sub[i][0]);
+	  subout.push_back(sub[i][1]);
 	} else
 	  return false;
-      in.append(subin);
-      out.append(subout);
+      in.push_back(subin);
+      out.push_back(subout);
     } else
       return (*s == ']');
   }
@@ -306,7 +303,7 @@ Type1Definition::value_namevec(Vector<PermString> &v) const
     if (isalnum(*s)) {
       char *start = s;
       while (!isspace(*s) && *s != ']' && *s != '/') s++;
-      v.append(PermString(start, s - start));
+      v.push_back(PermString(start, s - start));
     } else
       return (*s == ']');
   }
@@ -375,7 +372,7 @@ static void
 accum_numvec(StringAccum &sa, const NumVector &nv, bool executable)
 {
   sa << (executable ? '{' : '[');
-  for (int i = 0; i < nv.count(); i++) {
+  for (int i = 0; i < nv.size(); i++) {
     if (i) sa << ' ';
     sa << nv[i];
   }
@@ -395,7 +392,7 @@ Type1Definition::set_numvec_vec(const Vector<NumVector> &nv)
 {
   StringAccum sa;
   sa << '[';
-  for (int i = 0; i < nv.count(); i++)
+  for (int i = 0; i < nv.size(); i++)
     accum_numvec(sa, nv[i], false);
   sa << ']';
   set_val(sa);
@@ -407,11 +404,11 @@ Type1Definition::set_normalize(const Vector<NumVector> &vin,
 {
   StringAccum sa;
   sa << '[';
-  for (int i = 0; i < vin.count(); i++) {
+  for (int i = 0; i < vin.size(); i++) {
     const NumVector &vini = vin[i];
     const NumVector &vouti = vout[i];
     sa << '[';
-    for (int j = 0; j < vini.count(); j++)
+    for (int j = 0; j < vini.size(); j++)
       sa << '[' << vini[j] << ' ' << vouti[j] << ']';
     sa << ']';
   }
@@ -425,7 +422,7 @@ Type1Definition::set_namevec(const Vector<PermString> &v,
 {
   StringAccum sa;
   sa << '[';
-  for (int i = 0; i < v.count(); i++) {
+  for (int i = 0; i < v.size(); i++) {
     if (i) sa << ' ';
     if (executable) sa << '/';
     sa << v[i];

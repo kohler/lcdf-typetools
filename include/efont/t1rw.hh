@@ -1,8 +1,5 @@
 #ifndef T1RW_HH
 #define T1RW_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include <stdio.h>
 #include "permstr.hh"
 #include "straccum.hh"

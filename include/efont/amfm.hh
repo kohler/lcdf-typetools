@@ -92,7 +92,8 @@ class AmfmMetrics {
   
   bool sanity(ErrorHandler *) const;
   
-  double &fd(int i) const		{ return _fdv[i]; }
+  double fd(int i) const		{ return _fdv[i]; }
+  double &fd(int i)			{ return _fdv[i]; }
   
   PermString font_name() const		{ return _font_name; }
   PermString directory() const		{ return _directory; }

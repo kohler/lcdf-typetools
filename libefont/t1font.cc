@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "t1font.hh"
-#endif
 #include "t1font.hh"
 #include "t1item.hh"
 #include "t1rw.hh"
@@ -42,21 +39,22 @@ Type1Font::Type1Font(Type1Reader &reader)
       Type1Subr *fcs = Type1Subr::make(x, x_length, reader.charstring_start(),
 				       reader.charstring_length());
       if (fcs->is_subr()) {
-	if (fcs->subrno() >= _subrs.count())
+	if (fcs->subrno() >= _subrs.size())
 	  _subrs.resize(fcs->subrno() + 30, (Type1Subr *)0);
 	_subrs[fcs->subrno()] = fcs;
       } else {
-	int num = _glyphs.append(fcs);
+	int num = _glyphs.size();
+	_glyphs.push_back(fcs);
 	_glyph_map.insert(fcs->name(), num);
       }
-      _items.append(fcs);
+      _items.push_back(fcs);
       accum.clear();
       continue;
     }
     
     // check for COMMENTS
     if (x[0] == '%') {
-      _items.append(new Type1CopyItem(accum.take(), x_length));
+      _items.push_back(new Type1CopyItem(accum.take(), x_length));
       continue;
     }
     
@@ -71,7 +69,7 @@ Type1Font::Type1Font(Type1Reader &reader)
       _charstring_definer = permprintf(" %*s ", se - sb - 1, sb + 1);
       Type1Subr::set_charstring_definer(_charstring_definer);
       reader.set_charstring_definer(_charstring_definer);
-      _items.append(new Type1CopyItem(accum.take(), x_length));
+      _items.push_back(new Type1CopyItem(accum.take(), x_length));
       continue;
     }
    charstring_definer_fail:
@@ -95,8 +93,8 @@ Type1Font::Type1Font(Type1Reader &reader)
       }
       
       _dict[cur_dict].insert(fdi->name(), fdi);
-      if (_index[cur_dict] < 0) _index[cur_dict] = _items.count();
-      _items.append(fdi);
+      if (_index[cur_dict] < 0) _index[cur_dict] = _items.size();
+      _items.push_back(fdi);
       accum.clear();
       continue;
     }
@@ -113,7 +111,7 @@ Type1Font::Type1Font(Type1Reader &reader)
 	zeros++, x_length--;
       char *zeros_str = new char[zeros * 2 + x_length];
       memset(zeros_str, '0', zeros * 2 + x_length);
-      _items.append(new Type1CopyItem(zeros_str, zeros * 2 + x_length));
+      _items.push_back(new Type1CopyItem(zeros_str, zeros * 2 + x_length));
       eexec_state = 3;
       accum.clear();
       continue;
@@ -121,15 +119,15 @@ Type1Font::Type1Font(Type1Reader &reader)
     
     // add COPY ITEM
     x = accum.take();
-    _items.append(new Type1CopyItem(x, x_length));
+    _items.push_back(new Type1CopyItem(x, x_length));
     
     if (eexec_state == 0 && strcmp(x, "currentfile eexec") == 0) {
       reader.switch_eexec(true);
-      _items.append(new Type1EexecItem(true));
+      _items.push_back(new Type1EexecItem(true));
       eexec_state = 1;
     } else if (eexec_state == 1 && strstr(x, "currentfile closefile") != 0) {
       reader.switch_eexec(false);
-      _items.append(new Type1EexecItem(false));
+      _items.push_back(new Type1EexecItem(false));
       eexec_state = 2;
     } else if (strstr(x, "begin") != 0) {
       bool in_private = (strstr(x, "/Private") != 0);
@@ -146,7 +144,7 @@ Type1Font::Type1Font(Type1Reader &reader)
 bool
 Type1Font::ok() const
 {
-  return font_name() && _glyphs.count() > 0;
+  return font_name() && _glyphs.size() > 0;
 }
 
 
@@ -156,12 +154,12 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
   while (*first_line == ' ') first_line++;
   if (strncmp(first_line, "StandardEncoding", 16) == 0) {
     _encoding = Type1Encoding::standard_encoding();
-    _items.append(_encoding);
+    _items.push_back(_encoding);
     return;
   }
   
   _encoding = new Type1Encoding;
-  _items.append(_encoding);
+  _items.push_back(_encoding);
   
   bool got_any = false;
   StringAccum accum;
@@ -205,7 +203,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
       int len = strlen(pos);
       char *copy = new char[len + 1];
       strcpy(copy, pos);
-      _items.append(new Type1CopyItem(copy, len));
+      _items.push_back(new Type1CopyItem(copy, len));
     }
     
     // check for end of encoding section
@@ -220,7 +218,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
 Type1Font::~Type1Font()
 {
   delete[] _dict;
-  for (int i = 0; i < _items.count(); i++)
+  for (int i = 0; i < _items.size(); i++)
     delete _items[i];
 }
 
@@ -228,7 +226,7 @@ Type1Font::~Type1Font()
 Type1Charstring *
 Type1Font::subr(int e) const
 {
-  if (e >= 0 && e < _subrs.count() && _subrs[e])
+  if (e >= 0 && e < _subrs.size() && _subrs[e])
     return &_subrs[e]->t1cs();
   else
     return 0;
@@ -249,9 +247,9 @@ void
 Type1Font::shift_indices(int move_index, int delta)
 {
   if (delta > 0) {
-    _items.resize(_items.count() + delta, (Type1Item *)0);
+    _items.resize(_items.size() + delta, (Type1Item *)0);
     memmove(&_items[move_index + delta], &_items[move_index],
-	    sizeof(Type1Item *) * (_items.count() - move_index - delta));
+	    sizeof(Type1Item *) * (_items.size() - move_index - delta));
     
     for (int i = dFont; i < dLast; i++)
       if (_index[i] > move_index)
@@ -259,8 +257,8 @@ Type1Font::shift_indices(int move_index, int delta)
     
   } else {
     memmove(&_items[move_index], &_items[move_index - delta],
-	    sizeof(Type1Item *) * (_items.count() - (move_index - delta)));
-    _items.resize(_items.count() + delta);
+	    sizeof(Type1Item *) * (_items.size() - (move_index - delta)));
+    _items.resize(_items.size() + delta);
     
     for (int i = dFont; i < dLast; i++)
       if (_index[i] >= move_index) {
@@ -290,7 +288,7 @@ void
 Type1Font::add_header_comment(const char *comment)
 {
   int i;
-  for (i = 0; i < _items.count(); i++) {
+  for (i = 0; i < _items.size(); i++) {
     Type1CopyItem *copy = _items[i]->cast_copy();
     if (!copy || copy->value()[0] != '%') break;
   }
@@ -316,13 +314,13 @@ Type1Font::write(Type1Writer &w)
   // Set the /Subrs and /CharStrings integers correctly.
   // Make sure not to count extra nulls from the end of _subrs.
   Type1Definition *Subrs_def = p_dict("Subrs");
-  int c = _subrs.count();
+  int c = _subrs.size();
   while (c && !_subrs[c-1]) c--;
   if (Subrs_def) Subrs_def->set_int(c);
   Type1Definition *CharStrings_def = p_dict("CharStrings");
-  if (CharStrings_def) CharStrings_def->set_int(_glyphs.count());
+  if (CharStrings_def) CharStrings_def->set_int(_glyphs.size());
   
-  for (int i = 0; i < _items.count(); i++)
+  for (int i = 0; i < _items.size(); i++)
     _items[i]->gen(w);
   
   w.flush();
@@ -355,12 +353,12 @@ Type1Font::create_mmspace(ErrorHandler *errh = 0) const
   if (!t1d || !t1d->value_numvec_vec(master_positions))
     return 0;
   
-  int nmasters = master_positions.count();
+  int nmasters = master_positions.size();
   if (nmasters <= 0) {
     errh->error("bad BlendDesignPositions");
     return 0;
   }
-  int naxes = master_positions[0].count();
+  int naxes = master_positions[0].size();
   _mmspace = new Type1MMSpace(font_name(), naxes, nmasters);
   _mmspace->set_master_positions(master_positions);
   
@@ -371,8 +369,8 @@ Type1Font::create_mmspace(ErrorHandler *errh = 0) const
   
   Vector<PermString> axis_types;
   t1d = fi_dict("BlendAxisTypes");
-  if (t1d && t1d->value_namevec(axis_types) && axis_types.count() == naxes)
-    for (int a = 0; a < axis_types.count(); a++)
+  if (t1d && t1d->value_namevec(axis_types) && axis_types.size() == naxes)
+    for (int a = 0; a < axis_types.size(); a++)
       _mmspace->set_axis_type(a, axis_types[a]);
   
   int ndv, cdv;

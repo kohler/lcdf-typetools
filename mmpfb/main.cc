@@ -149,17 +149,17 @@ do_file(const char *filename, PsresDatabase *psres)
 static void
 set_design(PermString a, double v)
 {
-  ax_names.append(a);
-  ax_nums.append(-1);
-  values.append(v);
+  ax_names.push_back(a);
+  ax_nums.push_back(-1);
+  values.push_back(v);
 }
 
 static void
 set_design(int a, double v)
 {
-  ax_names.append(0);
-  ax_nums.append(a);
-  values.append(v);
+  ax_names.push_back(0);
+  ax_nums.push_back(a);
+  values.push_back(v);
 }
 
 
@@ -312,7 +312,7 @@ particular purpose.\n");
   }
   
   Vector<double> design = mmspace->empty_design_vector();
-  for (int i = 0; i < values.count(); i++)
+  for (int i = 0; i < values.size(); i++)
     if (ax_names[i])
       mmspace->set_design(design, ax_names[i], values[i], errh);
     else

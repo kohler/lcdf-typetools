@@ -79,8 +79,8 @@ class PairProgram {
   PairOpIndex find_left(GlyphIndex gi) const	{ return _left_map[gi]; }
   PairOpIndex find(GlyphIndex leftgi, GlyphIndex rightgi) const;
   
-  int op_count() const				{ return _op.count(); }
-  PairOp &op(PairOpIndex i) const		{ return _op[i]; }
+  int op_count() const				{ return _op.size(); }
+  const PairOp &op(PairOpIndex i) const		{ return _op[i]; }
   
   // Return true if it's a duplicate.
   bool add_kern(GlyphIndex, GlyphIndex, int);

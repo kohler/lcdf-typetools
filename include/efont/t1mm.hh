@@ -1,8 +1,5 @@
 #ifndef T1MM_HH
 #define T1MM_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "vector.hh"
 #include "permstr.hh"
 #include "t1cs.hh"

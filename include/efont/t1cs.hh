@@ -1,8 +1,5 @@
 #ifndef T1CS_HH
 #define T1CS_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "permstr.hh"
 #include "vector.hh"
 class Type1Interp;
@@ -15,7 +12,7 @@ class Type1Charstring {
   
   Type1Charstring(const Type1Charstring &);
   Type1Charstring &operator=(const Type1Charstring &);
-
+  
   void decrypt() const;
   
  public:
@@ -53,6 +50,15 @@ class Type1Program {
 };
 
 
+enum Type1Defs {
+  t1Warmup_ee	= 4,
+  t1R_ee	= 55665,
+  t1R_cs	= 4330,
+  t1C1		= 52845,
+  t1C2		= 22719,
+};
+
+
 inline
 Type1Charstring::Type1Charstring(unsigned char *d, int l)
   : _data(d), _len(l), _key(-1)
@@ -68,12 +74,11 @@ Type1Charstring::assign(unsigned char *d, int l)
   _key = -1;
 }
 
-enum Type1Defs {
-  t1Warmup_ee	= 4,
-  t1R_ee	= 55665,
-  t1R_cs	= 4330,
-  t1C1		= 52845,
-  t1C2		= 22719,
-};
+inline unsigned char *
+Type1Charstring::data() const
+{
+  if (_key >= 0) decrypt();
+  return _data;
+}
 
 #endif

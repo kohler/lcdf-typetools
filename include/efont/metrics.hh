@@ -72,7 +72,7 @@ class Metrics {
   
   // GLYPHS
   
-  int glyph_count() const		{ return _names.count(); }
+  int glyph_count() const		{ return _names.size(); }
   PermString name(GlyphIndex gi) const	{ return _names[gi]; }
   GlyphIndex find(PermString n) const	{ return _name_map[n]; }
   
@@ -88,18 +88,26 @@ class Metrics {
   double scale() const			{ return _scale; }
   void set_scale(double d)		{ _scale = d; }
   
-  int fd_count() const			{ return _fdv.count(); }
-  int kv_count() const			{ return _kernv.count(); }
+  int fd_count() const			{ return _fdv.size(); }
+  int kv_count() const			{ return _kernv.size(); }
   
-  double &fd(int i) const		{ return _fdv[i]; }
-  double &wd(int i) const		{ return _wdv[i]; }
-  double &lf(int i) const		{ return _lfv[i]; }
-  double &rt(int i) const		{ return _rtv[i]; }
-  double &tp(int i) const		{ return _tpv[i]; }
-  double &bt(int i) const		{ return _btv[i]; }
-  double &kv(int i) const		{ return _kernv[i]; }
+  double fd(int i) const		{ return _fdv[i]; }
+  double wd(int i) const		{ return _wdv[i]; }
+  double lf(int i) const		{ return _lfv[i]; }
+  double rt(int i) const		{ return _rtv[i]; }
+  double tp(int i) const		{ return _tpv[i]; }
+  double bt(int i) const		{ return _btv[i]; }
+  double kv(int i) const		{ return _kernv[i]; }
   
-  int add_kv(double d)			{ return _kernv.append(d); }
+  double &fd(int i)			{ return _fdv[i]; }
+  double &wd(int i)			{ return _wdv[i]; }
+  double &lf(int i)			{ return _lfv[i]; }
+  double &rt(int i)			{ return _rtv[i]; }
+  double &tp(int i)			{ return _tpv[i]; }
+  double &bt(int i)			{ return _btv[i]; }
+  double &kv(int i)			{ return _kernv[i]; }
+  
+  int add_kv(double d);
   
   void interpolate_dimens(const Metrics &, double, bool increment);
   
@@ -166,6 +174,14 @@ inline bool
 Metrics::add_lig(GlyphIndex g1, GlyphIndex g2, GlyphIndex gr, int kind)
 {
   return _pairp.add_lig(g1, g2, gr, kind);
+}
+
+inline int
+Metrics::add_kv(double d)
+{
+  int k = _kernv.size();
+  _kernv.push_back(d);
+  return k;
 }
 
 #endif

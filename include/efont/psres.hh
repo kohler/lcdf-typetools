@@ -43,7 +43,7 @@ class PsresDatabaseSection {
   Vector<String> _values;
   Vector<bool> _value_escaped;
   
-  const String &value(int index) const;
+  const String &value(int index);
   
  public:
   
@@ -54,9 +54,9 @@ class PsresDatabaseSection {
   void add_psres_file_section(Slurper &, PermString, bool);
   void add_section(PsresDatabaseSection *, bool override);
   
-  const String &value(PermString key) const	{ return value(_map[key]); }
+  const String &value(PermString key)		{ return value(_map[key]); }
   const String &unescaped_value(PermString key) const;
-  Filename filename_value(PermString key) const;
+  Filename filename_value(PermString key);
   
 };
 

@@ -1,14 +1,12 @@
 #ifndef T1FONT_HH
 #define T1FONT_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
+
 // Allow unknown doubles to have some `fuzz' -- so if an unknown double
-// is a bit off from the canonical Unkdouble value, we'll still recognize
+// is a bit off from the canonical UNKDOUBLE value, we'll still recognize
 // it as unknown. (Useful for interpolation.)
-const double Unkdouble		= -9.79797e97;
-const double MinKnowndouble	= -9.69696e97;
-#define KNOWN(d)		((d) >= MinKnowndouble)
+#define UNKDOUBLE		-9.79797e97
+#define MIN_KNOWN_DOUBLE	-9.69696e97
+#define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
 
 #include "t1cs.hh"
 #include "hashmap.hh"
@@ -71,16 +69,16 @@ class Type1Font: public Type1Program {
   
   PermString font_name() const;
   
-  int item_count() const		{ return _items.count(); }
+  int item_count() const		{ return _items.size(); }
   Type1Item *item(int i) const		{ return _items[i]; }
   void set_item(int i, Type1Item *it)	{ _items[i] = it; }
   
   bool is_mm() const			{ return !_dict[dBP].empty();}
   
-  int subr_count() const		{ return _subrs.count(); }
+  int subr_count() const		{ return _subrs.size(); }
   Type1Charstring *subr(int) const;
   
-  int glyph_count() const		{ return _glyphs.count(); }
+  int glyph_count() const		{ return _glyphs.size(); }
   Type1Subr *glyph(int i) const		{ return _glyphs[i]; }
   Type1Charstring *glyph(PermString) const;
   

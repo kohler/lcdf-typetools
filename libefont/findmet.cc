@@ -26,10 +26,10 @@ MetricsFinder::~MetricsFinder()
 }
 
 void
-MetricsFinder::append(MetricsFinder *new_finder)
+MetricsFinder::add_finder(MetricsFinder *new_finder)
 {
   if (_next)
-    _next->append(new_finder);
+    _next->add_finder(new_finder);
   else {
     assert(!new_finder->_prev);
     new_finder->_prev = this;
@@ -150,7 +150,8 @@ CacheMetricsFinder::find_amfm_x(PermString name, MetricsFinder *,
 void
 CacheMetricsFinder::record(Metrics *m, PermString name)
 {
-  int index = _metrics.append(m);
+  int index = _metrics.size();
+  _metrics.push_back(m);
   _metrics_map.insert(name, index);
   m->use();
   MetricsFinder::record(m, name);
@@ -159,7 +160,8 @@ CacheMetricsFinder::record(Metrics *m, PermString name)
 void
 CacheMetricsFinder::record(AmfmMetrics *amfm)
 {
-  int index = _amfm.append(amfm);
+  int index = _amfm.size();
+  _amfm.push_back(amfm);
   _amfm_map.insert(amfm->font_name(), index);
   amfm->use();
   MetricsFinder::record(amfm);
@@ -168,9 +170,9 @@ CacheMetricsFinder::record(AmfmMetrics *amfm)
 void
 CacheMetricsFinder::clear()
 {
-  for (int i = 0; i < _metrics.count(); i++)
+  for (int i = 0; i < _metrics.size(); i++)
     _metrics[i]->unuse();
-  for (int i = 0; i < _amfm.count(); i++)
+  for (int i = 0; i < _amfm.size(); i++)
     _amfm[i]->unuse();
   _metrics.clear();
   _amfm.clear();

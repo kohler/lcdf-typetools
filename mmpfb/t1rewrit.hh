@@ -49,7 +49,7 @@ class Type1MMRemover {
   
   Type1Program *program() const		{ return _font; }
   Vector<double> *weight_vector() const	{ return _weight_vector; }
-  int nmasters() const			{ return _weight_vector->count(); }
+  int nmasters() const			{ return _weight_vector->size(); }
   
   Type1Charstring *subr_prefix(int);
   Type1Charstring *subr(int);

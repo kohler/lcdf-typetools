@@ -67,7 +67,7 @@ Type1CharstringGen::gen_command(int command)
 void
 Type1CharstringGen::gen_stack(Type1Interp &interp)
 {
-  for (int i = 0; i < interp.count(); i++)
+  for (int i = 0; i < interp.size(); i++)
     gen_number(interp.at(i));
   interp.clear();
 }
@@ -232,12 +232,12 @@ Type1OneMMRemover::command(int cmd)
     
    case cCallothersubr:
      {
-       if (count() < 2) goto normal;
+       if (size() < 2) goto normal;
        int command = (int)top(0);
        int n = (int)top(1);
        if (command < 14 || command > 18)
 	 goto normal;
-       else if (count() < 2 + n)
+       else if (size() < 2 + n)
 	 goto partial_mm_command;
        pop(2);
        mm_command(command, n);
@@ -257,7 +257,7 @@ Type1OneMMRemover::command(int cmd)
      
    case cCallsubr:
      {
-       if (count() < 1) goto normal;
+       if (size() < 1) goto normal;
        int subrno = (int)pop();
        
        Type1Charstring *prefix = _remover->subr_prefix(subrno);
@@ -277,16 +277,16 @@ Type1OneMMRemover::command(int cmd)
      }
      
    case cPop:
-    if (count_ps() >= 1)
-      push(pop_ps());
-    else if (_in_prefix && count() == 0)
+    if (ps_size() >= 1)
+      push(ps_pop());
+    else if (_in_prefix && size() == 0)
       _prefix_gen.gen_command(cPop);
     else
       goto normal;
     break;
     
    case cDiv:
-    if (count() < 2) goto normal;
+    if (size() < 2) goto normal;
     top(1) /= top(0);
     pop();
     break;

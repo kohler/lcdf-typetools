@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "t1cs.hh"
-#endif
 #include "t1cs.hh"
 #include "t1interp.hh"
 
@@ -24,7 +21,6 @@ Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
   memcpy(_data, d, _len);
 }
 
-
 void
 Type1Charstring::decrypt() const
 {
@@ -38,15 +34,6 @@ Type1Charstring::decrypt() const
   }
   _key = -1;
 }
-
-
-inline unsigned char *
-Type1Charstring::data() const
-{
-  if (_key >= 0) decrypt();
-  return _data;
-}
-
 
 bool
 Type1Charstring::run(Type1Interp &t1interp) const

@@ -32,12 +32,12 @@ static String empty_string;
 PsresDatabase::PsresDatabase()
   : _section_map(0)
 {
-  _sections.append(0);
+  _sections.push_back((PsresDatabaseSection *)0);
 }
 
 PsresDatabase::~PsresDatabase()
 {
-  for (int i = 1; i < _sections.count(); i++)
+  for (int i = 1; i < _sections.size(); i++)
     delete _sections[i];
 }
 
@@ -45,9 +45,9 @@ PsresDatabase::~PsresDatabase()
 PsresDatabaseSection::PsresDatabaseSection(PermString section_name)
   : _section_name(section_name), _map(0)
 {
-  _directories.append(PermString());
-  _values.append(String());
-  _value_escaped.append(true);
+  _directories.push_back(PermString());
+  _values.push_back(String());
+  _value_escaped.push_back(true);
 }
 
 
@@ -170,9 +170,10 @@ PsresDatabaseSection::add_psres_file_section
     
     // stick key and value into our data structure
     if (index == 0) {
-      index = _directories.append(directory);
-      _values.append(value);
-      _value_escaped.append(false);
+      index = _directories.size();
+      _directories.push_back(directory);
+      _values.push_back(value);
+      _value_escaped.push_back(false);
       _map.insert(key, index);
     } else {
       _directories[index] = directory;
@@ -190,7 +191,8 @@ PsresDatabase::force_section(PermString name)
     return _sections[_section_map[name]];
   else {
     PsresDatabaseSection *s = new PsresDatabaseSection(name);
-    int index = _sections.append(s);
+    int index = _sections.size();
+    _sections.push_back(s);
     _section_map.insert(name, index);
     return s;
   }
@@ -263,7 +265,7 @@ PsresDatabase::add_psres_path(const char *path, const char *default_path,
     default_path = 0;
   }
   
-  if (override && _sections.count() > 1) {
+  if (override && _sections.size() > 1) {
     PsresDatabase new_db;
     new_db.add_psres_path(path, default_path, false);
     add_database(&new_db, true);
@@ -290,7 +292,7 @@ PsresDatabase::add_psres_path(const char *path, const char *default_path,
 void
 PsresDatabase::add_database(PsresDatabase *db, bool override)
 {
-  for (int i = 1; i < db->_sections.count(); i++) {
+  for (int i = 1; i < db->_sections.size(); i++) {
     PermString section_name = db->_sections[i]->section_name();
     PsresDatabaseSection *section = force_section(section_name);
     section->add_section(db->_sections[i], override);
@@ -311,9 +313,10 @@ PsresDatabaseSection::add_section(PsresDatabaseSection *s, bool override)
       _values[my_index] = s->_values[index];
       _value_escaped[my_index] = s->_value_escaped[index];
     } else {
-      int my_index = _directories.append(s->_directories[index]);
-      _values.append(s->_values[index]);
-      _value_escaped.append(s->_value_escaped[index]);
+      int my_index = _directories.size();
+      _directories.push_back(s->_directories[index]);
+      _values.push_back(s->_values[index]);
+      _value_escaped.push_back(s->_value_escaped[index]);
       _map.insert(key, my_index);
     }
   }
@@ -321,7 +324,7 @@ PsresDatabaseSection::add_section(PsresDatabaseSection *s, bool override)
 
 
 const String &
-PsresDatabaseSection::value(int index) const
+PsresDatabaseSection::value(int index)
 {
   if (_value_escaped[index])
     return _values[index];
@@ -335,7 +338,7 @@ PsresDatabaseSection::value(int index) const
 }
 
 Filename
-PsresDatabaseSection::filename_value(PermString key) const
+PsresDatabaseSection::filename_value(PermString key)
 {
   int index = _map[key];
   if (!index)

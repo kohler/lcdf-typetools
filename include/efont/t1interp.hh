@@ -1,8 +1,5 @@
 #ifndef T1INTERP_HH
 #define T1INTERP_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "vector.hh"
 #include "t1cs.hh"
 
@@ -127,18 +124,18 @@ class Type1Interp {
   bool done() const				{ return _done; }
   void set_done()				{ _done = true; }
   
-  int count() const				{ return _sp; }
+  int size() const				{ return _sp; }
   double &at(unsigned i)			{ return _s[i]; }
   double &top(unsigned i = 0)			{ return _s[ _sp - i - 1 ]; }
   double pop(unsigned n = 1)			{ _sp -= n; return _s[_sp]; }
   void push(double);
   void clear()					{ _sp = 0; }
   
-  int count_ps() const				{ return _ps_sp; }
-  double at_ps(unsigned i) const		{ return _ps_s[i]; }
-  double pop_ps()				{ return _ps_s[--_ps_sp]; }
-  void push_ps(double);
-  void clear_ps()				{ _ps_sp = 0; }
+  int ps_size() const				{ return _ps_sp; }
+  double ps_at(unsigned i) const		{ return _ps_s[i]; }
+  double ps_pop()				{ return _ps_s[--_ps_sp]; }
+  void ps_push(double);
+  void ps_clear()				{ _ps_sp = 0; }
   
   double &vec(Vector<double> *, int);
   Vector<double> *weight_vector();
@@ -169,7 +166,7 @@ Type1Interp::push(double d)
 }
 
 inline void
-Type1Interp::push_ps(double d)
+Type1Interp::ps_push(double d)
 {
   if (_ps_sp < StackSize)
     _ps_s[_ps_sp++] = d;
@@ -180,7 +177,7 @@ Type1Interp::push_ps(double d)
 inline double &
 Type1Interp::vec(Vector<double> *v, int i)
 {
-  if (i < 0 || i >= v->count()) {
+  if (i < 0 || i >= v->size()) {
     _error = errVector;
     return double_for_error;
   } else

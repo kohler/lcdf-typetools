@@ -33,7 +33,7 @@ class MetricsFinder {
 
   MetricsFinder *next() const			{ return _next; }
   
-  void append(MetricsFinder *);
+  void add_finder(MetricsFinder *);
   
   Metrics *find_metrics(PermString, ErrorHandler * = 0);
   AmfmMetrics *find_amfm(PermString, ErrorHandler * = 0);

@@ -55,17 +55,17 @@ static Vector<double> values;
 static void
 set_design(PermString a, double v)
 {
-  ax_names.append(a);
-  ax_nums.append(-1);
-  values.append(v);
+  ax_names.push_back(a);
+  ax_nums.push_back(-1);
+  values.push_back(v);
 }
 
 static void
 set_design(int a, double v)
 {
-  ax_names.append(0);
-  ax_nums.append(a);
-  values.append(v);
+  ax_names.push_back(0);
+  ax_nums.push_back(a);
+  values.push_back(v);
 }
 
 
@@ -165,7 +165,7 @@ main(int argc, char **argv)
   psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
   psres->add_psres_path(getenv("FONTPATH"), 0, false);
   PsresMetricsFinder *psres_finder = new PsresMetricsFinder(psres);
-  finder->append(psres_finder);
+  finder->add_finder(psres_finder);
   
   Clp_Parser *clp =
     Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
@@ -262,7 +262,7 @@ particular purpose.\n");
 #endif
   
   Vector<double> design = mmspace->default_design_vector();
-  for (int i = 0; i < values.count(); i++)
+  for (int i = 0; i < values.size(); i++)
     if (ax_names[i])
       mmspace->set_design(design, ax_names[i], values[i], &errh);
     else
@@ -309,8 +309,8 @@ particular purpose.\n");
       sprintf(buf, "Interpolated by mmafm-%s.", VERSION);
 #endif
       
-      afm_xt->opening_comments.append(buf);
-      afm_xt->opening_comments.append("Mmafm is free software.  See <http://www.lcdf.org/type/>.");
+      afm_xt->opening_comments.push_back(buf);
+      afm_xt->opening_comments.push_back("Mmafm is free software.  See <http://www.lcdf.org/type/>.");
       delete[] buf;
     }
 

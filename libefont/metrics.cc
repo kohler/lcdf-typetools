@@ -13,7 +13,7 @@ Metrics::Metrics()
     _xt_map(0),
     _uses(0)
 {
-  _xt.append((MetricsXt *)0);
+  _xt.push_back((MetricsXt *)0);
 }
 
 
@@ -26,16 +26,16 @@ Metrics::Metrics(PermString font_name, PermString full_name, const Metrics &m)
     _xt_map(0),
     _uses(0)
 {
-  reserve_glyphs(m._wdv.count());
-  _kernv.resize(m._kernv.count(), Unkdouble);
-  _xt.append((MetricsXt *)0);
+  reserve_glyphs(m._wdv.size());
+  _kernv.resize(m._kernv.size(), Unkdouble);
+  _xt.push_back((MetricsXt *)0);
 }
 
 
 Metrics::~Metrics()
 {
   assert(_uses == 0);
-  for (int i = 1; i < _xt.count(); i++)
+  for (int i = 1; i < _xt.size(); i++)
     delete _xt[i];
 }
 
@@ -51,7 +51,7 @@ Metrics::set_font_name(PermString n)
 void
 Metrics::reserve_glyphs(int amt)
 {
-  if (amt <= _wdv.count()) return;
+  if (amt <= _wdv.size()) return;
   _wdv.resize(amt, Unkdouble);
   _lfv.resize(amt, Unkdouble);
   _rtv.resize(amt, Unkdouble);
@@ -59,7 +59,7 @@ Metrics::reserve_glyphs(int amt)
   _btv.resize(amt, Unkdouble);
   _encoding.reserve_glyphs(amt);
   _pairp.reserve_glyphs(amt);
-  for (int i = 1; i < _xt.count(); i++)
+  for (int i = 1; i < _xt.size(); i++)
     _xt[i]->reserve_glyphs(amt);
 }
 
@@ -67,9 +67,10 @@ Metrics::reserve_glyphs(int amt)
 GlyphIndex
 Metrics::add_glyph(PermString n)
 {
-  if (glyph_count() >= _wdv.count())
+  if (glyph_count() >= _wdv.size())
     reserve_glyphs(glyph_count() ? glyph_count() * 2 : 64);
-  GlyphIndex gi = _names.append(n);
+  GlyphIndex gi = _names.size();
+  _names.push_back(n);
   _name_map.insert(n, gi);
   return gi;
 }
@@ -79,7 +80,7 @@ static void
 set_dimen(Vector<double> &dest, const Vector<double> &src, double scale,
 	  bool increment)
 {
-  int c = src.count();
+  int c = src.size();
   if (increment)
     for (int i = 0; i < c; i++)
       dest.at_u(i) += src.at_u(i) * scale;
@@ -106,8 +107,9 @@ Metrics::interpolate_dimens(const Metrics &m, double scale, bool increment)
 void
 Metrics::add_xt(MetricsXt *mxt)
 {
-  int n = _xt.append(mxt);
+  int n = _xt.size();
+  _xt.push_back(mxt);
   _xt_map.insert(mxt->kind(), n);
-  if (_wdv.count() > 0)
-    mxt->reserve_glyphs(_wdv.count());
+  if (_wdv.size() > 0)
+    mxt->reserve_glyphs(_wdv.size());
 }

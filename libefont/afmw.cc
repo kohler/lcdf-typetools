@@ -28,7 +28,7 @@ AfmWriter::write()
   
   fprintf(_f, "StartFontMetrics 4.1\n");
   if (_afm_xt)
-    for (int i = 0; i < _afm_xt->opening_comments.count(); i++)
+    for (int i = 0; i < _afm_xt->opening_comments.size(); i++)
       fprintf(_f, "Comment %s\n", _afm_xt->opening_comments[i].cc());
   
   write_prologue();
@@ -125,7 +125,7 @@ AfmWriter::write_char_metric_data(GlyphIndex gi, int e) const
   PairProgram &pairp = *_m->pair_program();
   PairOpIndex opi = pairp.find_left(gi);
   while (opi >= 0) {
-    PairOp &op = pairp.op(opi);
+    const PairOp &op = pairp.op(opi);
     if (op.is_lig()) {
       if (op.lig_kind() == opLigSimple)
 	fprintf(_f, " L %s %s ;",
@@ -159,7 +159,7 @@ AfmWriter::write_kerns() const
   for (GlyphIndex gi = 0; gi < _m->glyph_count(); gi++) {
     PairOpIndex opi = pairp.find_left(gi);
     while (opi >= 0) {
-      PairOp &op = pairp.op(opi);
+      const PairOp &op = pairp.op(opi);
       if (op.is_kern())
 	fprintf(_f, "KPX %s %s %g\n",
 		_m->name( gi ).cc(),

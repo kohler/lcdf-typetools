@@ -1,22 +1,19 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "t1mm.hh"
-#endif
 #include "t1mm.hh"
 #include "t1interp.hh"
-#ifdef T1FONT
+#ifdef HAVE_T1FONT
 # include "t1item.hh"
 # include "t1font.hh"
-# undef KNOWN
+#else
+# define UNKDOUBLE		-9.79797e97
+# define MIN_KNOWN_DOUBLE	-9.69696e96
+# define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
 #endif
 #include "error.hh"
 #include <stdarg.h>
 #include <stdio.h>
-#define UNKDOUBLE		-9.79797e97
-#define MIN_KNOWN_DOUBLE	-9.69696e96
-#define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
 
 Type1MMSpace::Type1MMSpace(PermString fn, int na, int nm)
   : _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),
@@ -115,36 +112,36 @@ Type1MMSpace::check(ErrorHandler *errh)
   if (_naxes <= 0 || _naxes > 4)
     return error(errh, "number of axes must be between 1 and 4");
   
-  if (_master_positions.count() != _nmasters)
+  if (_master_positions.size() != _nmasters)
     return error(errh, "bad BlendDesignPositions");
   for (int i = 0; i < _nmasters; i++)
-    if (_master_positions[i].count() != _naxes)
+    if (_master_positions[i].size() != _naxes)
       return error(errh, "inconsistent BlendDesignPositions");
   
-  if (_normalize_in.count() != _naxes || _normalize_out.count() != _naxes)
+  if (_normalize_in.size() != _naxes || _normalize_out.size() != _naxes)
     return error(errh, "bad BlendDesignMap");
   for (int i = 0; i < _naxes; i++)
-    if (_normalize_in[i].count() != _normalize_out[i].count())
+    if (_normalize_in[i].size() != _normalize_out[i].size())
       return error(errh, "bad BlendDesignMap");
   
-  if (!_axis_types.count())
+  if (!_axis_types.size())
     _axis_types.assign(_naxes, PermString());
-  if (_axis_types.count() != _naxes)
+  if (_axis_types.size() != _naxes)
     return error(errh, "bad BlendAxisTypes");
   
-  if (!_axis_labels.count())
+  if (!_axis_labels.size())
     _axis_labels.assign(_naxes, PermString());
-  if (_axis_labels.count() != _naxes)
+  if (_axis_labels.size() != _naxes)
     return error(errh, "bad axis labels");
   
-  if (!_default_design_vector.count())
+  if (!_default_design_vector.size())
     _default_design_vector.assign(_naxes, UNKDOUBLE);
-  if (_default_design_vector.count() != _naxes)
+  if (_default_design_vector.size() != _naxes)
     return error(errh, "inconsistent design vector");
   
-  if (!_default_weight_vector.count())
+  if (!_default_weight_vector.size())
     _default_weight_vector.assign(_nmasters, UNKDOUBLE);
-  if (_default_weight_vector.count() != _nmasters)
+  if (_default_weight_vector.size() != _nmasters)
     return error(errh, "inconsistent weight vector");
   
   _ok = true;
@@ -260,12 +257,12 @@ Type1MMSpace::normalize_vector(ErrorHandler *errh) const
     for (int a = 0; a < _naxes; a++) {
       double d = design[a];
       double nd = UNKDOUBLE;
-      Vector<double> &norm_in = _normalize_in[a];
-      Vector<double> &norm_out = _normalize_out[a];
+      const Vector<double> &norm_in = _normalize_in[a];
+      const Vector<double> &norm_out = _normalize_out[a];
       
       if (d < norm_in[0])
         nd = norm_out[0];
-      for (int i = 1; i < norm_in.count(); i++)
+      for (int i = 1; i < norm_in.size(); i++)
         if (d >= norm_in[i-1] && d < norm_in[i]) {
           nd = norm_out[i-1]
             + ((d - norm_in[i-1])

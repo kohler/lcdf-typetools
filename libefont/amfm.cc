@@ -52,7 +52,7 @@ AmfmMetrics::sanity(ErrorHandler *errh) const
   bool ok = true;
   for (int m = 0; m < _nmasters; m++)
     if (!_masters[m].font_name
-	|| _masters[m].weight_vector.count() != _nmasters) {
+	|| _masters[m].weight_vector.size() != _nmasters) {
       errh->error("AMFM sanity: no information for master %d", m);
       ok = false;
     }
@@ -91,7 +91,7 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
   if (!master.loaded) {
     master.loaded = true;
     DirectoryMetricsFinder directory_finder(_directory);
-    _finder->append(&directory_finder);
+    _finder->add_finder(&directory_finder);
     Metrics *afm = _finder->find_metrics(master.font_name);
     
     if (!afm) {
@@ -138,7 +138,7 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
 AmfmPrimaryFont *
 AmfmMetrics::find_primary_font(const Vector<double> &design_vector) const
 {
-  assert(design_vector.count() == _naxes);
+  assert(design_vector.size() == _naxes);
   for (AmfmPrimaryFont *pf = _primary_fonts; pf; pf = pf->next) {
     
     for (int a = 0; a < _naxes; a++)
@@ -157,7 +157,7 @@ HashMap<PermString, PermString> AmfmMetrics::axis_generic_label;
 void
 AmfmMetrics::make_axis_generic_label()
 {
-  if (axis_generic_label.count()) return;
+  if (axis_generic_label.size()) return;
   axis_generic_label.insert("Weight", "wt");
   axis_generic_label.insert("Width", "wd");
   axis_generic_label.insert("OpticalSize", "op");
@@ -170,8 +170,8 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
 			 const Vector<double> &weight_vector,
 			 ErrorHandler *errh)
 {
-  assert(design_vector.count() == _naxes);
-  assert(weight_vector.count() == _nmasters);
+  assert(design_vector.size() == _naxes);
+  assert(weight_vector.size() == _nmasters);
   
   // FIXME: check masters for correspondence.
   
@@ -189,7 +189,7 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
   make_axis_generic_label();
   AmfmPrimaryFont *pf = find_primary_font(design_vector);
   // The primary font is useless to us if it doesn't have axis labels.
-  if (pf && !pf->labels.count()) pf = 0;
+  if (pf && !pf->labels.size()) pf = 0;
   
   PermString new_font_name = _font_name;
   PermString new_full_name = _full_name;
@@ -323,7 +323,7 @@ AmfmReader::read()
   PermString comment;
   while (l.next_line()) {
     if (l.isall("Comment %+s", &comment))
-      _amfm->_opening_comments.append(comment);
+      _amfm->_opening_comments.push_back(comment);
     else if (l.isall("StartMasterFontMetrics %g", (double *)0))
       ;
     else {
@@ -535,7 +535,7 @@ AmfmReader::read_simple_array(Vector<double> &vec) const
   vec.clear();
   double d;
   while (_l.is("%g", &d))
-    vec.append(d);
+    vec.push_back(d);
   
   return _l.is("]");
 }
@@ -549,7 +549,7 @@ AmfmReader::read_positions() const
   if (!_l.is("[") || !_mmspace) goto error;
   
   for (int i = 0; i < nmasters(); i++) {
-    positions.append(NumVector());
+    positions.push_back(NumVector());
     if (!read_simple_array(positions.back()))
       goto error;
   }
@@ -572,12 +572,12 @@ AmfmReader::read_normalize() const
   
   for (int a = 0; a < naxes(); a++) {
     if (!_l.is("[")) goto error;
-    normalize_in.append(NumVector());
-    normalize_out.append(NumVector());
+    normalize_in.push_back(NumVector());
+    normalize_out.push_back(NumVector());
     double v1, v2;
     while (_l.is("[-%g %g-]", &v1, &v2)) {
-      normalize_in[a].append(v1);
-      normalize_out[a].append(v2);
+      normalize_in[a].push_back(v1);
+      normalize_out[a].push_back(v2);
     }
     if (!_l.is("]")) goto error;
   }
@@ -702,7 +702,7 @@ AmfmReader::read_master(int m) const
      case 'W':
       if (_l.is("WeightVector")) {
 	if (!(read_simple_array(amfmm->weight_vector) &&
-	      amfmm->weight_vector.count() == nmasters())) {
+	      amfmm->weight_vector.size() == nmasters())) {
 	  _errh->error(_l, "bad WeightVector");
 	  amfmm->weight_vector.clear();
 	}
@@ -791,13 +791,13 @@ Type1Charstring *
 AmfmReader::conversion_program(Vector<PermString> &l) const
 {
   int len = 0;
-  for (int i = 0; i < l.count(); i++)
+  for (int i = 0; i < l.size(); i++)
     len += l[i].length();
   if (len == 0) return 0;
   
   unsigned char *v = new unsigned char[len];
   int pos = 0;
-  for (int i = 0; i < l.count(); i++) {
+  for (int i = 0; i < l.size(); i++) {
     memcpy(v + pos, l[i].cc(), l[i].length());
     pos += l[i].length();
   }
@@ -818,7 +818,7 @@ AmfmReader::read_conversion_programs() const
       
      case 'C':
       if (_l.isall("CDV %<", &s)) {
-	cdv.append(s);
+	cdv.push_back(s);
 	break;
       }
       goto invalid;
@@ -830,7 +830,7 @@ AmfmReader::read_conversion_programs() const
       
      case 'N':
       if (_l.isall("NDV %<", &s)) {
-	ndv.append(s);
+	ndv.push_back(s);
 	break;
       }
       goto invalid;

@@ -114,7 +114,7 @@ AfmReader::read()
   PermString comment;
   while (l.next_line()) {
     if (l.isall("Comment %+s", &comment))
-      _afm_xt->opening_comments.append(comment);
+      _afm_xt->opening_comments.push_back(comment);
     else if (l.isall("StartFontMetrics %g", (double *)0))
       ;
     else {
@@ -336,9 +336,9 @@ AfmReader::read_char_metric_data() const
 	if (!n)
 	  _errh->error(_l, "ligature given, but character has no name");
 	else {
-	  ligature_left.append(n);
-	  ligature_right.append(ligright);
-	  ligature_result.append(ligresult);
+	  ligature_left.push_back(n);
+	  ligature_right.push_back(ligright);
+	  ligature_result.push_back(ligresult);
 	}
 	break;
       }
@@ -403,7 +403,7 @@ AfmReader::read_char_metric_data() const
 void
 AfmReader::read_char_metrics() const
 {
-  assert(!ligature_left.count());
+  assert(!ligature_left.size());
   
   while (_l.next_line())
     // Grok the whole line. Are we on a character metric data line?
@@ -431,7 +431,7 @@ AfmReader::read_char_metrics() const
   
  end_char_metrics:
   
-  for (int i = 0; i < ligature_left.count(); i++) {
+  for (int i = 0; i < ligature_left.size(); i++) {
     GlyphIndex leftgi = find_err(ligature_left[i], "ligature");
     GlyphIndex rightgi = find_err(ligature_right[i], "ligature");
     GlyphIndex resultgi = find_err(ligature_result[i], "ligature");

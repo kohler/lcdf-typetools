@@ -9,6 +9,6 @@
 void
 Encoding8::reserve_glyphs(int count)
 {
-  if (count <= _codes.count()) return;
+  if (count <= _codes.size()) return;
   _codes.resize(count, -1);
 }

@@ -19,7 +19,7 @@ PairProgram::PairProgram(const PairProgram &o)
 void
 PairProgram::reserve_glyphs(int e)
 {
-  if (e <= _left_map.count()) return;
+  if (e <= _left_map.size()) return;
   _left_map.resize(e, -1);
 }
 
@@ -41,7 +41,8 @@ bool
 PairProgram::add_kern(GlyphIndex left, GlyphIndex right, int ki)
 {
   PairOp newop(left, right, ki, _left_map[left]);
-  int newopi = _op.append(newop);
+  int newopi = _op.size();
+  _op.push_back(newop);
   _left_map[left] = newopi;
   
   //PairOpIndex duplicate = map[newop];
@@ -56,7 +57,8 @@ PairProgram::add_lig(GlyphIndex left, GlyphIndex right, GlyphIndex result,
 		     int kind)
 {
   PairOp newop(left, right, result, kind, _left_map[left]);
-  int newopi = _op.append(newop);
+  int newopi = _op.size();
+  _op.push_back(newop);
   _left_map[left] = newopi;
   
   //PairOpIndex duplicate = map[newop];
@@ -71,9 +73,9 @@ PairProgram::unreverse()
 {
   if (!_reversed) return;
   
-  _left_map.assign(_left_map.count(), -1);
+  _left_map.assign(_left_map.size(), -1);
   
-  for (PairOpIndex opi = _op.count() - 1; opi >= 0; opi--) {
+  for (PairOpIndex opi = _op.size() - 1; opi >= 0; opi--) {
     PairOp &o = _op[opi];
     PairOpIndex l = o.left();
     o.set_next(_left_map[l]);
@@ -113,15 +115,15 @@ void
 PairProgram::print() const
 {
 #if 0
-  for (GlyphIndex gi = 0; gi < glyphblock.count(); gi++)
+  for (GlyphIndex gi = 0; gi < glyphblock.size(); gi++)
     if (glyphblock[gi] != -1)
       printf("%s->B%d ", glyph(gi).name().cc(), glyphblock[gi]);
   printf("\n");
   
-  for (int i = 0; i < blocks.count(); i++) {
+  for (int i = 0; i < blocks.size(); i++) {
     printf("B%-2d:  ", i);
     PairOpBlock &opb = *blocks[i];
-    for (int j = 0; j < opb.count(); j++)
+    for (int j = 0; j < opb.size(); j++)
       if (opb[j].is_lig())
 	printf("%s->%s ", printname(opb[j].right()),
 	       printname(opb[j].result()));

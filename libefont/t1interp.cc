@@ -1,15 +1,12 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "t1interp.hh"
-#endif
 #include "t1interp.hh"
 #include <stdio.h>
 #include <stdlib.h>
 //#include <math.h>
 
-#define CHECK_STACK(numargs)	do { if (count() < numargs) ERROR(errUnderflow); } while (0)
+#define CHECK_STACK(numargs)	do { if (size() < numargs) ERROR(errUnderflow); } while (0)
 #define ERROR(what)		return error(what)
 
 
@@ -26,7 +23,7 @@ void
 Type1Interp::init()
 {
   clear();
-  clear_ps();
+  ps_clear();
   _done = false;
   _error = errOK;
 }
@@ -133,7 +130,7 @@ Type1Interp::blend_command()
   Vector<double> *weight = weight_vector();
   if (!weight) ERROR(errVector);
   
-  int nmasters = weight->count();
+  int nmasters = weight->size();
   CHECK_STACK(nargs * nmasters);
   
   int base = _sp - nargs * nmasters;
@@ -288,8 +285,8 @@ Type1Interp::arith_command(int cmd)
     break;
     
    case cPop:
-    if (count_ps() < 1) ERROR(errUnderflow);
-    push(pop_ps());
+    if (ps_size() < 1) ERROR(errUnderflow);
+    push(ps_pop());
     break;
     
    case 15:
@@ -342,12 +339,12 @@ Type1Interp::mm_command(int command, int on_stack)
    default: ERROR(errInternal);
   }
   
-  int nmasters = weight->count();
-  if (count() < nargs * nmasters
+  int nmasters = weight->size();
+  if (size() < nargs * nmasters
       || on_stack != nargs * nmasters)
     ERROR(errMultipleMaster);
   
-  int base = count() - on_stack;
+  int base = size() - on_stack;
   
   int off = base + nargs;
   for (int j = 0; j < nargs; j++) {
@@ -357,7 +354,7 @@ Type1Interp::mm_command(int command, int on_stack)
   }
   
   for (int i = nargs - 1; i >= 0; i--)
-    push_ps(at(base + i));
+    ps_push(at(base + i));
   
   pop(on_stack);
   return true;
