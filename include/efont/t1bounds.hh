@@ -22,7 +22,7 @@ class CharstringBounds : public CharstringInterp { public:
     void act_width(int, const Point &);
     void act_line(int, const Point &, const Point &);
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
-    void mark(const Point &);
+    inline void mark(const Point &);
 
     void clear();
     bool char_bounds(const CharstringContext &, bool shift = true);
@@ -43,16 +43,15 @@ class CharstringBounds : public CharstringInterp { public:
 
     void set_xf(const CharstringProgram *);
     
-    void xf_mark(const Point &);
+    inline void xf_mark(const Point &);
     void xf_mark(const Bezier &);
 
-    bool xf_inside(const Point &) const;
-    bool xf_controls_inside(const Bezier &) const;
+    inline bool xf_inside(const Point &) const;
+    inline bool xf_controls_inside(const Bezier &) const;
     
 };
 
-inline void
-CharstringBounds::xf_mark(const Point &p)
+inline void CharstringBounds::xf_mark(const Point &p)
 {
     if (!KNOWN(_lb.x))
 	_lb = _rt = p;
@@ -66,20 +65,17 @@ CharstringBounds::xf_mark(const Point &p)
 	_rt.y = p.y;
 }
 
-inline void
-CharstringBounds::mark(const Point &p)
+inline void CharstringBounds::mark(const Point &p)
 {
     xf_mark(p * _xf);
 }
 
-inline bool
-CharstringBounds::xf_inside(const Point &p) const
+inline bool CharstringBounds::xf_inside(const Point &p) const
 {
     return p.x >= _lb.x && p.x <= _rt.x && p.y >= _lb.y && p.y <= _rt.y;
 }
 
-inline bool
-CharstringBounds::xf_controls_inside(const Bezier &b) const
+inline bool CharstringBounds::xf_controls_inside(const Bezier &b) const
 {
     return xf_inside(b.point(1)) && xf_inside(b.point(2));
 }

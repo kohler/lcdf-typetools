@@ -218,8 +218,7 @@ class Substitution { public:
     
 };
 
-inline
-Substitution::Substitution()
+inline Substitution::Substitution()
     : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
 {
 }
@@ -235,134 +234,112 @@ Substitution::Substitution()
      ligature is: glyph result, u16 count, glyph components[]
 */
 
-inline
-Substitution::operator bool() const
+inline Substitution::operator bool() const
 {
     return !(_left_is == T_NONE && _in_is == T_NONE && _out_is == T_NONE && _right_is == T_NONE);
 }
 
-inline bool
-Substitution::is_single() const
+inline bool Substitution::is_single() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_NONE;
 }
 
-inline bool
-Substitution::is_multiple() const
+inline bool Substitution::is_multiple() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPHS && _right_is == T_NONE && !_alternate;
 }
 
-inline bool
-Substitution::is_alternate() const
+inline bool Substitution::is_alternate() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPHS && _right_is == T_NONE && _alternate;
 }
 
-inline bool
-Substitution::is_ligature() const
+inline bool Substitution::is_ligature() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPHS && _out_is == T_GLYPH && _right_is == T_NONE;
 }
 
-inline bool
-Substitution::is_simple_context() const
+inline bool Substitution::is_simple_context() const
 {
     return _left_is != T_COVERAGE && (_in_is == T_GLYPH || _in_is == T_GLYPHS) && (_out_is == T_GLYPH || _out_is == T_GLYPHS) && _right_is != T_COVERAGE;
 }
 
-inline bool
-Substitution::is_single_lcontext() const
+inline bool Substitution::is_single_lcontext() const
 {
     return _left_is == T_GLYPH && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_NONE;
 }
 
-inline bool
-Substitution::is_single_rcontext() const
+inline bool Substitution::is_single_rcontext() const
 {
     return _left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_GLYPH;
 }
 
-inline Glyph
-Substitution::left_glyph() const
+inline Glyph Substitution::left_glyph() const
 {
     return extract_glyph(_left, _left_is);
 }
 
-inline int
-Substitution::left_nglyphs() const
+inline int Substitution::left_nglyphs() const
 {
     return extract_nglyphs(_left, _left_is, false);
 }
 
-inline Glyph
-Substitution::in_glyph() const
+inline Glyph Substitution::in_glyph() const
 {
     return extract_glyph(_in, _in_is);
 }
 
-inline Glyph
-Substitution::in_glyph(int which) const
+inline Glyph Substitution::in_glyph(int which) const
 {
     return extract_glyph(_in, which, _in_is);
 }
 
-inline bool
-Substitution::in_glyphs(Vector<Glyph> &v) const
+inline bool Substitution::in_glyphs(Vector<Glyph> &v) const
 {
     return extract_glyphs(_in, _in_is, v, true);
 }
 
-inline int
-Substitution::in_nglyphs() const
+inline int Substitution::in_nglyphs() const
 {
     return extract_nglyphs(_in, _in_is, true);
 }
 
-inline bool
-Substitution::in_matches(int pos, Glyph g) const
+inline bool Substitution::in_matches(int pos, Glyph g) const
 {
     return matches(_in, _in_is, pos, g);
 }
 
-inline Glyph
-Substitution::out_glyph() const
+inline Glyph Substitution::out_glyph() const
 {
     return extract_glyph(_out, _out_is);
 }
 
-inline Glyph
-Substitution::out_glyph(int which) const
+inline Glyph Substitution::out_glyph(int which) const
 {
     return extract_glyph(_out, which, _out_is);
 }
 
-inline bool
-Substitution::out_glyphs(Vector<Glyph> &v) const
+inline bool Substitution::out_glyphs(Vector<Glyph> &v) const
 {
     return extract_glyphs(_out, _out_is, v, false);
 }
 
-inline const Glyph *
-Substitution::out_glyphptr() const
+inline const Glyph *Substitution::out_glyphptr() const
 {
     return extract_glyphptr(_out, _out_is);
 }
 
-inline int
-Substitution::out_nglyphs() const
+inline int Substitution::out_nglyphs() const
 {
     return extract_nglyphs(_out, _out_is, false);
 }
 
-inline Glyph
-Substitution::right_glyph() const
+inline Glyph Substitution::right_glyph() const
 {
     return extract_glyph(_right, _right_is);
 }
 
-inline StringAccum &
-operator<<(StringAccum &sa, const Substitution &sub)
+inline StringAccum &operator<<(StringAccum &sa, const Substitution &sub)
 {
     sub.unparse(sa);
     return sa;

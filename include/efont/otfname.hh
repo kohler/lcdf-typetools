@@ -63,38 +63,32 @@ class Name { public:
 
 #define USHORT_AT(d)		(ntohs(*reinterpret_cast<const uint16_t *>(d)))
 
-inline int
-Name::nameid(const namerecord_t &nr)
+inline int Name::nameid(const namerecord_t &nr)
 {
     return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr) + 6);
 }
 
-inline int
-Name::platform(const namerecord_t &nr)
+inline int Name::platform(const namerecord_t &nr)
 {
     return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr));
 }
 
-inline int
-Name::encoding(const namerecord_t &nr)
+inline int Name::encoding(const namerecord_t &nr)
 {
     return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr) + 2);
 }
 
-inline int
-Name::language(const namerecord_t &nr)
+inline int Name::language(const namerecord_t &nr)
 {
     return USHORT_AT(reinterpret_cast<const uint8_t *>(&nr) + 4);
 }
 
-inline Name::const_iterator
-Name::begin() const
+inline Name::const_iterator Name::begin() const
 {
     return reinterpret_cast<const_iterator>(_str.udata() + HEADER_SIZE);
 }
 
-inline Name::const_iterator
-Name::end() const
+inline Name::const_iterator Name::end() const
 {
     if (_error >= 0) {
 	int count = USHORT_AT(_str.data() + 2);
@@ -106,14 +100,12 @@ Name::end() const
 #undef USHORT_AT
 
 
-inline
-Name::PlatformPred::PlatformPred(int nid, int p, int e, int l)
+inline Name::PlatformPred::PlatformPred(int nid, int p, int e, int l)
     : _nameid(nid), _platform(p), _encoding(e), _language(l)
 {
 }
 
-inline bool
-Name::PlatformPred::operator()(const namerecord_t &i) const
+inline bool Name::PlatformPred::operator()(const namerecord_t &i) const
 {
     return (_nameid == nameid(i))
 	&& (_platform < 0 || _platform == platform(i))
@@ -121,8 +113,7 @@ Name::PlatformPred::operator()(const namerecord_t &i) const
 	&& (_language < 0 || _language == language(i));
 }
 
-inline bool
-Name::EnglishPlatformPred::operator()(const namerecord_t &i) const
+inline bool Name::EnglishPlatformPred::operator()(const namerecord_t &i) const
 {
     if (_nameid == nameid(i)) {
 	int p = platform(i), e = encoding(i), l = language(i);

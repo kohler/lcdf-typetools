@@ -15,7 +15,7 @@ class CharstringInterp { public:
     int error() const				{ return _error; }
     int error_data() const			{ return _error_data; }
     static String error_string(int error, int error_data);
-    String error_string() const;
+    inline String error_string() const;
     
     bool careful() const			{ return _careful; }
     void set_careful(bool c)			{ _careful = c; }
@@ -27,26 +27,26 @@ class CharstringInterp { public:
     double &at(unsigned i)			{ return _s[i]; }
     double &top(unsigned i = 0)			{ return _s[_sp - i - 1]; }
     double pop(unsigned n = 1)			{ _sp -= n; return _s[_sp]; }
-    void push(double);
+    inline void push(double);
     void clear()				{ _sp = 0; }
 
     int ps_size() const				{ return _ps_sp; }
     double ps_at(unsigned i) const		{ return _ps_s[i]; }
     double ps_pop()				{ return _ps_s[--_ps_sp]; }
-    void ps_push(double);
+    inline void ps_push(double);
     void ps_clear()				{ _ps_sp = 0; }
 
     int subr_depth() const			{ return _subr_depth; }
     
-    double &vec(Vector<double> *, int);
+    inline double &vec(Vector<double> *, int);
     const Vector<double> &weight_vector() const	{ return _weight_vector; }
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
 
     const CharstringProgram *program() const	{ return _program; }
-    Charstring *get_subr(int) const;
-    Charstring *get_gsubr(int) const;
-    Charstring *get_xsubr(bool g, int) const;
-    Charstring *get_glyph(PermString) const;
+    inline Charstring *get_subr(int) const;
+    inline Charstring *get_gsubr(int) const;
+    inline Charstring *get_xsubr(bool g, int) const;
+    inline Charstring *get_glyph(PermString) const;
 
     bool interpret(const CharstringProgram *, const Charstring *);
     inline bool interpret(const CharstringContext &);
@@ -61,7 +61,7 @@ class CharstringInterp { public:
     bool blend_command();
     bool callsubr_command();
     bool callgsubr_command();
-    bool callxsubr_command(bool g);
+    inline bool callxsubr_command(bool g);
     bool mm_command(int, int);
     bool itc_command(int, int);
 
@@ -169,14 +169,12 @@ class CharstringInterp { public:
 };
 
 
-inline String
-CharstringInterp::error_string() const
+inline String CharstringInterp::error_string() const
 {
     return error_string(_error, _error_data);
 }
 
-inline void
-CharstringInterp::push(double d)
+inline void CharstringInterp::push(double d)
 {
     if (_sp < STACK_SIZE)
 	_s[_sp++] = d;
@@ -184,8 +182,7 @@ CharstringInterp::push(double d)
 	error(errOverflow);
 }
 
-inline void
-CharstringInterp::ps_push(double d)
+inline void CharstringInterp::ps_push(double d)
 {
     if (_ps_sp < PS_STACK_SIZE)
 	_ps_s[_ps_sp++] = d;
@@ -193,8 +190,7 @@ CharstringInterp::ps_push(double d)
 	error(errOverflow);
 }
 
-inline double &
-CharstringInterp::vec(Vector<double> *v, int i)
+inline double &CharstringInterp::vec(Vector<double> *v, int i)
 {
     if (i < 0 || i >= v->size()) {
 	error(errVector);
@@ -203,45 +199,38 @@ CharstringInterp::vec(Vector<double> *v, int i)
 	return v->at_u(i);
 }
 
-inline Charstring *
-CharstringInterp::get_subr(int n) const
+inline Charstring *CharstringInterp::get_subr(int n) const
 {
     return _program ? _program->subr(n) : 0;
 }
 
-inline Charstring *
-CharstringInterp::get_gsubr(int n) const
+inline Charstring *CharstringInterp::get_gsubr(int n) const
 {
     return _program ? _program->gsubr(n) : 0;
 }
 
-inline Charstring *
-CharstringInterp::get_xsubr(bool g, int n) const
+inline Charstring *CharstringInterp::get_xsubr(bool g, int n) const
 {
     return _program ? _program->xsubr(g, n) : 0;
 }
 
-inline Charstring *
-CharstringInterp::get_glyph(PermString n) const
+inline Charstring *CharstringInterp::get_glyph(PermString n) const
 {
     return _program ? _program->glyph(n) : 0;
 }
 
-inline void
-CharstringInterp::ensure_weight_vector()
+inline void CharstringInterp::ensure_weight_vector()
 {
     if (!_weight_vector.size())
 	fetch_weight_vector();
 }
 
-inline bool
-CharstringInterp::callxsubr_command(bool g)
+inline bool CharstringInterp::callxsubr_command(bool g)
 {
     return (g ? callgsubr_command() : callsubr_command());
 }
 
-inline bool
-CharstringInterp::interpret(const CharstringContext &g)
+inline bool CharstringInterp::interpret(const CharstringContext &g)
 {
     return interpret(g.program, g.cs);
 }

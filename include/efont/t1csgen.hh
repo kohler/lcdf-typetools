@@ -108,8 +108,7 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
     
 };
 
-inline String
-Type1CharstringGen::take_string()
+inline String Type1CharstringGen::take_string()
 {
     String s = _ncs.take_string();
     clear();

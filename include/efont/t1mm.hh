@@ -24,7 +24,7 @@ class MultipleMasterSpace : public CharstringProgram { public:
     PermString axis_type(int a) const	{ return _axis_types[a]; }
     PermString axis_label(int a) const	{ return _axis_labels[a]; }
     PermString axis_abbreviation(int a) const;
-    static PermString axis_abbreviation(PermString);
+    static inline PermString axis_abbreviation(PermString);
   
     const Type1Charstring &ndv() const	{ return _ndv; }
     const Type1Charstring &cdv() const	{ return _cdv; }
@@ -42,11 +42,11 @@ class MultipleMasterSpace : public CharstringProgram { public:
     bool check_intermediate(ErrorHandler * = 0);
 
     NumVector empty_design_vector() const;
-    const NumVector &default_design_vector() const;
+    inline const NumVector &default_design_vector() const;
     bool set_design(NumVector &, int, double, ErrorHandler * = 0) const;
     bool set_design(NumVector &, PermString, double, ErrorHandler * = 0) const;
   
-    const NumVector &default_weight_vector() const;
+    inline const NumVector &default_weight_vector() const;
   
     bool design_to_norm_design(const NumVector &, NumVector &, ErrorHandler * = 0) const;
     bool design_to_weight(const NumVector &, NumVector &, ErrorHandler * = 0) const;
@@ -89,20 +89,17 @@ class MultipleMasterSpace : public CharstringProgram { public:
 };
 
 
-inline const Vector<double> &
-MultipleMasterSpace::default_design_vector() const
+inline const Vector<double> &MultipleMasterSpace::default_design_vector() const
 {
     return _default_design_vector;
 }
 
-inline const Vector<double> &
-MultipleMasterSpace::default_weight_vector() const
+inline const Vector<double> &MultipleMasterSpace::default_weight_vector() const
 {
     return _default_weight_vector;
 }
 
-inline PermString
-MultipleMasterSpace::axis_abbreviation(int a) const
+inline PermString MultipleMasterSpace::axis_abbreviation(int a) const
 {
     return axis_abbreviation(_axis_types[a]);
 }

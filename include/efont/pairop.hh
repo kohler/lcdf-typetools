@@ -26,14 +26,13 @@ typedef int PairOpIndex;
 class PairOp { public:
   
     PairOp()			{ }
-    PairOp(GlyphIndex l, GlyphIndex r, int v, PairOpIndex nl);
-    PairOp(GlyphIndex l, GlyphIndex r, GlyphIndex x, int kind,
-	   PairOpIndex nl);
+    inline PairOp(GlyphIndex l, GlyphIndex r, int v, PairOpIndex nl);
+    inline PairOp(GlyphIndex l, GlyphIndex r, GlyphIndex x, int kind, PairOpIndex nl);
   
     void noopify()		{ _val = opNoop; }
     void set_value(int val)	{ _val = val; }
   
-    void set_next(PairOpIndex);
+    inline void set_next(PairOpIndex);
   
     bool is_lig() const		{ return _val <= opLigature; }
     bool is_kern() const	{ return _val >= 0; }
@@ -94,21 +93,18 @@ class PairProgram { public:
 };
 
 
-inline
-PairOp::PairOp(GlyphIndex l, GlyphIndex r, int v, PairOpIndex nl)
+inline PairOp::PairOp(GlyphIndex l, GlyphIndex r, int v, PairOpIndex nl)
     : _left(l), _right(r), _val(v), _next_left(nl)
 {
 }
 
-inline
-PairOp::PairOp(GlyphIndex l, GlyphIndex r, GlyphIndex x, int kind,
-	       PairOpIndex nl)
+inline PairOp::PairOp(GlyphIndex l, GlyphIndex r, GlyphIndex x, int kind,
+		      PairOpIndex nl)
     : _left(l), _right(r), _result(x), _val(opLigature - kind), _next_left(nl)
 {
 }
 
-inline void
-PairOp::set_next(PairOpIndex nl)
+inline void PairOp::set_next(PairOpIndex nl)
 {
     _next_left = nl;
 }

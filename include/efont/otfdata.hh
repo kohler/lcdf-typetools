@@ -46,11 +46,11 @@ class Data { public:
 
     int length() const			{ return _str.length(); }
 
-    uint8_t operator[](unsigned offset) const throw (Bounds);
-    uint16_t u16(unsigned offset) const throw (Bounds);
-    int16_t s16(unsigned offset) const throw (Bounds);
-    uint32_t u32(unsigned offset) const throw (Bounds);    
-    int32_t s32(unsigned offset) const throw (Bounds);
+    inline uint8_t operator[](unsigned offset) const throw (Bounds);
+    inline uint16_t u16(unsigned offset) const throw (Bounds);
+    inline int16_t s16(unsigned offset) const throw (Bounds);
+    inline uint32_t u32(unsigned offset) const throw (Bounds);    
+    inline int32_t s32(unsigned offset) const throw (Bounds);
 
     Data subtable(unsigned offset) const throw (Bounds);
     Data offset_subtable(unsigned offset_offset) const throw (Bounds);
@@ -61,8 +61,7 @@ class Data { public:
     
 };
 
-inline uint8_t
-Data::operator[](unsigned offset) const throw (Bounds)
+inline uint8_t Data::operator[](unsigned offset) const throw (Bounds)
 {
     if (offset >= static_cast<unsigned>(_str.length()))
 	throw Bounds();
@@ -70,8 +69,7 @@ Data::operator[](unsigned offset) const throw (Bounds)
 	return _str[offset];
 }
 
-inline uint16_t
-Data::u16(unsigned offset) const throw (Bounds)
+inline uint16_t Data::u16(unsigned offset) const throw (Bounds)
 {
     if (offset >= static_cast<unsigned>(_str.length() - 1))
 	throw Bounds();
@@ -79,8 +77,7 @@ Data::u16(unsigned offset) const throw (Bounds)
 	return ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset));
 }
 
-inline int16_t
-Data::s16(unsigned offset) const throw (Bounds)
+inline int16_t Data::s16(unsigned offset) const throw (Bounds)
 {
     if (offset >= static_cast<unsigned>(_str.length() - 1))
 	throw Bounds();
@@ -88,8 +85,7 @@ Data::s16(unsigned offset) const throw (Bounds)
 	return ntohs(*reinterpret_cast<const int16_t *>(_str.data() + offset));
 }
 
-inline uint32_t
-Data::u32(unsigned offset) const throw (Bounds)
+inline uint32_t Data::u32(unsigned offset) const throw (Bounds)
 {
     if (offset >= static_cast<unsigned>(_str.length() - 3))
 	throw Bounds();
@@ -98,8 +94,7 @@ Data::u32(unsigned offset) const throw (Bounds)
 	    | ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset + 2));
 }
 
-inline int32_t
-Data::s32(unsigned offset) const throw (Bounds)
+inline int32_t Data::s32(unsigned offset) const throw (Bounds)
 {
     if (offset >= static_cast<unsigned>(_str.length() - 3))
 	throw Bounds();

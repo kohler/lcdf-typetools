@@ -18,7 +18,7 @@ class PsresDatabase { public:
     bool add_psres_file(Filename &, bool override);
     void add_database(PsresDatabase *, bool override);
   
-    PsresDatabaseSection *section(PermString section) const;
+    inline PsresDatabaseSection *section(PermString section) const;
     const String &value(PermString section, PermString key) const;
     const String &unescaped_value(PermString section, PermString key) const;
     Filename filename_value(PermString section, PermString key) const;
@@ -44,7 +44,7 @@ class PsresDatabaseSection { public:
     void add_section(PsresDatabaseSection *, bool override);
   
     const String &value(PermString key)		{ return value(_map[key]); }
-    const String &unescaped_value(PermString key) const;
+    inline const String &unescaped_value(PermString key) const;
     Filename filename_value(PermString key);
   
   private:
@@ -59,14 +59,12 @@ class PsresDatabaseSection { public:
   
 };
 
-inline PsresDatabaseSection *
-PsresDatabase::section(PermString n) const
+inline PsresDatabaseSection *PsresDatabase::section(PermString n) const
 {
     return _sections[_section_map[n]];
 }
 
-inline const String &
-PsresDatabaseSection::unescaped_value(PermString key) const
+inline const String &PsresDatabaseSection::unescaped_value(PermString key) const
 {
     assert(!_value_escaped[_map[key]]);
     return _values[_map[key]];

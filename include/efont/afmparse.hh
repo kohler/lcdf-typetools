@@ -25,7 +25,7 @@ class AfmParser { public:
     bool is(const char *, ...);
     bool isall(const char *, ...);
   
-    bool next_line();
+    inline bool next_line();
     void save_line()			{ _slurper.save_line(); }
     void skip_until(unsigned char);
   
@@ -53,8 +53,7 @@ class AfmParser { public:
 };
 
 
-inline bool
-AfmParser::next_line()
+inline bool AfmParser::next_line()
 {
     _pos = _line = (unsigned char *)_slurper.next_line();
     _length = _slurper.cur_line_length();

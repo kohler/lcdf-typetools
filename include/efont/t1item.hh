@@ -80,8 +80,8 @@ class Type1Definition : public Type1Item { public:
     ~Type1Definition()			{ }
     static Type1Definition *make(StringAccum &, Type1Reader * = 0, bool force = false);
     static Type1Definition *make_string(PermString, const String &, PermString);
-    static Type1Definition *make_literal(PermString, const String &, PermString);
-    static Type1Definition *make(PermString, double, PermString);
+    static inline Type1Definition *make_literal(PermString, const String &, PermString);
+    static inline Type1Definition *make(PermString, double, PermString);
   
     PermString name() const		{ return _name; }
     const String &value() const		{ return _val; }
@@ -236,32 +236,27 @@ class Type1IncludedFont : public Type1Item { public:
 };
 
 
-inline Type1Definition *
-Type1Definition::make_literal(PermString n, const String &v, PermString d)
+inline Type1Definition *Type1Definition::make_literal(PermString n, const String &v, PermString d)
 {
     return new Type1Definition(n, v, d);
 }
 
-inline Type1Definition *
-Type1Definition::make(PermString n, double v, PermString d)
+inline Type1Definition *Type1Definition::make(PermString n, double v, PermString d)
 {
     return new Type1Definition(n, String(v), d);
 }
 
-inline void
-Type1Definition::set_val(const String &v)
+inline void Type1Definition::set_val(const String &v)
 {
     _val = v;
 }
 
-inline void
-Type1Definition::set_val(StringAccum &sa)
+inline void Type1Definition::set_val(StringAccum &sa)
 {
     _val = sa.take_string();
 }
 
-inline void
-Type1Encoding::put(int e, PermString glyph)
+inline void Type1Encoding::put(int e, PermString glyph)
 {
     if (_copy_of)
 	unshare();

@@ -13,7 +13,7 @@ class Cmap { public:
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
 
-    Glyph map_uni(uint32_t c) const;
+    inline Glyph map_uni(uint32_t c) const;
     int map_uni(const Vector<uint32_t> &in, Vector<Glyph> &out) const;
 
   private:
@@ -39,8 +39,7 @@ class Cmap { public:
 };
 
 
-inline Glyph
-Cmap::map_uni(uint32_t c) const
+inline Glyph Cmap::map_uni(uint32_t c) const
 {
     return map_table(first_unicode_table(), c, ErrorHandler::default_handler());
 }

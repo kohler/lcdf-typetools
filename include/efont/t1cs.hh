@@ -130,21 +130,21 @@ class Charstring { public:
 class Type1Charstring : public Charstring { public:
     
     Type1Charstring()				{ }
-    Type1Charstring(const String &);		// unencrypted
+    inline Type1Charstring(const String &);	// unencrypted
     Type1Charstring(int lenIV, const String &);	// encrypted
     // default copy constructor
     // default destructor
     // default assignment operator
   
-    const uint8_t *data() const;
+    inline const uint8_t *data() const;
     int length() const				{ return _s.length(); }
     operator bool() const			{ return _s.length() != 0; }
     
-    const String &data_string() const;
-    String substring(int pos, int len) const;
+    inline const String &data_string() const;
+    inline String substring(int pos, int len) const;
     int first_caret_after(int pos) const;
     
-    void assign(const String &);
+    inline void assign(const String &);
     void prepend(const Type1Charstring &);
     void assign_substring(int pos, int len, const String &);
     
@@ -163,12 +163,12 @@ class Type1Charstring : public Charstring { public:
 class Type2Charstring : public Charstring { public:
   
     Type2Charstring()				{ }
-    Type2Charstring(const String &);
+    inline Type2Charstring(const String &);
     // default copy constructor
     // default destructor
     // default assignment operator
     
-    const uint8_t *data() const;
+    inline const uint8_t *data() const;
     int length() const				{ return _s.length(); }
     
     bool process(CharstringInterp &) const;
@@ -213,9 +213,9 @@ class CharstringProgram { public:
     virtual Charstring *gsubr(int) const	{ return 0; }
     virtual int gsubr_bias() const		{ return 0; }
 
-    int nxsubrs(bool g) const;
-    Charstring *xsubr(bool g, int) const;
-    int xsubr_bias(bool g) const;
+    inline int nxsubrs(bool g) const;
+    inline Charstring *xsubr(bool g, int) const;
+    inline int xsubr_bias(bool g) const;
     
     virtual int nglyphs() const			{ return 0; }
     virtual PermString glyph_name(int) const	{ return PermString();}
@@ -251,88 +251,76 @@ enum Type1Defs {
 };
 
 
-inline
-Type1Charstring::Type1Charstring(const String &s)
+inline Type1Charstring::Type1Charstring(const String &s)
     : _s(s), _key(-1)
 {
 }
 
-inline void
-Type1Charstring::assign(const String &s)
+inline void Type1Charstring::assign(const String &s)
 {
     _s = s;
     _key = -1;
 }
 
-inline const uint8_t *
-Type1Charstring::data() const
+inline const uint8_t *Type1Charstring::data() const
 {
     if (_key >= 0)
 	decrypt();
     return reinterpret_cast<const uint8_t *>(_s.data());
 }
 
-inline const String &
-Type1Charstring::data_string() const
+inline const String &Type1Charstring::data_string() const
 {
     if (_key >= 0)
 	decrypt();
     return _s;
 }
 
-inline String
-Type1Charstring::substring(int pos, int len) const
+inline String Type1Charstring::substring(int pos, int len) const
 {
     if (_key >= 0)
 	decrypt();
     return _s.substring(pos, len);
 }
 
-inline bool
-operator==(const Type1Charstring &a, const Type1Charstring &b)
+inline bool operator==(const Type1Charstring &a, const Type1Charstring &b)
 {
     return a.data_string() == b.data_string();
 }
 
 
-inline
-Type2Charstring::Type2Charstring(const String &s)
+inline Type2Charstring::Type2Charstring(const String &s)
     : _s(s)
 {
 }
 
-inline const uint8_t *
-Type2Charstring::data() const
+inline const uint8_t *Type2Charstring::data() const
 {
     return reinterpret_cast<const uint8_t *>(_s.data());
 }
 
-inline int
-CharstringProgram::nxsubrs(bool g) const
+
+inline int CharstringProgram::nxsubrs(bool g) const
 {
     return (g ? ngsubrs() : nsubrs());
 }
 
-inline Charstring *
-CharstringProgram::xsubr(bool g, int i) const
+inline Charstring *CharstringProgram::xsubr(bool g, int i) const
 {
     return (g ? gsubr(i) : subr(i));
 }
 
-inline int
-CharstringProgram::xsubr_bias(bool g) const
+inline int CharstringProgram::xsubr_bias(bool g) const
 {
     return (g ? gsubr_bias() : subr_bias());
 }
 
-inline const CharstringProgram *
-CharstringProgram::program(int gi) const
+inline const CharstringProgram *CharstringProgram::program(int gi) const
 {
     return (_parent_program ? child_program(gi) : this);
 }
 
-inline CharstringContext
-CharstringProgram::glyph_context(int gi) const
+inline CharstringContext CharstringProgram::glyph_context(int gi) const
 {
     if (!_parent_program)
 	return CharstringContext(this, glyph(gi));
@@ -342,8 +330,7 @@ CharstringProgram::glyph_context(int gi) const
 	return CharstringContext(0, 0);
 }
 
-inline CharstringContext
-CharstringProgram::glyph_context(PermString gn) const
+inline CharstringContext CharstringProgram::glyph_context(PermString gn) const
 {
     return CharstringContext(this, glyph(gn));
 }

@@ -24,7 +24,7 @@ class Type1Font : public CharstringProgram { public:
     
     bool ok() const;
   
-    PermString font_name() const;
+    inline PermString font_name() const;
     void font_matrix(double[6]) const;
   
     int nitems() const			{ return _items.size(); }
@@ -71,8 +71,8 @@ class Type1Font : public CharstringProgram { public:
     Type1Definition *fi_dict(PermString s) const { return _dict[dFI][s];}
 
     typedef HashMap<PermString, Type1Definition *> DictHashMap;
-    DictHashMap::const_iterator dict_begin(int dict) const;
-    DictHashMap::iterator dict_begin(int dict);
+    inline DictHashMap::const_iterator dict_begin(int dict) const;
+    inline DictHashMap::iterator dict_begin(int dict);
     int first_dict_item(int d) const		{ return _index[d]; }
 
     Type1Definition *ensure(Dict, PermString);
@@ -137,31 +137,27 @@ class Type1Font : public CharstringProgram { public:
   protected:
 
     void uncache_defs();
-    void set_dict(int dict, PermString, Type1Definition *);
+    inline void set_dict(int dict, PermString, Type1Definition *);
   
 };
 
 
-inline Type1Font::DictHashMap::const_iterator
-Type1Font::dict_begin(int dict) const
+inline Type1Font::DictHashMap::const_iterator Type1Font::dict_begin(int dict) const
 {
     return _dict[dict].begin();
 }
 
-inline Type1Font::DictHashMap::iterator
-Type1Font::dict_begin(int dict)
+inline Type1Font::DictHashMap::iterator Type1Font::dict_begin(int dict)
 {
     return _dict[dict].begin();
 }
 
-inline void
-Type1Font::set_dict(int dict, PermString name, Type1Definition *t1d)
+inline void Type1Font::set_dict(int dict, PermString name, Type1Definition *t1d)
 {
     _dict[dict].insert(name, t1d);
 }
 
-inline PermString
-Type1Font::font_name() const
+inline PermString Type1Font::font_name() const
 {
     if (!_cached_defs)
 	cache_defs();

@@ -84,8 +84,8 @@ class Cff { public:
 	operator bool() const	{ return live(); }
 	int nitems() const;
 
-	const uint8_t *operator*() const;
-	const uint8_t *operator[](int) const;
+	inline const uint8_t *operator*() const;
+	inline const uint8_t *operator[](int) const;
 	const uint8_t *index_end() const;
 
 	void operator++()	{ _offset += _offsize; }
@@ -98,7 +98,7 @@ class Cff { public:
 	const uint8_t *_last_offset;
 	int _offsize;
 
-	uint32_t offset_at(const uint8_t *) const;
+	inline uint32_t offset_at(const uint8_t *) const;
     
     };
     
@@ -194,7 +194,7 @@ class Cff::FDSelect { public:
     int error() const			{ return _error; }
     
     int nglyphs() const			{ return _nglyphs; }
-    int gid_to_fd(int gid) const;
+    inline int gid_to_fd(int gid) const;
     
   private:
 
@@ -347,8 +347,8 @@ class Cff::Font : public Cff::ChildFont { public:
 
     bool dict_has(DictOperator) const;
     String dict_string(DictOperator) const;
-    bool dict_value(DictOperator, double, double *) const;
-    bool dict_value(DictOperator, Vector<double> &) const;
+    inline bool dict_value(DictOperator, double, double *) const;
+    inline bool dict_value(DictOperator, Vector<double> &) const;
     
   private:
 
@@ -366,13 +366,12 @@ class Cff::Font : public Cff::ChildFont { public:
     int parse_encoding(int pos, ErrorHandler *);
     int assign_standard_encoding(const int *standard_encoding);
 
-    const Dict &dict_of(DictOperator) const;
+    inline const Dict &dict_of(DictOperator) const;
     
 };
 
 
-inline uint32_t
-Cff::IndexIterator::offset_at(const uint8_t *x) const
+inline uint32_t Cff::IndexIterator::offset_at(const uint8_t *x) const
 {
     switch (_offsize) {
       case 0:
@@ -388,22 +387,19 @@ Cff::IndexIterator::offset_at(const uint8_t *x) const
     }
 }
 
-inline const uint8_t *
-Cff::IndexIterator::operator*() const
+inline const uint8_t *Cff::IndexIterator::operator*() const
 {
     assert(live());
     return _contents + offset_at(_offset);
 }
 
-inline const uint8_t *
-Cff::IndexIterator::operator[](int which) const
+inline const uint8_t *Cff::IndexIterator::operator[](int which) const
 {
     assert(live() && _offset + which * _offsize <= _last_offset);
     return _contents + offset_at(_offset + which * _offsize);
 }
 
-inline int
-Cff::Charset::gid_to_sid(int gid) const
+inline int Cff::Charset::gid_to_sid(int gid) const
 {
     if (gid >= 0 && gid < _sids.size())
 	return _sids[gid];
@@ -411,8 +407,7 @@ Cff::Charset::gid_to_sid(int gid) const
 	return -1;
 }
 
-inline int
-Cff::Charset::sid_to_gid(int sid) const
+inline int Cff::Charset::sid_to_gid(int sid) const
 {
     if (sid >= 0 && sid < _gids.size())
 	return _gids[sid];
@@ -420,8 +415,7 @@ Cff::Charset::sid_to_gid(int sid) const
 	return -1;
 }
 
-inline int
-Cff::FDSelect::gid_to_fd(int gid) const
+inline int Cff::FDSelect::gid_to_fd(int gid) const
 {
     if (gid >= 0 && gid < _nglyphs)
 	return _fds[gid];
@@ -429,26 +423,22 @@ Cff::FDSelect::gid_to_fd(int gid) const
 	return -1;
 }
 
-inline bool
-Cff::Dict::has_first(DictOperator op) const
+inline bool Cff::Dict::has_first(DictOperator op) const
 {
     return _operators.size() && _operators[0] == op;
 }
 
-inline const Cff::Dict &
-Cff::Font::dict_of(DictOperator op) const
+inline const Cff::Dict &Cff::Font::dict_of(DictOperator op) const
 {
     return (op >= 0 && op <= oLastOperator && (operator_types[op] & tP) ? _private_dict : _top_dict);
 }
 
-inline bool
-Cff::Font::dict_value(DictOperator op, double def, double *val) const
+inline bool Cff::Font::dict_value(DictOperator op, double def, double *val) const
 {
     return dict_of(op).value(op, def, val);
 }
 
-inline bool
-Cff::Font::dict_value(DictOperator op, Vector<double> &val) const
+inline bool Cff::Font::dict_value(DictOperator op, Vector<double> &val) const
 {
     return dict_of(op).value(op, val);
 }

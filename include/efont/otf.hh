@@ -62,7 +62,7 @@ class Font { public:
 class ScriptList { public:
 
     ScriptList()		{ }
-    ScriptList(const String &, ErrorHandler * = 0);
+    inline ScriptList(const String &, ErrorHandler * = 0);
     int assign(const String &, ErrorHandler * = 0);
     // default destructor
 
@@ -89,7 +89,7 @@ class ScriptList { public:
 class FeatureList { public:
 
     FeatureList()		{ }
-    FeatureList(const String &, ErrorHandler * = 0);
+    inline FeatureList(const String &, ErrorHandler * = 0);
     int assign(const String &, ErrorHandler * = 0);
     // default destructor
 
@@ -186,8 +186,8 @@ class Coverage { public:
 
 Coverage operator&(const Coverage &, const Coverage &);
 bool operator<=(const Coverage &, const Coverage &);
-inline bool
-operator>=(const Coverage &a, const Coverage &b)
+
+inline bool operator>=(const Coverage &a, const Coverage &b)
 {
     return b <= a;
 }
@@ -198,8 +198,8 @@ class GlyphSet { public:
     GlyphSet(const GlyphSet &);
     ~GlyphSet();
 
-    bool covers(Glyph g) const;
-    bool operator[](Glyph g) const	{ return covers(g); }
+    inline bool covers(Glyph g) const;
+    inline bool operator[](Glyph g) const;
     int change(Glyph, bool);
     void insert(Glyph g)		{ change(g, true); }
     void remove(Glyph g)		{ change(g, false); }
@@ -285,88 +285,74 @@ class ClassDef { public:
 extern Vector<PermString> debug_glyph_names;
 
 
-inline bool
-operator==(Tag t1, uint32_t t2)
+inline bool operator==(Tag t1, uint32_t t2)
 {
     return t1.value() == t2;
 }
 
-inline bool
-operator!=(Tag t1, uint32_t t2)
+inline bool operator!=(Tag t1, uint32_t t2)
 {
     return t1.value() != t2;
 }
 
-inline bool
-operator<(Tag t1, uint32_t t2)
+inline bool operator<(Tag t1, uint32_t t2)
 {
     return t1.value() < t2;
 }
 
-inline bool
-operator>(Tag t1, uint32_t t2)
+inline bool operator>(Tag t1, uint32_t t2)
 {
     return t1.value() > t2;
 }
 
-inline bool
-operator<=(Tag t1, uint32_t t2)
+inline bool operator<=(Tag t1, uint32_t t2)
 {
     return t1.value() <= t2;
 }
 
-inline bool
-operator>=(Tag t1, uint32_t t2)
+inline bool operator>=(Tag t1, uint32_t t2)
 {
     return t1.value() >= t2;
 }
 
-inline bool
-operator==(Tag t1, Tag t2)
+inline bool operator==(Tag t1, Tag t2)
 {
     return t1.value() == t2.value();
 }
 
-inline bool
-operator!=(Tag t1, Tag t2)
+inline bool operator!=(Tag t1, Tag t2)
 {
     return t1.value() != t2.value();
 }
 
-inline bool
-operator<(Tag t1, Tag t2)
+inline bool operator<(Tag t1, Tag t2)
 {
     return t1.value() < t2.value();
 }
 
-inline unsigned
-hashcode(Tag t)
+inline unsigned hashcode(Tag t)
 {
     return t.value();
 }
 
-inline
-ScriptList::ScriptList(const String &str, ErrorHandler *errh)
+inline ScriptList::ScriptList(const String &str, ErrorHandler *errh)
 {
     assign(str, errh);
 }
 
-inline
-FeatureList::FeatureList(const String &str, ErrorHandler *errh)
+inline FeatureList::FeatureList(const String &str, ErrorHandler *errh)
 {
     assign(str, errh);
 }
 
-inline void
-FeatureList::filter(Vector<int> &fids, Tag ftag) const
+inline void FeatureList::filter(Vector<int> &fids, Tag ftag) const
 {
     Vector<Tag> tags;
     tags.push_back(ftag);
     filter(fids, tags);
 }
 
-inline bool
-GlyphSet::covers(Glyph g) const
+inline bool GlyphSet::covers(Glyph g) const
 {
     if ((unsigned)g > MAXGLYPH)
 	return false;
@@ -374,6 +360,11 @@ GlyphSet::covers(Glyph g) const
 	return u[(g & MASK) >> 5] & (1 << (g & 0x1F));
     else
 	return false;
+}
+
+inline bool GlyphSet::operator[](Glyph g) const
+{
+    return covers(g);
 }
 
 }}

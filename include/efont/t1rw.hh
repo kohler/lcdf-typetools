@@ -116,11 +116,11 @@ class Type1Writer { public:
   
     bool eexecing() const				{ return _eexec; }
   
-    void print(int);
+    inline void print(int);
     void print(const char *, int);
   
-    Type1Writer &operator<<(char);
-    Type1Writer &operator<<(unsigned char);
+    inline Type1Writer &operator<<(char);
+    inline Type1Writer &operator<<(unsigned char);
     Type1Writer &operator<<(int);
     Type1Writer &operator<<(double);
   
@@ -191,44 +191,38 @@ class Type1PFBWriter: public Type1Writer {
 };
 
 
-inline void
-Type1Writer::print(int c)
+inline void Type1Writer::print(int c)
 {
     if (_pos >= BufSize)
 	local_flush();
     _buf[_pos++] = c;
 }
 
-inline Type1Writer &
-operator<<(Type1Writer &w, const char *cc)
+inline Type1Writer &operator<<(Type1Writer &w, const char *cc)
 {
     w.print(cc, strlen(cc));
     return w;
 }
 
-inline Type1Writer &
-operator<<(Type1Writer &w, PermString p)
+inline Type1Writer &operator<<(Type1Writer &w, PermString p)
 {
     w.print(p.c_str(), p.length());
     return w;
 }
 
-inline Type1Writer &
-operator<<(Type1Writer &w, const String &s)
+inline Type1Writer &operator<<(Type1Writer &w, const String &s)
 {
     w.print(s.data(), s.length());
     return w;
 }
 
-inline Type1Writer &
-Type1Writer::operator<<(char c)
+inline Type1Writer &Type1Writer::operator<<(char c)
 {
     print((unsigned char)c);
     return *this;
 }
 
-inline Type1Writer &
-Type1Writer::operator<<(unsigned char c)
+inline Type1Writer &Type1Writer::operator<<(unsigned char c)
 {
     print(c);
     return *this;

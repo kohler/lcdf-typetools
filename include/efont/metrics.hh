@@ -69,7 +69,7 @@ class Metrics { public:
     double &bt(int i)			{ return _btv[i]; }
     double &kv(int i)			{ return _kernv[i]; }
   
-    int add_kv(double d);
+    inline int add_kv(double d);
   
     void interpolate_dimens(const Metrics &, double, bool increment);
   
@@ -77,8 +77,8 @@ class Metrics { public:
   
     PairProgram *pair_program()			{ return &_pairp; }
     const PairProgram *pair_program() const	{ return &_pairp; }
-    bool add_kern(GlyphIndex, GlyphIndex, int);
-    bool add_lig(GlyphIndex, GlyphIndex, GlyphIndex, int = opLigSimple);
+    inline bool add_kern(GlyphIndex, GlyphIndex, int);
+    inline bool add_lig(GlyphIndex, GlyphIndex, GlyphIndex, int = opLigSimple);
 
     // EXTENSIONS
 
@@ -156,20 +156,17 @@ enum FontDimensionDefs {
 };
 
 
-inline bool
-Metrics::add_kern(GlyphIndex g1, GlyphIndex g2, int ki)
+inline bool Metrics::add_kern(GlyphIndex g1, GlyphIndex g2, int ki)
 {
     return _pairp.add_kern(g1, g2, ki);
 }
 
-inline bool
-Metrics::add_lig(GlyphIndex g1, GlyphIndex g2, GlyphIndex gr, int kind)
+inline bool Metrics::add_lig(GlyphIndex g1, GlyphIndex g2, GlyphIndex gr, int kind)
 {
     return _pairp.add_lig(g1, g2, gr, kind);
 }
 
-inline int
-Metrics::add_kv(double d)
+inline int Metrics::add_kv(double d)
 {
     int k = _kernv.size();
     _kernv.push_back(d);
