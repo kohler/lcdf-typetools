@@ -913,13 +913,16 @@ incorrectly.
 .TP 5
 .IR aalt ", Access All Alternates"
 Lets the user choose between all available alternate forms for a character.
-This includes things like superscript and subscript variants, as well as
-different styles (swash, for example).  The
+This includes things like superscript and subscript variants, different
+styles (swash, for example), and even ornaments.  The
+.BR \-\-altselector\-feature= aalt
+option can help an
 .BR \-\-altselector\-char
-mechanism can provide useful access to this feature if you supply
-.BR \-\-altselector\-feature= aalt. 
-See also
-.IR salt " and " calt .
+provide useful access to alternates, but the
+.I aalt
+feature isn't usually useful on its own.  Try the
+.IR salt " and " calt
+features instead.
 .TP 5
 .IR c2sc ", Small Capitals From Capitals"
 Replaces capital letters with small capitals: a sort of converse of the
