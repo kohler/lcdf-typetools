@@ -52,7 +52,7 @@ printable_filename(const String &s)
 }
 
 String
-shell_command_output(String cmdline, const String &input, ErrorHandler *errh)
+shell_command_output(String cmdline, const String &input, ErrorHandler *errh, bool strip_newlines)
 {
     FILE *f = tmpfile();
     if (!f)
@@ -79,5 +79,7 @@ shell_command_output(String cmdline, const String &input, ErrorHandler *errh)
 
     fclose(f);
     pclose(p);
+    while (strip_newlines && sa && (sa.back() == '\n' || sa.back() == '\r'))
+	sa.pop_back();
     return sa.take_string();
 }

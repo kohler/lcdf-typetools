@@ -20,6 +20,8 @@
 static String::Initializer initializer;
 static String odir[NUMODIR];
 static String typeface = "unknown";
+static String vendor;
+#define DEFAULT_VENDOR "otftotfm"
 
 static const struct {
     const char *name;
@@ -27,11 +29,11 @@ static const struct {
     const char *texdir;
 } odir_info[] = {
     { "encoding", "ENCODINGDESTDIR", "dvips" },
-    { "TFM", "TFMDESTDIR", "fonts/tfm/autofont/%t" },
-    { "PL", "PLDESTDIR", "fonts/pl/autofont/%t" },
-    { "VF", "VFDESTDIR", "fonts/vf/autofont/%t" },
-    { "VPL", "VPLDESTDIR", "fonts/vpl/autofont/%t" },
-    { "Type 1", "T1DESTDIR", "fonts/type1/autofont/%t" },
+    { "TFM", "TFMDESTDIR", "fonts/tfm/%t" },
+    { "PL", "PLDESTDIR", "fonts/pl/%t" },
+    { "VF", "VFDESTDIR", "fonts/vf/%t" },
+    { "VPL", "VPLDESTDIR", "fonts/vpl/%t" },
+    { "Type 1", "T1DESTDIR", "fonts/type1/%t" },
     { "DVIPS map", 0, "dvips" }
 };
 
@@ -77,8 +79,11 @@ getodir(int o, ErrorHandler *errh)
     if (!odir[o] && automatic && writable_texdir) {
 	String dir = writable_texdir + odir_info[o].texdir;
 
-	if (dir.substring(-3, 3) == "/%t")
-	    dir = dir.substring(0, -2) + typeface;
+	if (dir.substring(-3, 3) == "/%t") {
+	    if (!vendor)
+		vendor = DEFAULT_VENDOR;
+	    dir = dir.substring(0, -2) + vendor + "/" + typeface;
+	}
 	
 	// create parent directories as appropriate
 	int slash = writable_texdir.length() - 1;
@@ -113,9 +118,9 @@ bool
 setodir(int o, const String &value)
 {
     assert(o >= 0 && o < NUMODIR);
-    bool first = !odir[o];
+    bool had = (bool) odir[o];
     odir[o] = value;
-    return !first;
+    return !had;
 }
 
 const char *
@@ -134,8 +139,6 @@ update_odir(int o, String file, ErrorHandler *errh)
 	// look for mktexupd script
 	if (!mktexupd_tried) {
 	    mktexupd = shell_command_output(KPATHSEA_BINDIR "kpsewhich --format='web2c files' mktexupd", "", errh);
-	    while (mktexupd && (mktexupd.back() == '\n' || mktexupd.back() == '\r'))
-		mktexupd = mktexupd.substring(0, -1);
 	    mktexupd_tried = true;
 	}
 
@@ -160,10 +163,18 @@ update_odir(int o, String file, ErrorHandler *errh)
 #endif
 }
 
-void
-set_typeface(const String &t)
+bool
+set_vendor(const String &s)
 {
-    typeface = t;
+    bool had = (bool) vendor;
+    vendor = s;
+    return !had;
+}
+
+void
+set_typeface(const String &s)
+{
+    typeface = s;
 }
 
 String
@@ -215,7 +226,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 {
 #if HAVE_KPATHSEA
     if (automatic && getodir(O_MAP, errh)) {
-	String filename = odir[O_MAP] + "/autofont.map";
+	String filename = odir[O_MAP] + "/" + vendor + ".map";
 	int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
 	    return errh->error("%s: %s", filename.c_str(), strerror(errno));
@@ -241,19 +252,12 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 # endif
 
 	// remove spurious absolute paths from mapline
-	{
-	    int pos;
-	    if (odir_kpathsea[O_ENCODING]
-		&& (pos = mapline.find_left("<[" + writable_texdir)) > 0) {
-		int space = mapline.find_left(' ', pos);
-		if (space < 0)
-		    space = mapline.length();
-		int slash = mapline.find_right('/', space);
-		mapline = mapline.substring(0, pos + 2) + mapline.substring(slash + 1);
-	    }
-	    if (odir_kpathsea[O_TYPE1]
-		&& (pos = mapline.find_left("<" + writable_texdir)) > 0) {
-		int space = mapline.find_left(' ', pos);
+	for (int pos = mapline.find_left('<'); pos >= 0; pos = mapline.find_left('<', pos + 1)) {
+	    if (pos + 1 < mapline.length() && (mapline[pos+1] == '[' || mapline[pos+1] == '<'))
+		pos++;
+	    if (pos + 1 + writable_texdir.length() <= mapline.length()
+		&& memcmp(mapline.data() + pos + 1, writable_texdir.data(), writable_texdir.length()) == 0) {
+		int space = mapline.find_left(' ', pos + writable_texdir.length());
 		if (space < 0)
 		    space = mapline.length();
 		int slash = mapline.find_right('/', space);
@@ -276,7 +280,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	// add comment if necessary
 	bool created = (!text);
 	if (created)
-	    text = "% Automatically created by otftotfm or other autofont programs. Do not edit.\n\n";
+	    text = "% Automatically maintained by otftotfm or other programs. Do not edit.\n\n";
 	if (text.back() != '\n')
 	    text += "\n";
 
@@ -326,4 +330,30 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
     (void) mapline;
 #endif
     return 0;
+}
+
+String
+locate_encoding(String encfile, ErrorHandler *errh, bool literal)
+{
+    if (!encfile || encfile == "-")
+	return encfile;
+    
+    if (!literal) {
+	int slash = encfile.find_right('/');
+	int dot = encfile.find_left('.', slash >= 0 ? slash : 0);
+	if (dot < 0)
+	    if (String file = locate_encoding(encfile + ".enc", errh, true))
+		return file;
+    }
+    
+#if HAVE_KPATHSEA
+    if (encfile.find_left('\'') < 0)
+	if (String file = shell_command_output(KPATHSEA_BINDIR "kpsewhich --format='PostScript header' '" + encfile + "'", "", errh))
+	    return file;
+#endif
+
+    if (access(encfile.c_str(), R_OK) >= 0)
+	return encfile;
+    else
+	return String();
 }

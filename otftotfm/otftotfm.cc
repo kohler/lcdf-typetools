@@ -53,6 +53,7 @@ using namespace Efont;
 #define FONT_NAME_OPT		322
 #define QUIET_OPT		323
 #define GLYPHLIST_OPT		324
+#define VENDOR_OPT		325
 
 #define VIRTUAL_OPT		331
 #define PL_OPT			332
@@ -81,6 +82,7 @@ Clp_Option options[] = {
     
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
     { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
+    { "vendor", 'v', VENDOR_OPT, Clp_ArgString, 0 },
     
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ArgString, 0 },
     { "pl-directory", 0, PL_DIR_OPT, Clp_ArgString, 0 },
@@ -96,7 +98,7 @@ Clp_Option options[] = {
     { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
-    { "version", 'v', VERSION_OPT, 0, 0 },
+    { "version", 0, VERSION_OPT, 0, 0 },
 
     { "tfm", 't', TFM_OPT, 0, 0 }, // deprecated
     { "print-features", 0, QUERY_FEATURES_OPT, 0, 0 }, // deprecated
@@ -169,12 +171,13 @@ Input options:\n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
   -p, --pl                     Output human-readable PL/VPLs, not VF/TFMs.\n\
-  -a, --automatic              Derive directories from the environment.\n\
-      --tfm-directory=DIR      Put TFM files in DIR [.|TFMDESTDIR].\n\
-      --pl-directory=DIR       Put PL files in DIR [.|PLDESTDIR].\n\
-      --vf-directory=DIR       Put VF files in DIR [.|VFDESTDIR].\n\
-      --vpl-directory=DIR      Put VPL files in DIR [.|VPLDESTDIR].\n\
-      --encoding-directory=DIR Put encoding files in DIR [.|ENCODINGDESTDIR].\n\
+  -a, --automatic              Install in a TeX Directory Structure.\n\
+  -v, --vendor=NAME            With -a, set vendor for fonts [otftotfm].\n\
+      --tfm-directory=DIR      Put TFM files in DIR [.|automatic].\n\
+      --pl-directory=DIR       Put PL files in DIR [.|automatic].\n\
+      --vf-directory=DIR       Put VF files in DIR [.|automatic].\n\
+      --vpl-directory=DIR      Put VPL files in DIR [.|automatic].\n\
+      --encoding-directory=DIR Put encoding files in DIR [.|automatic].\n\
 \n\
 Other options:\n\
   --qs, --query-scripts        Print font's supported scripts and exit.\n\
@@ -183,7 +186,7 @@ Other options:\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
-  -v, --version                Print version number and exit.\n\
+      --version                Print version number and exit.\n\
 \n\
 Report bugs to <kohler@icir.org>.\n", program_name, program_name);
 }
@@ -345,7 +348,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 
     // write MAPFONT
     if (vpl)
-	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s_base)\n   )\n", font_name.c_str());
+	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s--base)\n   )\n", font_name.c_str());
     
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
@@ -892,7 +895,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     // check whether virtual metrics are necessary
     String metrics_suffix;
     if (encoding.need_virtual())
-	metrics_suffix = "_base";
+	metrics_suffix = "--base";
     else
 	output_flags &= ~G_VMETRICS;
     
@@ -943,7 +946,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	sa << '\n';
 	if (!automatic)
 	    printf("%s", sa.c_str());
-	update_autofont_map(font_name, sa.take_string(), errh);
+	update_autofont_map(font_name + metrics_suffix, sa.take_string(), errh);
     }
 }
 
@@ -1113,6 +1116,11 @@ main(int argc, char **argv)
 	    automatic = !clp->negated;
 	    break;
 
+	  case VENDOR_OPT:
+	    if (!set_vendor(clp->arg))
+		usage_error(errh, "vendor name specified twice");
+	    break;
+
 	  case VIRTUAL_OPT:
 	    if (clp->negated)
 		output_flags &= ~G_VMETRICS;
@@ -1238,7 +1246,8 @@ particular purpose.\n");
     // read encoding
     DvipsEncoding dvipsenc;
     if (encoding_file)
-	dvipsenc.parse(encoding_file, errh);
+	if (String path = locate_encoding(encoding_file, errh))
+	    dvipsenc.parse(path, errh);
 
     do_file(input_file, otf, dvipsenc, literal_encoding, &cerrh);
     
