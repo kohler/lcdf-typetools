@@ -861,13 +861,14 @@ CharstringInterp::type1_command(int cmd)
 int
 CharstringInterp::type2_handle_width(int cmd, bool have_width)
 {
-    if (have_width) {
+    _cp = _lsb = _seac_origin;
+    if (_state != S_INITIAL)
+	/* ignore width */;
+    else if (have_width)
 	act_nominal_width_delta(cmd, at(0));
-	return 1;
-    } else {
+    else
 	act_default_width(cmd);
-	return 0;
-    }
+    return (have_width ? 1 : 0);
 }
 
 bool
@@ -884,7 +885,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cHstem:
       case CS::cHstemhm:
 	CHECK_STACK(2);
-	if (_state == S_INITIAL)
+	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
 	if (_state > S_HSTEM)
 	    return error(errOrdering, cmd);
@@ -899,7 +900,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       case CS::cVstem:
       case CS::cVstemhm:
 	CHECK_STACK(2);
-	if (_state == S_INITIAL)
+	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
 	if (_state > S_VSTEM)
 	    return error(errOrdering, cmd);
@@ -933,7 +934,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 
       case CS::cRmoveto:
 	CHECK_STACK(2);
-	if (_state == S_INITIAL)
+	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 2);
 	else if (_state == S_PATH)
 	    act_closepath(cmd);
@@ -946,7 +947,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 
       case CS::cHmoveto:
 	CHECK_STACK(1);
-	if (_state == S_INITIAL)
+	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 1);
 	else if (_state == S_PATH)
 	    act_closepath(cmd);
@@ -959,7 +960,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 
       case CS::cVmoveto:
 	CHECK_STACK(1);
-	if (_state == S_INITIAL)
+	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 1);
 	else if (_state == S_PATH)
 	    act_closepath(cmd);
@@ -1148,7 +1149,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
       }
 	
       case CS::cEndchar:
-	if (_state == S_INITIAL)
+	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 0 && size() != 4);
 	if (bottom + 3 < size() && _state == S_INITIAL)
 	    act_seac(cmd, 0, at(bottom), at(bottom + 1), (int)at(bottom + 2), (int)at(bottom + 3));
