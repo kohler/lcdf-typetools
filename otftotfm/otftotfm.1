@@ -805,9 +805,7 @@ To remove all kerns between two characters, say:
 .nf
     % LIGKERN \fIglyph1\fR {} \fIglyph2\fR ;
 .fi
-Use a star "*" for one
-.I glyph
-to inhibit all matching kerns.  For instance,
+A "*" matches any character.  For instance,
 .nf
     % LIGKERN a {} * ;
 .fi
@@ -818,7 +816,7 @@ removes all kerns with "a" as the left-hand character, and
 removes all kerns.
 .PP
 .B Otftotfm 
-also supports extended syntax for inhibiting ligatures via LIGKERNX
+can also inhibit ligatures via LIGKERNX
 commands.  This:
 .nf
     % LIGKERNX \fIglyph1\fR {L} \fIglyph2\fR ;
