@@ -88,7 +88,7 @@ kpsei_string(char* x)
 }
 
 static void
-look_for_writable_texdir(const char *path_variable)
+look_for_writable_texdir(const char *path_variable, bool create)
 {
     String path = kpsei_string(kpsei_path_expand(path_variable));
     while (path && !writable_texdir) {
@@ -96,6 +96,9 @@ look_for_writable_texdir(const char *path_variable)
 	String texdir = path.substring(path.begin(), colon);
 	path = path.substring(colon + 1, path.end());
 	if (access(texdir.c_str(), W_OK) >= 0)
+	    writable_texdir = texdir;
+	else if (create && errno != EACCES && mkdir(texdir.c_str(), 0777) >= 0)
+	    // create file if it doesn't exist already
 	    writable_texdir = texdir;
     }   
     if (writable_texdir && writable_texdir.back() != '/')
@@ -105,11 +108,13 @@ look_for_writable_texdir(const char *path_variable)
 static void
 find_writable_texdir(ErrorHandler *errh, const char *)
 {
-    look_for_writable_texdir("$VARTEXMF");
+    look_for_writable_texdir("$TEXMFVAR", true);
     if (!writable_texdir)
-	look_for_writable_texdir("$TEXMF");
+	look_for_writable_texdir("$VARTEXMF", false);
+    if (!writable_texdir)
+	look_for_writable_texdir("$TEXMF", false);
     if (!writable_texdir) {
-	errh->warning("no writable directory found in $VARTEXMF or $TEXMF");
+	errh->warning("no writable directory found in $TEXMFVAR or $TEXMF");
 	errh->message("(You probably need to set your TEXMF environment variable; see\n\
 the manual for more information. The current TEXMF path is\n\
 '%s'.)", kpsei_string(kpsei_path_expand("$TEXMF")).c_str());
