@@ -66,22 +66,26 @@ void
 Type1Reader::switch_eexec(bool on, unsigned char *data, int len)
 {
     if (on) {
-	if (_pos < len + 2) {
-	    unsigned char *new_data = new unsigned char[len + 2 + DATA_SIZE];
+	if (_pos < len + 3) {
+	    unsigned char *new_data = new unsigned char[len + 3 + DATA_SIZE];
 	    assert(_len <= DATA_SIZE);
-	    memcpy(new_data + len + 2, _data + _pos, _len - _pos);
-	    _len = len + 2 + _len - _pos;
-	    _pos = len + 2;
+	    memcpy(new_data + len + 3, _data + _pos, _len - _pos);
+	    _len = len + 3 + _len - _pos;
+	    _pos = len + 3;
 	    delete[] _data;
 	    _data = new_data;
 	}
+	int original_pos = _pos;
+	// don't forget _ungot!!
+	if (_ungot >= 0)
+	    _data[--_pos] = _ungot, _ungot = -1;
 	if (_crlf == 0 || _crlf == 2)
 	    _data[--_pos] = '\n';
 	if (_crlf == 1 || _crlf == 2)
 	    _data[--_pos] = '\r';
 	memcpy(_data + _pos - len, data, len);
 	_pos -= len;
-	start_eexec();
+	start_eexec(original_pos - _pos);
     }
     _eexec = on;
 }
@@ -151,20 +155,21 @@ Type1Reader::get()
 
 
 void
-Type1Reader::start_eexec()
+Type1Reader::start_eexec(int initial_ascii)
 {
     /* God damn this _ungot thing!! It makes sense not to check it on every
        char fetch, since it can only be set at the end of next_line; therefore,
        only the first get() into a user-visible function might need to check
        _ungot. The problem is I forgot start_eexec() was such a function! */
     int c = _ungot < 0 ? get_base() : _ungot;
+    initial_ascii--;
     _ungot = -1;
   
     /* Strictly speaking, I should look for whitespace even in binary sections
        of PFB fonts; but it turns out some PFBs would be unreadable with that
        pedantic rule. */
-    while (isspace(c) && !preserve_whitespace())
-	c = get_base();
+    while (isspace(c) && (initial_ascii >= 0 || !preserve_whitespace()))
+	c = get_base(), initial_ascii--;
   
     /* Differentiate between ASCII eexec and binary eexec. */
     int rand_bytes[4];

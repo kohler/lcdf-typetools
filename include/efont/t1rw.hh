@@ -52,7 +52,7 @@ class Type1Reader { public:
     inline int get_base();
     inline int get();
   
-    void start_eexec();
+    void start_eexec(int ascii_chars);
   
     bool test_charstring(StringAccum &);
   
