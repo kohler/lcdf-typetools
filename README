@@ -1,89 +1,49 @@
-T1SICLE
-=======
-   The current version of the mminstance package is available on the Web at
-`http://www.lcdf.org/~eddietwo/type/'. To find out what version you have,
-look at `configure.in' in this directory, or build mmafm (or mmpfb) and run
-`mmafm --version'.
+LCDF-TYPETOOLS 0.1
+==================
 
 USAGE
 -----
-   Mmafm creates an AFM file (font metrics) corresponding to an instance of
-a multiple-master font. It reads the AMFM and AFM files distributed with
-the font.
+   The LCDF Typetools package contains several programs for manipulating
+PostScript Type 1 and PostScript-flavored OpenType fonts.
 
-   Mmpfb creates a normal, single-master font program which looks like an
-instance of a multiple-master font. It reads the multiple master font
-program in PFA or PFB format.
+   Cfftot1 translates a Compact Font Format (CFF) font, or a PostScript-
+flavored OpenType font, into PostScript Type 1 format. It correctly handles
+subroutines and hints. See the manual page 'cfftot1/cfftot1.1' for more
+information.
 
-   These tools let you use multiple masters with programs that require
-single-master fonts (afm2tfm, ps2pk, fontinst, etc.). Both programs work
-fine with fonts which contain intermediate masters (Adobe Jenson and
-Kepler); see `Intermediate Masters' below.
+   Otftopl creates TeX font metrics and encodings that correspond to a
+PostScript-flavored OpenType font. It will interpret glyph positionings,
+substitutions, and ligatures as far as it is able. You can say which
+OpenType features should be activated. See the manual page
+'otftopl/otftopl.1' for more information.
+
+   The other two programs are preliminary and have little or no
+documentation. T1lint checks a Type 1 font for correctness, and t1testpage
+creates PostScript test page file for a given font file.
+
+   Please write me with problems, patches, or suggestions at the address
+below.
 
 REQUIREMENTS
 ------------
-   UNIX; gmake; C & C++ compilers. It's tested on g++-2.7.2 or later. To
-build, just run ./configure, then gmake. See `INSTALL' in this directory
-for more detailed information about `./configure'.
-
-EXAMPLES
---------
-   % mmafm MyriadMM.amfm --weight=300 --width=585 > MyriadMM_300_585_.afm
-   % mmpfb MyriadMM.pfb --weight=300 --width=585 > MyriadMM_300_585_.pfb
-
-   Run `mmafm --help' and `mmpfb --help' for a full option summary.
-
-MMAFM NOTES
------------
-   Mmafm expects the name of an AMFM file on the command line. It also
-needs to find an AFM file for each master (these should have been
-distributed with the AMFM file). You can give the AFM files' names on the
-command line, along with the AMFM file, or you let mmafm find the AFM files
-automatically. For the automatic method, you must follow one of these 2
-conventions:
-
-  1) The AFM files are in the same directory as the AMFM file. They are
-named `FONTNAME.afm' -- `MyriadMM-LightCn.afm', for example.
-
-  2) There is a `PSres.upr' file that lists the AFMs by font name, and the
-`PSRESOURCEPATH' environment variable contains the directory with that
-`PSres.upr' file. (`ps2pk' comes with a sample `PSres.upr' file.)
-
-INTERMEDIATE MASTERS
---------------------
-   Mmpfb can handle intermediate-master fonts transparently. If you use
-`PSres.upr' files, as described above, mmafm will also work transparently
-on intermediate-master fonts: it'll call mmpfb to get the information it
-needs. If you don't use `PSres.upr' files, you need to use mmpfb ahead of
-time to set up some auxiliary files. Say you want to set up an intermediate
-master font `FONT', and FONT's AMFM file is in the `DIR' directory. Here's
-what you need to do:
-
-	% mmpfb FONT.pfb --amcp-info > DIR/FONT.amcp
-
-   When you run mmafm on `DIR/FONT.amfm', it will automatically look for
-`DIR/FONT.amcp'. An example using Adobe Jenson:
-
-	% cd ~/Fonts/AJensonMM
-	% mmpfb AJensonMM.pfb --amcp-info > AJensonMM.amcp
-
-   Most multiple master fonts don't have intermediate masters, so you
-usually don't need to make `.amcp' files. Mmafm will tell you if it is
-necessary for a particular font.
+   UNIX; gmake; C & C++ compilers. To build, just run ./configure, then
+gmake. See 'INSTALL' in this directory for more detailed information about
+'./configure'.
 
 COPYRIGHT/LICENSE
 -----------------
-   All source code is Copyright (C) 1997-9 Eddie Kohler.
+   All source code is Copyright (C) 1997-2003 Eddie Kohler.
 
    This code is distributed under the GNU General Public License, Version
 2, or, at your discretion, any later version. The GNU General Public
 License is available via the Web at <http://www.gnu.org/copyleft/gpl.html>
 
-ACKNOWLEDGEMENTS
-----------------
-   Thanks to Melissa O'Neill <oneill@cs.sfu.ca> for patient debugging.
-
 AUTHOR
 ------
-Eddie Kohler, <eddietwo@lcs.mit.edu>
-http://www.pdos.lcs.mit.edu/~eddietwo/
+Eddie Kohler, <kohler@icir.org>
+http://www.lcdf.org/~eddietwo/
+
+   The current version of the mminstance package is available on the Web at
+'http://www.lcdf.org/type/'.
+
+   LCDF stands for Little Cambridgeport Design Factory.

@@ -1,4 +1,7 @@
 .ds V 0.1
+.de M
+.BR "\\$1" "(\\$2)\\$3"
+..
 .de Sp
 .if n .sp
 .if t .sp 0.4
@@ -66,11 +69,8 @@ Print the version number and some short non-warranty information and exit.
 '
 .SH "SEE ALSO"
 .LP
-.BR t1binary (1),
-.BR t1unmac (1),
-.BR t1mac (1),
-.BR t1asm (1),
-.BR t1disasm (1)
+.M t1binary 1 ,
+.M t1ascii 1
 .LP
 .I "Adobe Type 1 Font Format"
 .LP

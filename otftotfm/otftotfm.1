@@ -1,4 +1,7 @@
 .ds V 0.1
+.de M
+.BR "\\$1" "(\\$2)\\$3"
+..
 .de Sp
 .if n .sp
 .if t .sp 0.4
@@ -10,7 +13,7 @@ otftopl \- create TeX PL metrics files from PostScript OpenType fonts
 .B otftopl
 \%[\fBoptions\fR]
 \%\fIfont\fR [\fIoutput\fR [\fIencoding-output\fR]]
-
+.br
 .B otftopl
 \-a
 \%[\fBoptions\fR]
@@ -18,7 +21,7 @@ otftopl \- create TeX PL metrics files from PostScript OpenType fonts
 .SH DESCRIPTION
 .BR Otftopl
 creates TeX font metrics and a 
-.BR dvips (1)-like
+.M dvips 1 -like
 encoding file that correspond, as far as possible, to a PostScript-flavored
 OpenType font. If the file
 .I output
@@ -45,7 +48,7 @@ selects the instructions that TeX supports, and generates font metrics and
 a dvips encoding file that, together, implement those instructions. By
 default otftopl generates human-readable PL font metrics. Either feed the
 PL font metrics to
-.BR pltotf (1)
+.M pltotf 1
 to get TeX-readable TFM font metrics, or supply the
 .B \-\-tfm
 option and otftopl will run pltotf for you.
@@ -62,7 +65,7 @@ option to select automatic mode.
 Otftopl also generates a prototype
 .I psfonts.map
 line for the font, suitable for
-.BR dvips (1)
+.M dvips 1
 configuration files. It is written to the standard output unless some other
 file was written there already.
 '
@@ -101,7 +104,7 @@ Defaults to any features required by the selected scripts.
 .TP 5
 .BI \-e " encoding\fR, " \-\-encoding= encoding
 Selects the
-.BR dvips (1)
+.M dvips 1
 encoding used as a starting point. See ENCODINGS, below, for more
 information. Defaults to the font's encoding.
 '
@@ -109,7 +112,7 @@ information. Defaults to the font's encoding.
 .TP 5
 .BI \-\-literal\-encoding= encoding
 Selects the
-.BR dvips (1)
+.M dvips 1
 encoding used for the font. No glyph substitutions will be permitted, so
 the output encoding will equal the input encoding (and otftopl will not
 generate an output encoding).
@@ -123,7 +126,7 @@ Select automatic mode.
 .TP 5
 .BI \-n " fontname\fR, " \-\-name= fontname
 Set the name of the output font, which is used in the
-.BR dvips (1)
+.M dvips 1
 .I psfonts.map
 line and, in automatic mode, to generate the output filename. The default
 is derived from the output filename in manual mode, and from the OpenType
@@ -258,7 +261,7 @@ separate them with spaced semicolons.
 Otftopl will use any unused spaces in the encoding for ligatures. Ligatures
 are mapped to their usual locations in the input encoding when possible.
 Ligatures and kerns can be inhibited by LIGKERN comments, as in
-.BR afm2tfm (1).
+.M afm2tfm 1 .
 '
 .SH "BUGS"
 .LP
@@ -273,12 +276,12 @@ fonts.
 '
 .SH "SEE ALSO"
 .LP
-.BR pltotf (1),
-.BR tftopl (1),
-.BR vptovf (1),
-.BR afm2tfm (1),
-.BR dvips (1),
-.BR cfftot1 (1)
+.M pltotf 1 ,
+.M tftopl 1 ,
+.M vptovf 1 ,
+.M afm2tfm 1 ,
+.M dvips 1 ,
+.M cfftot1 1
 .LP
 .I "Adobe Type 1 Font Format"
 .LP

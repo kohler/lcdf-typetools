@@ -12,4 +12,4 @@ cfftot1_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
 
-EXTRADIST = cfftot1.1
+EXTRA_DIST = cfftot1.1
