@@ -529,7 +529,7 @@ CharstringInterp::itc_command(int command, int on_stack)
 
 
 inline void
-CharstringInterp::act_rmoveto(int cmd, double dx, double dy)
+CharstringInterp::act_rmoveto(int /*cmd*/, double dx, double dy)
 {
     _cp.shift(dx, dy);
 }
