@@ -667,7 +667,6 @@ ErrorHandler *
 ErrorHandler::static_initialize(ErrorHandler *default_handler)
 {
   the_default_handler = default_handler;
-  the_silent_handler = new SilentErrorHandler;
   return the_default_handler;
 }
 
@@ -700,7 +699,8 @@ ErrorHandler::default_handler()
 ErrorHandler *
 ErrorHandler::silent_handler()
 {
-  assert(the_silent_handler != 0);
+  if (!the_silent_handler)
+    the_silent_handler = new SilentErrorHandler;
   return the_silent_handler;
 }
 
