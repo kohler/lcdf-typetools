@@ -206,8 +206,7 @@ main(int argc, char **argv)
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
   
-    ErrorHandler *default_errh = new FileErrorHandler(stderr);
-    ErrorHandler *errh = default_errh;
+    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
     const char *output_file = 0;
   
     while (1) {

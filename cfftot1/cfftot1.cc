@@ -161,8 +161,7 @@ main(int argc, char **argv)
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
   
-    ErrorHandler *default_errh = new FileErrorHandler(stderr);
-    ErrorHandler *errh = default_errh;
+    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
     const char *input_file = 0;
     const char *output_file = 0;
   
@@ -180,7 +179,7 @@ main(int argc, char **argv)
       
 	  case QUIET_OPT:
 	    if (clp->negated)
-		errh = default_errh;
+		errh = ErrorHandler::default_handler();
 	    else
 		errh = ErrorHandler::silent_handler();
 	    break;
