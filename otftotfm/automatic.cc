@@ -303,11 +303,8 @@ int
 update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 {
 #if HAVE_KPATHSEA
-    bool remove_absolutes = false;
-    if (automatic && !map_file && getodir(O_MAP, errh)) {
+    if (automatic && !map_file && getodir(O_MAP, errh))
 	map_file = odir[O_MAP] + "/" + vendor + ".map";
-	remove_absolutes = true;
-    }
 #endif
 
     if (map_file == "" || map_file == "-")
@@ -342,23 +339,6 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		return errh->error("locking %s: %s", map_file.c_str(), strerror(result));
 	    }
 	}
-#endif
-
-#if HAVE_KPATHSEA
-	// remove spurious absolute paths from mapline
-	if (remove_absolutes)
-	    for (int pos = mapline.find_left('<'); pos >= 0; pos = mapline.find_left('<', pos + 1)) {
-		if (pos + 1 < mapline.length() && (mapline[pos+1] == '[' || mapline[pos+1] == '<'))
-		    pos++;
-		if (pos + 1 + writable_texdir.length() <= mapline.length()
-		    && memcmp(mapline.data() + pos + 1, writable_texdir.data(), writable_texdir.length()) == 0) {
-		    int space = mapline.find_left(' ', pos + writable_texdir.length());
-		    if (space < 0)
-			space = mapline.length();
-		    int slash = mapline.find_right('/', space);
-		    mapline = mapline.substring(0, pos + 1) + mapline.substring(slash + 1);
-		}
-	    }
 #endif
 
 	// read old data from map file

@@ -65,6 +65,16 @@ printable_filename(const String &s)
 	return s;
 }
 
+String
+pathname_filename(const String &path)
+{
+    int slash = path.find_right('/');
+    if (slash >= 0 && slash != path.length() - 1)
+	return path.substring(slash + 1);
+    else
+	return path;
+}
+
 int
 mysystem(const char *command, ErrorHandler *errh)
 {

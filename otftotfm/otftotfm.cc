@@ -1011,9 +1011,9 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    sa << extend << " ExtendFont ";
 	if (slant)
 	    sa << slant << " SlantFont ";
-	sa << out_encoding_name << " ReEncodeFont\" <[" << out_encoding_file;
+	sa << out_encoding_name << " ReEncodeFont\" <[" << pathname_filename(out_encoding_file);
 	if (String fn = installed_type1(input_filename, font.font_name(), (output_flags & G_TYPE1), errh))
-	    sa << " <" << fn;
+	    sa << " <" << pathname_filename(fn);
 	sa << '\n';
 	update_autofont_map(font_name + metrics_suffix, sa.take_string(), errh);
     }
