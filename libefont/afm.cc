@@ -11,28 +11,37 @@
 #include <assert.h>
 
 
-AfmReader::AfmReader(Slurper &slurp, ErrorHandler *errh)
-  : _afm(0), _l(*(new AfmParser(slurp))),
+AfmReader::AfmReader(AfmParser &parser, Metrics *afm, AfmMetricsXt *afm_xt,
+		     ErrorHandler *errh)
+  : _afm(afm), _afm_xt(afm_xt), _l(parser),
     _composite_warned(false), _metrics_sets_warned(false), _y_width_warned(0)
 {
-  _errh = errh ? errh : ErrorHandler::null_handler();
-  if (_l.ok())
-    read();
+  _errh = errh ? errh : ErrorHandler::silent_handler();
 }
-
-AfmReader::~AfmReader()
-{
-  delete _afm;
-  delete &_l;
-}
-
 
 Metrics *
-AfmReader::take()
+AfmReader::read(Slurper &slurp, ErrorHandler *errh)
 {
-  Metrics *m = _afm;
-  _afm = 0;
-  return m;
+  AfmParser p(slurp);
+  if (!p.ok()) return 0;
+  
+  Metrics *afm = new Metrics;
+  AfmMetricsXt *afm_xt = new AfmMetricsXt;
+  afm->add_xt(afm_xt);
+  AfmReader reader(p, afm, afm_xt, errh);
+  
+  if (!reader.read()) {
+    delete afm;
+    return 0;
+  } else
+    return afm;
+}
+
+Metrics *
+AfmReader::read(const Filename &fn, ErrorHandler *errh)
+{
+  Slurper slurpy(fn);
+  return read(slurpy, errh);
 }
 
 
@@ -94,14 +103,11 @@ AfmReader::no_match_warning(const char *context = 0) const
 }
 
 
-void
+bool
 AfmReader::read()
 {
   AfmParser &l = _l;
-  assert(!_afm);
-  _afm = new Metrics;
-  _afm_xt = new AfmMetricsXt;
-  _afm->add_xt(_afm_xt);
+  assert(_afm && _afm_xt);
   
   // First, read all opening comments into an array so we can print them out
   // later.
@@ -279,10 +285,10 @@ AfmReader::read()
     }
   
  done:
-  if (invalid_lines >= l.lineno() - 10) {
-    delete _afm;
-    _afm = 0;
-  }
+  if (invalid_lines >= l.lineno() - 10)
+    return false;
+  else
+    return true;
 }
 
 

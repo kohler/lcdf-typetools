@@ -6,6 +6,7 @@
 #include "metrics.hh"
 class AfmParser;
 class Slurper;
+class Filename;
 class ErrorHandler;
 
 struct AfmMetricsXt: public MetricsXt {
@@ -42,15 +43,14 @@ class AfmReader {
   void read_kerns() const;
   void read_composites() const;
   
-  void read();
+  bool read();
+  
+  AfmReader(AfmParser &, Metrics *, AfmMetricsXt *, ErrorHandler *);
   
  public:
   
-  AfmReader(Slurper &, ErrorHandler *);
-  ~AfmReader();
-  
-  bool ok() const				{ return _afm; }
-  Metrics *take();
+  static Metrics *read(const Filename &, ErrorHandler *);
+  static Metrics *read(Slurper &, ErrorHandler *);
   
 };
 

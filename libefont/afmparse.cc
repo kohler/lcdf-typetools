@@ -57,16 +57,6 @@ AfmParser::static_initialize()
 }
 
 
-/* Because this mucks with name_enders, a static (supposedly) constant array,
-   it makes AfmParser non-threadsafe. */
-
-void
-AfmParser::set_ends_names(unsigned char c, bool ends_name)
-{
-  name_enders[c] = ends_name;
-}
-
-
 // isall == is total == is all of the string
 
 // %s   whitespace-terminated PermString - non-zero-length

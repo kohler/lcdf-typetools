@@ -12,6 +12,13 @@ AfmWriter::AfmWriter(Metrics *m, FILE *f)
 {
 }
 
+void
+AfmWriter::write(Metrics *m, FILE *f)
+{
+  AfmWriter w(m, f);
+  w.write();
+}
+
 
 void
 AfmWriter::write()

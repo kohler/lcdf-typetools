@@ -8,6 +8,7 @@
 #include "afmparse.hh"
 #include "afm.hh"
 #include "amfm.hh"
+#include "psres.hh"
 #include <string.h>
 #include <stdlib.h>
 
@@ -88,6 +89,30 @@ AmfmMetrics *
 MetricsFinder::find_amfm_x(PermString, MetricsFinder *, ErrorHandler *)
 {
   return 0;
+}
+
+Metrics *
+MetricsFinder::try_metrics_file(const Filename &fn, MetricsFinder *finder,
+				ErrorHandler *errh)
+{
+  if (fn.readable()) {
+    Metrics *afm = AfmReader::read(fn, errh);
+    if (afm) finder->record(afm);
+    return afm;
+  } else
+    return 0;
+}
+
+AmfmMetrics *
+MetricsFinder::try_amfm_file(const Filename &fn, MetricsFinder *finder,
+			     ErrorHandler *errh)
+{
+  if (fn.readable()) {
+    AmfmMetrics *amfm = AmfmReader::read(fn, finder, errh);
+    if (amfm) finder->record(amfm);
+    return amfm;
+  } else
+    return 0;
 }
 
 
@@ -212,74 +237,25 @@ InstanceMetricsFinder::find_metrics_x(PermString name, MetricsFinder *finder,
  * PsresMetricsFinder
  **/
 
-PsresMetricsFinder::PsresMetricsFinder()
+PsresMetricsFinder::PsresMetricsFinder(PsresDatabase *psres)
+  : _psres(psres)
 {
-}
-
-void
-PsresMetricsFinder::read_psres(const Filename &file_name)
-{
-  Slurper slurper(file_name);
-  AfmParser l(slurper);
-  AfmParser::set_ends_names('=', true);
-  
-  PermString directory = file_name.directory();
-  PermString font, file;
-  
-  while (l.next_line() && !l.is("."))
-    ;
-  
-  while (l.next_line() && !l.is("FontAFM"))
-    ;
-  while (l.next_line() && !l.is("."))
-    if (l.is("%/s=%+s", &font, &file) && !_afm_path_map[font]) {
-      PermString path =
-	permprintf("%p/%p", directory.capsule(), file.capsule());
-      _afm_path_map.insert(font, path);
-    }
-  
-  while (l.next_line() && !l.is("FontAMFM"))
-    ;
-  while (l.next_line() && !l.is("."))
-    if (l.is("%/s=%+s", &font, &file) && !_amfm_path_map[font]) {
-      PermString path =
-	permprintf("%p/%p", directory.capsule(), file.capsule());
-      _amfm_path_map.insert(font, path);
-    }
-  
-  AfmParser::set_ends_names('=', false);
 }
 
 Metrics *
 PsresMetricsFinder::find_metrics_x(PermString name, MetricsFinder *finder,
 				   ErrorHandler *errh)
 {
-  PermString tryname = _afm_path_map[name];
-  Filename newfile = tryname;
-  if (newfile.readable()) {
-    Slurper slurper(newfile);
-    AfmReader reader(slurper, errh);
-    Metrics *afm = reader.take();
-    if (afm) finder->record(afm);
-    return afm;
-  }
-  return 0;
+  return try_metrics_file
+    (_psres->filename_value("FontAFM", name), finder, errh);
 }
 
 AmfmMetrics *
 PsresMetricsFinder::find_amfm_x(PermString name, MetricsFinder *finder,
 				ErrorHandler *errh)
 {
-  PermString tryname = _amfm_path_map[name];
-  Filename newfile = tryname;
-  if (newfile.readable()) {
-    Slurper slurper(newfile);
-    AmfmReader reader(slurper, finder, errh);
-    AmfmMetrics *amfm = reader.take();
-    if (amfm) finder->record(amfm);
-    return amfm;
-  }
-  return 0;
+  return try_amfm_file
+    (_psres->filename_value("FontAMFM", name), finder, errh);
 }
 
 
@@ -296,30 +272,22 @@ Metrics *
 DirectoryMetricsFinder::find_metrics_x(PermString name, MetricsFinder *finder,
 				       ErrorHandler *errh)
 {
-  Filename newfile =
-    Filename(_directory, permprintf("%p.afm", name.capsule()));
-  if (newfile.readable()) {
-    Slurper slurper(newfile);
-    AfmReader reader(slurper, errh);
-    Metrics *afm = reader.take();
-    if (afm) finder->record(afm);
-    return afm;
-  }
-  return 0;
+  Metrics *afm = try_metrics_file
+    (Filename(_directory, permcat(name, ".afm")), finder, errh);
+  if (!afm)
+    afm = try_metrics_file
+      (Filename(_directory, permcat(name, ".AFM")), finder, errh);
+  return afm;
 }
 
 AmfmMetrics *
 DirectoryMetricsFinder::find_amfm_x(PermString name, MetricsFinder *finder,
 				    ErrorHandler *errh)
 {
-  Filename newfile =
-    Filename(_directory, permprintf("%p.amfm", name.capsule()));
-  if (newfile.readable()) {
-    Slurper slurper(newfile);
-    AmfmReader reader(slurper, finder, errh);
-    AmfmMetrics *amfm = reader.take();
-    if (amfm) finder->record(amfm);
-    return amfm;
-  }
-  return 0;
+  AmfmMetrics *amfm = try_amfm_file
+    (Filename(_directory, permcat(name, ".amfm")), finder, errh);
+  if (!amfm)
+    amfm = try_amfm_file
+      (Filename(_directory, permcat(name, ".AMFM")), finder, errh);
+  return amfm;
 }

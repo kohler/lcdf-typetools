@@ -7,6 +7,7 @@
 #include "hashmap.hh"
 #include "t1mm.hh"
 class Slurper;
+class Filename;
 class AfmParser;
 class MetricsFinder;
 class Type1Charstring;
@@ -94,6 +95,7 @@ class AmfmMetrics {
   double &fd(int i) const		{ return _fdv[i]; }
   
   PermString font_name() const		{ return _font_name; }
+  PermString directory() const		{ return _directory; }
   
   int naxes() const			{ return _naxes; }
   int nmasters() const			{ return _nmasters; }
@@ -135,19 +137,17 @@ class AmfmReader {
   void read_one_primary_font() const;
   Type1Charstring *conversion_program(Vector<PermString> &) const;
   void read_conversion_programs() const;
-  void read();
+  bool read();
   
   void read_amcp_file();
-  
-  AmfmReader(const AmfmReader &, Slurper &);
+
+  AmfmReader(AfmParser &, AmfmMetrics *, ErrorHandler *);
   
  public:
   
-  AmfmReader(Slurper &, MetricsFinder *, ErrorHandler *);
-  ~AmfmReader();
-  
-  bool ok() const				{ return _amfm; }
-  AmfmMetrics *take();
+  static AmfmMetrics *read(const Filename &, MetricsFinder *, ErrorHandler *);
+  static AmfmMetrics *read(Slurper &, MetricsFinder *, ErrorHandler *);
+  static void add_amcp_file(Slurper &, AmfmMetrics *, ErrorHandler *);
   
 };
 

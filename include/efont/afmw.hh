@@ -15,14 +15,15 @@ class AfmWriter {
   void write_prologue() const;
   void write_char_metric_data(GlyphIndex, int) const;
   void write_kerns() const;
-
-  double fd(int i) const		{ return _m->fd(i); }
+  void write();
   
- public:
+  double fd(int i) const		{ return _m->fd(i); }
   
   AfmWriter(Metrics *, FILE *);
   
-  void write();
+ public:
+
+  static void write(Metrics *, FILE *);
   
 };
 

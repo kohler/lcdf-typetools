@@ -10,6 +10,7 @@ class Filename;
 class Metrics;
 class AmfmMetrics;
 class ErrorHandler;
+class PsresDatabase;
 
 
 class MetricsFinder {
@@ -19,6 +20,11 @@ class MetricsFinder {
   
   MetricsFinder(const MetricsFinder &)			{ }
   MetricsFinder &operator=(const MetricsFinder &)	{ return *this; }
+
+ protected:
+  
+  Metrics *try_metrics_file(const Filename &, MetricsFinder *, ErrorHandler *);
+  AmfmMetrics *try_amfm_file(const Filename &, MetricsFinder *, ErrorHandler*);
   
  public:
   
@@ -78,14 +84,12 @@ class InstanceMetricsFinder: public MetricsFinder {
 
 
 class PsresMetricsFinder: public MetricsFinder {
-  
-  HashMap<PermString, PermString> _afm_path_map;
-  HashMap<PermString, PermString> _amfm_path_map;
+
+  PsresDatabase *_psres;
   
  public:
   
-  PsresMetricsFinder();
-  void read_psres(const Filename &);
+  PsresMetricsFinder(PsresDatabase *);
   
   Metrics *find_metrics_x(PermString, MetricsFinder *, ErrorHandler *);
   AmfmMetrics *find_amfm_x(PermString, MetricsFinder *, ErrorHandler *);

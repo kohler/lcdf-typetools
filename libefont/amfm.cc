@@ -46,19 +46,19 @@ AmfmMetrics::sanity(ErrorHandler *errh) const
 {
   if (!_mmspace) {
     errh->error("AMFM sanity: no multiple master interpolation information");
-    return 0;
+    return false;
   }
   
-  bool ok = 1;
+  bool ok = true;
   for (int m = 0; m < _nmasters; m++)
     if (!_masters[m].font_name
 	|| _masters[m].weight_vector.count() != _nmasters) {
       errh->error("AMFM sanity: no information for master %d", m);
-      ok = 0;
+      ok = false;
     }
-
+  
   if (!_mmspace->check(errh))
-    ok = 0;
+    ok = false;
   
   return ok;
 }
@@ -222,8 +222,6 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
   Metrics *afm = new Metrics(new_font_name, new_full_name, *_masters[m].afm);
   if (MetricsXt *xt = _masters[m].afm->find_xt("AFM")) {
     AfmMetricsXt *new_xt = new AfmMetricsXt((AfmMetricsXt &)*xt);
-    new_xt->opening_comments.append
-      ("* Interpolated by Little Cambridgeport Design Factory");
     afm->add_xt(new_xt);
   }
   
@@ -244,39 +242,43 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
  * AmfmReader
  **/
 
-AmfmReader::AmfmReader(Slurper &slurper, MetricsFinder *finder,
-		       ErrorHandler *errh)
-  : _amfm(0), _finder(finder), _l(*(new AfmParser(slurper)))
+AmfmReader::AmfmReader(AfmParser &afmp, AmfmMetrics *amfm, ErrorHandler *errh)
+  : _amfm(amfm), _finder(amfm->_finder), _l(afmp),
+    _mmspace(amfm->_mmspace)
 {
-  _errh = errh ? errh : ErrorHandler::null_handler();
-  if (_l.ok())
-    read();
+  _errh = errh ? errh : ErrorHandler::silent_handler();
 }
-
-AmfmReader::AmfmReader(const AmfmReader &r, Slurper &slurper)
-  : _amfm(r._amfm), _finder(r._finder), _l(*(new AfmParser(slurper))),
-    _mmspace(r._mmspace), _errh(r._errh)
-{
-  // Used to read .amcp file.
-  if (_l.ok())
-    read_amcp_file();
-  _amfm = 0;
-}
-
-AmfmReader::~AmfmReader()
-{
-  delete _amfm;
-  delete &_l;
-}
-
 
 AmfmMetrics *
-AmfmReader::take()
+AmfmReader::read(Slurper &slurper, MetricsFinder *finder, ErrorHandler *errh)
 {
-  AmfmMetrics *a = _amfm;
-  _amfm = 0;
-  return a;
+  AfmParser parser(slurper);
+  if (!parser.ok()) return 0;
+  AmfmMetrics *amfm = new AmfmMetrics(finder);
+  AmfmReader reader(parser, amfm, errh);
+  if (!reader.read()) {
+    delete amfm;
+    return 0;
+  } else
+    return amfm;
 }
+
+AmfmMetrics *
+AmfmReader::read(const Filename &fn, MetricsFinder *finder, ErrorHandler *errh)
+{
+  Slurper slurper(fn);
+  return read(slurper, finder, errh);
+}
+
+void
+AmfmReader::add_amcp_file(Slurper &slurper, AmfmMetrics *amfm, ErrorHandler *errh)
+{
+  AfmParser parser(slurper);
+  if (!parser.ok()) return;
+  AmfmReader reader(parser, amfm, errh);
+  reader.read_amcp_file();
+}
+
 
 void
 AmfmReader::no_match_warning(const char *context = 0) const
@@ -307,12 +309,11 @@ AmfmReader::check_mmspace()
 }
 
 
-void
+bool
 AmfmReader::read()
 {
-  assert(!_amfm);
-  _amfm = new AmfmMetrics(_finder);
-  _mmspace = 0;
+  assert(_amfm);
+  _mmspace = _amfm->_mmspace;
   
   AfmParser &l = _l;
   _amfm->_directory = l.filename().directory();
@@ -473,27 +474,23 @@ AmfmReader::read()
  done:
   if (!_mmspace) {
     _errh->error("`%s' is not an AMFM file", _l.landmark().file().cc());
-    delete _amfm;
-    _amfm = 0;
-    return;
-  }
-  
-  if (!_mmspace->ndv() && !_mmspace->cdv() && _l.filename().directory()) {
-    PermString name = permprintf("%p.amcp", l.filename().base().capsule());
-    Filename filename = _l.filename().from_directory(name);
-    if (filename.readable()) {
-      Slurper slurp(filename);
-      AmfmReader new_reader(*this, slurp);
-    }
+    return false;
   }
   
   PinnedErrorHandler pin_errh(_l, _errh);
   if (!_amfm->sanity(&pin_errh)) {
     _errh->error(_l.landmark().whole_file(),
 		 "bad AMFM file (missing or inconsistent information)");
-    delete _amfm;
-    _amfm = 0;
+    return false;
   }
+  
+  if (!_mmspace->check_intermediate() && _l.filename().directory()) {
+    PermString name = permprintf("%p.amcp", l.filename().base().capsule());
+    Slurper slurp(_l.filename().from_directory(name));
+    add_amcp_file(slurp, _amfm, _errh);
+  }
+  
+  return true;
 }
 
 

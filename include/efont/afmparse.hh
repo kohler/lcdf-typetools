@@ -33,8 +33,6 @@ class AfmParser {
   unsigned lineno() const		{ return _slurper.lineno(); }
   const Filename &filename() const	{ return _slurper.filename(); }
   
-  static void set_ends_names(unsigned char, bool);
-  
   bool key_matched() const		{ return _fail_field >= 0; }
   int fail_field() const		{ return _fail_field; }
   PermString message() const		{ return _message; }
@@ -48,6 +46,7 @@ class AfmParser {
   void save_line()			{ _slurper.save_line(); }
   void skip_until(unsigned char);
   
+  unsigned char *cur_line() const	{ return _pos; }
   unsigned char first() const		{ return _pos[0]; }
   unsigned char operator[](int i) const	{ return _pos[i]; }
   bool left() const			{ return *_pos != 0; }
@@ -59,7 +58,7 @@ inline bool
 AfmParser::next_line()
 {
   _pos = _line = (unsigned char *)_slurper.next_line();
-  _length = _slurper.length();
+  _length = _slurper.cur_line_length();
   return _line != 0;
 }
 
