@@ -588,29 +588,35 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup, co
     int failures = 0;
     for (const Substitution *s = sv.begin(); s != sv.end(); s++) {
 	bool is_single = s->is_single() || s->is_alternate();
-	if (is_single && allow_single && allow_alternate(s->out_glyph(0), includes, excludes, glyph_names)) {
-	    Code e = encoding(s->in_glyph());
-	    if (!ctx.allowed(e, false))
+	if (is_single && allow_single) {
+	    // look for an allowed alternate
+	    Glyph out = -1;
+	    for (int i = 0; out < 0 && i < s->out_nglyphs(); i++)
+		if (allow_alternate(s->out_glyph(i), includes, excludes, glyph_names))
+		    out = s->out_glyph(i);
+	    
+	    Code cin = encoding(s->in_glyph());
+	    if (!ctx.allowed(cin, false) || out < 0)
 		/* not encoded before this substitution began, or completely
 		   changed; ignore */;
-	    else if (ctx.virgin(e)) {
+	    else if (ctx.virgin(cin)) {
 		// no one has changed this glyph yet, change it unilaterally
 		assign_emap(s->in_glyph(), -2);
-		assign_emap(s->out_glyph(0), e);
-		assert(!_encoding[e].virtual_char);
-		_encoding[e].glyph = s->out_glyph(0);
-		ctx.disallow(e);
+		assign_emap(out, cin);
+		assert(!_encoding[cin].virtual_char);
+		_encoding[cin].glyph = out;
+		ctx.disallow(cin);
 	    } else {
 		// some contextual substitutions have changed this glyph, add
 		// contextual substitutions for the remaining possibilities
-		Code out = force_encoding(s->out_glyph(0), lookup);
+		Code cout = force_encoding(out, lookup);
 		for (Code right = 0; right < _encoding.size(); right++)
-		    if (_encoding[right].visible() && !_encoding[right].flag(Char::BUILT) && ctx.pair_allowed(e, right)) {
-			Code pair = pair_code(out, right, lookup);
-			_encoding[out].flags &= ~Char::INTERMEDIATE;
-			add_ligature(e, right, pair);
+		    if (_encoding[right].visible() && !_encoding[right].flag(Char::BUILT) && ctx.pair_allowed(cin, right)) {
+			Code pair = pair_code(cout, right, lookup);
+			_encoding[cout].flags &= ~Char::INTERMEDIATE;
+			add_ligature(cin, right, pair);
 		    }
-		ctx.disallow(e);
+		ctx.disallow(cin);
 	    }
 
 	} else if (!is_single && !s->is_multiple() && s->is_simple_context()) {
