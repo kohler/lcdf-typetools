@@ -3,12 +3,24 @@
 # include <config.h>
 #endif
 #include <lcdf/transform.hh>
+#include <cmath>
 
 Transform::Transform()
 {
     _m[0] = _m[4] = 1;
     _m[1] = _m[2] = _m[3] = _m[5] = 0;
     _null = true;
+}
+
+Transform::Transform(const double m[6])
+{
+    _m[0] = m[0];
+    _m[1] = m[1];
+    _m[2] = m[2];
+    _m[3] = m[3];
+    _m[4] = m[4];
+    _m[5] = m[5];
+    check_null(0);
 }
 
 Transform::Transform(double m0, double m1, double m2,
@@ -20,7 +32,15 @@ Transform::Transform(double m0, double m1, double m2,
     _m[3] = m3;
     _m[4] = m4;
     _m[5] = m5;
-    _null = (m2 == 0 && m0 == 1 && m1 == 0 && m3 == 0 && m4 == 1 && m5 == 0);
+    check_null(0);
+}
+
+void
+Transform::check_null(double tolerance)
+{
+    _null = (fabs(_m[0] - 1) < tolerance && fabs(_m[1]) < tolerance
+	     && fabs(_m[2]) < tolerance && fabs(_m[3]) < tolerance
+	     && fabs(_m[4] - 1) < tolerance && fabs(_m[5]) < tolerance);
 }
 
 
@@ -65,7 +85,7 @@ Transform::add_translate(double x, double y)
 }
 
 Transform
-Transform::transform(const Transform &t) const
+Transform::transformed(const Transform &t) const
 {
     return Transform(_m[0] * t._m[0] + _m[1] * t._m[3],
 		     _m[0] * t._m[1] + _m[1] * t._m[4],
@@ -76,24 +96,19 @@ Transform::transform(const Transform &t) const
 }
 
 
-Point &
-operator*=(Point &p, const Transform &t)
+void
+Transform::real_apply_to(Point &p) const
 {
-    if (!t.null()) {
-	double x = p.x;
-	p.x = x*t._m[0] + p.y*t._m[1] + t._m[2];
-	p.y = x*t._m[3] + p.y*t._m[4] + t._m[5];
-    }
-    return p;
+    double x = p.x;
+    p.x = x*_m[0] + p.y*_m[1] + _m[2];
+    p.y = x*_m[3] + p.y*_m[4] + _m[5];
 }
 
 Point
-operator*(const Point &p, const Transform &t)
+Transform::real_apply(const Point &p) const
 {
-    return (t.null()
-	    ? p
-	    : Point(p.x*t._m[0] + p.y*t._m[1] + t._m[2],
-		    p.x*t._m[3] + p.y*t._m[4] + t._m[5]));
+    return Point(p.x*_m[0] + p.y*_m[1] + _m[2],
+		 p.x*_m[3] + p.y*_m[4] + _m[5]);
 }
 
 Bezier &
