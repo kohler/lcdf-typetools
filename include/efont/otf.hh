@@ -69,7 +69,7 @@ class ScriptList { public:
     bool ok() const			{ return _str.length() > 0; }
 
     int language_systems(Vector<Tag> &scripts, Vector<Tag> &langsys, ErrorHandler * = 0) const;
-    int features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0) const;
+    int features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0, bool clear_fids = true) const;
     
   private:
 
@@ -101,6 +101,7 @@ class FeatureList { public:
 
     int find(Tag, const Vector<int> &fids) const;
     void filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
+    inline void filter(Vector<int> &fids, Tag ftag) const;
 
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(const Vector<int> &required_fids, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
@@ -354,6 +355,14 @@ inline
 FeatureList::FeatureList(const String &str, ErrorHandler *errh)
 {
     assign(str, errh);
+}
+
+inline void
+FeatureList::filter(Vector<int> &fids, Tag ftag) const
+{
+    Vector<Tag> tags;
+    tags.push_back(ftag);
+    filter(fids, tags);
 }
 
 inline bool

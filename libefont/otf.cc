@@ -310,10 +310,11 @@ ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHan
 }
 
 int
-ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler *errh) const
+ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler *errh, bool clear_fids) const
 {
     required_fid = -1;
-    fids.clear();
+    if (clear_fids)
+	fids.clear();
     
     int offset = langsys_offset(script, langsys);
     if (offset <= 0)
