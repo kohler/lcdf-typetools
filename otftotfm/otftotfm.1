@@ -101,9 +101,11 @@ directory, if you don't have one already. Add a
 .I $HOME/texmf/dvips
 subdirectory, and create a file
 .I $HOME/texmf/dvips/config.ps
-containing the like "p +lcdftools.map" (or add that line to your existing
-.I config.ps
-file); this will help
+containing the line "p +lcdftools.map" (or add that line to your 
+.I ~/.dvipsrc
+or an existing
+.IR config.ps );
+this will help
 .M dvips 1
 find your new fonts. Now, after running "otftotfm
 .B \-a
