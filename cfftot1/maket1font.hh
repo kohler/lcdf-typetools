@@ -5,6 +5,6 @@ namespace Efont {
 class Type1Font;
 }
 
-Efont::Type1Font *create_type1_font(Efont::Cff::Font *);
+Efont::Type1Font *create_type1_font(Efont::Cff::Font *, ErrorHandler *);
 
 #endif

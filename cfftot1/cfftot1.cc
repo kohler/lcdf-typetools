@@ -130,7 +130,7 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
     if (errh->nerrors() > 0)
 	return;
     
-    Type1Font *font1 = create_type1_font(font);
+    Type1Font *font1 = create_type1_font(font, errh);
 
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;
