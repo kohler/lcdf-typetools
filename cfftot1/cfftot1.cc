@@ -125,7 +125,7 @@ do_file(const char *infn, const char *outfn,
 	PinnedErrorHandler cerrh(errh, infn);
 	String data = sa.take_string();
 	if (c == 'O')
-	    data = EfontOTF(data, &cerrh).table("CFF");
+	    data = OpenTypeFont(data, &cerrh).table("CFF");
 	
 	font = new EfontCFF::Font(new EfontCFF(data, &cerrh), PermString(), &cerrh);
     } else
