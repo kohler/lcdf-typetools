@@ -17,6 +17,9 @@ class CharstringInterp { public:
     static String error_string(int error, int error_data);
     String error_string() const;
     
+    bool careful() const			{ return _careful; }
+    void set_careful(bool c)			{ _careful = c; }
+    
     bool done() const				{ return _done; }
     void set_done()				{ _done = true; }
 
@@ -120,6 +123,7 @@ class CharstringInterp { public:
     int _error;
     int _error_data;
     bool _done;
+    bool _careful;
 
     double _s[STACK_SIZE];
     int _sp;

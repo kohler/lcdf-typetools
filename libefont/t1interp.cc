@@ -60,13 +60,14 @@ double CharstringInterp::double_for_error;
 
 
 CharstringInterp::CharstringInterp()
-    : _error(errOK), _sp(0), _ps_sp(0),
+    : _error(errOK), _careful(false), _sp(0), _ps_sp(0),
       _scratch_vector(SCRATCH_SIZE, 0), _program(0)
 {
 }
 
 CharstringInterp::CharstringInterp(const Vector<double> &weight_vector)
-    : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight_vector),
+    : _error(errOK), _careful(false), _sp(0), _ps_sp(0),
+      _weight_vector(weight_vector),
       _scratch_vector(SCRATCH_SIZE, 0), _program(0)
 {
 }
@@ -685,26 +686,28 @@ CharstringInterp::type1_command(int cmd)
 
       case CS::cHsbw:
 	CHECK_STACK(2);
-	if (_state > S_SEAC)
+	if (_state <= S_SEAC) {
+	    _lsb = _cp = _seac_origin.shifted(at(0), 0);
+	    if (_state == S_INITIAL) {
+		act_sidebearing(cmd, _lsb);
+		act_width(cmd, Point(at(1), 0));
+	    }
+	    _state = S_SBW;
+	} else if (_careful)
 	    return error(errOrdering, cmd);
-	_lsb = _cp = _seac_origin.shifted(at(0), 0);
-	if (_state == S_INITIAL) {
-	    act_sidebearing(cmd, _lsb);
-	    act_width(cmd, Point(at(1), 0));
-	}
-	_state = S_SBW;
 	break;
 
       case CS::cSbw:
 	CHECK_STACK(4);
-	if (_state > S_SEAC)
+	if (_state <= S_SEAC) {
+	    _lsb = _cp = _seac_origin.shifted(at(0), at(1));
+	    if (_state == S_INITIAL) {
+		act_sidebearing(cmd, _lsb);
+		act_width(cmd, Point(at(2), at(3)));
+	    }
+	    _state = S_SBW;
+	} else if (_careful)
 	    return error(errOrdering, cmd);
-	_lsb = _cp = _seac_origin.shifted(at(0), at(1));
-	if (_state == S_INITIAL) {
-	    act_sidebearing(cmd, _lsb);
-	    act_width(cmd, Point(at(2), at(3)));
-	}
-	_state = S_SBW;
 	break;
 	
       case CS::cSeac:
