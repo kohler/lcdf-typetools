@@ -2,7 +2,16 @@ LCDF Typetools NEWS
 
 Version 0.16
 
-* otftotfm: Add '--ligkern' option.
+* otftotfm: When there isn't enough encoding space for all new glyphs,
+  prefer shorter ligatures made out of regular letters.
+
+* otftotfm: Add '--ligkern' and '--unicoding' options.
+
+* otftotfm: Add '--coding-scheme' option and '% CODINGSCHEME' encoding
+  comment, to define the PL/TFM coding scheme for the font. Apparently
+  fontinst actually looks at the coding scheme. Also, when you specify a
+  coding scheme, set DESIGNUNITS to 1, again to satisfy fontinst. Requested
+  by Marco Kuhlmann.
 
 * otftotfm: Remove virtual font 'N.vf' when installing a regular font
   'N.tfm' in automatic mode. This reduces the risk that an old virtual font
