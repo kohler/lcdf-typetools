@@ -24,7 +24,8 @@ MyFont::~MyFont()
 void
 MyFont::kill_def(Type1Definition *t1d, int whichd)
 {
-  if (!t1d) return;
+  if (!t1d)
+    return;
   
   if (whichd < 0)
     for (whichd = dFont; whichd < dLast; whichd = (Dict)(whichd + 1))
