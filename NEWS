@@ -2,7 +2,7 @@ LCDF Typetools NEWS
 
 Version 0.18   9.Jul.2003
 
-* Otftotfm will now generate characters for some T1 glyphs automatically,
+* Otftotfm will now synthesize characters for some T1 glyphs automatically,
   specifically 'cwm' (compound word mark), 'visualspace', and 'Germandbls'.
   Requested by Marco Kuhlmann.
 
