@@ -7,19 +7,10 @@ namespace Efont {
 
 class CharstringBounds : public CharstringInterp { public:
 
-    CharstringBounds(const EfontProgram *);
-    CharstringBounds(const EfontProgram *, const Vector<double> &weight_vec);
+    CharstringBounds();
+    CharstringBounds(const Transform &);
+    CharstringBounds(const Transform &, const Vector<double> &weight_vec);
     ~CharstringBounds()				{ }
-
-    const Transform &transform() const		{ return _xf; }
-    void set_transform(const Transform &xf)	{ _xf = xf; }
-    void transform(const Transform &);
-    void translate(double, double);
-    void extend(double);
-    void shear(double);
-    
-    void init();
-    void init(const Transform &);
 
     const Point &width() const			{ return _width; }
     double x_width() const			{ return _width.x; }
@@ -33,17 +24,23 @@ class CharstringBounds : public CharstringInterp { public:
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
     void mark(const Point &);
 
-    bool bounds(int bb[4], int &width, bool use_cur_width = false) const;
-    bool run(const Charstring &, int bounds[4], int &width);
-    bool run_incr(const Charstring &);
-    
+    bool char_bounds(const CharstringContext &, bool shift = true);
+    void translate(double dx, double dy);
+    bool output(int bb[4], int &width, bool use_cur_width = false) const;
+
+    static bool bounds(const CharstringContext &, int bounds[4], int &width);
+        
   private:
 
     Point _lb;
     Point _rt;
     Point _width;
     Transform _xf;
+    Transform _nonfont_xf;
+    const CharstringProgram *_last_xf_program;
 
+    void set_xf(const CharstringProgram *);
+    
     void xf_mark(const Point &);
     void xf_mark(const Bezier &);
 

@@ -20,7 +20,7 @@
 namespace Efont {
 
 CharstringUnparser::CharstringUnparser()
-    : CharstringInterp(0),
+    : CharstringInterp(),
       _one_command_per_line(false), _start_of_line(true)
 {
 }
@@ -120,7 +120,7 @@ CharstringUnparser::unparse(const Charstring *cs)
 {
     if (cs) {
 	CharstringUnparser u;
-	cs->run(u);
+	u.interpret(0, cs);
 	return u.value();
     } else
 	return "(null)";
@@ -130,7 +130,7 @@ String
 CharstringUnparser::unparse(const Charstring &cs)
 {
     CharstringUnparser u;
-    cs.run(u);
+    u.interpret(0, &cs);
     return u.value();
 }
 

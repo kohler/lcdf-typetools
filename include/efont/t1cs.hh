@@ -14,7 +14,9 @@ namespace Efont {
 #define MIN_KNOWN_DOUBLE	-9.69696e97
 #define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
 
+class CharstringProgram;
 class CharstringInterp;
+class CharstringContext;
 class MultipleMasterSpace;
 class Type1Encoding;
 
@@ -23,7 +25,7 @@ class Charstring { public:
     Charstring()				{ }
     virtual ~Charstring();
 
-    virtual bool run(CharstringInterp &) const = 0;
+    virtual bool process(CharstringInterp &) const = 0;
     
     enum Commands {
 	cError		= 0,
@@ -146,7 +148,7 @@ class Type1Charstring : public Charstring { public:
     void prepend(const Type1Charstring &);
     void assign_substring(int pos, int len, const String &);
     
-    bool run(CharstringInterp &) const;
+    bool process(CharstringInterp &) const;
 
   private:
 
@@ -169,7 +171,7 @@ class Type2Charstring : public Charstring { public:
     const uint8_t *data() const;
     int length() const				{ return _s.length(); }
     
-    bool run(CharstringInterp &) const;
+    bool process(CharstringInterp &) const;
 
   private:
   
@@ -178,13 +180,30 @@ class Type2Charstring : public Charstring { public:
 };
 
 
-class EfontProgram { public:
+struct CharstringContext {
 
-    EfontProgram()				{ }
-    virtual ~EfontProgram()			{ }
+    CharstringContext(const CharstringProgram *program_, const Charstring *cs_) : program(program_), cs(cs_) { }
+
+    operator bool() const			{ return cs; }
+    
+    const CharstringProgram *program;
+    const Charstring *cs;
+    
+};
+
+
+class CharstringProgram { public:
+
+    CharstringProgram()				: _parent_program(false) { }
+    virtual ~CharstringProgram()		{ }
 
     virtual PermString font_name() const	{ return PermString();}
     virtual void font_matrix(double[6]) const;
+
+    inline const CharstringProgram *program(int) const;
+    virtual const CharstringProgram *child_program(int) const;
+    bool parent_program() const			{ return _parent_program; }
+    void set_parent_program(bool pp)		{ _parent_program = pp; }
     
     virtual int nsubrs() const			{ return 0; }
     virtual Charstring *subr(int) const		{ return 0; }
@@ -204,6 +223,9 @@ class EfontProgram { public:
     virtual Charstring *glyph(int) const	{ return 0; }
     virtual Charstring *glyph(PermString) const	{ return 0; }
 
+    inline CharstringContext glyph_context(int) const;
+    inline CharstringContext glyph_context(PermString) const;
+
     virtual bool is_mm() const			{ return mmspace() != 0; }
     virtual MultipleMasterSpace *mmspace() const	{ return 0; }
     enum VectorType { VEC_WEIGHT = 0, VEC_NORM_DESIGN = 1, VEC_DESIGN = 2 };
@@ -212,6 +234,10 @@ class EfontProgram { public:
     virtual Type1Encoding *type1_encoding() const	{ return 0; }
 
     virtual double global_width_x(bool is_nominal) const;
+
+  private:
+
+    bool _parent_program;
     
 };
 
@@ -282,21 +308,44 @@ Type2Charstring::data() const
 }
 
 inline int
-EfontProgram::nxsubrs(bool g) const
+CharstringProgram::nxsubrs(bool g) const
 {
     return (g ? ngsubrs() : nsubrs());
 }
 
 inline Charstring *
-EfontProgram::xsubr(bool g, int i) const
+CharstringProgram::xsubr(bool g, int i) const
 {
     return (g ? gsubr(i) : subr(i));
 }
 
 inline int
-EfontProgram::xsubr_bias(bool g) const
+CharstringProgram::xsubr_bias(bool g) const
 {
     return (g ? gsubr_bias() : subr_bias());
+}
+
+inline const CharstringProgram *
+CharstringProgram::program(int gi) const
+{
+    return (_parent_program ? child_program(gi) : this);
+}
+
+inline CharstringContext
+CharstringProgram::glyph_context(int gi) const
+{
+    if (!_parent_program)
+	return CharstringContext(this, glyph(gi));
+    else if (const CharstringProgram *p = child_program(gi))
+	return CharstringContext(p, p->glyph(gi));
+    else
+	return CharstringContext(0, 0);
+}
+
+inline CharstringContext
+CharstringProgram::glyph_context(PermString gn) const
+{
+    return CharstringContext(this, glyph(gn));
 }
 
 }

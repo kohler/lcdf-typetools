@@ -59,31 +59,42 @@ static const char * const error_formats[] = {
 double CharstringInterp::double_for_error;
 
 
-CharstringInterp::CharstringInterp(const EfontProgram *prog)
+CharstringInterp::CharstringInterp()
     : _error(errOK), _sp(0), _ps_sp(0),
-      _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
+      _scratch_vector(SCRATCH_SIZE, 0), _program(0)
 {
 }
 
-CharstringInterp::CharstringInterp(const EfontProgram *prog, const Vector<double> &weight_vector)
+CharstringInterp::CharstringInterp(const Vector<double> &weight_vector)
     : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight_vector),
-      _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
+      _scratch_vector(SCRATCH_SIZE, 0), _program(0)
 {
 }
 
 void
-CharstringInterp::init()
+CharstringInterp::initialize()
 {
     clear();
     ps_clear();
-    _done = false;
-    _error = errOK;
-
     _lsb = _cp = _seac_origin = Point(0, 0);
     _state = S_INITIAL;
     _flex = false;
     _t2nhints = 0;
     _subr_depth = 0;
+    _done = false;
+    _error = errOK;
+}
+
+bool
+CharstringInterp::interpret(const CharstringProgram *program, const Charstring *cs)
+{
+    if (cs) {
+	initialize();
+	_program = program;
+	cs->process(*this);
+	return _error != errOK;
+    } else
+	return error(errGlyph, 0);
 }
 
 bool
@@ -123,14 +134,14 @@ void
 CharstringInterp::fetch_weight_vector()
 {
     if (_program)
-	if (Vector<double> *wv = _program->mm_vector(EfontProgram::VEC_WEIGHT, false))
+	if (Vector<double> *wv = _program->mm_vector(CharstringProgram::VEC_WEIGHT, false))
 	    _weight_vector = *wv;
 }
 
 bool
 CharstringInterp::vector_command(int cmd)
 {
-    EfontProgram::VectorType which_vector;
+    CharstringProgram::VectorType which_vector;
     int vectoroff, offset, num, i;
     Vector<double> *v = 0;
   
@@ -151,7 +162,7 @@ CharstringInterp::vector_command(int cmd)
     
       case CS::cStore:
 	CHECK_STACK(4);
-	which_vector = (EfontProgram::VectorType)((int)top(3));
+	which_vector = (CharstringProgram::VectorType)((int)top(3));
 	vectoroff = (int)top(2);
 	offset = (int)top(1);
 	num = (int)top(0);
@@ -166,13 +177,13 @@ CharstringInterp::vector_command(int cmd)
 	for (i = 0; i < num; i++, offset++, vectoroff++)
 	    vec(v, vectoroff) = vec(&_scratch_vector, offset);
 	// erase our weight vector if the global weight vector has changed
-	if (which_vector == EfontProgram::VEC_WEIGHT)
+	if (which_vector == CharstringProgram::VEC_WEIGHT)
 	    _weight_vector.clear();
 	break;
 
       case CS::cLoad:
 	CHECK_STACK(3);
-	which_vector = (EfontProgram::VectorType)((int)top(2));
+	which_vector = (CharstringProgram::VectorType)((int)top(2));
 	offset = (int)top(1);
 	num = (int)top(0);
 	pop(3);
@@ -181,7 +192,7 @@ CharstringInterp::vector_command(int cmd)
 	    return error(errVector, cmd);
 	v = _program->mm_vector(which_vector, false);
 	// use our weight vector if appropriate
-	if (!v && which_vector == EfontProgram::VEC_WEIGHT && _weight_vector.size())
+	if (!v && which_vector == CharstringProgram::VEC_WEIGHT && _weight_vector.size())
 	    v = &_weight_vector;
 	if (!v)
 	    return error(errVector, cmd);
@@ -405,7 +416,7 @@ CharstringInterp::callsubr_command()
 	return error(errSubrDepth, which);
     _subr_depth++;
 
-    subr_cs->run(*this);
+    subr_cs->process(*this);
 
     _subr_depth--;
     if (_error != errOK)
@@ -428,7 +439,7 @@ CharstringInterp::callgsubr_command()
 	return error(errSubrDepth, which);
     _subr_depth++;
 
-    subr_cs->run(*this);
+    subr_cs->process(*this);
 
     _subr_depth--;
     if (_error != errOK)
@@ -1248,6 +1259,7 @@ CharstringInterp::act_seac(int cmd, double asb, double adx, double ady, int bcha
 {
     Charstring *acs = 0, *bcs = 0;
     if (achar < 0 || achar >= 256 || bchar < 0 || bchar >= 256
+	|| !_program || _program->parent_program()
 	|| !(acs = get_glyph(Charstring::standard_encoding[achar]))
 	|| !(bcs = get_glyph(Charstring::standard_encoding[bchar]))) {
 	error(errGlyph, cmd);
@@ -1258,15 +1270,15 @@ CharstringInterp::act_seac(int cmd, double asb, double adx, double ady, int bcha
     Point save_lsb = _lsb;
     Point save_seac_origin = _seac_origin;
     
-    CharstringInterp::init();
+    CharstringInterp::initialize();
     _seac_origin = apos;
     _state = S_SEAC;
-    acs->run(*this);
+    acs->process(*this);
     if (error() == errOK) {
-	CharstringInterp::init();
+	CharstringInterp::initialize();
 	_seac_origin = save_seac_origin;
 	_state = S_SEAC;
-	bcs->run(*this);
+	bcs->process(*this);
     }
 
     _lsb = save_lsb;

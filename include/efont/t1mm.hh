@@ -6,7 +6,7 @@ class ErrorHandler;
 namespace Efont {
 class Type1Font;
 
-class MultipleMasterSpace : public EfontProgram { public:
+class MultipleMasterSpace : public CharstringProgram { public:
 
     MultipleMasterSpace(PermString, int naxes, int nmasters);
     // default destructor

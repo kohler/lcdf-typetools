@@ -23,60 +23,23 @@
 
 namespace Efont {
 
-CharstringBounds::CharstringBounds(const EfontProgram *p)
-    : CharstringInterp(p)
+CharstringBounds::CharstringBounds()
+    : _lb(UNKDOUBLE, UNKDOUBLE), _rt(UNKDOUBLE, UNKDOUBLE),
+      _last_xf_program(0)
 {
-    // see also version with weight vector
-    double matrix[6];
-    program()->font_matrix(matrix);
-    _xf = Transform(matrix).scaled(1000);
-    _xf.check_null(0.001);
 }
 
-CharstringBounds::CharstringBounds(const EfontProgram *p, const Vector<double> &weight)
-    : CharstringInterp(p, weight)
+CharstringBounds::CharstringBounds(const Transform &nonfont_xf)
+    : _lb(UNKDOUBLE, UNKDOUBLE), _rt(UNKDOUBLE, UNKDOUBLE),
+      _nonfont_xf(nonfont_xf), _last_xf_program(0)
 {
-    double matrix[6];
-    program()->font_matrix(matrix);
-    _xf = Transform(matrix).scaled(1000);
-    _xf.check_null(0.001);
 }
 
-void
-CharstringBounds::transform(const Transform &t)
+CharstringBounds::CharstringBounds(const Transform &nonfont_xf, const Vector<double> &weight)
+    : CharstringInterp(weight),
+      _lb(UNKDOUBLE, UNKDOUBLE), _rt(UNKDOUBLE, UNKDOUBLE),
+      _nonfont_xf(nonfont_xf), _last_xf_program(0)
 {
-    _xf = _xf.transformed(t);
-}
-
-void
-CharstringBounds::translate(double dx, double dy)
-{
-    _xf.translate(dx, dy);
-}
-
-void
-CharstringBounds::extend(double e)
-{
-    _xf.scale(e, 1);
-}
-
-void
-CharstringBounds::shear(double s)
-{
-    transform(Transform(1, 0, s, 1, 0, 0));
-}
-
-void
-CharstringBounds::init()
-{
-    _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
-}
-
-void
-CharstringBounds::init(const Transform &t)
-{
-    _xf = t;
-    _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
 }
 
 void
@@ -121,8 +84,40 @@ CharstringBounds::act_curve(int, const Point &p0, const Point &p1, const Point &
     }
 }
 
+void
+CharstringBounds::set_xf(const CharstringProgram *program)
+{
+    if (_last_xf_program != program) {
+	_last_xf_program = program;
+	double matrix[6];
+	program->font_matrix(matrix);
+	Transform font_xf = Transform(matrix).scaled(1000);
+	font_xf.check_null(0.001);
+	_xf = _nonfont_xf * font_xf;
+    }
+}
+
 bool
-CharstringBounds::bounds(int bb[4], int &width, bool use_cur_width) const
+CharstringBounds::char_bounds(const CharstringContext &g, bool shift)
+{
+    set_xf(g.program);
+    CharstringInterp::interpret(g);
+    if (shift) {
+	_xf.translate(_width);
+	_nonfont_xf.translate(_width);
+    }
+    return error() >= 0;
+}
+
+void
+CharstringBounds::translate(double dx, double dy)
+{
+    _xf.translate(dx, dy);
+    _nonfont_xf.translate(dx, dy);
+}
+
+bool
+CharstringBounds::output(int bb[4], int &width, bool use_cur_width) const
 {
     if (!KNOWN(_lb.x))
 	bb[0] = bb[1] = bb[2] = bb[3] = 0;
@@ -142,21 +137,11 @@ CharstringBounds::bounds(int bb[4], int &width, bool use_cur_width) const
 }
 
 bool
-CharstringBounds::run(const Charstring &cs, int bb[4], int &width)
+CharstringBounds::bounds(const CharstringContext &g, int bb[4], int &width)
 {
-    init();
-    CharstringInterp::init();
-    cs.run(*this);
-    return bounds(bb, width, true);
-}
-
-bool
-CharstringBounds::run_incr(const Charstring &cs)
-{
-    CharstringInterp::init();
-    cs.run(*this);
-    _xf.translate(_width);
-    return error() >= 0;
+    CharstringBounds b;
+    b.char_bounds(g, false);
+    return b.output(bb, width, true);
 }
 
 }

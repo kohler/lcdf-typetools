@@ -146,7 +146,7 @@ Type1Charstring::decrypt() const
 }
 
 bool
-Type1Charstring::run(CharstringInterp &interp) const
+Type1Charstring::process(CharstringInterp &interp) const
 {
     const uint8_t *data = Type1Charstring::data();
     int left = _s.length();
@@ -257,7 +257,7 @@ Type1Charstring::assign_substring(int pos, int len, const String &cs)
 
 
 bool
-Type2Charstring::run(CharstringInterp &interp) const
+Type2Charstring::process(CharstringInterp &interp) const
 {
     const uint8_t *data = Type2Charstring::data();
     int left = _s.length();
@@ -326,15 +326,21 @@ Type2Charstring::run(CharstringInterp &interp) const
 }
 
 
+const CharstringProgram *
+CharstringProgram::child_program(int) const
+{
+    return this;
+}
+
 void
-EfontProgram::font_matrix(double matrix[6]) const
+CharstringProgram::font_matrix(double matrix[6]) const
 {
     matrix[0] = matrix[3] = 0.001;
     matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
 }
 
 void
-EfontProgram::glyph_names(Vector<PermString> &gnames) const
+CharstringProgram::glyph_names(Vector<PermString> &gnames) const
 {
     int n = nglyphs();
     gnames.resize(n);
@@ -343,13 +349,13 @@ EfontProgram::glyph_names(Vector<PermString> &gnames) const
 }
 
 Vector<double> *
-EfontProgram::mm_vector(VectorType, bool) const
+CharstringProgram::mm_vector(VectorType, bool) const
 {
     return 0;
 }
 
 double
-EfontProgram::global_width_x(bool) const
+CharstringProgram::global_width_x(bool) const
 {
     return UNKDOUBLE;
 }

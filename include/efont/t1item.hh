@@ -172,8 +172,6 @@ class Type1Subr : public Type1Item { public:
     operator Type1Charstring &()	{ return _cs; }
     operator const Type1Charstring &() const { return _cs; }
   
-    bool run(CharstringInterp &csi)	{ return _cs.run(csi); }
-  
     void gen(Type1Writer &);
   
     virtual Type1Subr *cast_subr()	{ return this; }

@@ -486,13 +486,13 @@ Cff::gsubr(int i)
  * Cff::Charset
  **/
 
-Cff::Charset::Charset(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
+Cff::Charset::Charset(const Cff *cff, int pos, int nglyphs, int max_sid, ErrorHandler *errh)
 {
-    assign(cff, pos, nglyphs, errh);
+    assign(cff, pos, nglyphs, max_sid, errh);
 }
 
 void
-Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
+Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, int max_sid, ErrorHandler *errh)
 {
     if (!errh)
 	errh = ErrorHandler::silent_handler();
@@ -506,10 +506,9 @@ Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
     else if (pos == 2)
 	assign(expert_subset_charset, sizeof(expert_subset_charset) / sizeof(int), nglyphs);
     else
-	_error = parse(cff, pos, nglyphs, errh);
+	_error = parse(cff, pos, nglyphs, max_sid, errh);
 
-    if (_error >= 0) {
-	_gids.assign(cff->max_sid() + 1, -1);
+    if (_error >= 0)
 	for (int g = 0; g < _sids.size(); g++) {
 	    if (_gids[_sids[g]] >= 0) {
 		errh->error("glyph '%s' in charset twice", cff->sid_permstring(_sids[g]).c_str());
@@ -517,7 +516,6 @@ Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 	    }
 	    _gids[_sids[g]] = g;
 	}
-    }
 }
 
 void
@@ -527,30 +525,31 @@ Cff::Charset::assign(const int *data, int size, int nglyphs)
 	size = nglyphs;
     _sids.resize(size);
     memcpy(&_sids[0], data, sizeof(const int) * size);
+    _gids.resize(data[size-1] + 1, -1);
     _error = 0;
 }
 
 int
-Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
+Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, int max_sid, ErrorHandler *errh)
 {
     const uint8_t *data = cff->data();
     int len = cff->length();
-    int max_sid = cff->max_sid();
     
     if (pos + 1 > len)
 	return errh->error("charset position out of range"), -EFAULT;
 
     _sids.push_back(0);
+    int actual_max_sid = 0;
 
     int format = data[pos];
     if (format == 0) {
 	if (pos + 1 + (nglyphs - 1) * 2 > len)
-	    return errh->error("charset/0 out of range"), -EFAULT;
+	    return errh->error("charset [format 0] out of range"), -EFAULT;
 	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 2) {
 	    int sid = (p[0] << 8) | p[1];
-	    if (sid > max_sid)
-		return errh->error("charset[0] uses bad SID %d", sid), -EINVAL;
+	    if (sid > actual_max_sid)
+		actual_max_sid = sid;
 	    _sids.push_back(sid);
 	}
 	
@@ -558,11 +557,11 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 3) {
 	    if (p + 3 > data + len)
-		return errh->error("charset/1 out of range"), -EFAULT;
+		return errh->error("charset [format 1] out of range"), -EFAULT;
 	    int sid = (p[0] << 8) | p[1];
 	    int n = p[2];
-	    if (sid + n > max_sid)
-		return errh->error("charset/1 uses bad SID %d", sid + n), -EINVAL;
+	    if (sid + n > actual_max_sid)
+		actual_max_sid = sid + n;
 	    for (int i = 0; i <= n; i++)
 		_sids.push_back(sid + i);
 	}
@@ -571,11 +570,11 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 	const uint8_t *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 4) {
 	    if (p + 4 > data + len)
-		return errh->error("charset/2 out of range"), -EFAULT;
+		return errh->error("charset [format 2] out of range"), -EFAULT;
 	    int sid = (p[0] << 8) | p[1];
 	    int n = (p[2] << 8) | p[3];
-	    if (sid + n > max_sid)
-		return errh->error("charset/2 uses bad SID %d", sid + n), -EINVAL;
+	    if (sid + n > actual_max_sid)
+		actual_max_sid = sid + n;
 	    for (int i = 0; i <= n; i++)
 		_sids.push_back(sid + i);
 	}
@@ -583,7 +582,10 @@ Cff::Charset::parse(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
     } else
 	return errh->error("unknown charset format %d", format), -EINVAL;
 
+    if (max_sid >= 0 && actual_max_sid > max_sid)
+	return errh->error("charset [format %d] uses bad SID %d", format, actual_max_sid), -EINVAL;
     _sids.resize(nglyphs);
+    _gids.resize(actual_max_sid + 1, -1);
     return 0;
 }
 
@@ -1020,15 +1022,20 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
     if ((_error = _top_dict.error()) < 0)
 	return;
     _error = -EINVAL;
-    if (_top_dict.check(false, errh, "Top DICT") < 0
-	|| !_top_dict.has(oCharStrings)	|| !_top_dict.has(oPrivate))
+    if (_top_dict.check(false, errh, "Top DICT") < 0)
 	return;
+    else if (!_top_dict.has(oCharStrings)) {
+	errh->error("font has no CharStrings dictionary");
+	return;
+    }
     //_top_dict.unparse(errh, "Top DICT");
 
     // extract offsets and information from TOP DICT
     _top_dict.value(oCharstringType, 2, &_charstring_type);
-    if (_charstring_type != 1 && _charstring_type != 2)
+    if (_charstring_type != 1 && _charstring_type != 2) {
+	errh->error("unknown CharString type %d", _charstring_type);
 	return;
+    }
     
     int charstrings_offset;
     _top_dict.value(oCharStrings, 0, &charstrings_offset);
@@ -1041,7 +1048,7 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
 
     int charset;
     _top_dict.value(oCharset, 0, &charset);
-    _charset.assign(cff, charset, _charstrings_index.nitems(), errh);
+    _charset.assign(cff, charset, _charstrings_index.nitems(), (cid() ? -1 : cff->max_sid()), errh);
     if (_charset.error() < 0) {
 	_error = _charset.error();
 	return;
@@ -1053,27 +1060,34 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
 	return;
 
     // extract information from Private DICT
-    Vector<double> private_info;
-    _top_dict.value(oPrivate, private_info);
-    int private_offset = (int) private_info[1];
-    _private_dict.assign(cff, private_offset, (int) private_info[0], errh, "Private DICT");
-    if ((_error = _private_dict.error()) < 0)
-	return;
-    _error = -EINVAL;
-    if (_private_dict.check(true, errh, "Private DICT") < 0)
-	return;
-    //_private_dict.unparse(errh, "Private DICT");
-
-    _private_dict.value(oDefaultWidthX, 0, &_default_width_x);
-    _private_dict.value(oNominalWidthX, 0, &_nominal_width_x);
-    if (_private_dict.has(oSubrs)) {
-	int subrs_offset;
-	_private_dict.value(oSubrs, 0, &subrs_offset);
-	_subrs_index = Cff::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
-	if ((_error = _subrs_index.error()) < 0)
+    if (_top_dict.has(oPrivate)) {
+	Vector<double> private_info;
+	_top_dict.value(oPrivate, private_info);
+	int private_offset = (int) private_info[1];
+	_private_dict.assign(cff, private_offset, (int) private_info[0], errh, "Private DICT");
+	if ((_error = _private_dict.error()) < 0)
 	    return;
+	_error = -EINVAL;
+	if (_private_dict.check(true, errh, "Private DICT") < 0)
+	    return;
+	//_private_dict.unparse(errh, "Private DICT");
+
+	_private_dict.value(oDefaultWidthX, 0, &_default_width_x);
+	_private_dict.value(oNominalWidthX, 0, &_nominal_width_x);
+	if (_private_dict.has(oSubrs)) {
+	    int subrs_offset;
+	    _private_dict.value(oSubrs, 0, &subrs_offset);
+	    _subrs_index = Cff::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
+	    if ((_error = _subrs_index.error()) < 0)
+		return;
+	}
+	_subrs_cs.assign(nsubrs(), 0);
     }
-    _subrs_cs.assign(nsubrs(), 0);
+
+    if (cid()) {
+	errh->error("CID-keyed fonts not yet supported");
+	return;
+    }
 
     // success!
     _error = 0;

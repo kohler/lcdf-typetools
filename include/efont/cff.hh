@@ -18,7 +18,7 @@ class Cff { public:
     const String &data_string() const	{ return _data_string; }
     const uint8_t *data() const		{ return _data; }
     int length() const			{ return _len; }
-    
+
     int nfonts() const			{ return _name_index.size(); }
     PermString font_name(int i) const	{ return _name_index[i]; }
     int font_offset(int, int &, int &) const;
@@ -137,6 +137,7 @@ class Cff::Dict { public:
     int check(bool is_private, ErrorHandler * = 0, const char *dict_name = "DICT") const;
 
     bool has(DictOperator) const;
+    inline bool has_first(DictOperator) const;
     bool value(DictOperator, Vector<double> &) const;
     bool value(DictOperator, int, int *) const;
     bool value(DictOperator, double, double *) const;
@@ -157,16 +158,16 @@ class Cff::Dict { public:
 class Cff::Charset { public:
 
     Charset()				: _error(-1) { }
-    Charset(const Cff *, int pos, int nglyphs, ErrorHandler * = 0);
-    void assign(const Cff *, int pos, int nglyphs, ErrorHandler * = 0);
+    Charset(const Cff *, int pos, int nglyphs, int max_sid, ErrorHandler * = 0);
+    void assign(const Cff *, int pos, int nglyphs, int max_sid, ErrorHandler * = 0);
 
     int error() const			{ return _error; }
     
     int nglyphs() const			{ return _sids.size(); }
     int nsids() const			{ return _gids.size(); }
     
-    int gid_to_sid(int gid) const;
-    int sid_to_gid(int sid) const;
+    inline int gid_to_sid(int gid) const;
+    inline int sid_to_gid(int sid) const;
     
   private:
 
@@ -175,12 +176,12 @@ class Cff::Charset { public:
     int _error;
 
     void assign(const int *, int, int);
-    int parse(const Cff *, int pos, int nglyphs, ErrorHandler *);
+    int parse(const Cff *, int pos, int nglyphs, int max_sid, ErrorHandler *);
     
 };
 
 
-class Cff::Font : public EfontProgram { public:
+class Cff::Font : public CharstringProgram { public:
 
     Font(Cff *, PermString = PermString(), ErrorHandler * = 0);
     ~Font();
@@ -190,6 +191,8 @@ class Cff::Font : public EfontProgram { public:
 
     PermString font_name() const	{ return _font_name; }
     void font_matrix(double[6]) const;
+    
+    inline bool cid() const;
     
     int nsubrs_x() const		{ return _subrs_index.nitems(); }
     int ngsubrs_x() const		{ return _cff->ngsubrs(); }
@@ -301,6 +304,18 @@ Cff::Charset::sid_to_gid(int sid) const
 	return _gids[sid];
     else
 	return -1;
+}
+
+inline bool
+Cff::Dict::has_first(DictOperator op) const
+{
+    return _operators.size() && _operators[0] == op;
+}
+
+inline bool
+Cff::Font::cid() const
+{
+    return _top_dict.has_first(oROS);
 }
 
 inline const Cff::Dict &

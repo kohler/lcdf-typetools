@@ -251,8 +251,8 @@ MultipleMasterSpace::normalize_vector(ErrorHandler *errh) const
     norm_design.assign(_naxes, UNKDOUBLE);
   
     if (_ndv) {
-	CharstringInterp ai(this);
-	if (!_ndv.run(ai))
+	CharstringInterp ai;
+	if (!ai.interpret(this, &_ndv))
 	    return error(errh, "error in NDV program");
     
     } else
@@ -296,8 +296,8 @@ MultipleMasterSpace::convert_vector(ErrorHandler *errh) const
     weight.assign(_nmasters, 1);
   
     if (_cdv) {
-	CharstringInterp ai(this);
-	if (!_cdv.run(ai))
+	CharstringInterp ai;
+	if (!ai.interpret(this, &_cdv))
 	    return error(errh, "error in CDV program");
     
     } else

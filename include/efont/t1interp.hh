@@ -8,8 +8,8 @@ namespace Efont {
 
 class CharstringInterp { public:
 
-    CharstringInterp(const EfontProgram *);
-    CharstringInterp(const EfontProgram *, const Vector<double> &weight_vec);
+    CharstringInterp();
+    CharstringInterp(const Vector<double> &weight_vec);
     virtual ~CharstringInterp()			{ }
 
     int error() const				{ return _error; }
@@ -39,13 +39,16 @@ class CharstringInterp { public:
     const Vector<double> &weight_vector() const	{ return _weight_vector; }
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
 
-    const EfontProgram *program() const		{ return _program; }
+    const CharstringProgram *program() const	{ return _program; }
     Charstring *get_subr(int) const;
     Charstring *get_gsubr(int) const;
     Charstring *get_xsubr(bool g, int) const;
     Charstring *get_glyph(PermString) const;
 
-    virtual void init();
+    bool interpret(const CharstringProgram *, const Charstring *);
+    inline bool interpret(const CharstringContext &);
+
+    //virtual void init(const CharstringProgram *);
     bool error(int c)				{ return error(c, 0); }
     virtual bool error(int, int);
     virtual bool number(double);
@@ -131,8 +134,8 @@ class CharstringInterp { public:
     Point _lsb;
     Point _cp;
     Point _seac_origin;
-  
-    const EfontProgram *_program;
+
+    const CharstringProgram *_program;
 
     enum State {
 	S_INITIAL, S_SEAC, S_SBW, S_HSTEM, S_VSTEM, S_HINTMASK, S_IPATH, S_PATH
@@ -145,6 +148,8 @@ class CharstringInterp { public:
     
     static double double_for_error;
 
+    void initialize();
+    
     inline void ensure_weight_vector();
     void fetch_weight_vector();
     
@@ -224,20 +229,16 @@ CharstringInterp::ensure_weight_vector()
 	fetch_weight_vector();
 }
 
-#if 0
-inline Vector<double> *
-CharstringInterp::weight_vector()
-{
-    if (!_weight_vector && _program)
-	_weight_vector = _program->mm_vector(EfontProgram::);
-    return _weight_vector;
-}
-#endif
-
 inline bool
 CharstringInterp::callxsubr_command(bool g)
 {
     return (g ? callgsubr_command() : callsubr_command());
+}
+
+inline bool
+CharstringInterp::interpret(const CharstringContext &g)
+{
+    return interpret(g.program, g.cs);
 }
 
 }
