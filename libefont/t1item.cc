@@ -606,26 +606,32 @@ Type1Subr::gen(Type1Writer &w)
   else
     w << '/' << _name << ' ' << len + lenIV << charstring_start;
   
-  /* PERFORMANCE NOTE: Putting the charstring in a buffer of known length and
-     printing that buffer rather than one char at a time is an OK
-     optimization. (around 10%) */
-  unsigned char *buf = new unsigned char[len + lenIV];
-  unsigned char *t = buf;
-  
-  int r = t1R_cs;
-  for (int i = 0; i < lenIV; i++) {
-    unsigned char c = (unsigned char)(r >> 8);
-    *t++ = c;
-    r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
+  if (lenIV < 0) {
+    // lenIV < 0 means charstrings are unencrypted
+    w.print((char *)data, len);
+    
+  } else {
+    // PERFORMANCE NOTE: Putting the charstring in a buffer of known length
+    // and printing that buffer rather than one char at a time is an OK
+    // optimization. (around 10%)
+    unsigned char *buf = new unsigned char[len + lenIV];
+    unsigned char *t = buf;
+    
+    int r = t1R_cs;
+    for (int i = 0; i < lenIV; i++) {
+      unsigned char c = (unsigned char)(r >> 8);
+      *t++ = c;
+      r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
+    }
+    for (int i = 0; i < len; i++, data++) {
+      unsigned char c = (*data ^ (r >> 8));
+      *t++ = c;
+      r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
+    }
+    
+    w.print((char *)buf, len + lenIV);
+    delete[] buf;
   }
-  for (int i = 0; i < len; i++, data++) {
-    unsigned char c = (*data ^ (r >> 8));
-    *t++ = c;
-    r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
-  }
-  
-  w.print((char *)buf, len + lenIV);
-  delete[] buf;
   
   w << _definer << '\n';
 }

@@ -8,10 +8,19 @@
 #include "t1interp.hh"
 
 Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
-  : _data(new unsigned char[l - lenIV]), _len(l - lenIV), _key(t1R_cs)
 {
-  for (int i = 0; i < lenIV; i++, d++)
-    _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
+  if (lenIV < 0) {
+    // lenIV < 0 means there is no charstring encryption.
+    _data = new unsigned char[l];
+    _len = l;
+    _key = -1;
+  } else {
+    _data = new unsigned char[l - lenIV];
+    _len = l - lenIV;
+    _key = t1R_cs;
+    for (int i = 0; i < lenIV; i++, d++)
+      _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
+  }
   memcpy(_data, d, _len);
 }
 
