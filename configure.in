@@ -27,28 +27,49 @@ AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PR
   [kpathsea=$withval], [kpathsea=])
 
 if test "x$kpathsea" = xno; then
-    KPSEI_LDADD=
+    KPSEINTERFACE_O=
+    LIBKPATHSEA=
 else
     if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
 	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
 	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
+    else
+	kpathsea=yes
     fi
+
+    dnl check for kpathsea/kpathsea.h
     AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
+
+    dnl if not found and kpathsea prefix not set, check /usr/local
+    if test "x$kpse_header" != xyes -a "x$kpathsea" = xyes -a -r /usr/local/include/kpathsea/tex-file.h; then
+	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
+	LDFLAGS="$LDFLAGS -L/usr/local/lib"
+	AC_CHECK_HEADER(kpathsea/tex-file.h, [kpse_header=yes], [kpse_header=no])
+    fi
+
+    dnl check for -lkpathsea
     AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
+
+    dnl bail out if not found
     if test "x$kpse_header" != xyes -o "x$kpse_library" != xyes; then
 	AC_MSG_ERROR([
 =========================================
 
 I can't find the kpathsea library and/or header files. Tell me where to look
-with the --with-kpathsea=PREFIX option, or disable support with
- --without-kpathsea.
+using the --with-kpathsea=PREFIX option (header files should be under
+PREFIX/include/kpathsea, and library under PREFIX/lib), or disable support
+using --without-kpathsea.
 
 =========================================])
     fi
+
+    dnl OK, found
     AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
-    KPSEI_LDADD='kpseinterface.$(OBJEXT) -lkpathsea'
+    KPSEINTERFACE_O='kpseinterface.$(OBJEXT)'
+    LIBKPATHSEA='-lkpathsea'
 fi
-AC_SUBST([KPSEI_LDADD])
+AC_SUBST([KPSEINTERFACE_O])
+AC_SUBST([LIBKPATHSEA])
 
 AC_ARG_ENABLE(cfftot1, [  --disable-cfftot1       disable running cfftot1 from otftotfm], :, enable_cfftot1=yes)
 

@@ -13,8 +13,8 @@ otftotfm_SOURCES = \
 	util.cc util.hh
 EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 
-otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEI_LDADD@
-otftotfm_DEPENDENCIES = @KPSEI_LDADD@
+otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@ @LIBKPATHSEA@
+otftotfm_DEPENDENCIES = @KPSEINTERFACE_O@
 
 INCLUDES = -I$(top_srcdir)/include
 
