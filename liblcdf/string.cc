@@ -246,7 +246,7 @@ String::substring(int left, int len) const
   if (left < 0)
     left += _length;
   if (len < 0)
-    len = _length - left;
+    len = _length - left + len;
   if (left + len > _length)
     len = _length - left;
   if (left < 0 || len <= 0)
