@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.90
+
+* mmpfb: Fix behavior with Adobe Jenson and other fonts with intermediate
+  masters, and '--minimize' output, which had been broken since 1.65.
+
+
 Version 1.88   23.Dec.2003
 
 * otfinfo: Change coding to be friendlier to older C++ compilers. Requested

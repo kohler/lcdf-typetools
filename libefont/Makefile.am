@@ -27,6 +27,7 @@ libefont_a_SOURCES = \
 	t1interp.cc \
 	t1item.cc \
 	t1font.cc \
+	t1fontskel.cc \
 	t1mm.cc \
 	t1rw.cc \
 	t1unparser.cc
