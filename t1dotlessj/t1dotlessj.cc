@@ -197,10 +197,8 @@ Type1Charstring
 Sectioner::gen(Type1Font *font)
 {
     StringAccum sa;
-    for (String *s = _sections.begin(); s < _sections.end(); s++) {
-	fprintf(stderr, "%d  %s\n", s - _sections.begin(), CharstringUnparser::unparse(Type1Charstring(*s)).c_str());
+    for (String *s = _sections.begin(); s < _sections.end(); s++)
 	sa << *s;
-    }
     Type1Charstring in(sa.take_string()), out;
     Type1CharstringGenInterp gen(precision());
     gen.set_hint_replacement_storage(font);
