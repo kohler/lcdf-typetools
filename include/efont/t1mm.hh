@@ -5,11 +5,11 @@
 #endif
 #include "vector.hh"
 #include "permstr.hh"
-class Type1Charstring;
+#include "t1cs.hh"
 class ErrorHandler;
 class Type1Font;
 
-class Type1MMSpace {
+class Type1MMSpace: public Type1Program {
   
   typedef Vector<double> NumVector;
   
@@ -31,18 +31,25 @@ class Type1MMSpace {
   Type1Charstring *_ndv;
   Type1Charstring *_cdv;
   
-  NumVector _design_vector;
-  NumVector _weight_vector;
+  NumVector _default_design_vector;
+  NumVector _default_weight_vector;
+
+  mutable NumVector *_design_vector;
+  mutable NumVector *_norm_design_vector;
+  mutable NumVector *_weight_vector;
   
-  bool set_error(ErrorHandler *, const char *, ...) const;
+  bool error(ErrorHandler *, const char *, ...) const;
   
   Type1MMSpace(const Type1MMSpace &);
   Type1MMSpace &operator=(const Type1MMSpace &);
   
-  bool normalize_vector(NumVector &, NumVector &, NumVector &,
-			ErrorHandler *) const;
-  bool convert_vector(NumVector &, NumVector &, NumVector &,
-		      ErrorHandler *) const;
+  bool normalize_vector(ErrorHandler *) const;
+  bool convert_vector(ErrorHandler *) const;
+  
+  NumVector *design_vector() const	{ return _design_vector; }
+  NumVector *norm_design_vector() const	{ return _norm_design_vector; }
+  NumVector *weight_vector() const	{ return _weight_vector; }
+  bool writable_vectors() const		{ return true; }
   
  public:
   
@@ -74,14 +81,14 @@ class Type1MMSpace {
   
   bool check(ErrorHandler * = 0);
   
-  NumVector design_vector() const;
+  NumVector default_design_vector() const;
   bool set_design(NumVector &, int, double, ErrorHandler * = 0) const;
   bool set_design(NumVector &, PermString, double, ErrorHandler * = 0) const;
   
-  bool norm_design_vector(const NumVector &, NumVector &,
-			  ErrorHandler * = 0) const; 
-  bool weight_vector(const NumVector &, NumVector &,
-		     ErrorHandler * = 0) const; 
+  bool design_to_norm_design(const NumVector &, NumVector &,
+			     ErrorHandler * = 0) const;
+  bool design_to_weight(const NumVector &, NumVector &,
+			ErrorHandler * = 0) const;
   
 };
 

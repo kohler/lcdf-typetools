@@ -552,7 +552,7 @@ int Type1Subr::lenIV = 4;
 
 Type1Subr::Type1Subr(PermString n, int num, PermString definer,
 		     int lenIV, unsigned char *cs, int l)
-  : _is_subr(!n), _name(n), _subrno(num), _definer(definer), _cs(lenIV, cs, l)
+  : _name(n), _subrno(num), _definer(definer), _cs(lenIV, cs, l)
 {
 }
 

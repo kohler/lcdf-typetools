@@ -133,7 +133,6 @@ class Type1Encoding: public Type1Item {
 
 class Type1Subr: public Type1Item {
   
-  bool _is_subr;
   PermString _name;
   int _subrno;
   PermString _definer;
@@ -150,7 +149,7 @@ class Type1Subr: public Type1Item {
   
   static Type1Subr *make(char *, int, int cs_start, int cs_len);
   
-  bool is_subr() const			{ return _is_subr; }
+  bool is_subr() const			{ return !_name; }
   PermString name() const		{ return _name; }
   int subrno() const			{ return _subrno; }
   PermString definer() const		{ return _definer; }

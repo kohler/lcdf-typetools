@@ -74,18 +74,18 @@ Type1MMSpace::set_cdv(Type1Charstring *cs, bool own)
 void
 Type1MMSpace::set_design_vector(const NumVector &v)
 {
-  _design_vector = v;
+  _default_design_vector = v;
 }
 
 void
 Type1MMSpace::set_weight_vector(const NumVector &v)
 {
-  _weight_vector = v;
+  _default_weight_vector = v;
 }
 
 
 bool
-Type1MMSpace::set_error(ErrorHandler *errh, const char *s, ...) const
+Type1MMSpace::error(ErrorHandler *errh, const char *s, ...) const
 {
   if (errh) {
     char buf[1024];
@@ -107,41 +107,41 @@ Type1MMSpace::check(ErrorHandler *errh)
     return 1;
   
   if (_nmasters <= 0 || _nmasters > 16)
-    return set_error(errh, "number of masters must be between 1 and 16");
+    return error(errh, "number of masters must be between 1 and 16");
   if (_naxes <= 0 || _naxes > 4)
-    return set_error(errh, "number of axes must be between 1 and 4");
+    return error(errh, "number of axes must be between 1 and 4");
   
   if (_master_positions.count() != _nmasters)
-    return set_error(errh, "bad BlendDesignPositions (%d/%d)", _master_positions.count(), _nmasters);
+    return error(errh, "bad BlendDesignPositions");
   for (int i = 0; i < _nmasters; i++)
     if (_master_positions[i].count() != _naxes)
-      return set_error(errh, "inconsistent BlendDesignPositions");
+      return error(errh, "inconsistent BlendDesignPositions");
   
   if (_normalize_in.count() != _naxes || _normalize_out.count() != _naxes)
-    return set_error(errh, "bad BlendDesignMap");
+    return error(errh, "bad BlendDesignMap");
   for (int i = 0; i < _naxes; i++)
     if (_normalize_in[i].count() != _normalize_out[i].count())
-      return set_error(errh, "bad BlendDesignMap");
+      return error(errh, "bad BlendDesignMap");
   
   if (!_axis_types.count())
     _axis_types.assign(_naxes, PermString());
   if (_axis_types.count() != _naxes)
-    return set_error(errh, "bad BlendAxisTypes");
+    return error(errh, "bad BlendAxisTypes");
   
   if (!_axis_labels.count())
     _axis_labels.assign(_naxes, PermString());
   if (_axis_labels.count() != _naxes)
-    return set_error(errh, "bad axis labels");
+    return error(errh, "bad axis labels");
   
-  if (!_design_vector.count())
-    _design_vector.assign(_naxes, UNKDOUBLE);
-  if (_design_vector.count() != _naxes)
-    return set_error(errh, "inconsistent design vector");
+  if (!_default_design_vector.count())
+    _default_design_vector.assign(_naxes, UNKDOUBLE);
+  if (_default_design_vector.count() != _naxes)
+    return error(errh, "inconsistent design vector");
   
-  if (!_weight_vector.count())
-    _weight_vector.assign(_nmasters, UNKDOUBLE);
-  if (_weight_vector.count() != _nmasters)
-    return set_error(errh, "inconsistent weight vector");
+  if (!_default_weight_vector.count())
+    _default_weight_vector.assign(_nmasters, UNKDOUBLE);
+  if (_default_weight_vector.count() != _nmasters)
+    return error(errh, "inconsistent weight vector");
   
   _ok = 1;
   return 1;
@@ -171,9 +171,9 @@ Type1MMSpace::axis_high(int ax) const
 
 
 Vector<double>
-Type1MMSpace::design_vector() const
+Type1MMSpace::default_design_vector() const
 {
-  return _design_vector;
+  return _default_design_vector;
 }
 
 bool
@@ -181,7 +181,7 @@ Type1MMSpace::set_design(NumVector &design_vector, int ax, double value,
 			 ErrorHandler *errh) const
 {
   if (ax < 0 || ax >= _naxes)
-    return set_error(errh, "no axis number %d", ax);
+    return error(errh, "no axis number %d", ax);
   
   if (value < axis_low(ax)) {
     value = axis_low(ax);
@@ -206,27 +206,29 @@ Type1MMSpace::set_design(NumVector &design_vector, PermString ax_name,
 {
   int ax = axis(ax_name);
   if (ax < 0)
-    return set_error(errh, "no `%s' axis", ax_name.cc());
+    return error(errh, "no `%s' axis", ax_name.cc());
   else
     return set_design(design_vector, ax, val, errh);
 }
 
 
 bool
-Type1MMSpace::normalize_vector(NumVector &design, NumVector &norm_design,
-			       NumVector &weight, ErrorHandler *errh) const
+Type1MMSpace::normalize_vector(ErrorHandler *errh) const
 {
+  NumVector &design = *_design_vector;
+  NumVector &norm_design = *_norm_design_vector;
+  
   for (int a = 0; a < _naxes; a++)
     if (!KNOWN(design[a]))
-      return set_error(errh, "not all design coordinates specified");
+      return error(errh, "not all design coordinates specified");
   
   // Move to normalized design coordinates.
   norm_design.assign(_naxes, UNKDOUBLE);
   
   if (_ndv) {
-    Type1Interp ai(0, &design, &norm_design, &weight);
+    Type1Interp ai(this);
     if (!_ndv->run(ai))
-      return set_error(errh, "error in NDV program");
+      return error(errh, "error in NDV program");
     
   } else
     for (int a = 0; a < _naxes; a++) {
@@ -254,22 +256,24 @@ Type1MMSpace::normalize_vector(NumVector &design, NumVector &norm_design,
   
   for (int a = 0; a < _naxes; a++)
     if (!KNOWN(norm_design[a]))
-      return set_error(errh, "bad normalization");
+      return error(errh, "bad normalization");
   
   return true;
 }
 
 
 bool
-Type1MMSpace::convert_vector(NumVector &design, NumVector &norm_design,
-			     NumVector &weight, ErrorHandler *errh) const
+Type1MMSpace::convert_vector(ErrorHandler *errh) const
 {
+  NumVector &norm_design = *_norm_design_vector;
+  NumVector &weight = *_weight_vector;
+  
   weight.assign(_nmasters, 1);
   
   if (_cdv) {
-    Type1Interp ai(0, &design, &norm_design, &weight);
+    Type1Interp ai(this);
     if (!_cdv->run(ai))
-      return set_error(errh, "error in CDV program");
+      return error(errh, "error in CDV program");
     
   } else
     for (int a = 0; a < _naxes; a++)
@@ -290,45 +294,51 @@ Type1MMSpace::convert_vector(NumVector &design, NumVector &norm_design,
 
 
 bool
-Type1MMSpace::norm_design_vector(const NumVector &design_in,
-				 NumVector &norm_design,
-				 ErrorHandler *errh) const
+Type1MMSpace::design_to_norm_design(const NumVector &design_in,
+				    NumVector &norm_design,
+				    ErrorHandler *errh) const
 {
   NumVector design(design_in);
   NumVector weight;
   
-  if (!normalize_vector(design, norm_design, weight, errh))
+  _design_vector = &design;
+  _norm_design_vector = &norm_design;
+  _weight_vector = &weight;
+  if (!normalize_vector(errh))
     return false;
-
+  
   return true;
 }
 
 
 bool
-Type1MMSpace::weight_vector(const NumVector &design_in, NumVector &weight,
-			    ErrorHandler *errh) const
+Type1MMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
+			       ErrorHandler *errh) const
 {
   NumVector design(design_in);
   NumVector norm_design;
   
   bool dirty = false;
   for (int i = 0; i < _naxes; i++)
-    if (design[i] != _design_vector[i])
+    if (design[i] != _default_design_vector[i])
       dirty = true;
   
   if (dirty) {
-    if (!normalize_vector(design, norm_design, weight, errh))
+    _design_vector = &design;
+    _norm_design_vector = &norm_design;
+    _weight_vector = &weight;
+    if (!normalize_vector(errh))
       return false;
-    if (!convert_vector(design, norm_design, weight, errh))
+    if (!convert_vector(errh))
       return false;
   } else
-    weight = _weight_vector;
+    weight = _default_weight_vector;
   
   double sum = 0;
   for (int m = 0; m < _nmasters; m++)
     sum += weight[m];
   if (sum < 0.9999 || sum > 1.0001)
-    return set_error(errh, "bad conversion: weight vector doesn't sum to 1");
+    return error(errh, "bad conversion: weight vector doesn't sum to 1");
   
   return true;
 }
