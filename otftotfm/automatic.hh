@@ -11,6 +11,7 @@ String getodir(int o, ErrorHandler *);
 bool setodir(int o, const String &);
 bool set_vendor(const String &);
 bool set_typeface(const String &, bool override);
+bool set_map_file(const String &);
 const char *odirname(int o);
 void update_odir(int o, String file, ErrorHandler *);
 String installed_type1(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *);

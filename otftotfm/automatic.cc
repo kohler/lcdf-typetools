@@ -23,6 +23,7 @@ static String::Initializer initializer;
 static String odir[NUMODIR];
 static String typeface;
 static String vendor;
+static String map_file;
 #define DEFAULT_VENDOR "lcdftools"
 #define DEFAULT_TYPEFACE "unknown"
 
@@ -233,6 +234,14 @@ set_typeface(const String &s, bool override)
     return !had;
 }
 
+bool
+set_map_file(const String &s)
+{
+    bool had = (bool) map_file;
+    map_file = s;
+    return !had;
+}
+
 String
 installed_type1(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
@@ -277,23 +286,30 @@ int
 update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 {
 #if HAVE_KPATHSEA
-    if (automatic && getodir(O_MAP, errh)) {
-	String filename = odir[O_MAP] + "/" + vendor + ".map";
+    bool remove_absolutes = false;
+    if (automatic && !map_file && getodir(O_MAP, errh)) {
+	map_file = odir[O_MAP] + "/" + vendor + ".map";
+	remove_absolutes = true;
+    }
+#endif
 
+    if (map_file == "" || map_file == "-")
+	printf("%s\n", mapline.c_str());
+    else {
 	// report nocreate/verbose
 	if (nocreate) {
-	    errh->message("would update %s", filename.c_str());
+	    errh->message("would update %s", map_file.c_str());
 	    return 0;
 	} else if (verbose)
-	    errh->message("updating %s", filename.c_str());
+	    errh->message("updating %s", map_file.c_str());
 	
-	int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
+	int fd = open(map_file.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
-	    return errh->error("%s: %s", filename.c_str(), strerror(errno));
+	    return errh->error("%s: %s", map_file.c_str(), strerror(errno));
 	FILE *f = fdopen(fd, "r+");
-	// NB: also change update_autofont_map if you change this code
+	// NB: also change encoding logic if you change this code
 
-# if defined(F_SETLKW) && defined(HAVE_FTRUNCATE)
+#if defined(F_SETLKW) && defined(HAVE_FTRUNCATE)
 	{
 	    struct flock lock;
 	    lock.l_type = F_WRLCK;
@@ -306,26 +322,29 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    if (result < 0) {
 		result = errno;
 		fclose(f);
-		return errh->error("locking %s: %s", filename.c_str(), strerror(result));
+		return errh->error("locking %s: %s", map_file.c_str(), strerror(result));
 	    }
 	}
-# endif
+#endif
 
+#if HAVE_KPATHSEA
 	// remove spurious absolute paths from mapline
-	for (int pos = mapline.find_left('<'); pos >= 0; pos = mapline.find_left('<', pos + 1)) {
-	    if (pos + 1 < mapline.length() && (mapline[pos+1] == '[' || mapline[pos+1] == '<'))
-		pos++;
-	    if (pos + 1 + writable_texdir.length() <= mapline.length()
-		&& memcmp(mapline.data() + pos + 1, writable_texdir.data(), writable_texdir.length()) == 0) {
-		int space = mapline.find_left(' ', pos + writable_texdir.length());
-		if (space < 0)
-		    space = mapline.length();
-		int slash = mapline.find_right('/', space);
-		mapline = mapline.substring(0, pos + 1) + mapline.substring(slash + 1);
+	if (remove_absolutes)
+	    for (int pos = mapline.find_left('<'); pos >= 0; pos = mapline.find_left('<', pos + 1)) {
+		if (pos + 1 < mapline.length() && (mapline[pos+1] == '[' || mapline[pos+1] == '<'))
+		    pos++;
+		if (pos + 1 + writable_texdir.length() <= mapline.length()
+		    && memcmp(mapline.data() + pos + 1, writable_texdir.data(), writable_texdir.length()) == 0) {
+		    int space = mapline.find_left(' ', pos + writable_texdir.length());
+		    if (space < 0)
+			space = mapline.length();
+		    int slash = mapline.find_right('/', space);
+		    mapline = mapline.substring(0, pos + 1) + mapline.substring(slash + 1);
+		}
 	    }
-	}
+#endif
 
-	// read old data from encoding file
+	// read old data from map file
 	StringAccum sa;
 	while (!feof(f))
 	    if (char *x = sa.reserve(8192)) {
@@ -356,7 +375,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		    // duplicate of old name, don't change it
 		    fclose(f);
 		    if (verbose)
-			errh->message("%s unchanged", filename.c_str());
+			errh->message("%s unchanged", map_file.c_str());
 		    return 0;
 		} else {
 		    text = text.substring(0, fl) + text.substring(nl);
@@ -371,13 +390,13 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	text += mapline;
 
 	// rewind file
-# ifdef HAVE_FTRUNCATE
+#ifdef HAVE_FTRUNCATE
 	rewind(f);
 	ftruncate(fd, 0);
-# else
+#else
 	fclose(f);
-	f = fopen(filename.c_str(), "w");
-# endif
+	f = fopen(map_file.c_str(), "w");
+#endif
 
 	// write data
 	fwrite(text.data(), 1, text.length(), f);
@@ -386,11 +405,9 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 
 	// inform about the new file if necessary
 	if (created)
-	    update_odir(O_MAP, filename, errh);
+	    update_odir(O_MAP, map_file, errh);
     }
-#else
-    (void) mapline;
-#endif
+
     return 0;
 }
 

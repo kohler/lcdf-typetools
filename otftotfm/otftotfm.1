@@ -1,3 +1,4 @@
+'\"t
 .ds V 0.7
 .de M
 .BR "\\$1" "(\\$2)\\$3"
@@ -26,7 +27,7 @@ encoding file that correspond, as far as possible, to a PostScript-flavored
 OpenType font. The generated files are written into the current directory,
 or, with the
 .B \-a 
-option, into a collection of directories taken from environment variables.
+option, into a TeX Directory Structure.
 .LP
 .\"OpenType supports extensive substitutions and complex positionings that TeX
 .\"can't handle. 
@@ -46,31 +47,92 @@ Simple glyph positionings, such as adding extra space on either side of 'W'.
 Otftotfm reads an OpenType font, turns on any font features you choose,
 selects the instructions that TeX supports, and generates font metrics and
 a dvips encoding file that, together, implement those instructions. By
-default otftotfm uses the
+default otftotfm creates TFM and VF files using the
 .M pltotf 1
 and
 .M vptovf 1
-programs to create TFM and VF files, but supply the
+programs, but supply the
 .B \-\-pl
-option to make it generates human-readable PL and VPL files.
+option and it will generate human-readable PL and VPL files.
+'
+.SS Automatic mode
 .PP
-Otftotfm runs in automatic mode or manual mode. In manual mode, all output
-files are written into the current directory; in automatic mode, they are
-written to directories specified by various environment variables. In
-either case, you can override a directory choice with one of the
-.B \-\-whatever\-directory
-options. Provide the
+Automatic mode, triggered by the
 .BR \-a / \-\-automatic
-option to select automatic mode.
+option, is the easiest way to use otftotfm. In automatic mode, otftotfm
+will install the font metrics and encoding files where TeX can find them,
+and additionally install a Type 1 font and mapping for dvips. This requires
+a TeX installation that follows the TeX Directory Structure standard
+(http://www.tug.org/tds/), such as most Unix TeX installations.
+'
 .PP
-Otftotfm also generates a prototype
-.I psfonts.map
-line for the font, suitable for
+Simple instructions for web2c-based installations: First, create a
+.I $HOME/texmf
+directory, if you don't have one already. Add a
+.I $HOME/texmf/dvips
+subdirectory, and create a file
+.I $HOME/texmf/dvips/config.ps
+containing the like "p +lcdftools.map" (or add that line to your existing
+.I config.ps
+file); this will help
 .M dvips 1
-configuration files. It is written to the standard output unless some other
-file was written there already.
+find your new fonts. Now you can just run "otftotfm
+.B \-a
+.IR file .otf
+.IR fontname ,
+then refer to a font in TeX using the
+.I fontname
+supplied to otftotfm.
+'
+.PP
+In automatic mode, otftotfm first searches your $TEXMF path for a writable
+directory. Often this will be your "$HOME/texmf" directory; you might want
+to create this directory now. It then installs files under that directory
+tree. Specifically, it places files in file-type-specific subdirectories,
+as follows:
+'
+.TS
+l	l	l	.
+\fBFile type\fR	\fBDirectory\fR	\fBFilename\fR
+TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR[--base].tfm
+VF	TEXMF/fonts/vf/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR.vf
+PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR[--base].pl
+VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR.vpl
+encoding	TEXMF/dvips/	a_\fIsignature\fR.enc
+PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPSfontname\fR.pfb
+psfonts.map	TEXMF/dvips/	\fIvendor\fR.map
+.TE
+.PP
+"TEXMF" stands for the writable $TEXMF directory. \fIFontname\fR is the
+font name supplied as otftotfm's second argument, and \fIPSfontname\fR is
+the PostScript name of the input font. The \fIvendor\fR and \fItypeface\fR
+strings are required by TDS; they default to "lcdftools" and the font's
+family name, respectively. \fISignature\fR is an opaque 6-character
+encoding signature.
+.PP
+You can override these directories with environment variables and options
+as follows. Options take precedence over environment variables.
+'
+.TS
+l	l	l	.
+\fBFile type\fR	\fBEnvironment variable\fR	\fBOption\fR
+TFM	TFMDESTDIR	\-\-tfm\-directory
+VF	VFDESTDIR	\-\-vf\-directory
+PL	PLDESTDIR	\-\-pl\-directory
+VPL	VPLDESTDIR	\-\-vpl\-directory
+encoding	ENCODINGDESTDIR	\-\-encoding\-directory
+PFB font	T1DESTDIR	\-\-type1\-directory
+psfonts.map	\-	\-\-map\-file
+.TE
+.PP
+Otftotfm will update the
+.I TEXMF/ls-R
+file when installing files under TEXMF.
 '
 .SH OPTIONS
+With long options, you need type only as many characters as will make the
+option unique.
+.SS Font feature options
 .PD 0
 .TP 5
 .BI \-s " script\fR[.\fIlang\fR], " \-\-script= "script\fR[.\fIlang\fR]"
@@ -137,12 +199,39 @@ Like
 .M afm2tfm 1 's
 .B \-s
 option.
+.PD
 '
-.Sp
+'
+.SS Automatic mode options
+'
+.PD 0
 .TP 5
 .BI \-a "\fR, " \-\-automatic
 Select automatic mode.
 '
+.Sp
+.TP 5
+.BI \-v " vendor\fR, " \-\-vendor= vendor
+Set the font vendor name, which is used to locate files within the TDS.
+Defaults to "lcdftools".
+'
+.Sp
+.TP 5
+.BI \-\-typeface= typeface
+Set the font typeface name, which is used to locate files within the TDS.
+Defaults to the current font's family name with unsuiable characters
+removed.
+'
+.Sp
+.TP 5
+.BI \-\-no\-type1
+Do not use
+.M cfftot1 1
+to create Type 1 fonts corresponding to the OpenType input fonts.
+.PD
+'
+'
+.SS Output options
 .Sp
 .TP 5
 .BI \-n " fontname\fR, " \-\-name= fontname
@@ -155,46 +244,65 @@ font's name and the features you selected in automatic mode.
 '
 .Sp
 .TP 5
-.BI \-t "\fR, " \-\-tfm
-Output TFM metrics, not PL metrics.
+.BI \-p "\fR, " \-\-pl
+Output human-readable PL and VPL metrics, not binary TFM and VF metrics.
 '
 .Sp
 .TP 5
-.BI \-o " file-or-dir\fR, " \-\-output= file-or-dir
-The file (or, in automatic mode, directory) used for output font metrics.
-Same as the second non-option argument.
+.BI \-\-no\-virtual
+Do not generate virtual fonts (VFs and VPLs). Otftotfm will warn if the
+selected font features cannot be implemented without virtual fonts.
 '
 .Sp
 .TP 5
-.BI \-\-output\-encoding= file-or-dir
-The file (or, in automatic mode, directory) used for the output encoding.
-Same as the third non-option argument.
+.BI \-\-no\-encoding
+Do not generate an encoding file.
+'
+.Sp
+.TP 5
+.BI \-\-no\-map
+Do not generate a
+.I psfonts.map
+line for the font.
+.PD
+'
+'
+.SS File location options
+.PD 0
+.TP 5
+.BI \-\-tfm\-directory= dir
+The directory used for output TFM font metrics. Defaults to the TFMDESTDIR
+environment variable. If that's not set, it defaults to "." in manual mode,
+or a TDS directory in automatic mode (see above).
 '
 .Sp
 .TP 5
 .BI \-\-pl\-directory= dir
-The directory used for output PL font metrics in automatic mode. The
-.B \-\-output
-option overrides this setting. Defaults to the PLDESTDIR environment
-variable, or if that's not set, the current directory.
-'
-.Sp
 .TP 5
-.BI \-\-tfm\-directory= dir
-The directory used for output TFM font metrics in automatic mode. The
-.B \-\-output
-option overrides this setting. Defaults to the TFMDESTDIR environment
-variable, or if that's not set, the current directory.
-'
-.Sp
+.BI \-\-vf\-directory= dir
+.TP 5
+.BI \-\-vpl\-directory= dir
 .TP 5
 .BI \-\-encoding\-directory= dir
-The directory used for output encodings in automatic mode. The
-.B \-\-output\-encoding
-option overrides this setting. Defaults to the ENCODINGDESTDIR environment
-variable, or if that's not set, the current directory.
+.TP 5
+.BI \-\-type1\-directory= dir
+These options act like
+.BR \-\-tfm\-directory
+for other file types. The default environment variables are described
+above. All default to ".".
 '
 .Sp
+.TP 5
+.BI \-\-map\-file= filename
+Set file in which otftotfm will write a
+.I psfonts.map
+line for the font. The default is standard out in manual mode, and
+"TEXMF/dvips/\fIvendor\fR.map" elsewhere.
+.PD
+'
+'
+.SS Miscellaneous options
+.PD 0
 .TP 5
 .BR \-\-qs ", " \-\-query\-scripts
 Print the scripts and language systems supported by the specified font and
@@ -232,6 +340,17 @@ points. See ENCODINGS, below, for more information.
 '
 .Sp
 .TP 5
+.BR \-V ", " \-\-verbose
+Write messages about the program's progress to standard error.
+'
+.Sp
+.TP 5
+.BR \-\-no\-create
+Do not create or modify any files. Instead, write messages about the
+program's hypothetical progress to standard error.
+'
+.Sp
+.TP 5
 .BR \-q ", " \-\-quiet
 Do not generate any error messages.
 '
@@ -242,7 +361,7 @@ Print usage information and exit.
 '
 .Sp
 .TP 5
-.BR \-v ", " \-\-version
+.BR \-\-version
 Print the version number and some short non-warranty information and exit.
 .PD
 '
@@ -302,9 +421,6 @@ LIGKERNX blocks, since that avoids confusing
 '
 .SH "BUGS"
 .LP
-Otftotfm should warn when TeX cannot implement a requested feature (complex
-context-sensitive positionings, for example).
-.LP
 Presumably some context-sensitive positionings and ligatures could be
 implemented with TeX's boundary character, but otftotfm doesn't do that yet.
 .LP
@@ -329,6 +445,12 @@ and #5177,
 .LP
 .IR "OpenType Specification" ,
 Version 1.4
+.LP
+.IR "A Directory Structure for TeX Files" ,
+http://www.tug.org/tds/
+.LP
+.IR "Kpathsea: A library for path searching" ,
+http://www.tug.org/kpathsea/
 '
 .SH AUTHOR
 Eddie Kohler (kohler@icir.org)

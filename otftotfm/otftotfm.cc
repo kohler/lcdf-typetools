@@ -62,9 +62,11 @@ using namespace Efont;
 #define VIRTUAL_OPT		331
 #define PL_OPT			332
 #define TFM_OPT			333
+#define MAP_FILE_OPT		334
 
 enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
-       G_BINARY = 16, G_ASCII = 32 };
+       G_PSFONTSMAP = 16,
+       G_BINARY = 32, G_ASCII = 64 };
 
 #define DIR_OPTS		350
 #define ENCODING_DIR_OPT	(DIR_OPTS + O_ENCODING)
@@ -72,8 +74,9 @@ enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
 #define PL_DIR_OPT		(DIR_OPTS + O_PL)
 #define VF_DIR_OPT		(DIR_OPTS + O_VF)
 #define VPL_DIR_OPT		(DIR_OPTS + O_VPL)
+#define TYPE1_DIR_OPT		(DIR_OPTS + O_TYPE1)
 
-#define NO_OUTPUT_OPTS		360
+#define NO_OUTPUT_OPTS		370
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 
@@ -90,6 +93,7 @@ Clp_Option options[] = {
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
     { "no-encoding", 0, NO_ENCODING_OPT, 0, Clp_OnlyNegated },
     { "no-type1", 0, NO_TYPE1_OPT, 0, Clp_OnlyNegated },
+    { "map-file", 0, MAP_FILE_OPT, Clp_ArgString, Clp_Negate },
         
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
     { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
@@ -101,6 +105,7 @@ Clp_Option options[] = {
     { "tfm-directory", 0, TFM_DIR_OPT, Clp_ArgString, 0 },
     { "vpl-directory", 0, VPL_DIR_OPT, Clp_ArgString, 0 },
     { "vf-directory", 0, VF_DIR_OPT, Clp_ArgString, 0 },
+    { "type1-directory", 0, TYPE1_DIR_OPT, Clp_ArgString, 0 },
 
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
@@ -140,13 +145,12 @@ static double slant;
 static String out_encoding_file;
 static String out_encoding_name;
 
-static int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_TYPE1 | G_BINARY;
+static int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_BINARY;
 
 bool automatic = false;
 bool verbose = false;
 bool nocreate = false;
-
-static bool stdout_used = false;
+bool quiet = false;
 
 
 void
@@ -173,10 +177,9 @@ options to turn on optional OpenType features, and a '-e ENC' option to\n\
 specify a base encoding. Output files are written to the current directory\n(\
 but see '--automatic' and the 'directory' options).\n\
 \n\
-Usage: %s [OPTIONS] OTFFILE [FONTNAME]\n\
-   or: %s -a [OPTIONS] OTFFILE [FONTNAME]\n\
+Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\
 \n\
-Input options:\n\
+Font feature options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
@@ -184,35 +187,40 @@ Input options:\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
 \n\
+Automatic mode options:\n\
+  -a, --automatic              Install in a TeX Directory Structure.\n\
+  -v, --vendor=NAME            Set font vendor for TDS [lcdftools].\n\
+      --typeface=NAME          Set typeface name for TDS [<font family>].\n\
+      --no-type1               Do not generate a Type 1 font.\n\
+\n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
   -p, --pl                     Output human-readable PL/VPLs, not VF/TFMs.\n\
       --no-virtual             Do not generate VFs or VPLs.\n\
       --no-encoding            Do not generate an encoding file.\n\
+      --no-map                 Do not generate a psfonts.map line.\n\
 \n\
-Automatic mode:\n\
-  -a, --automatic              Install in a TeX Directory Structure.\n\
-  -v, --vendor=NAME            With -a, set TDS vendor [lcdftools].\n\
-      --typeface=NAME          With -a, set TDS typeface [<font family>].\n\
-      --no-type1               With -a, do not generate a Type 1 font.\n\
-\n\
-Directory options:\n\
+File location options:\n\
       --tfm-directory=DIR      Put TFM files in DIR [.|automatic].\n\
       --pl-directory=DIR       Put PL files in DIR [.|automatic].\n\
       --vf-directory=DIR       Put VF files in DIR [.|automatic].\n\
       --vpl-directory=DIR      Put VPL files in DIR [.|automatic].\n\
       --encoding-directory=DIR Put encoding files in DIR [.|automatic].\n\
+      --type1-directory=DIR    Put Type 1 fonts in DIR [automatic].\n\
+      --map-file=FILE          Update FILE with psfonts.map information [-].\n\
 \n\
 Other options:\n\
   --qs, --query-scripts        Print font's supported scripts and exit.\n\
   --qf, --query-features       Print font's supported features for specified\n\
                                scripts and exit.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
+  -V, --verbose                Print progress information to standard error.\n\
+      --no-create              Print messages, don't modify any files.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name, program_name);
+Report bugs to <kohler@icir.org>.\n", program_name);
 }
 
 
@@ -949,9 +957,12 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
     // check whether virtual metrics are necessary
     String metrics_suffix;
-    if (encoding.need_virtual())
-	metrics_suffix = "--base";
-    else
+    if (encoding.need_virtual()) {
+	if (output_flags & G_VMETRICS)
+	    metrics_suffix = "--base";
+	else
+	    errh->warning("features require virtual fonts");
+    } else
 	output_flags &= ~G_VMETRICS;
     
     // output metrics
@@ -980,7 +991,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     }
 
     // print DVIPS map line
-    if (!stdout_used && errh->nerrors() == 0) {
+    if (errh->nerrors() == 0 && (output_flags & G_PSFONTSMAP)) {
 	StringAccum sa;
 	sa << font_name << metrics_suffix << ' ' << font.font_name() << " \"";
 	if (extend)
@@ -991,8 +1002,6 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	if (String fn = installed_type1(input_filename, font.font_name(), (output_flags & G_TYPE1), errh))
 	    sa << " <" << fn;
 	sa << '\n';
-	if (!automatic)
-	    printf("%s", sa.c_str());
 	update_autofont_map(font_name + metrics_suffix, sa.take_string(), errh);
     }
 }
@@ -1186,6 +1195,16 @@ main(int argc, char **argv)
 	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
 	    break;
 
+	  case MAP_FILE_OPT:
+	    if (clp->negated)
+		output_flags &= ~G_PSFONTSMAP;
+	    else {
+		output_flags |= G_PSFONTSMAP;
+		if (!set_map_file(clp->arg))
+		    usage_error(errh, "map file specified twice");
+	    }
+	    break;
+	    
 	  case PL_OPT:
 	    output_flags = (output_flags & ~G_BINARY) | G_ASCII;
 	    break;
@@ -1199,6 +1218,7 @@ main(int argc, char **argv)
 	  case PL_DIR_OPT:
 	  case VF_DIR_OPT:
 	  case VPL_DIR_OPT:
+	  case TYPE1_DIR_OPT:
 	    if (!setodir(opt - DIR_OPTS, clp->arg))
 		usage_error(errh, "%s directory specified twice", odirname(opt - DIR_OPTS));
 	    break;
