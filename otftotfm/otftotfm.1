@@ -1,5 +1,5 @@
 '\"t
-.ds V 0.9
+.ds V 0.10
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -26,10 +26,18 @@ or, with the
 .B \-a 
 option, into a TeX Directory Structure.
 .LP
-.\"OpenType supports extensive substitutions and complex positionings that TeX
-.\"can't handle. 
-Many OpenType instructions useful for the Latin script are supported by
-TeX, including:
+OpenType fonts come with configurable knobs called
+.IR features .
+Turning on the "small capitals" feature, for example, replaces lower-case
+letter glyphs with the corresponding small capitals. Other features control
+the spacing of capital letters, whether numbers are lining or old-style,
+and so forth. (You can check the features a font supports using otftotfm's
+.B \-\-query\-features
+option.)
+.LP
+OpenType features can be more complex than TeX can handle, but many
+features useful for Western scripts (Latin, Greek, and Cyrillic, for
+example) are supported by TeX, including:
 .IP * 3
 Glyph substitutions, such as replacing 'a' with small caps 
 .SM 'A'.
@@ -41,16 +49,40 @@ glyph.
 .IP * 3
 Simple glyph positionings, such as adding extra space on either side of 'W'.
 .LP
-Otftotfm reads an OpenType font, turns on any font features you choose,
-selects the instructions that TeX supports, and generates font metrics and
-a dvips encoding file that, together, implement those instructions. By
-default otftotfm creates TFM and VF files using the
+Otftotfm reads an OpenType font, turns on any font features you choose, and
+generates font metrics and a dvips encoding file that, together, implement
+as much of those features as possible. By default otftotfm creates TFM and
+VF files using the
 .M pltotf 1
 and
 .M vptovf 1
 programs, but supply the
 .B \-\-pl
 option and it will generate human-readable PL and VPL files.
+'
+.SS Common features
+.PP
+Even "default" ligatures and pair kerns are generally optional in OpenType
+fonts, so you'll generally provide the
+.BR \-f kern
+and 
+.BR \-f liga
+options to turn them on. Other features you may be interested in include
+.BR \-f cpsp,
+for capital spacing;
+.BR \-f dlig,
+for optional ligatures;
+.BR \-f lnum,
+.BR \-f onum,
+.BR \-f "pnum, and"
+.BR \-f tnum,
+to control digit glyphs;
+.BR \-f smcp,
+for small capitals;
+and
+.BR \-f swsh,
+for swash variants. See the OPENTYPE FEATURES section below for more
+information on these and other features.
 '
 .SS Automatic mode
 .PP
@@ -424,6 +456,113 @@ ligatures and kerns. Otftotfm parses "% LIGKERNX" comments as well as "%
 LIGKERN" comments; it's probably better to put the extended commands in
 LIGKERNX blocks, since that avoids confusing
 .M afm2tfm 1 .
+'
+.SH "OPENTYPE FEATURES"
+.LP
+This section lists features common to Western OpenType fonts and describes
+how otftotfm handles them for common fonts.
+.Sp
+.PD 0
+.TP 5
+.IR aalt ", Access All Alternates"
+Lets the user choose between all available alternate forms for a character.
+This is not likely useful for TeX, since a TeX user can't interactively
+choose a given alternate form. Not well supported.
+.TP 5
+.IR c2sc ", Small Capitals From Capitals"
+Replaces capital letters with small capitals: a sort of converse of the
+more usual
+.I smcp
+feature, which replaces lower-case letters with small capitals. Supported.
+.TP 5
+.IR case ", Case-Sensitive Forms"
+Shifts punctuation marks up to a position that works well with
+all-capital-letter sequences. For example, the hyphen character, which
+generally centers vertically on the x-height, is raised up to center
+vertically on a capital letter. Also replaces text figures with lining
+figures. Supported.
+.TP 5
+.IR cpsp ", Capital Spacing"
+Adds a bit of space on either side of each capital letter. Supported.
+.TP 5
+.IR cswh ", Contextual Swash"
+.TP 5
+.IR dlig ", Discretionary Ligatures"
+Activates uncommon ligatures, such as "c_t", "s_p", and "s_t". Supported.
+.TP 5
+.IR dnom ", Denominators"
+.TP 5
+.IR fina ", Terminal Forms"
+.TP 5
+.IR frac ", Fractions"
+Replaces sequences like "1/2" with nice-looking fractions. The contextual
+lookup is too hard for TeX; not supported.
+.TP 5
+.IR hist ", Historical Forms"
+.TP 5
+.IR kern ", Kerning"
+Adjusts the space between characters (pair kerning). Otftotfm generally
+supports this feature, and you should generally turn it on.
+.TP 5
+.IR liga ", Standard Ligatures"
+Activates common ligatures, such as "f_f", "f_i", "f_f_j", and (in some
+Adobe fonts) "T_h". Otftotfm supports this feature, and you should
+generally turn it on.
+.TP 5
+.IR lnum ", Lining Figures"
+Uses lining figures, the set of digits that are all about as high as
+capital letters. Supported. See also
+.IR pnum
+and
+.IR tnum.
+.TP 5
+.IR numr ", Numerators"
+.TP 5
+.IR onum ", Oldstyle Figures"
+Uses old-style, or text, figures, the set of digits that have ascenders and
+descenders like lower-case letters. Supported. See also
+.IR pnum
+and
+.IR tnum.
+.TP 5
+.IR ordn ", Ordinals"
+.TP 5
+.IR ornm ", Ornaments"
+.TP 5
+.IR pnum ", Proportional Figures"
+Digits will have different widths (compare
+.IR tnum ).
+Supported. See also
+.IR lnum
+and
+.IR onum.
+.TP 5
+.IR salt ", Stylistic Alternates"
+.TP 5
+.IR sinf ", Scientific Inferiors"
+.TP 5
+.IR size ", Optical Size"
+.TP 5
+.IR smcp ", Small Capitals"
+Replaces lower-case letters with small capitals. Supported. Compare
+.IR c2sc .
+.TP 5
+.IR sups ", Superscript"
+.TP 5
+.IR swsh ", Swash"
+.TP 5
+.IR tnum ", Tabular Figures"
+All digits will have the same width, so that tables and the like will align
+visually (compare
+.IR pnum ).
+Supported. See also
+.IR lnum
+and
+.IR onum.
+.TP 5
+.IR zero ", Slashed Zero"
+Replaces the zero character with a slashed zero. Supported.
+.PD
 '
 .SH "BUGS"
 .LP

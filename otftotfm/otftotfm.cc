@@ -588,6 +588,7 @@ write_encoding_file(String &filename, const String &encoding_name,
 	    return errh->error("Out of memory!");
 	}
     String old_encodings = sa.take_string();
+    bool created = (!old_encodings);
 
     // append old encodings
     int pos1 = old_encodings.find_left("\n%%");
@@ -618,6 +619,10 @@ write_encoding_file(String &filename, const String &encoding_name,
     fwrite(contents.data(), 1, contents.length(), f);
 
     fclose(f);
+
+    // inform about the new file if necessary
+    if (created)
+	update_odir(O_ENCODING, filename, errh);
     return 0;
 }
 	
