@@ -198,13 +198,25 @@ _HashMap_const_iterator<K, V>::operator!=(const const_iterator &i) const
 inline unsigned
 hashcode(int i)
 {
-    return i;
+    return static_cast<unsigned>(i);
 }
 
 inline unsigned
 hashcode(unsigned u)
 {
     return u;
+}
+
+inline unsigned
+hashcode(long l)
+{
+    return static_cast<unsigned>(l);
+}
+
+inline unsigned
+hashcode(unsigned long ul)
+{
+    return static_cast<unsigned long>(ul);
 }
 
 #include <lcdf/hashmap.cc>	// necessary to support GCC 3.3
