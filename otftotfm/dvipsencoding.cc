@@ -256,6 +256,10 @@ static struct { const char *s; int v; } ligkern_ops[] = {
     { "{kl}", DvipsEncoding::J_NOLIGKERN }, { 0, 0 }
 };
 
+static const char * const nokern_names[] = {
+    "kern removal", "ligature removal", "lig/kern removal"
+};
+
 static int
 find_ligkern_op(const String &s)
 {
@@ -266,52 +270,68 @@ find_ligkern_op(const String &s)
 }
 
 int
-DvipsEncoding::parse_ligkern(const Vector<String> &v)
+DvipsEncoding::parse_ligkern(Vector<String> &v, ErrorHandler *errh)
 {
     int op;
     if (v.size() == 3) {
 	if (v[0] == "||" && v[1] == "=") {
-	    String data = v[2];
 	    char *endptr;
-	    _boundary_char = strtol(data.c_str(), &endptr, 10);
-	    return (*endptr == 0 && _boundary_char < _e.size() ? 0 : -1);
+	    _boundary_char = strtol(v[2].c_str(), &endptr, 10);
+	    if (*endptr == 0 && _boundary_char < _e.size())
+		return 0;
+	    else
+		return errh->error("parse error in boundary character assignment");
 	} else if ((op = find_ligkern_op(v[1])) >= J_NOKERN) {
 	    int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
+	    if (av < 0)
+		return errh->warning("'%s' has no encoding, ignoring %s", v[0].c_str(), nokern_names[op - J_NOKERN]);
 	    int bv = (v[2] == "*" ? J_ALL : encoding_of(v[2]));
-	    if (av < 0 || bv < 0)
-		return -1;
+	    if (bv < 0)
+		return errh->warning("'%s' has no encoding, ignoring %s", v[2].c_str(), nokern_names[op - J_NOKERN]);
 	    Ligature lig = { av, bv, op, 0 };
 	    _lig.push_back(lig);
 	    return 0;
 	} else
 	    return -1;
     } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= 0 && op < 8) {
-	int av = encoding_of(v[0]), bv = encoding_of(v[1]), cv = encoding_of(v[3]);
-	if (av < 0 || bv < 0 || cv < 0)
-	    return -1;
+	int av = encoding_of(v[0]);
+	if (av < 0)
+	    return errh->warning("'%s' has no encoding, ignoring ligature", v[0].c_str());
+	int bv = encoding_of(v[1]);
+	if (bv < 0)
+	    return errh->warning("'%s' has no encoding, ignoring ligature", v[1].c_str());
+	int cv = encoding_of(v[3]);
+	if (cv < 0)
+	    return errh->warning("'%s' has no encoding, ignoring ligature", v[3].c_str());
 	Ligature lig = { av, bv, op, cv };
 	_lig.push_back(lig);
 	return 0;
     } else
-	return -1;
+	return errh->error("parse error in LIGKERN");
 }
 
 int
-DvipsEncoding::parse_unicoding(const Vector<String> &v)
+DvipsEncoding::parse_unicoding(Vector<String> &v, ErrorHandler *errh)
 {
     int av;
-    if (v.size() < 2 || (v[1] != "=" && v[1] != "=:") || v[0] == "||"
-	|| (av = encoding_of(v[0])) < 0)
-	return -1;
-    _unicoding_map.insert(v[0], _unicoding.size());
+    if (v.size() < 2 || (v[1] != "=" && v[1] != "=:"))
+	return errh->error("parse error in UNICODING");
+    else if (v[0] == "||" || (av = encoding_of(v[0])) < 0)
+	return errh->error("target '%s' has no encoding, ignoring UNICODING", v[0].c_str());
+
+    int original_size = _unicoding.size();
+    _unicoding_map.insert(v[0], original_size);
     
     if (v.size() == 2 || (v.size() == 3 && v[2] == dot_notdef))
 	/* no warnings to delete a glyph */;
     else {
 	for (int i = 2; i < v.size(); i++) {
 	    int uni = glyphname_unicode(v[i]);
-	    if (uni < 0)
-		/* XXX errh */;
+	    if (uni < 0) {
+		errh->warning("can't map '%s' to Unicode", v[i].c_str());
+		if (i == 2)
+		    errh->warning("target '%s' will be deleted from encoding", v[0].c_str());
+	    }
 	    _unicoding.push_back(uni);
 	}
     }
@@ -321,7 +341,7 @@ DvipsEncoding::parse_unicoding(const Vector<String> &v)
 }
 
 int
-DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(const Vector<String> &))
+DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(Vector<String> &, ErrorHandler *), ErrorHandler *errh)
 {
     Vector<String> words;
     const char *data = s.data();
@@ -335,14 +355,13 @@ DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(const V
 	if (pos == first)
 	    /* do nothing */;
 	else if (pos == first + 1 && data[first] == ';') {
-	    if ((this->*method)(words) < 0)
-		return -1;
+	    (this->*method)(words, errh);
 	    words.clear();
 	} else
 	    words.push_back(s.substring(first, pos - first));
     }
     if (words.size() > 0)
-	return (this->*method)(words);
+	(this->*method)(words, errh);
     return 0;
 }
 
@@ -380,24 +399,25 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
     // now parse comments
     pos = 0, line = 1;
     Vector<String> words;
+    LandmarkErrorHandler lerrh(errh, "");
     while ((token = comment_tokenize(s, pos, line)))
 	if (token.length() >= 8
 	    && memcmp(token.data(), "LIGKERN", 7) == 0
 	    && isspace(token[7])) {
-	    if (parse_words(token.substring(8), &DvipsEncoding::parse_ligkern) < 0)
-		errh->lerror(landmark(filename, line), "parse error in LIGKERN");
+	    lerrh.set_landmark(landmark(filename, line));
+	    parse_words(token.substring(8), &DvipsEncoding::parse_ligkern, &lerrh);
 	    
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
 		   && isspace(token[8])) {
-	    if (parse_words(token.substring(8), &DvipsEncoding::parse_ligkern) < 0)
-		errh->lerror(landmark(filename, line), "parse error in LIGKERNX");
+	    lerrh.set_landmark(landmark(filename, line));
+	    parse_words(token.substring(9), &DvipsEncoding::parse_ligkern, &lerrh);
 	    
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace(token[9])) {
-	    if (parse_words(token.substring(10), &DvipsEncoding::parse_unicoding) < 0)
-		errh->lerror(landmark(filename, line), "parse error in UNICODING");
+	    lerrh.set_landmark(landmark(filename, line));
+	    parse_words(token.substring(10), &DvipsEncoding::parse_unicoding, &lerrh);
 	}
 
     return 0;
@@ -482,5 +502,3 @@ DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh) co
 	}
     }
 }
-
-#include <lcdf/vector.cc>

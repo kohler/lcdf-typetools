@@ -29,7 +29,7 @@ class DvipsEncoding { public:
     void apply_ligkern(GsubEncoding &, ErrorHandler *) const;
     
     enum { J_BAD = -1, J_NOKERN = 100, J_NOLIG = 101, J_NOLIGKERN = 102,
-	   J_ALL = 0x7FFFFFFF };
+	   J_ALL = 0x7FFFFFFF }; // also see nokern_names in dvipsencoding.cc
     
   private:
 
@@ -47,9 +47,9 @@ class DvipsEncoding { public:
     HashMap<PermString, int> _unicoding_map;
     Vector<int> _unicoding;
 
-    int parse_ligkern(const Vector<String> &);
-    int parse_unicoding(const Vector<String> &);
-    int parse_words(const String &, int (DvipsEncoding::*)(const Vector<String> &));
+    int parse_ligkern(Vector<String> &, ErrorHandler *);
+    int parse_unicoding(Vector<String> &, ErrorHandler *);
+    int parse_words(const String &, int (DvipsEncoding::*)(Vector<String> &, ErrorHandler *), ErrorHandler *);
     void bad_codepoint(int);
 
     static PermString dot_notdef;
