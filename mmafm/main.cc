@@ -45,7 +45,7 @@ Clp_Option options[] = {
   { "kern-precision", 'k', KERN_PREC_OPT, Clp_ArgDouble, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "precision", 'p', PRECISION_OPT, Clp_ArgInt, 0 },
-  { "version", 0, VERSION_OPT, 0, 0 },
+  { "version", 'v', VERSION_OPT, 0, 0 },
   { "help", 'h', HELP_OPT, 0, 0 },
 };
 
@@ -218,7 +218,7 @@ the PSRESOURCEPATH environment variable.\n\
 General options:\n\
   -o, --output=FILE             Write output to FILE.\n\
   -h, --help                    Print this message and exit.\n\
-      --version                 Print version number and warranty and exit.\n\
+  -v, --version                 Print version number and warranty and exit.\n\
 \n\
 Interpolation settings:\n\
   -w, --weight=N                Set weight to N.\n\

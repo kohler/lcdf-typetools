@@ -54,7 +54,7 @@ Clp_Option options[] = {
   { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
   { "style", 0, STYLE_OPT, Clp_ArgDouble, 0 },
   { "subrs", 0, SUBRS_OPT, Clp_ArgInt, Clp_Negate },
-  { "version", 0, VERSION_OPT, 0, 0 },
+  { "version", 'v', VERSION_OPT, 0, 0 },
   { "wd", 0, WIDTH_OPT, Clp_ArgDouble, 0 },
   { "weight", 'w', WEIGHT_OPT, Clp_ArgDouble, 0 },
   { "width", 'W', WIDTH_OPT, Clp_ArgDouble, 0 },
@@ -111,7 +111,7 @@ General options:\n\
                                with well-known code.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
-      --version                Print version number and exit.\n\
+  -v, --version                Print version number and exit.\n\
 \n\
 Interpolation settings:\n\
   -w, --weight=N               Set weight to N.\n\
