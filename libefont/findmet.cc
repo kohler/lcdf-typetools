@@ -131,7 +131,6 @@ InstanceMetricsFinder::InstanceMetricsFinder()
 {
 }
 
-
 Metrics *
 InstanceMetricsFinder::find_metrics_instance(PermString name,
 				MetricsFinder *finder, ErrorHandler *errh)
@@ -144,7 +143,7 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
   if (!amfm) return 0;
   
   Type1MMSpace *mmspace = amfm->mmspace();
-  Vector<double> design = mmspace->design_vector();
+  Vector<double> design = mmspace->default_design_vector();
   int i = 0;
   while (underscore[0] == '_' && underscore[1]) {
     double x = strtod(underscore + 1, &underscore);
@@ -153,7 +152,7 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
   }
   
   Vector<double> weight;
-  if (!mmspace->weight_vector(design, weight, errh))
+  if (!mmspace->design_to_weight(design, weight, errh))
     return 0;
   Metrics *new_afm = amfm->interpolate(design, weight, errh);
   if (new_afm)
