@@ -1,7 +1,8 @@
-#ifndef SLURPER_HH
-#define SLURPER_HH
-#include "landmark.hh"
-#include "filename.hh"
+// -*- related-file-name: "../../liblcdf/slurper.cc" -*-
+#ifndef LCDF_SLURPER_HH
+#define LCDF_SLURPER_HH
+#include <lcdf/landmark.hh>
+#include <lcdf/filename.hh>
 #include <cstdio>
 
 class Slurper { public:

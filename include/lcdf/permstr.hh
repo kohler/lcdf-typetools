@@ -1,5 +1,6 @@
-#ifndef PERMSTR_HH
-#define PERMSTR_HH
+// -*- related-file-name: "../../liblcdf/permstr.cc" -*-
+#ifndef LCDF_PERMSTR_HH
+#define LCDF_PERMSTR_HH
 #include <cassert>
 #include <cstddef>
 #include <cstdarg>

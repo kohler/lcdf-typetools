@@ -1,4 +1,5 @@
-// -*- related-file-name: "../include/lcdf/hashmap.hh" -*-
+#ifndef LCDF_HASHMAP_CC_HH
+#define LCDF_HASHMAP_CC_HH
 #include <lcdf/hashmap.hh>
 
 // 		k1 == k2  (must exist)
@@ -155,3 +156,5 @@ HashMap<K, V>::each(int &ival, K &k, V &v) const
   ival++;
   return true;
 }
+
+#endif

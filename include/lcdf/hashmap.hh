@@ -1,5 +1,5 @@
-#ifndef HASHMAP_HH
-#define HASHMAP_HH
+#ifndef LCDF_HASHMAP_HH
+#define LCDF_HASHMAP_HH
 
 template <class K, class V>
 class HashMap { public:

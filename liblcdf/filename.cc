@@ -1,8 +1,9 @@
+// -*- related-file-name: "../include/lcdf/filename.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "filename.hh"
-#include "landmark.hh"
+#include <lcdf/filename.hh>
+#include <lcdf/landmark.hh>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>

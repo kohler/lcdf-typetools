@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/lcdf/permstr.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "permstr.hh"
+#include <lcdf/permstr.hh>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>

@@ -1,4 +1,6 @@
-// -*- related-file-name: "../include/lcdf/vector.hh" -*-
+#ifndef LCDF_VECTOR_CC_HH
+#define LCDF_VECTOR_CC_HH
+
 /*
  * vector.{cc,hh} -- simple array template class
  * Eddie Kohler
@@ -114,3 +116,5 @@ Vector<T>::swap(Vector<T> &o)
     o._n = n;
     o._cap = cap;
 }
+
+#endif

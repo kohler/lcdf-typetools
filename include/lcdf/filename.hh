@@ -1,6 +1,6 @@
-#ifndef FILENAME_HH
-#define FILENAME_HH
-#include "permstr.hh"
+#ifndef LCDF_FILENAME_HH
+#define LCDF_FILENAME_HH
+#include <lcdf/permstr.hh>
 #include <cstdio>
 
 class Filename {

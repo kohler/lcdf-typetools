@@ -1,4 +1,4 @@
-// -*- c-basic-offset: 2 -*-
+// -*- related-file-name: "../include/lcdf/straccum.hh" -*-
 /*
  * straccum.{cc,hh} -- build up strings with operator<<
  * Eddie Kohler
@@ -19,7 +19,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "straccum.hh"
+#include <lcdf/straccum.hh>
 #include <cstdarg>
 #include <cstdio>
 

@@ -1,6 +1,7 @@
-#ifndef ERROR_HH
-#define ERROR_HH
-#include "string.hh"
+// -*- related-file-name: "../../liblcdf/error.cc" -*-
+#ifndef LCDF_ERROR_HH
+#define LCDF_ERROR_HH
+#include <lcdf/string.hh>
 #ifndef __KERNEL__
 # include <cstdio>
 #endif

@@ -15,7 +15,7 @@
  * legally binding.
  */
 
-#include "vector.hh"
+#include <lcdf/vector.hh>
 #include <cstring>
 
 Vector<void *>::Vector(const Vector<void *> &o)

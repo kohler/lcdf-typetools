@@ -1,7 +1,8 @@
+/* -*- related-file-name: "../include/lcdf/strtonum.h" -*- */
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "strtonum.h"
+#include <lcdf/strtonum.h>
 #include <stdlib.h>
 #ifdef BROKEN_STRTOD
 # define strtod good_strtod

@@ -1,6 +1,6 @@
-// -*- c-basic-offset: 2 -*-
-#ifndef STRACCUM_HH
-#define STRACCUM_HH
+// -*- related-file-name: "../../liblcdf/straccum.cc" -*-
+#ifndef LCDF_STRACCUM_HH
+#define LCDF_STRACCUM_HH
 #include <cstring>
 #include <cassert>
 #ifdef HAVE_PERMSTRING

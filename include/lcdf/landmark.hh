@@ -1,7 +1,7 @@
-#ifndef LANDMARK_HH
-#define LANDMARK_HH
-#include "permstr.hh"
-#include "string.hh"
+#ifndef LCDF_LANDMARK_HH
+#define LCDF_LANDMARK_HH
+#include <lcdf/permstr.hh>
+#include <lcdf/string.hh>
 
 class Landmark {
   

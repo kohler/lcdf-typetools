@@ -1,4 +1,4 @@
-// -*- c-basic-offset: 2 -*-
+// -*- related-file-name: "../include/lcdf/string.hh" -*-
 /*
  * string.{cc,hh} -- a String class with shared substrings
  * Eddie Kohler
@@ -19,8 +19,8 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "string.hh"
-#include "straccum.hh"
+#include <lcdf/string.hh>
+#include <lcdf/straccum.hh>
 #include <cstdio>
 #include <cstring>
 #include <cctype>

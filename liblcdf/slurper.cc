@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/lcdf/slurper.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "slurper.hh"
+#include <lcdf/slurper.hh>
 #include <cstring>
 
 static const int DefChunkCap	= 2048;

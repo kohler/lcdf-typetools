@@ -1,6 +1,6 @@
-// -*- c-basic-offset: 2 -*-
-#ifndef STRING_HH
-#define STRING_HH
+// -*- related-file-name: "../../liblcdf/string.cc" -*-
+#ifndef LCDF_STRING_HH
+#define LCDF_STRING_HH
 #ifdef HAVE_PERMSTRING
 # include "permstr.hh"
 #endif

@@ -1,8 +1,9 @@
+// -*- related-file-name: "../include/lcdf/error.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "error.hh"
-#include "straccum.hh"
+#include <lcdf/error.hh>
+#include <lcdf/straccum.hh>
 #include <cassert>
 #include <cctype>
 #ifndef __KERNEL__

@@ -1,5 +1,5 @@
-#ifndef VECTOR_HH
-#define VECTOR_HH
+#ifndef LCDF_VECTOR_HH
+#define LCDF_VECTOR_HH
 #include <cassert>
 #include <cstdlib>
 #ifdef HAVE_NEW_HDR

@@ -1,7 +1,8 @@
+// -*- related-file-name: "../include/lcdf/landmark.hh" -*-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "landmark.hh"
+#include <lcdf/landmark.hh>
 
 Landmark
 operator+(const Landmark &landmark, int offset)
