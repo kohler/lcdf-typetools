@@ -1,8 +1,5 @@
 #ifndef SLURPER_HH
 #define SLURPER_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "landmark.hh"
 #include "filename.hh"
 #include <stdio.h>

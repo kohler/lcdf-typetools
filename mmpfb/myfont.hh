@@ -1,8 +1,5 @@
 #ifndef MYFONT_HH
 #define MYFONT_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "t1font.hh"
 #include <stdio.h>
 class Type1MMSpace;

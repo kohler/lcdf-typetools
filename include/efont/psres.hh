@@ -1,8 +1,5 @@
 #ifndef PSRES_HH
 #define PSRES_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "vector.hh"
 #include "hashmap.hh"
 #include "string.hh"

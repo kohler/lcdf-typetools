@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "string.hh"
-#endif
 #include "string.hh"
 #include <string.h>
 #include <stdio.h>

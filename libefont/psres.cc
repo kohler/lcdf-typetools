@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "psres.hh"
-#endif
 #include "psres.hh"
 #include "slurper.hh"
 /* Get the correct functions for directory searching */ 

@@ -1,8 +1,5 @@
 #ifndef STRING_HH
 #define STRING_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "permstr.hh"
 #include <stdio.h>
 

@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "t1rewrit.hh"
-#endif
 #include "t1rewrit.hh"
 #include "t1item.hh"
 #include "error.hh"

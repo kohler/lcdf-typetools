@@ -1,8 +1,5 @@
 #ifndef T1REWRIT_HH
 #define T1REWRIT_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "t1interp.hh"
 #include "t1font.hh"
 #include "straccum.hh"
