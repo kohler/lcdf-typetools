@@ -7,6 +7,7 @@
 #include "t1mm.hh"
 #include "error.hh"
 #include <string.h>
+#include <ctype.h>
 
 Type1Font::Type1Font(Type1Reader &reader)
   : _cached_defs(false), _glyph_map(-1), _encoding(0),
@@ -181,19 +182,20 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
       continue;
     }
     
-    // check for `dup INDEX /CHARNAME put'
-    if (x[0] == 'd' && x[1] == 'u' && x[2] == 'p' && x[3] == ' ') {
+    // check for `dup INDEX /CHARNAME put\s*'*
+    while (x[0] == 'd' && x[1] == 'u' && x[2] == 'p' && x[3] == ' ') {
       int char_value = strtol(x + 4, &x, 10);
       while (x[0] == ' ') x++;
-      if (char_value >= 0 && char_value < 256 && *x++ == '/') {
+      if (char_value >= 0 && char_value < 256 && x[0] == '/') {
+	x++;
 	char *name_start = x;
-	while (*x != ' ' && *x)
-	  x++;
-	if (strncmp(x, " put", 4) == 0) {
+	while (x[0] != ' ' && x[0]) x++;
+	if (x[0] == ' ' && x[1] == 'p' && x[2] == 'u' && x[3] == 't') {
 	  _encoding->put(char_value, PermString(name_start, x - name_start));
 	  accum.clear();
 	  got_any = true;
-	  continue;
+	  x += 4;
+	  while (isspace(x[0])) x++;
 	}
       }
     }
