@@ -122,19 +122,27 @@ Type %s --help for more information.\n",
 static void
 usage()
 {
-  fprintf(stderr, "Usage: %s [options and filenames]\n\
+  printf("\
+`Mmafm' creates an AFM font metrics file for a multiple master font by\n\
+interpolating at a point you specify. You pass it an AMFM (multiple master\n\
+font metrics) file; interpolation settings; and optionally, AFM files for the\n\
+master designs. It writes the resulting AFM on standard out.\n\
+\n\
+Usage: %s [options and filenames]\n\
+\n\
 General options:\n\
   --output=FILE, -o FILE        Write output to FILE.\n\
   --help, -h                    Print this message and exit.\n\
   --version                     Print version number and warranty and exit.\n\
-Multiple master settings:\n\
+\n\
+Interpolation settings:\n\
   --weight=N, -w N              Set weight to N.\n\
   --width=N, -W N               Set width to N.\n\
   --optical-size=N, -O N        Set optical size to N.\n\
   --style=N                     Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N    Set first (second, third, fourth) axis to N.\n\
-",
-          program_name);
+\n\
+Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 }
 
 

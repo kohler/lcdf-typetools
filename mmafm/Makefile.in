@@ -15,6 +15,13 @@ prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 VPATH		= @srcdir@/mmafm
 srcdir		= @srcdir@/mmafm
+bindir		= @bindir@
+mandir		= @mandir@/man$(manext)
+manext		= 1
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
 
 CC		= @CC@ $(PROFILING)
 CCLINKER	= @CC@ $(PROFILING)
@@ -43,6 +50,12 @@ mmafm: $(OBJS)
 main.o: main.cc
 	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
 
+install: install-prog install-man
+install-prog: mmafm
+	$(INSTALL_PROGRAM) mmafm $(bindir)/mmafm
+install-man:
+	$(INSTALL_DATA) mmafm.man $(mandir)/mmafm.$(manext)
+
 #####
 # Cleaning and distribution
 
@@ -57,3 +70,6 @@ dist:
 	mkdir -m 0777 ../$(PACKAGE)-$(VERSION)/mmafm
 	cp Makefile.in hashmapi.cc vectori.cc main.cc mmafm.man \
 	../$(PACKAGE)-$(VERSION)/mmafm
+
+.PHONY: all install install-prog install-man clean mostlyclean distclean \
+	realclean dist
