@@ -16,10 +16,12 @@ class DvipsEncoding { public:
     operator bool() const			{ return _e.size() > 0; }
     const String &name() const			{ return _name; }
     const String &filename() const		{ return _filename; }
+    int boundary_char() const			{ return _boundary_char; }
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
     bool encoded(int e) const;
+    int encoding_size() const			{ return _e.size(); }
 
     int parse(String filename, ErrorHandler *);
 

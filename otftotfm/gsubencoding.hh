@@ -4,8 +4,6 @@
 #include <efont/otfgpos.hh>
 class DvipsEncoding;
 
-enum { BOUNDARYGLYPH = 0x7FFFFFFFU };
-
 struct Setting {
     enum { SHOW, HMOVETO, VMOVETO };
     int op;
@@ -19,11 +17,10 @@ class GsubEncoding { public:
     typedef Efont::OpenType::Substitution Substitution;
     typedef Efont::OpenType::Positioning Positioning;
 
-    GsubEncoding();
+    GsubEncoding(int nglyphs);
     // default destructor
 
-    int boundary_char() const			{ return _boundary_char; }
-    void set_boundary_char(int c)		{ _boundary_char = c; }
+    Glyph boundary_glyph() const		{ return _boundary_glyph; }
 
     inline Glyph glyph(int) const;
     bool setting(int, Vector<Setting> &) const;
@@ -46,6 +43,7 @@ class GsubEncoding { public:
     enum { CODE_ALL = 0x7FFFFFFF };
     void remove_ligatures(int code1, int code2);
     void remove_kerns(int code1, int code2);
+    void reencode_right_ligkern(int old_code, int new_code);
 
     int twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &context) const;
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
@@ -62,7 +60,7 @@ class GsubEncoding { public:
     Vector<Glyph> _encoding;
     Vector<Glyph> _substitutions;
     mutable Vector<int> _emap;
-    int _boundary_char;
+    Glyph _boundary_glyph;
 
     struct Ligature {
 	Vector<int> in;
@@ -90,7 +88,7 @@ class GsubEncoding { public:
 
     int hard_encoding(Glyph) const;
     inline void assign_emap(Glyph, int);
-    void add_single_rcontext_substitution(int, int, int);
+    void add_single_context_substitution(int, int, int, bool is_right);
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(const Vector<int> &);
     int find_skippable_twoligature(int, int, bool add_fake);

@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 0.13   27.Jun.2003
+
+* --without-kpathsea works. Problem reported by Adam Lindsay.
+
+
 Version 0.12   27.Jun.2003
 
 * otftotfm: Better error messages when directories cannot be found.

@@ -329,9 +329,16 @@ static const char * const digit_names[] = {
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
 };
 
+static inline const char *
+lig_context_str(int ctx)
+{
+    return (ctx == 0 ? "LIG" : (ctx < 0 ? "/LIG" : "LIG/"));
+}
+
 static void
 output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
-	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	  const GsubEncoding &gse, int boundary_char,
+	  const Vector<PermString> &glyph_names,
 	  bool vpl, FILE *f)
 {
     // XXX check DESIGNSIZE and DESIGNUNITS for correctness
@@ -390,9 +397,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     
     fprintf(f, "   (QUAD D 1000)\n   )\n");
 
-    int boundary_char = gse.boundary_char();
     if (boundary_char >= 0)
-	fprintf(f, "(BOUNDARYCHAR D %d)\n", gse.boundary_char());
+	fprintf(f, "(BOUNDARYCHAR D %d)\n", boundary_char);
 
     // write MAPFONT
     if (vpl)
@@ -400,7 +406,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
-    Vector<String> glyph_comments(256, String());
+    Vector<String> glyph_comments(257, String());
     for (int i = 0; i < 256; i++)
 	if (OpenType::Glyph g = gse.glyph(i)) {
 	    PermString name = glyph_names[g];
@@ -418,11 +424,13 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		glyph_comments[i] = " (COMMENT " + String(name) + ")";
 	} else
 	    glyph_ids.push_back("X");
+    // finally, BOUNDARYCHAR
+    glyph_ids.push_back("BOUNDARYCHAR");
 
     // LIGTABLE
     fprintf(f, "(LIGTABLE\n");
     Vector<int> lig_code2, lig_outcode, lig_context, kern_code2, kern_amt;
-    for (int i = 0; i < 256; i++)
+    for (int i = 0; i <= 256; i++)
 	if (gse.glyph(i)) {
 	    int any_lig = gse.twoligatures(i, lig_code2, lig_outcode, lig_context);
 	    int any_kern = gse.kerns(i, kern_code2, kern_amt);
@@ -430,7 +438,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		fprintf(f, "   (LABEL %s)%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
 		for (int j = 0; j < lig_code2.size(); j++)
 		    fprintf(f, "   (%s %s %s)%s%s\n",
-			    (lig_context[j] ? "LIG/" : "LIG"),
+			    lig_context_str(lig_context[j]),
 			    glyph_ids[lig_code2[j]].c_str(),
 			    glyph_ids[lig_outcode[j]].c_str(),
 			    glyph_comments[lig_code2[j]].c_str(),
@@ -487,7 +495,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 
 static void
 output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
-	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	  const GsubEncoding &gse, int boundary_char,
+	  const Vector<PermString> &glyph_names,
 	  bool vpl, String filename, ErrorHandler *errh)
 {
     if (nocreate)
@@ -496,7 +505,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	if (verbose)
 	    errh->message("creating %s", filename.c_str());
 	if (FILE *f = fopen(filename.c_str(), "w")) {
-	    output_pl(cff, cmap, gse, glyph_names, vpl, f);
+	    output_pl(cff, cmap, gse, boundary_char, glyph_names, vpl, f);
 	    fclose(f);
 	} else
 	    errh->error("%s: %s", filename.c_str(), strerror(errno));
@@ -749,7 +758,8 @@ temporary_file(String &filename, ErrorHandler *errh)
 
 static void
 write_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
-	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	  const GsubEncoding &gse, int boundary_char,
+	  const Vector<PermString> &glyph_names,
 	  String tfm_filename, String vf_filename, ErrorHandler *errh)
 {
     String pl_filename;
@@ -766,7 +776,7 @@ write_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	if (verbose)
 	    errh->message("writing %s to temporary file", (vpl ? "VPL" : "PL"));
 	FILE *f = fdopen(pl_fd, "w");
-	output_pl(cff, cmap, gse, glyph_names, vpl, f);
+	output_pl(cff, cmap, gse, boundary_char, glyph_names, vpl, f);
 	fclose(f);
     }
 
@@ -885,13 +895,15 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     }
     
     // initialize encoding
-    GsubEncoding encoding;
+    GsubEncoding encoding(font.nglyphs());
     OpenType::Cmap cmap(otf.table("cmap"), errh);
     assert(cmap.ok());
     if (dvipsenc_literal)
 	dvipsenc.make_literal_gsub_encoding(encoding, &font);
     else
 	dvipsenc.make_gsub_encoding(encoding, cmap, &font);
+    // encode boundary glyph at 256
+    encoding.encode(256, encoding.boundary_glyph());
     
     // maintain statistics about features
     HashMap<uint32_t, int> feature_usage(0);
@@ -906,13 +918,21 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    OpenType::GsubLookup l = gsub.lookup(i);
 	    bool understood = l.unparse_automatics(gsub, subs);
 
-	    // check for -ffina, which should apply only at the ends of words
-	    if (lookups[i].features.size() == 1 && lookups[i].features[0] == OpenType::Tag("fina")) {
-		if (encoding.boundary_char() < 0)
+	    // check for -ffina, which should apply only at the ends of words,
+	    // and -finit, which should apply only at the beginnings.
+	    OpenType::Tag feature = (lookups[i].features.size() == 1 ? lookups[i].features[0] : OpenType::Tag());
+	    if (feature == OpenType::Tag("fina") || feature == OpenType::Tag("fin2") || feature == OpenType::Tag("fin3")) {
+		if (dvipsenc.boundary_char() < 0)
 		    errh->warning("'-ffina' requires a boundary character\n(The input encoding didn't specify a boundary character, but\nI need one to implement '-ffina' features correctly. Add one\nwith a \"%% LIGKERN || = <slot> ;\" command in the encoding.)");
-		else
+		else {
+		    int bg = encoding.boundary_glyph();
 		    for (int j = 0; j < subs.size(); j++)
-			subs[j].add_right(BOUNDARYGLYPH);
+			subs[j].add_outer_right(bg);
+		}
+	    } else if (feature == OpenType::Tag("init")) {
+		int bg = encoding.boundary_glyph();
+		for (int j = 0; j < subs.size(); j++)
+		    subs[j].add_outer_left(bg);
 	    }
 	    
 	    int nunderstood = encoding.apply(subs, !dvipsenc_literal);
@@ -923,11 +943,11 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
     encoding.simplify_ligatures(false);
-    
+
     if (dvipsenc_literal)
-	encoding.cut_encoding(256);
+	encoding.cut_encoding(257);
     else
-	encoding.shrink_encoding(256, dvipsenc_in, glyph_names, errh);
+	encoding.shrink_encoding(257, dvipsenc_in, glyph_names, errh);
     
     // apply activated GPOS features
     OpenType::Gpos gpos(otf.table("GPOS"), errh);
@@ -951,6 +971,9 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
     // apply LIGKERN commands to the result
     dvipsenc.apply_ligkern(encoding, errh);
+
+    // reencode right components of boundary_glyph as boundary_char
+    encoding.reencode_right_ligkern(256, dvipsenc.boundary_char());
 
     // report unused and underused features if any
     report_underused_features(feature_usage, errh);
@@ -999,10 +1022,10 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	/* do nothing */;
     else if (output_flags & G_BINARY) {
 	String fn = getodir(O_TFM, errh) + "/" + font_name + metrics_suffix + ".tfm";
-	write_tfm(&font, cmap, encoding, glyph_names, fn, String(), errh);
+	write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, fn, String(), errh);
     } else {
 	String outfile = getodir(O_PL, errh) + "/" + font_name + metrics_suffix + ".pl";
-	output_pl(&font, cmap, encoding, glyph_names, false, outfile, errh);
+	output_pl(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, false, outfile, errh);
 	update_odir(O_PL, outfile, errh);
     }
 
@@ -1012,10 +1035,10 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     else if (output_flags & G_BINARY) {
 	String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
 	String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
-	write_tfm(&font, cmap, encoding, glyph_names, tfm, vf, errh);
+	write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, tfm, vf, errh);
     } else {
 	String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
-	output_pl(&font, cmap, encoding, glyph_names, true, outfile, errh);
+	output_pl(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, true, outfile, errh);
 	update_odir(O_VPL, outfile, errh);
     }
 
@@ -1123,7 +1146,9 @@ main(int argc, char **argv)
     Clp_Parser *clp =
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
+#if HAVE_KPATHSEA
     kpsei_init(argv[0]);
+#endif
 #ifdef HAVE_CTIME
     {
 	time_t t = time(0);

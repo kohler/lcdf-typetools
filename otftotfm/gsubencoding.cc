@@ -21,8 +21,8 @@
 #include <algorithm>
 #include <lcdf/straccum.hh>
 
-GsubEncoding::GsubEncoding()
-    : _boundary_char(-1)
+GsubEncoding::GsubEncoding(int nglyphs)
+    : _boundary_glyph(nglyphs)
 {
     _encoding.assign(256, 0);
 }
@@ -64,8 +64,6 @@ GsubEncoding::hard_encoding(Glyph g) const
 {
     if (g < 0)
 	return -1;
-    if (g == BOUNDARYGLYPH)
-	return _boundary_char;
     int answer = -1, n = 0;
     for (int i = _encoding.size() - 1; i >= 0; i--)
 	if (_encoding[i] == g)
@@ -134,15 +132,15 @@ in_changed_context(const Vector<int> &changed, const Vector<int *> &changed_cont
 }
 
 void
-GsubEncoding::add_single_rcontext_substitution(int in, int right, int out)
+GsubEncoding::add_single_context_substitution(int left, int right, int out, bool is_right)
 {
-    if (out != in) {
+    if (out != (is_right ? right : left)) {
 	Ligature l;
-	l.in.push_back(in);
+	l.in.push_back(left);
 	l.in.push_back(right);
 	l.out = out;
 	l.skip = 1;
-	l.context = 1;
+	l.context = (is_right ? 1 : -1);
 	_ligatures.push_back(l);
     }
 }
@@ -177,7 +175,7 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
 		const int *v = changed_context[e];
 		for (int j = 0; j < changed.size(); j++)
 		    if (_encoding[j] > 0 && !(v[j >> 5] & (1 << (j & 0x1F))))
-			add_single_rcontext_substitution(e, j, out);
+			add_single_context_substitution(e, j, out, true);
 		changed[e] = CH_ALL;
 	    }
 	    success++;
@@ -205,8 +203,18 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
 	    if (in >= 0 && in < changed.size()
 		&& !in_changed_context(changed, changed_context, in, right)
 		&& right >= 0 && right < changed.size()) {
-		add_single_rcontext_substitution(in, right, force_encoding(s.out_glyph()));
+		add_single_context_substitution(in, right, force_encoding(s.out_glyph()), true);
 		assign_changed_context(changed, changed_context, in, right);
+	    }
+	    success++;
+
+	} else if (s.is_single_lcontext()) {
+	    int left = encoding(s.left_glyph()), in = encoding(s.in_glyph());
+	    if (in >= 0 && in < changed.size()
+		&& !in_changed_context(changed, changed_context, left, in)
+		&& left >= 0 && left < changed.size()) {
+		add_single_context_substitution(left, in, force_encoding(s.out_glyph()), false);
+		assign_changed_context(changed, changed_context, left, in);
 	    }
 	    success++;
 	}
@@ -311,7 +319,7 @@ GsubEncoding::simplify_ligatures(bool add_fake)
     // ligatures in the table
     for (int i = 0; i < _ligatures.size(); i++) {
 	Ligature &l = _ligatures[i];
-	if (l.in[0] >= 0 && l.in.size() == l.context + 1
+	if (l.in[0] >= 0 && l.context >= 0 && l.in.size() == l.context + 1
 	    && l.in[0] == l.out)
 	    l.in[0] = -1;
     }
@@ -498,6 +506,22 @@ GsubEncoding::remove_kerns(int code1, int code2)
 	    _kerns[i].left = -1;
 }
 
+void
+GsubEncoding::reencode_right_ligkern(int old_code, int new_code)
+{
+    for (int i = 0; i < _ligatures.size(); i++) {
+	Ligature &l = _ligatures[i];
+	for (int j = 1; j < l.in.size(); j++)
+	    if (l.in[j] == old_code)
+		l.in[j] = new_code;
+    }
+    for (int i = 0; i < _kerns.size(); i++) {
+	Kern &k = _kerns[i];
+	if (k.right == old_code)
+	    k.right = new_code;
+    }
+}
+
 int
 GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, Vector<int> &context) const
 {
@@ -507,7 +531,7 @@ GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, 
     context.clear();
     for (int i = 0; i < _ligatures.size(); i++) {
 	const Ligature &l = _ligatures[i];
-	if (l.in.size() == 2 && l.in[0] == code1 && l.in[0] >= 0 && l.out >= 0) {
+	if (l.in.size() == 2 && l.in[0] == code1 && l.in[1] >= 0 && l.out >= 0) {
 	    code2.push_back(l.in[1]);
 	    outcode.push_back(l.out);
 	    context.push_back(l.context);

@@ -280,14 +280,17 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
     if (!automatic || !ps_fontname)
 	return String();
 
+    String pfb_filename;
+# if HAVE_KPATHSEA
     // look for .pfb and .pfa
-    String pfb_filename = ps_fontname + ".pfb";
+    pfb_filename = ps_fontname + ".pfb";
     if (String found = kpsei_string(kpsei_find_file(pfb_filename.c_str(), KPSEI_FMT_TYPE1)))
 	return found;
 
     String pfa_filename = ps_fontname + ".pfa";
     if (String found = kpsei_string(kpsei_find_file(pfa_filename.c_str(), KPSEI_FMT_TYPE1)))
 	return found;
+# endif
 
     // if not found, and can generate on the fly, run cfftot1
     if (allow_generate && otf_filename && otf_filename != "-"
