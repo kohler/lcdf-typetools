@@ -561,6 +561,10 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	    // if that didn't work, try the glyph name
 	    if (!gid && font)
 		gid = font->glyphid(chname);
+	    // always try the literal glyph name if it contained a '.'
+	    if (font && std::find(chname.begin(), chname.end(), '.') < chname.end())
+		if (Efont::OpenType::Glyph gid2 = font->glyphid(chname))
+		    gid = gid2;
 	    // as a last resort, try adding it with secondary
 	    if (gid <= 0 && secondary
 		&& (m = glyphname_unicode(chname)) >= 0
