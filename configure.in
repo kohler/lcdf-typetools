@@ -188,12 +188,15 @@ using --without-kpathsea.
     KPSEINTERFACE_O='kpseinterface.$(OBJEXT)'
     if test "x$enable_tetex_build" = xyes; then
 	LIBKPATHSEA='$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a'
+	LIBKPATHSEA_DEP="$LIBKPATHSEA"
     else
 	LIBKPATHSEA='-lkpathsea'
+	LIBKPATHSEA_DEP=''
     fi
 fi
 AC_SUBST([KPSEINTERFACE_O])
 AC_SUBST([LIBKPATHSEA])
+AC_SUBST([LIBKPATHSEA_DEP])
 
 AC_ARG_ENABLE(selfauto-set, [  --disable-selfauto-set  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_set=yes)
 

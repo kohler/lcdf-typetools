@@ -17,9 +17,12 @@ otftotfm_SOURCES = \
 EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 
 otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@ @LIBKPATHSEA@
-otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@
+otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@ @LIBKPATHSEA_DEP@
 
 INCLUDES = -I$(top_srcdir)/include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otftotfm.1
+
+$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a:
+	cd $(top_builddir)/../../texk/kpathsea && $(MAKE)
