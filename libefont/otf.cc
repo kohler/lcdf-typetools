@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <netinet/in.h>		// for ntohl()
 
 #ifndef static_assert
@@ -19,6 +20,7 @@
 
 #define USHORT_ATX(d)		(((uint8_t)*(d) << 8) | (uint8_t)*((d)+1))
 #define ULONG_ATX(d)		((USHORT_ATX((d)) << 16) | USHORT_ATX((d)+2))
+#define ULONG_AT2(d)		((USHORT_AT((d)) << 16) | USHORT_AT((d)+2))
 
 namespace Efont {
 
@@ -84,6 +86,12 @@ OpenTypeFont::table(OpenTypeTag tag) const
 	return String();
 }
 
+
+
+/**************************
+ * OpenTypeTag            *
+ *                        *
+ **************************/
 
 OpenTypeTag::OpenTypeTag(const char *s)
     : _tag(0)
@@ -162,5 +170,394 @@ OpenTypeTag::table_entry(const uint8_t *table, int n, int entry_size) const
     }
     return 0;
 }
+
+
+
+/**************************
+ * OpenTypeScriptList     *
+ *                        *
+ **************************/
+
+OpenTypeScriptList::OpenTypeScriptList(const String &str, ErrorHandler *errh)
+    : _str(str)
+{
+    _str.align(4);
+    if (check_header(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	_str = String();
+}
+
+int
+OpenTypeScriptList::check_header(ErrorHandler *errh)
+{
+    // HEADER FORMAT:
+    // USHORT	scriptCount
+    // 6bytes	scriptRecord[]
+    int scriptCount;
+    if (_str.length() < 2
+	|| (scriptCount = USHORT_AT(_str.udata()),
+	    _str.length() < 2 + scriptCount*SCRIPTREC_SIZE))
+	return errh->error("OTF ScriptList too short");
+
+    // XXX check that scripts are sorted
+
+    return 0;
+}
+
+int
+OpenTypeScriptList::script_offset(OpenTypeTag script) const
+{
+    if (_str.length() == 0)
+	return -1;
+    const uint8_t *data = _str.udata();
+    int l = 0, r = USHORT_AT(data) - 1;
+    while (l <= r) {
+	int m = (l + r) >> 1;
+	uint32_t mscript = ULONG_AT2(data + 2 + m*SCRIPTREC_SIZE);
+	if (script == mscript)
+	    return USHORT_AT(data + 6 + m*SCRIPTREC_SIZE);
+	else if (script < mscript)
+	    r = l - 1;
+	else
+	    l = r + 1;
+    }
+    return 0;
+}
+
+int
+OpenTypeScriptList::langsys_offset(OpenTypeTag script, OpenTypeTag langsys, ErrorHandler *errh) const
+{
+    int script_off = script_offset(script);
+    if (script_off == 0) {
+	script = OpenTypeTag("DFLT");
+	script_off = script_offset(script);
+    }
+    if (script_off <= 0)
+	return script_off;
+
+    // check script bounds
+    const uint8_t *data = _str.udata();
+    int langSysCount;
+    if (_str.length() < script_off + 4
+	|| (langSysCount = USHORT_AT(data + script_off + 2),
+	    (_str.length() < script_off + 4 + langSysCount*LANGSYSREC_SIZE)))
+	return (errh ? errh->error("OTF Script table for '%s' out of range", script.text().c_str()) : -1);
+    // XXX check that langsys are sorted
+
+    // search script table
+    int l = 0, r = langSysCount - 1;
+    data += script_off + 4;
+    while (l <= r) {
+	int m = (l + r) >> 1;
+	uint32_t mlangsys = ULONG_AT2(data + m*LANGSYSREC_SIZE);
+	if (langsys == mlangsys)
+	    return script_off + USHORT_AT(data + 4 + m*LANGSYSREC_SIZE);
+	else if (langsys < mlangsys)
+	    r = l - 1;
+	else
+	    l = r + 1;
+    }
+
+    // return default
+    int defaultLangSys = USHORT_AT(data - 4);
+    if (defaultLangSys != 0)
+	return script_off + defaultLangSys;
+    else
+	return 0;
+}
+
+int
+OpenTypeScriptList::features(OpenTypeTag script, OpenTypeTag langsys, int &required_fid, Vector<int> &fids, ErrorHandler *errh) const
+{
+    required_fid = -1;
+    fids.clear();
+    
+    int offset = langsys_offset(script, langsys);
+    if (offset <= 0)
+	return offset;
+
+    // check langsys bounds
+    const uint8_t *data = _str.udata();
+    int featureCount;
+    if (_str.length() < offset + 6
+	|| (featureCount = USHORT_AT(data + offset + 4),
+	    (_str.length() < offset + 6 + featureCount*2)))
+	return (errh ? errh->error("OTF LangSys table for '%s/%s' out of range", script.text().c_str(), langsys.text().c_str()) : -1);
+
+    // search langsys table
+    int f = USHORT_AT(data + offset + 2);
+    if (f != 0xFFFF)
+	required_fid = f;
+    data += offset + 6;
+    for (int i = 0; i < featureCount; i++, data += 2)
+	fids.push_back(USHORT_AT(data));
+    
+    return 0;
+}
+
+
+
+/**************************
+ * OpenTypeFeatureList    *
+ *                        *
+ **************************/
+
+OpenTypeFeatureList::OpenTypeFeatureList(const String &str, ErrorHandler *errh)
+    : _str(str)
+{
+    _str.align(4);
+    if (check_header(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	_str = String();    
+}
+
+int
+OpenTypeFeatureList::check_header(ErrorHandler *errh)
+{
+    int featureCount;
+    if (_str.length() < 2
+	|| (featureCount = USHORT_AT(_str.udata()),
+	    _str.length() < 2 + featureCount*FEATUREREC_SIZE))
+	return errh->error("OTF FeatureList too short");
+    return 0;
+}
+
+void
+OpenTypeFeatureList::filter_features(Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags) const
+{
+    if (_str.length() == 0)
+	fids.clear();
+    else {
+	std::sort(fids.begin(), fids.end()); // sort fids
+	
+	int i = 0, j = 0;
+	while (i < fids.size() && fids[i] < 0)
+	    fids[i++] = 0x7FFFFFFF;
+
+	// XXX check that feature list is in alphabetical order
+	
+	const uint8_t *data = _str.udata();
+	int nfeatures = USHORT_AT(data);
+	while (i < fids.size() && j < sorted_ftags.size() && fids[i] < nfeatures) {
+	    uint32_t ftag = ULONG_AT2(data + 2 + fids[i]*FEATUREREC_SIZE);
+	    if (ftag < sorted_ftags[j]) { // not an interesting feature
+		// replace featureID with a large number, remove later
+		fids[i] = 0x7FFFFFFF;
+		i++;
+	    } else if (ftag == sorted_ftags[j]) // interesting feature
+		i++;
+	    else		// an interesting feature is not available
+		j++;
+	}
+
+	fids.resize(i);		// remove remaining uninteresting features
+	std::sort(fids.begin(), fids.end()); // resort, to move bad ones last
+	while (fids.size() && fids.back() == 0x7FFFFFFF)
+	    fids.pop_back();
+    }
+}
+
+int
+OpenTypeFeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler *errh) const
+{
+    results.clear();
+    if (_str.length() == 0)
+	return -1;
+    if (errh == 0)
+	errh = ErrorHandler::silent_handler();
+
+    const uint8_t *data = _str.udata();
+    int len = _str.length();
+    int nfeatures = USHORT_AT(data);
+    for (int i = 0; i < fids.size(); i++) {
+	int fid = fids[i];
+	if (fid < 0 || fid >= nfeatures)
+	    return errh->error("OTF feature ID '%d' out of range", fid);
+	int foff = ULONG_AT2(data + 6 + fid*FEATUREREC_SIZE);
+	int lookupCount;
+	if (len < foff + 4
+	    || (lookupCount = USHORT_AT(data + foff + 2),
+		len < foff + 4 + lookupCount*2))
+	    return errh->error("OTF LookupList for feature ID '%d' too short", fid);
+	const uint8_t *ldata = data + foff + 4;
+	for (int j = 0; j < lookupCount; j++, ldata += 2)
+	    results.push_back(USHORT_AT(ldata));
+    }
+
+    // sort results and remove duplicates
+    std::sort(results.begin(), results.end());
+    int *unique_result = std::unique(results.begin(), results.end());
+    results.resize(unique_result - results.begin());
+    return 0;
+}
+
+int
+OpenTypeFeatureList::lookups(int required_fid, const Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
+{
+    Vector<int> fidsx(fids);
+    filter_features(fidsx, sorted_ftags);
+    if (required_fid >= 0)
+	fidsx.push_back(required_fid);
+    return lookups(fidsx, results, errh);
+}
+
+
+
+/**************************
+ * OpenTypeCoverage       *
+ *                        *
+ **************************/
+
+OpenTypeCoverage::OpenTypeCoverage(const String &str, ErrorHandler *errh)
+    : _str(str)
+{
+    _str.align(4);
+    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	_str = String();
+}
+
+int
+OpenTypeCoverage::check(ErrorHandler *errh)
+{
+    // HEADER FORMAT:
+    // USHORT	coverageFormat
+    // USHORT	glyphCount
+    int len = _str.length();
+    const uint8_t *data = _str.udata();
+    if (len < 4)
+	return errh->error("OTF coverage table too small for header");
+    int coverageFormat = USHORT_AT(data);
+    int count = USHORT_AT(data + 2);
+    
+    if (coverageFormat == 1) {
+	if (len < 4 + 2 * count)
+	    return errh->error("OTF coverage table (format 1) too short");
+	// XXX don't check sorting
+    } else if (coverageFormat == 2) {
+	if (len < 4 + 12 * count)
+	    return errh->error("OTF coverage table (format 2) too short");
+	// XXX don't check sorting
+	// XXX don't check startCoverageIndexes
+    } else
+	return errh->error("OTF coverage table has unknown format %d", coverageFormat);
+
+    return 0;
+}
+
+int
+OpenTypeCoverage::lookup(OpenTypeGlyph g) const
+{
+    if (_str.length() == 0)
+	return -1;
+    
+    const uint8_t *data = _str.udata();
+    int coverageFormat = USHORT_AT(data);
+    int count = USHORT_AT(data + 2);
+    if (coverageFormat == 1) {
+	int l = 0, r = count - 1;
+	data += 4;
+	while (l <= r) {
+	    int m = (l + r) >> 1;
+	    int mval = USHORT_AT(data + (m << 1));
+	    if (g == mval)
+		return m;
+	    else if (g < mval)
+		r = m - 1;
+	    else
+		l = m + 1;
+	}
+	return -1;
+    } else if (coverageFormat == 2) {
+	int l = 0, r = count - 1;
+	data += 4;
+	while (l <= r) {
+	    int m = (l + r) >> 1;
+	    const uint8_t *rec = data + m * 12;
+	    if (g < USHORT_AT(rec))
+		r = m - 1;
+	    else if (g <= USHORT_AT(rec + 2))
+		return USHORT_AT(rec + 4) + g - USHORT_AT(rec);
+	    else
+		l = m + 1;
+	}
+	return -1;
+    } else
+	return -1;
+}
+
+
+/**************************
+ * OpenTypeClassDef       *
+ *                        *
+ **************************/
+
+OpenTypeClassDef::OpenTypeClassDef(const String &str, ErrorHandler *errh)
+    : _str(str)
+{
+    _str.align(4);
+    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	_str = String();
+}
+
+int
+OpenTypeClassDef::check(ErrorHandler *errh)
+{
+    // HEADER FORMAT:
+    // USHORT	coverageFormat
+    // USHORT	glyphCount
+    int len = _str.length();
+    const uint8_t *data = _str.udata();
+    if (len < 6)		// NB: prevents empty format-2 tables
+	return errh->error("OTF class def table too small for header");
+    int classFormat = USHORT_AT(data);
+    
+    if (classFormat == 1) {
+	int count = USHORT_AT(data + 4);
+	if (len < 6 + count * 2)
+	    return errh->error("OTF class def table (format 1) too short");
+	// XXX don't check sorting
+    } else if (classFormat == 2) {
+	int count = USHORT_AT(data + 2);
+	if (len < 4 + 12 * count)
+	    return errh->error("OTF class def table (format 2) too short");
+	// XXX don't check sorting
+    } else
+	return errh->error("OTF class def table has unknown format %d", classFormat);
+
+    return 0;
+}
+
+int
+OpenTypeClassDef::lookup(OpenTypeGlyph g) const
+{
+    if (_str.length() == 0)
+	return -1;
+    
+    const uint8_t *data = _str.udata();
+    int coverageFormat = USHORT_AT(data);
+    
+    if (coverageFormat == 1) {
+	OpenTypeGlyph start = USHORT_AT(data + 2);
+	int count = USHORT_AT(data + 4);
+	if (g < start || g >= start + count)
+	    return 0;
+	else
+	    return USHORT_AT(data + 4 + (g - start) * 2);
+    } else if (coverageFormat == 2) {
+	int l = 0, r = USHORT_AT(data + 2) - 1;
+	data += 2;
+	while (l <= r) {
+	    int m = (l + r) >> 1;
+	    const uint8_t *rec = data + m * 12;
+	    if (g < USHORT_AT(rec))
+		r = m - 1;
+	    else if (g <= USHORT_AT(rec + 2))
+		return USHORT_AT(rec + 4);
+	    else
+		l = m + 1;
+	}
+	return 0;
+    } else
+	return 0;
+}
+
 
 }

@@ -15,7 +15,7 @@
 
 namespace Efont {
 
-EfontOTF_cmap::EfontOTF_cmap(const String &s, ErrorHandler *errh)
+OpenType_cmap::OpenType_cmap(const String &s, ErrorHandler *errh)
     : _str(s)
 {
     _str.align(4);
@@ -23,7 +23,7 @@ EfontOTF_cmap::EfontOTF_cmap(const String &s, ErrorHandler *errh)
 }
 
 int
-EfontOTF_cmap::parse_header(ErrorHandler *errh)
+OpenType_cmap::parse_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // USHORT	version
@@ -47,7 +47,8 @@ EfontOTF_cmap::parse_header(ErrorHandler *errh)
     int last_platform = -1;
     int last_encoding = -1;
     int last_version = -1;
-    for (int i = 0; i < _ntables; i++) {
+    _first_unicode_table = -1;
+     for (int i = 0; i < _ntables; i++) {
 	int loc = HEADER_SIZE + ENCODING_SIZE * i;
 	int platform = USHORT_AT(data + loc);
 	int encoding = USHORT_AT(data + loc + 2);
@@ -61,6 +62,9 @@ EfontOTF_cmap::parse_header(ErrorHandler *errh)
 		      || (encoding == last_encoding
 			  && version > last_version)))))
 	    return errh->error("subtables out of order at entry %d", i);
+	if ((platform == 0 || (platform == 3 && encoding == 1))
+	    && _first_unicode_table < 0)
+	    _first_unicode_table = i;
 	last_platform = platform, last_encoding = encoding, last_version = version;
     }
 
@@ -69,7 +73,7 @@ EfontOTF_cmap::parse_header(ErrorHandler *errh)
 }
 
 int
-EfontOTF_cmap::first_table(int platform, int encoding) const
+OpenType_cmap::first_table(int platform, int encoding) const
 {
     if (error() < 0)
 	return -1;
@@ -84,22 +88,7 @@ EfontOTF_cmap::first_table(int platform, int encoding) const
 }
 
 int
-EfontOTF_cmap::first_unicode_table() const
-{
-    if (error() < 0)
-	return -1;
-    const uint8_t *data = _str.udata();
-    data += HEADER_SIZE;
-    for (int i = 0; i < _ntables; i++, data += ENCODING_SIZE) {
-	int p = USHORT_AT(data), e = USHORT_AT(data + 2);
-	if (platform == 0 || (platform == 3 && encoding == 1))
-	    return i;
-    }
-    return -1;
-}
-
-int
-EfontOTF_cmap::check_table(int t, ErrorHandler *errh) const
+OpenType_cmap::check_table(int t, ErrorHandler *errh) const
 {
     if (!errh)
 	errh = ErrorHandler::silent_handler();
@@ -114,66 +103,74 @@ EfontOTF_cmap::check_table(int t, ErrorHandler *errh) const
     uint32_t left = _str.length() - offset;
     data += offset;
     int format = USHORT_AT(data);
-    uint32_t length;
+    uint32_t length = 0;	// value not used
     
     switch (format) {
 	
       case F_BYTE:
-	if (left < 4 || (length = USHORT_AT(data + 2)) > left
+	if (left < 4
+	    || (length = USHORT_AT(data + 2)) > left
 	    || length != 259)
 	    return errh->error("bad table %d length (format %d)", t, format);
 	break;
 	
       case F_HIBYTE:
-	if (left < 4 || (length = USHORT_AT(data + 2)) > left
+	if (left < 4
+	    || (length = USHORT_AT(data + 2)) > left
 	    || length < 524)
 	    return errh->error("bad table %d length (format %d)", t, format);
 	for (int hi_byte = 0; hi_byte < 256; hi_byte++)
-	    if (int subh = USHORT_AT(data + 6 + 2 * hi_byte)) {
-		if ((subh & 7) || subh + 524 + 8 > length)
+	    if (uint32_t subh_key = USHORT_AT(data + 6 + 2 * hi_byte)) {
+		if ((subh_key & 7) || HIBYTE_SUBHEADERS + subh_key + 8 > length)
 		    return errh->error("bad table %d subheader %d offset (format 2)", t, hi_byte);
-		int firstCode = USHORT_AT(data + subh + 524);
-		int entryCount = USHORT_AT(data + subh + 526);
-		int idRangeOffset = USHORT_AT(data + subh + 530);
+		const uint8_t *subh = data + HIBYTE_SUBHEADERS + subh_key;
+		int firstCode = USHORT_AT(subh);
+		int entryCount = USHORT_AT(subh + 2);
+		int idRangeOffset = USHORT_AT(subh + 6);
 		if (firstCode + entryCount > 256 || entryCount == 0)
 		    return errh->error("bad table %d subheader %d contents (format 2)", t, hi_byte);
-		if (subh + 530 + idRangeOffset + entryCount * 2 > length)
+		if ((HIBYTE_SUBHEADERS + subh_key + 6) // pos[idRangeOffset]
+		    + idRangeOffset + entryCount * 2 > length)
 		    return errh->error("bad table %d subheader %d length (format 2)", t, hi_byte);
 	    }
 	break;
 	
       case F_SEGMENTED: {
-	  if (left < 4 || (length = USHORT_AT(data + 2)) > left
+	  if (left < 4
+	      || (length = USHORT_AT(data + 2)) > left
 	      || length < 16)
 	      return errh->error("bad table %d length (format %d)", t, format);
 	  int segCountX2 = USHORT_AT(data + 6);
 	  int searchRange = USHORT_AT(data + 8);
 	  int entrySelector = USHORT_AT(data + 10);
 	  int rangeShift = USHORT_AT(data + 12);
-	  if ((segCountX2 & 1) || segCountX2 == 0
+	  if ((segCountX2 & 1)
+	      || segCountX2 == 0
 	      || (searchRange & (searchRange - 1)) /* not a power of 2? */
-	      || searchRange <= segCountX2/2 || (searchRange>>1) > segCountX2/2
+	      || searchRange <= segCountX2/2
+	      || (searchRange>>1) > segCountX2/2
 	      || 1 << (entrySelector + 1) != searchRange
 	      || rangeShift != segCountX2 - searchRange)
 	      return errh->error("bad table %d segment counts (format 4)", t);
-	  int segCount = segCountX2 >> 1;
+	  uint32_t segCount = segCountX2 >> 1;
 	  if (length < 16 + 8 * segCount)
 	      return errh->error("bad table %d length (format %d)", t, format);
-	  uint8_t *endCodes = data + 14;
-	  uint8_t *startCodes = endCodes + 2 + segCountX2;
-	  uint8_t *idDeltas = startCodes + segCountX2;
-	  uint8_t *idRangeOffsets = idDeltas + segCountX2;
+	  const uint8_t *endCodes = data + 14;
+	  const uint8_t *startCodes = endCodes + 2 + segCountX2;
+	  const uint8_t *idDeltas = startCodes + segCountX2;
+	  const uint8_t *idRangeOffsets = idDeltas + segCountX2;
 	  int last_end = 0;
 	  for (int i = 0; i < segCountX2; i += 2) {
 	      int endCode = USHORT_AT(endCodes + i);
 	      int startCode = USHORT_AT(startCodes + i);
-	      int idDelta = SHORT_AT(idDeltas + i);
+	      /* int idDelta = SHORT_AT(idDeltas + i); // no need to check */
 	      int idRangeOffset = USHORT_AT(idRangeOffsets + i);
 	      if (endCode < startCode || startCode < last_end)
 		  return errh->error("bad table %d overlapping range %d (format %d)", t, i/2, format);
 	      if (idRangeOffset
 		  && idRangeOffsets + i + idRangeOffset + (endCode - startCode)*2 + 2 > data + length)
 		  return errh->error("bad table %d range %d length (format 4)", t, i/2);
+	      last_end = endCode + 1;
 	  }
 	  if (USHORT_AT(endCodes + segCountX2 - 2) != 0xFFFF)
 	      return errh->error("bad table %d incorrect final endCode (format 4)", t);
@@ -181,17 +178,19 @@ EfontOTF_cmap::check_table(int t, ErrorHandler *errh) const
       }
 	
       case F_TRIMMED: {
-	  if (left < 4 || (length = USHORT_AT(data + 2)) > left
+	  if (left < 4
+	      || (length = USHORT_AT(data + 2)) > left
 	      || length < 10)
 	      return errh->error("bad table %d length (format %d)", t, format);
-	  int entryCount = USHORT_AT(data + 8);
+	  uint32_t entryCount = USHORT_AT(data + 8);
 	  if (10 + entryCount * 2 > length)
 	      return errh->error("bad table %d length (format %d)", t, format);
 	  break;
       }
 
       case F_SEGMENTED32: {
-	  if (left < 8 || (length = ULONG_AT(data + 4)) > left
+	  if (left < 8
+	      || (length = ULONG_AT(data + 4)) > left
 	      || length < 16)
 	      return errh->error("bad table %d length (format %d)", t, format);
 	  uint32_t nGroups = ULONG_AT(data + 16);
@@ -220,8 +219,8 @@ EfontOTF_cmap::check_table(int t, ErrorHandler *errh) const
     return 0;
 }
 
-uint32_t
-EfontOTF_cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
+OpenTypeGlyph
+OpenType_cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 {
     if (check_table(t, errh) < 0)
 	return 0;
@@ -263,51 +262,51 @@ EfontOTF_cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 	      return 0;
 	  int segCount = USHORT_AT(data + 6) >> 1;
 	  const uint8_t *endCounts = data + 14;
-	  const uint8_t *startCounts = endCounts + segCount << 1 + 2;
-	  const uint8_t *idDeltas = startCounts + segCount << 1;
-	  const uint8_t *idRangeOffsets = idDeltas + segCount << 1;
+	  const uint8_t *startCounts = endCounts + (segCount << 1) + 2;
+	  const uint8_t *idDeltas = startCounts + (segCount << 1);
+	  const uint8_t *idRangeOffsets = idDeltas + (segCount << 1);
 	  int l = 0, r = segCount - 1;
 	  while (l <= r) {
 	      int m = (l + r) / 2;
-	      int endCount = USHORT_AT(endCounts + m << 1);
-	      int startCount = USHORT_AT(startCounts + m << 1);
-	      if (startCount <= uni && uni <= endCount) {
-		  int idDelta = SHORT_AT(idDeltas + m << 1);
-		  int idRangeOffset = USHORT_AT(idRangeOffsets + m << 1);
+	      uint32_t endCount = USHORT_AT(endCounts + (m << 1));
+	      uint32_t startCount = USHORT_AT(startCounts + (m << 1));
+	      if (uni < startCount)
+		  r = l - 1;
+	      else if (uni <= endCount) {
+		  int idDelta = SHORT_AT(idDeltas + (m << 1));
+		  int idRangeOffset = USHORT_AT(idRangeOffsets + (m << 1));
 		  if (idRangeOffset == 0)
 		      return (idDelta + uni) & 65535;
-		  int g = USHORT_AT(idRangeOffsets + m << 1 + idRangeOffset + (uni - startCount) << 1);
+		  int g = USHORT_AT(idRangeOffsets + (m << 1) + idRangeOffset + ((uni - startCount) << 1));
 		  if (g == 0)
 		      return 0;
 		  return (idDelta + g) & 65535;
-	      } else if (uni < startCount)
-		  r = l - 1;
-	      else
+	      } else
 		  l = r + 1;
 	  }
 	  return 0;
       }
 
       case F_TRIMMED: {
-	  int firstCode = USHORT_AT(data + 6);
-	  int entryCount = USHORT_AT(data + 8);
+	  uint32_t firstCode = USHORT_AT(data + 6);
+	  uint32_t entryCount = USHORT_AT(data + 8);
 	  if (uni < firstCode || uni >= firstCode + entryCount)
 	      return 0;
-	  return USHORT_AT(data + 10 + (uni - firstCode) << 1);
+	  return USHORT_AT(data + 10 + ((uni - firstCode) << 1));
       }
 	
       case F_SEGMENTED32: {
 	  uint32_t nGroups = ULONG_AT(data + 12);
 	  uint32_t l = 0, r = nGroups - 1;
-	  uint8_t *groups = data + 16;
+	  const uint8_t *groups = data + 16;
 	  while (l <= r) {
 	      uint32_t m = (l + r) / 2;
 	      uint32_t startCharCode = ULONG_AT(groups + m * 12);
 	      uint32_t endCharCode = ULONG_AT(groups + m * 12 + 4);
-	      if (startCharCode <= uni && uni <= endCharCode)
-		  return ULONG_AT(groups + m * 12 + 8) + uni - startCharCode;
-	      else if (uni < startCharCode)
+	      if (uni < startCharCode)
 		  r = l - 1;
+	      else if (uni <= endCharCode)
+		  return ULONG_AT(groups + m * 12 + 8) + uni - startCharCode;
 	      else
 		  l = r + 1;
 	  }
@@ -320,11 +319,11 @@ EfontOTF_cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
     }
 }
 
-uint32_t
-EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, ErrorHandler *errh) const
+void
+OpenType_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, ErrorHandler *errh) const
 {
     if (check_table(t, errh) < 0)
-	return 0;
+	return;
     
     const uint8_t *data = _str.udata();
     data += ULONG_AT(data + HEADER_SIZE + t * ENCODING_SIZE + 4);
@@ -352,7 +351,7 @@ EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
 	    int idRangeOffset = USHORT_AT(tdata + 6);
 	    const uint8_t *gdata = tdata + 6 + idRangeOffset;
 	    for (int i = 0; i < entryCount; i++)
-		if (int g = USHORT_AT(gdata + i << 1)) {
+		if (int g = USHORT_AT(gdata + (i << 1))) {
 		    cs.push_back(hi_byte << 8 + firstCode + i);
 		    gs.push_back((idDelta + g) & 65535);
 		}
@@ -362,9 +361,9 @@ EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
       case F_SEGMENTED: {
 	  int segCountX2 = USHORT_AT(data + 6);
 	  const uint8_t *endCounts = data + 14;
-	  const uint8_t *startCounts = endCounts + segCount << 1 + 2;
-	  const uint8_t *idDeltas = startCounts + segCount << 1;
-	  const uint8_t *idRangeOffsets = idDeltas + segCount << 1;
+	  const uint8_t *startCounts = endCounts + segCountX2 + 2;
+	  const uint8_t *idDeltas = startCounts + segCountX2;
+	  const uint8_t *idRangeOffsets = idDeltas + segCountX2;
 	  for (int i = 0; i < segCountX2; i += 2) {
 	      int endCount = USHORT_AT(endCounts + i);
 	      int startCount = USHORT_AT(startCounts + i);
@@ -376,7 +375,7 @@ EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
 		      gs.push_back((c + idDelta) & 65535);
 		  }
 	      } else {
-		  uint32_t *gdata = idRangeOffsets + i + idRangeOffset;
+		  const uint8_t *gdata = idRangeOffsets + i + idRangeOffset;
 		  for (int c = startCount; c <= endCount; c++, gdata += 2)
 		      if (int g = USHORT_AT(gdata)) {
 			  cs.push_back(c);
@@ -391,7 +390,7 @@ EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
 	  int firstCode = USHORT_AT(data + 6);
 	  int entryCount = USHORT_AT(data + 8);
 	  for (int i = 0; i < entryCount; i++)
-	      if (int g = USHORT_AT(data + 10 + i << 1)) {
+	      if (int g = USHORT_AT(data + 10 + (i << 1))) {
 		  cs.push_back(firstCode + i);
 		  gs.push_back(g);
 	      }
@@ -400,7 +399,7 @@ EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
 	
       case F_SEGMENTED32: {
 	  uint32_t nGroups = ULONG_AT(data + 12);
-	  uint8_t *groups = data + 16;
+	  const uint8_t *groups = data + 16;
 	  for (uint32_t i = 0; i < nGroups; i++, groups += 12) {
 	      uint32_t startCharCode = ULONG_AT(groups);
 	      uint32_t nCharCodes = ULONG_AT(groups + 4) - startCharCode;
@@ -419,22 +418,16 @@ EfontOTF_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
     }
 }
 
-uint32_t
-EfontOTF_cmap::map_unicode_character(int table, uint32_t c) const
-{
-    const uint8_t *data = _str.udata();
-    uint32_t offset = ULONG_AT(data + HEADER_SIZE + table * ENCODING_SIZE + 4);
-    
-    data +=
-}
-
 int
-EfontOTF_cmap::map_unicode_characters(const Vector<int> &vin, Vector<int> &vout, bool) const
+OpenType_cmap::map_uni(const Vector<uint32_t> &vin, Vector<OpenTypeGlyph> &vout) const
 {
     int t = first_unicode_table();
-    if (t < 0)
+    if (check_table(t) < 0)
 	return -1;
-    
+    vout.resize(vin.size(), 0);
+    for (int i = 0; i < vin.size(); i++)
+	vout[i] = map_table(t, vin[i]);
+    return 0;
 }
 
 }

@@ -5,6 +5,8 @@
 class ErrorHandler;
 namespace Efont {
 
+typedef int OpenTypeGlyph;		// 16-bit integer
+
 class OpenTypeTag { public:
     
     enum { FIRST_VALID_TAG = 0x20202020U, LAST_VALID_TAG = 0x7E7E7E7EU };
@@ -56,6 +58,87 @@ class OpenTypeFont { public:
     int parse_header(ErrorHandler *);
     
 };
+
+class OpenTypeScriptList { public:
+
+    OpenTypeScriptList(const String &, ErrorHandler * = 0);
+    // default destructor
+
+    bool ok() const			{ return _str.length() > 0; }
+
+    int features(OpenTypeTag script, OpenTypeTag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0) const;
+    
+  private:
+
+    enum { SCRIPTREC_SIZE = 6, LANGSYSREC_SIZE = 6 };
+    
+    String _str;
+
+    int check_header(ErrorHandler *);
+    int script_offset(OpenTypeTag) const;
+    int langsys_offset(OpenTypeTag, OpenTypeTag, ErrorHandler * = 0) const;
+    
+};
+
+class OpenTypeFeatureList { public:
+
+    OpenTypeFeatureList(const String &, ErrorHandler * = 0);
+    // default destructor
+
+    bool ok() const			{ return _str.length() > 0; }
+
+    void filter_features(Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags) const;
+    int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
+    int lookups(int required_fid, const Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
+    
+  private:
+
+    enum { FEATUREREC_SIZE = 6 };
+    
+    String _str;
+
+    int check_header(ErrorHandler *);
+    int script_offset(OpenTypeTag) const;
+    int langsys_offset(OpenTypeTag, OpenTypeTag, ErrorHandler * = 0) const;
+    
+};
+
+class OpenTypeCoverage { public:
+
+    OpenTypeCoverage(const String &, ErrorHandler * = 0);
+    // default destructor
+
+    bool ok() const			{ return _str.length() > 0; }
+
+    int lookup(OpenTypeGlyph) const;
+    int operator[](OpenTypeGlyph g) const { return lookup(g); }
+    
+  private:
+
+    String _str;
+
+    int check(ErrorHandler *);
+
+};
+
+class OpenTypeClassDef { public:
+
+    OpenTypeClassDef(const String &, ErrorHandler * = 0);
+    // default destructor
+
+    bool ok() const			{ return _str.length() > 0; }
+
+    int lookup(OpenTypeGlyph) const;
+    int operator[](OpenTypeGlyph g) const { return lookup(g); }
+    
+  private:
+
+    String _str;
+
+    int check(ErrorHandler *);
+
+};
+
 
 inline bool
 operator==(OpenTypeTag t1, uint32_t t2)
