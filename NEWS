@@ -1,9 +1,15 @@
 LCDF Typetools NEWS
 
-Version 2.26
+Version 2.26   2.Apr.2005
 
-* otftotfm: Fix crash tickled by newer versions of MinionPro, reported by
-  Michael Zedler.
+* otftotfm: Support more kinds of substitution.
+
+* otftotfm: Support old-style and new-style chaining context substitutions
+  using Adobe's procedure.  Older fonts had erroneous substitutions because
+  of a software error; newer fonts don't.
+
+* otftotfm: Fix crash tickled by newer versions of MinionPro and other
+  fonts, reported by Michael Zedler and Oliver M. Haynold.
 
 
 Version 2.25   10.Mar.2005

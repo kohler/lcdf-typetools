@@ -192,7 +192,7 @@ do_query_scripts(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *re
 {
     Vector<String> results;
     if (String gsub_table = otf.table("GSUB")) {
-	OpenType::Gsub gsub(gsub_table, errh);
+	OpenType::Gsub gsub(gsub_table, &otf, errh);
 	collect_script_descriptions(gsub.script_list(), results, errh);
     }
     if (String gpos_table = otf.table("GPOS")) {
@@ -230,7 +230,7 @@ do_query_features(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *r
 {
     Vector<String> results;
     if (String gsub_table = otf.table("GSUB")) {
-	OpenType::Gsub gsub(gsub_table, errh);
+	OpenType::Gsub gsub(gsub_table, &otf, errh);
 	collect_feature_descriptions(gsub.script_list(), gsub.feature_list(), results, errh);
     }
     if (String gpos_table = otf.table("GPOS")) {

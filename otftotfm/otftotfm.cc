@@ -1134,7 +1134,7 @@ static void
 do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bool dvipsenc_literal, HashMap<uint32_t, int>& feature_usage, const Vector<PermString>& glyph_names, ErrorHandler* errh)
 {
     // apply activated GSUB features
-    OpenType::Gsub gsub(otf.table("GSUB"), errh);
+    OpenType::Gsub gsub(otf.table("GSUB"), &otf, errh);
     Vector<Lookup> lookups(gsub.nlookups(), Lookup());
     find_lookups(gsub.script_list(), gsub.feature_list(), lookups, errh);
     Vector<OpenType::Substitution> subs;

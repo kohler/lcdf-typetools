@@ -576,7 +576,7 @@ Metrics::apply_ligature(const Vector<Code> &in, const Substitution *s, int looku
     add_ligature(cin1, cin2, cout);
 
     //fprintf(stderr, "%s : %d/%s %d/%s => %d/%s [was %d/%s]\n", s->unparse().c_str(), cin1, code_str(cin1), cin2, code_str(cin2), cout, code_str(cout), old_out, code_str(old_out));
-
+    
     // if appropriate, swap old ligatures to point to the new result
     if (old_out >= 0)
 	for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
@@ -922,8 +922,11 @@ Metrics::cut_encoding(int size)
 	mark_liveness(size, all_ligs);
     }
     
-    /* Characters above 'size' are not 'good'. */
-    Vector<int> good(_encoding.size(), 0);
+    /* Characters below 'size' are 'good'.
+       Characters above 'size' are not 'good'. */
+    Vector<int> good(_encoding.size(), 1);
+    for (Code c = size; c < _encoding.size(); c++)
+	good[c] = 0;
 
     /* Characters encoded via base_code are 'good', though. */
     for (Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
@@ -947,7 +950,7 @@ Metrics::cut_encoding(int size)
 	    good[c] = 1;
       bad_virtual_char: ;
     }
-    
+
     /* Certainly none of the later ligatures or kerns will be meaningful. */
     for (Code c = size; c < _encoding.size(); c++) {
 	_encoding[c].ligatures.clear();
