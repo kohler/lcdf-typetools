@@ -159,12 +159,16 @@ Substitution::Substitution(Context c, Glyph g)
 Substitution::Substitution(Context c, Glyph g1, Glyph g2)
     : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
 {
-    assert(c == C_LEFT || c == C_RIGHT);
+    assert(c == C_LEFT || c == C_RIGHT || c == C_LEFTRIGHT);
     Glyph gs[2] = { g1, g2 };
     if (c == C_LEFT)
 	assign(_left, _left_is, 2, gs);
-    else
+    else if (c == C_RIGHT)
 	assign(_right, _right_is, 2, gs);
+    else {
+	assign(_left, _left_is, g1);
+	assign(_right, _right_is, g2);
+    }
 }
 
 Substitution::~Substitution()
@@ -270,7 +274,7 @@ Substitution::extract_glyph_0(const Substitute &s, uint8_t t) throw ()
 }
 
 bool
-Substitution::extract_glyphs(const Substitute &s, uint8_t t, Vector<Glyph> &v) throw ()
+Substitution::extract_glyphs(const Substitute &s, uint8_t t, Vector<Glyph> &v, bool coverage_ok) throw ()
 {
     switch (t) {
       case T_GLYPH:
@@ -281,9 +285,12 @@ Substitution::extract_glyphs(const Substitute &s, uint8_t t, Vector<Glyph> &v) t
 	    v.push_back(s.gids[i]);
 	return true;
       case T_COVERAGE:
-	for (Coverage::iterator i = s.coverage->begin(); i; i++)
-	    v.push_back(*i);
-	return true;
+	if (coverage_ok) {
+	    for (Coverage::iterator i = s.coverage->begin(); i; i++)
+		v.push_back(*i);
+	    return true;
+	} else
+	    return false;
       default:
 	return false;
     }
@@ -339,6 +346,30 @@ Substitution::is_noop() const
 	|| (_in_is == T_GLYPHS && _out_is == T_GLYPHS
 	    && _in.gids[0] == _out.gids[0]
 	    && memcmp(_in.gids, _out.gids, (_in.gids[0] + 1) * sizeof(Glyph)) == 0);
+}
+
+bool
+Substitution::all_in_glyphs(Vector<Glyph> &v) const
+{
+    bool ok = true;
+    if (_left_is != T_NONE)
+	ok &= extract_glyphs(_left, _left_is, v, false);
+    ok &= extract_glyphs(_in, _in_is, v, false);
+    if (_right_is != T_NONE)
+	ok &= extract_glyphs(_right, _right_is, v, false);
+    return ok;
+}
+
+bool
+Substitution::all_out_glyphs(Vector<Glyph> &v) const
+{
+    bool ok = true;
+    if (_left_is != T_NONE)
+	ok &= extract_glyphs(_left, _left_is, v, false);
+    ok &= extract_glyphs(_out, _out_is, v, false);
+    if (_right_is != T_NONE)
+	ok &= extract_glyphs(_right, _right_is, v, false);
+    return ok;
 }
 
 void
@@ -490,10 +521,8 @@ Substitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 	    sa << "LIGATURE[";
 	else if (is_multiple())
 	    sa << "MULTIPLE[";
-	else if (is_rcontext())
-	    sa << "RCONTEXT[";
-	else if (is_lcontext())
-	    sa << "LCONTEXT[";
+	else if (is_simple_context())
+	    sa << "SIMPLECONTEXT[";
 	else
 	    sa << "UNKNOWN[";
 
@@ -1030,6 +1059,14 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
 	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
 	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
 		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_RIGHT, *c1i, *c2i));
+	return any;
+    } else if (nbacktrack == 1 && ninput == 1 && nlookahead == 1) {
+	Coverage c1(_d.offset_subtable(F3_HSIZE));
+	Coverage c2(_d.offset_subtable(lookahead_offset + F3_LOOKAHEAD_HSIZE));
+	bool any = false;
+	for (Coverage::iterator c1i = c1.begin(); c1i; c1i++)
+	    for (Coverage::iterator c2i = c2.begin(); c2i; c2i++)
+		any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFTRIGHT, *c1i, *c2i));
 	return any;
     } else
 	return false;
