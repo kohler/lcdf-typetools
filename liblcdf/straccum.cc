@@ -51,7 +51,7 @@ StringAccum::make_out_of_memory()
 {
   assert(_cap >= 0);
   delete[] _s;
-  _s = reinterpret_cast<unsigned char *>(const_cast<char *>(String::out_of_memory_string().data()));
+  _s = reinterpret_cast<unsigned char *>(const_cast<char *>(String::out_of_memory_data()));
   _cap = -1;
   _len = 0;
 }
