@@ -562,6 +562,33 @@ Type1Font::remove_subr(int e)
     return true;
 }
 
+void
+Type1Font::fill_in_subrs()
+{
+    while (_subrs.size() && _subrs.back() == 0)
+	_subrs.pop_back();
+    for (int i = 0; i < _subrs.size(); i++)
+	if (!_subrs[i])
+	    set_subr(i, Type1Charstring(String::stable_string("\013", 1)));
+}
+
+void
+Type1Font::renumber_subrs(const Vector<int> &renumbering)
+{
+    Vector<Type1Subr *> old_subrs;
+    old_subrs.swap(_subrs);
+    for (int i = 0; i < old_subrs.size() && i < renumbering.size(); i++) {
+	int r = renumbering[i];
+	Type1Subr *s = old_subrs[i];
+	if (r >= 0 && s)
+	    set_subr(r, s->t1cs(), s->definer());
+	else
+	    delete s;
+    }
+    for (int i = renumbering.size(); i < old_subrs.size(); i++)
+	delete old_subrs[i];
+}
+
 
 void
 Type1Font::shift_indices(int move_index, int delta)
@@ -600,6 +627,7 @@ Type1Font::ensure(Dict dict, PermString name)
 	int move_index = _index[dict];
 	shift_indices(move_index, 1);
 	_items[move_index] = def;
+	set_dict(dict, name, def);
     }
     return def;
 }
@@ -716,11 +744,9 @@ Type1Font::write(Type1Writer &w)
 void
 Type1Font::cache_defs() const
 {
-    Type1Definition *t1d;
-  
-    t1d = dict("FontName");
-    if (t1d) t1d->value_name(_font_name);
-  
+    Type1Definition *t1d = dict("FontName");
+    if (t1d)
+	t1d->value_name(_font_name);
     _cached_defs = true;
 }
 
@@ -763,7 +789,7 @@ Type1Font::create_mmspace(ErrorHandler *errh) const
     Vector<PermString> axis_types;
     t1d = fi_dict("BlendAxisTypes");
     if (t1d && t1d->value_namevec(axis_types) && axis_types.size() == naxes)
-	for (int a = 0; a < axis_types.size(); a++)
+	for (int a = 0; a < naxes; a++)
 	    _mmspace->set_axis_type(a, axis_types[a]);
   
     int ndv, cdv;
@@ -790,6 +816,12 @@ Type1Font::create_mmspace(ErrorHandler *errh) const
 	_mmspace = 0;
     }
     return _mmspace;
+}
+
+void
+Type1Font::uncache_defs()
+{
+    _cached_defs = false;
 }
 
 void

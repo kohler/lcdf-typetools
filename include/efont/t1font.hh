@@ -46,6 +46,8 @@ class Type1Font : public EfontProgram { public:
     Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
     bool set_subr(int, const Type1Charstring &, PermString definer = PermString());
     bool remove_subr(int);
+    void fill_in_subrs();
+    void renumber_subrs(const Vector<int> &); // dangerous!
     
     Type1Subr *glyph_x(int i) const	{ return _glyphs[i]; }
 
@@ -121,7 +123,8 @@ class Type1Font : public EfontProgram { public:
     void set_dict_size(int, int);
 
   protected:
-    
+
+    void uncache_defs();
     void set_dict(int dict, PermString, Type1Definition *);
   
 };
