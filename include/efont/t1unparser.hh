@@ -4,7 +4,7 @@
 #include "straccum.hh"
 #include "string.hh"
 
-class Type1Unparser: public Type1Interp {
+class Type1Unparser : public CharstringInterp {
 
   String _indent;
   bool _one_command_per_line;
@@ -28,7 +28,6 @@ class Type1Unparser: public Type1Interp {
   String value();
 
   static String unparse(const Type1Charstring *);
-  static String unparse_command(int);
   
 };
 

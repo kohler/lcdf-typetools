@@ -14,7 +14,7 @@ class Type1CharstringGen { public:
 
     void gen_number(double, int = 0);
     void gen_command(int);
-    void gen_stack(Type1Interp &, int for_cmd);
+    void gen_stack(CharstringInterp &, int for_cmd);
 
     Type1Charstring *output();
     void output(Type1Charstring &);

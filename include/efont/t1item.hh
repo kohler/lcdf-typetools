@@ -6,7 +6,7 @@
 class StringAccum;
 class Type1Reader;
 class Type1Writer;
-class Type1Interp;
+class CharstringInterp;
 class Type1Font;
 class Type1CopyItem;
 class Type1Subr;
@@ -164,7 +164,7 @@ class Type1Subr : public Type1Item { public:
     operator Type1Charstring &()	{ return _cs; }
     operator const Type1Charstring &() const { return _cs; }
   
-    bool run(Type1Interp &t1i)		{ return _cs.run(t1i); }
+    bool run(CharstringInterp &csi)	{ return _cs.run(csi); }
   
     void gen(Type1Writer &);
   

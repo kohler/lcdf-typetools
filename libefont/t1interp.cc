@@ -10,40 +10,16 @@
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STATE()		do { if (_t2state < T2_PATH) return error(errOrdering, cmd); } while (0)
 
-const char * const Type1Interp::command_names[] = {
-    "error", "hstem", "UNKNOWN_2", "vstem", "vmoveto",
-    "rlineto", "hlineto", "vlineto", "rrcurveto", "closepath",
-  
-    "callsubr", "return", "escape", "hsbw", "endchar",
-    "UNKNOWN_15", "blend", "UNKNOWN_17", "hstemhm", "hintmask",
-  
-    "cntrmask", "rmoveto", "hmoveto", "vstemhm", "rcurveline",
-    "rlinecurve", "vvcurveto", "hhcurveto", "shortint", "callgsubr",
-  
-    "vhcurveto", "hvcurveto", "dotsection", "vstem3", "hstem3",
-    "and", "or", "not", "seac", "sbw",
-  
-    "store", "abs", "add", "sub", "div",
-    "load", "neg", "eq", "callothersubr", "pop",
-  
-    "drop", "UNKNOWN_12_19", "put", "get", "ifelse",
-    "random", "mul", "UNKNOWN_12_25", "sqrt", "dup",
-  
-    "exch", "index", "roll", "UNKNOWN_12_31", "UNKNOWN_12_32",
-    "setcurrentpoint", "hflex", "flex", "hflex1", "flex1"
-};
+double CharstringInterp::double_for_error;
 
-
-double Type1Interp::double_for_error;
-
-Type1Interp::Type1Interp(const EfontProgram *prog, Vector<double> *weight)
+CharstringInterp::CharstringInterp(const EfontProgram *prog, Vector<double> *weight)
     : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
       _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
 {
 }
 
 void
-Type1Interp::init()
+CharstringInterp::init()
 {
     clear();
     ps_clear();
@@ -56,7 +32,7 @@ Type1Interp::init()
 }
 
 bool
-Type1Interp::error(int err, int error_data)
+CharstringInterp::error(int err, int error_data)
 {
     _error = err;
     _error_data = error_data;
@@ -64,34 +40,34 @@ Type1Interp::error(int err, int error_data)
 }
 
 bool
-Type1Interp::number(double v)
+CharstringInterp::number(double v)
 {
     push(v);
     return true;
 }
 
 bool
-Type1Interp::vector_command(int cmd)
+CharstringInterp::vector_command(int cmd)
 {
     int which_vector, vectoroff, offset, num, i;
     Vector<double> *vector = 0;
   
     switch (cmd) {
     
-      case cPut:
+      case CS::cPut:
 	CHECK_STACK(2);
 	offset = (int)top(0);
 	vec(&_scratch_vector, offset) = top(1);
 	pop(2);
 	break;
     
-      case cGet:
+      case CS::cGet:
 	CHECK_STACK(1);
 	offset = (int)top();
 	top() = vec(&_scratch_vector, offset);
 	break;
     
-      case cStore:
+      case CS::cStore:
 	CHECK_STACK(4);
 	which_vector = (int)top(3);
 	vectoroff = (int)top(2);
@@ -114,7 +90,7 @@ Type1Interp::vector_command(int cmd)
 	    vec(vector, vectoroff) = vec(&_scratch_vector, offset);
 	break;
     
-      case cLoad:
+      case CS::cLoad:
 	CHECK_STACK(3);
 	which_vector = (int)top(2);
 	offset = (int)top(1);
@@ -144,15 +120,15 @@ Type1Interp::vector_command(int cmd)
 }
 
 bool
-Type1Interp::blend_command()
+CharstringInterp::blend_command()
 {
-    const int cmd = cBlend;
+    const int cmd = CS::cBlend;
     CHECK_STACK(1);
     int nargs = (int)pop();
   
     Vector<double> *weight = weight_vector();
     if (!weight)
-	return error(errVector, cBlend);
+	return error(errVector, cmd);
   
     int nmasters = weight->size();
     CHECK_STACK(nargs * nmasters);
@@ -170,14 +146,14 @@ Type1Interp::blend_command()
 }
 
 bool
-Type1Interp::roll_command()
+CharstringInterp::roll_command()
 {
-    const int cmd = cRoll;
+    const int cmd = CS::cRoll;
     CHECK_STACK(2);
     int amount = (int)pop();
     int n = (int)pop();
     if (n <= 0)
-	return error(errValue, cRoll);
+	return error(errValue, cmd);
     CHECK_STACK(n);
   
     int base = _sp - n;
@@ -195,46 +171,46 @@ Type1Interp::roll_command()
 }
 
 bool
-Type1Interp::arith_command(int cmd)
+CharstringInterp::arith_command(int cmd)
 {
     int i;
     double d;
   
     switch (cmd) {
     
-      case cBlend:
+      case CS::cBlend:
 	return blend_command();
     
-      case cAbs:
+      case CS::cAbs:
 	CHECK_STACK(1);
 	if (top() < 0)
 	    top() = -top();
 	break;
     
-      case cAdd:
+      case CS::cAdd:
 	CHECK_STACK(1);
 	d = pop();
 	top() += d;
 	break;
     
-      case cSub:
+      case CS::cSub:
 	CHECK_STACK(1);
 	d = pop();
 	top() -= d;
 	break;
     
-      case cDiv:
+      case CS::cDiv:
 	CHECK_STACK(2);
 	d = pop();
 	top() /= d;
 	break;
     
-      case cNeg:
+      case CS::cNeg:
 	CHECK_STACK(1);
 	top() = -top();
 	break;
     
-      case cRandom: {
+      case CS::cRandom: {
 	  double d;
 	  do {
 	      d = random() / ((double)RAND_MAX);
@@ -243,32 +219,32 @@ Type1Interp::arith_command(int cmd)
 	  break;
       }
     
-      case cMul:
+      case CS::cMul:
 	CHECK_STACK(2);
 	d = pop();
 	top() *= d;
 	break;
     
-      case cSqrt:
+      case CS::cSqrt:
 	CHECK_STACK(1);
 	if (top() < 0)
-	    return error(errValue, cSqrt);
+	    return error(errValue, cmd);
 	top() = sqrt(top());
 	break;
     
-      case cDrop:
+      case CS::cDrop:
 	CHECK_STACK(1);
 	pop();
 	break;
     
-      case cExch:
+      case CS::cExch:
 	CHECK_STACK(2);
 	d = top(0);
 	top(0) = top(1);
 	top(1) = d;
 	break;
     
-      case cIndex:
+      case CS::cIndex:
 	CHECK_STACK(1);
 	i = (int)top();
 	if (i < 0)
@@ -277,47 +253,47 @@ Type1Interp::arith_command(int cmd)
 	top() = top(i+1);
 	break;
     
-      case cRoll:
+      case CS::cRoll:
 	return roll_command();
     
-      case cDup:
+      case CS::cDup:
 	CHECK_STACK(1);
 	push(top());
 	break;
     
-      case cAnd:
+      case CS::cAnd:
 	CHECK_STACK(2);
 	d = pop();
 	top() = (top() != 0) && (d != 0);
 	break;
     
-      case cOr:
+      case CS::cOr:
 	CHECK_STACK(2);
 	d = pop();
 	top() = (top() != 0) || (d != 0);
 	break;
     
-      case cNot:
+      case CS::cNot:
 	CHECK_STACK(1);
 	top() = (top() == 0);
 	break;
     
-      case cEq:
+      case CS::cEq:
 	CHECK_STACK(2);
 	d = pop();
 	top() = (top() == d);
 	break;
     
-      case cIfelse:
+      case CS::cIfelse:
 	CHECK_STACK(4);
 	if (top(1) > top(0))
 	    top(3) = top(2);
 	pop(3);
 	break;
     
-      case cPop:
+      case CS::cPop:
 	if (ps_size() < 1)
-	    return error(errUnderflow, cPop);
+	    return error(errUnderflow, cmd);
 	push(ps_pop());
 	break;
     
@@ -336,13 +312,13 @@ Type1Interp::arith_command(int cmd)
 }
 
 bool
-Type1Interp::callsubr_command()
+CharstringInterp::callsubr_command()
 {
-    const int cmd = cCallsubr;
+    const int cmd = CS::cCallsubr;
     CHECK_STACK(1);
     int which = (int)pop();
 
-    EfontCharstring *subr_cs = get_subr(which);
+    Charstring *subr_cs = get_subr(which);
     if (!subr_cs)
 	return error(errSubr, which);
 
@@ -354,13 +330,13 @@ Type1Interp::callsubr_command()
 }
 
 bool
-Type1Interp::callgsubr_command()
+CharstringInterp::callgsubr_command()
 {
-    const int cmd = cCallgsubr;
+    const int cmd = CS::cCallgsubr;
     CHECK_STACK(1);
     int which = (int)pop();
 
-    EfontCharstring *subr_cs = get_gsubr(which);
+    Charstring *subr_cs = get_gsubr(which);
     if (!subr_cs)
 	return error(errSubr, which);
 
@@ -372,7 +348,7 @@ Type1Interp::callgsubr_command()
 }
 
 bool
-Type1Interp::mm_command(int command, int on_stack)
+CharstringInterp::mm_command(int command, int on_stack)
 {
     Vector<double> *weight = weight_vector();
     if (!weight)
@@ -380,11 +356,11 @@ Type1Interp::mm_command(int command, int on_stack)
   
     int nargs;
     switch (command) {
-      case othcMM1: nargs = 1; break;
-      case othcMM2: nargs = 2; break;
-      case othcMM3: nargs = 3; break;
-      case othcMM4: nargs = 4; break;
-      case othcMM6: nargs = 6; break;
+      case CS::othcMM1: nargs = 1; break;
+      case CS::othcMM2: nargs = 2; break;
+      case CS::othcMM3: nargs = 3; break;
+      case CS::othcMM4: nargs = 4; break;
+      case CS::othcMM6: nargs = 6; break;
       default: return error(errInternal, command);
     }
   
@@ -410,7 +386,7 @@ Type1Interp::mm_command(int command, int on_stack)
 }
 
 bool
-Type1Interp::itc_command(int command, int on_stack)
+CharstringInterp::itc_command(int command, int on_stack)
 {
     Vector<double> *weight = weight_vector();
     if (!weight)
@@ -419,7 +395,7 @@ Type1Interp::itc_command(int command, int on_stack)
     int base = size() - on_stack;
     switch (command) {
 
-      case othcITC_load: {
+      case CS::othcITC_load: {
 	  if (on_stack != 1)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base);
@@ -428,7 +404,7 @@ Type1Interp::itc_command(int command, int on_stack)
 	  break;
       }
 
-      case othcITC_put: {
+      case CS::othcITC_put: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base+1);
@@ -436,7 +412,7 @@ Type1Interp::itc_command(int command, int on_stack)
 	  break;
       }
    
-      case othcITC_get: {
+      case CS::othcITC_get: {
 	  if (on_stack != 1)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base);
@@ -444,35 +420,35 @@ Type1Interp::itc_command(int command, int on_stack)
 	  break;
       }
    
-      case othcITC_add: {
+      case CS::othcITC_add: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) + at(base+1));
 	  break;
       }
 	
-      case othcITC_sub: {
+      case CS::othcITC_sub: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) - at(base+1));
 	  break;
       }
    
-      case othcITC_mul: {
+      case CS::othcITC_mul: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) * at(base+1));
 	  break;
       }
    
-      case othcITC_div: {
+      case CS::othcITC_div: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) / at(base+1));
 	  break;
       }
    
-      case othcITC_ifelse: {
+      case CS::othcITC_ifelse: {
 	  if (on_stack != 4)
 	      return error(errOthersubr, command);
 	  if (at(base+2) <= at(base+3))
@@ -492,34 +468,34 @@ Type1Interp::itc_command(int command, int on_stack)
 }
 
 bool
-Type1Interp::callothersubr_command(int othersubrnum, int n)
+CharstringInterp::callothersubr_command(int othersubrnum, int n)
 {
     switch (othersubrnum) {
     
-      case othcReplacehints:
+      case CS::othcReplacehints:
 	if (n != 1)
 	    goto unknown;
 	ps_clear();
 	ps_push(top());
 	break;
     
-      case othcMM1:
-      case othcMM2:
-      case othcMM3:
-      case othcMM4:
-      case othcMM6:
+      case CS::othcMM1:
+      case CS::othcMM2:
+      case CS::othcMM3:
+      case CS::othcMM4:
+      case CS::othcMM6:
 	return mm_command(othersubrnum, n);
 
-      case othcITC_load:
-      case othcITC_add:
-      case othcITC_sub:
-      case othcITC_mul:
-      case othcITC_div:
-      case othcITC_put:
-      case othcITC_get:
-      case othcITC_unknown:
-      case othcITC_ifelse:
-      case othcITC_random:
+      case CS::othcITC_load:
+      case CS::othcITC_add:
+      case CS::othcITC_sub:
+      case CS::othcITC_mul:
+      case CS::othcITC_div:
+      case CS::othcITC_put:
+      case CS::othcITC_get:
+      case CS::othcITC_unknown:
+      case CS::othcITC_ifelse:
+      case CS::othcITC_random:
 	return itc_command(othersubrnum, n);
     
       default:			// unknown
@@ -536,18 +512,18 @@ Type1Interp::callothersubr_command(int othersubrnum, int n)
 }
 
 bool
-Type1Interp::type1_command(int cmd)
+CharstringInterp::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case cEndchar:
+      case CS::cEndchar:
 	set_done();
 	return false;
     
-      case cReturn:
+      case CS::cReturn:
 	return false;
 
-      case cHsbw:
+      case CS::cHsbw:
 	CHECK_STACK(2);
 	_lsbx = at(0);
 	_lsby = 0;
@@ -555,7 +531,7 @@ Type1Interp::type1_command(int cmd)
 	char_width(cmd, at(1), 0);
 	break;
 
-      case cSbw:
+      case CS::cSbw:
 	CHECK_STACK(4);
 	_lsbx = at(0);
 	_lsby = at(1);
@@ -563,16 +539,16 @@ Type1Interp::type1_command(int cmd)
 	char_width(cmd, at(2), at(3));
 	break;
 	
-      case cSeac:
+      case CS::cSeac:
 	CHECK_STACK(5);
 	char_seac(cmd, at(0), at(1), at(2), (int)at(3), (int)at(4));
 	clear();
 	return false;
 
-      case cCallsubr:
+      case CS::cCallsubr:
 	return callsubr_command();
     
-      case cCallothersubr: {
+      case CS::cCallothersubr: {
 	  CHECK_STACK(2);
 	  int othersubrnum = (int)top(0);
 	  int n = (int)top(1);
@@ -582,112 +558,112 @@ Type1Interp::type1_command(int cmd)
 	  return callothersubr_command(othersubrnum, n);
       }
     
-      case cPut:
-      case cGet:
-      case cStore:
-      case cLoad:
+      case CS::cPut:
+      case CS::cGet:
+      case CS::cStore:
+      case CS::cLoad:
 	return vector_command(cmd);
     
-      case cBlend:
-      case cAbs:
-      case cAdd:
-      case cSub:
-      case cDiv:
-      case cNeg:
-      case cRandom:
-      case cMul:
-      case cSqrt:
-      case cDrop:
-      case cExch:
-      case cIndex:
-      case cRoll:
-      case cDup:
-      case cAnd:
-      case cOr:
-      case cNot:
-      case cEq:
-      case cIfelse:
-      case cPop:
+      case CS::cBlend:
+      case CS::cAbs:
+      case CS::cAdd:
+      case CS::cSub:
+      case CS::cDiv:
+      case CS::cNeg:
+      case CS::cRandom:
+      case CS::cMul:
+      case CS::cSqrt:
+      case CS::cDrop:
+      case CS::cExch:
+      case CS::cIndex:
+      case CS::cRoll:
+      case CS::cDup:
+      case CS::cAnd:
+      case CS::cOr:
+      case CS::cNot:
+      case CS::cEq:
+      case CS::cIfelse:
+      case CS::cPop:
 	return arith_command(cmd);
 
-      case cHlineto:
+      case CS::cHlineto:
 	CHECK_STACK(1);
 	char_rlineto(cmd, at(0), 0);
 	break;
 	
-      case cHmoveto:
+      case CS::cHmoveto:
 	CHECK_STACK(1);
 	char_rmoveto(cmd, at(0), 0);
 	break;
 	
-      case cHvcurveto:
+      case CS::cHvcurveto:
 	CHECK_STACK(4);
 	char_rrcurveto(cmd, at(0), 0, at(1), at(2), 0, at(3));
 	break;
 
-      case cRlineto:
+      case CS::cRlineto:
 	CHECK_STACK(2);
 	char_rlineto(cmd, at(0), at(1));
 	break;
 
-      case cRmoveto:
+      case CS::cRmoveto:
 	CHECK_STACK(2);
 	char_rmoveto(cmd, at(0), at(1));
 	break;
 
-      case cRrcurveto:
+      case CS::cRrcurveto:
 	CHECK_STACK(6);
 	char_rrcurveto(cmd, at(0), at(1), at(2), at(3), at(4), at(5));
 	break;
 
-      case cVhcurveto:
+      case CS::cVhcurveto:
 	CHECK_STACK(4);
 	char_rrcurveto(cmd, 0, at(0), at(1), at(2), at(3), 0);
 	break;
 
-      case cVlineto:
+      case CS::cVlineto:
 	CHECK_STACK(1);
 	char_rlineto(cmd, 0, at(0));
 	break;
 
-      case cVmoveto:
+      case CS::cVmoveto:
 	CHECK_STACK(1);
 	char_rmoveto(cmd, 0, at(0));
 	break;
 
-      case cDotsection:
+      case CS::cDotsection:
 	break;
 
-      case cHstem:
+      case CS::cHstem:
 	CHECK_STACK(2);
 	char_hstem(cmd, _lsby + at(0), at(1));
 	break;
 
-      case cHstem3:
+      case CS::cHstem3:
 	CHECK_STACK(6);
 	char_hstem3(cmd, _lsby + at(0), at(1), _lsby + at(2), at(3), _lsby + at(4), at(5));
 	break;
 
-      case cVstem:
+      case CS::cVstem:
 	CHECK_STACK(2);
 	char_vstem(cmd, _lsbx + at(0), at(1));
 	break;
 
-      case cVstem3:
+      case CS::cVstem3:
 	CHECK_STACK(6);
 	char_vstem3(cmd, _lsbx + at(0), at(1), _lsbx + at(2), at(3), _lsbx + at(4), at(5));
 	break;
 
-      case cSetcurrentpoint:
+      case CS::cSetcurrentpoint:
 	CHECK_STACK(2);
 	char_setcurrentpoint(cmd, at(0), at(1));
 	break;
 
-      case cClosepath:
+      case CS::cClosepath:
 	char_closepath(cmd);
 	break;
 	
-      case cError:
+      case CS::cError:
       default:
 	return error(errUnimplemented, cmd);
     
@@ -701,7 +677,7 @@ Type1Interp::type1_command(int cmd)
 #undef DEBUG_TYPE2
 
 int
-Type1Interp::type2_handle_width(int cmd, bool have_width)
+CharstringInterp::type2_handle_width(int cmd, bool have_width)
 {
     if (have_width) {
 	char_nominal_width_delta(cmd, at(0));
@@ -713,18 +689,18 @@ Type1Interp::type2_handle_width(int cmd, bool have_width)
 }
 
 bool
-Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
+CharstringInterp::type2_command(int cmd, const unsigned char *data, int *left)
 {
     int bottom = 0;
 
 #ifdef DEBUG_TYPE2
-    fprintf(stderr, "%s [%d/%d]\n", Type1Unparser::unparse_command(cmd).cc(), _t2nhints, size());
+    fprintf(stderr, "%s [%d/%d]\n", Charstring::command_name(cmd).cc(), _t2nhints, size());
 #endif
     
     switch (cmd) {
 
-      case cHstem:
-      case cHstemhm:
+      case CS::cHstem:
+      case CS::cHstemhm:
 	CHECK_STACK(2);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
@@ -738,8 +714,8 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	}
 	break;
 
-      case cVstem:
-      case cVstemhm:
+      case CS::cVstem:
+      case CS::cVstemhm:
 	CHECK_STACK(2);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
@@ -753,8 +729,8 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	}
 	break;
 
-      case cHintmask:
-      case cCntrmask:
+      case CS::cHintmask:
+      case CS::cCntrmask:
 	if (_t2state == T2_HSTEM && size() >= 2)
 	    for (double pos = 0; bottom + 1 < size(); bottom += 2) {
 		_t2nhints++;
@@ -772,7 +748,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	*left -= ((_t2nhints - 1) >> 3) + 1;
 	break;
 
-      case cRmoveto:
+      case CS::cRmoveto:
 	CHECK_STACK(2);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 2);
@@ -783,7 +759,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cHmoveto:
+      case CS::cHmoveto:
 	CHECK_STACK(1);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 1);
@@ -794,7 +770,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cVmoveto:
+      case CS::cVmoveto:
 	CHECK_STACK(1);
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 1);
@@ -805,14 +781,14 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cRlineto:
+      case CS::cRlineto:
 	CHECK_STACK(2);
 	CHECK_STATE();
 	for (; bottom + 1 < size(); bottom += 2)
 	    char_rlineto(cmd, at(bottom), at(bottom + 1));
 	break;
 	
-      case cHlineto:
+      case CS::cHlineto:
 	CHECK_STACK(1);
 	CHECK_STATE();
 	while (bottom < size()) {
@@ -822,7 +798,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	}
 	break;
 	
-      case cVlineto:
+      case CS::cVlineto:
 	CHECK_STACK(1);
 	CHECK_STATE();
 	while (bottom < size()) {
@@ -832,14 +808,14 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	}
 	break;
 
-      case cRrcurveto:
+      case CS::cRrcurveto:
 	CHECK_STACK(6);
 	CHECK_STATE();
 	for (; bottom + 5 < size(); bottom += 6)
 	    char_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
 	break;
 
-      case cHhcurveto:
+      case CS::cHhcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	if (size() % 2 == 1) {
@@ -850,7 +826,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	    char_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), at(bottom + 3), 0);
 	break;
 
-      case cHvcurveto:
+      case CS::cHvcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	while (bottom + 3 < size()) {
@@ -869,7 +845,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cRcurveline:
+      case CS::cRcurveline:
 	CHECK_STACK(8);
 	CHECK_STATE();
 	for (; bottom + 7 < size(); bottom += 6)
@@ -880,7 +856,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cRlinecurve:
+      case CS::cRlinecurve:
 	CHECK_STACK(8);
 	CHECK_STATE();
 	for (; bottom + 7 < size(); bottom += 2)
@@ -891,7 +867,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cVhcurveto:
+      case CS::cVhcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	while (bottom + 3 < size()) {
@@ -910,7 +886,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cVvcurveto:
+      case CS::cVvcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	if (size() % 2 == 1) {
@@ -921,7 +897,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	    char_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), 0, at(bottom + 3));
 	break;
 
-      case cFlex:
+      case CS::cFlex:
 	CHECK_STACK(13);
 	CHECK_STATE();
 	assert(bottom == 0);
@@ -934,7 +910,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cHflex:
+      case CS::cHflex:
 	CHECK_STACK(7);
 	CHECK_STATE();
 	assert(bottom == 0);
@@ -947,7 +923,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cHflex1:
+      case CS::cHflex1:
 	CHECK_STACK(9);
 	CHECK_STATE();
 	assert(bottom == 0);
@@ -960,7 +936,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
 	break;
 
-      case cFlex1: {
+      case CS::cFlex1: {
 	  CHECK_STACK(11);
 	  CHECK_STATE();
 	  assert(bottom == 0);
@@ -982,7 +958,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 #endif
       }
 	
-      case cEndchar:
+      case CS::cEndchar:
 	if (_t2state == T2_INITIAL)
 	    bottom = type2_handle_width(cmd, size() > 0 && size() != 4);
 	if (bottom + 3 < size() && _t2state == T2_INITIAL)
@@ -991,47 +967,47 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	clear();
 	return false;
     
-      case cReturn:
+      case CS::cReturn:
 	return false;
 
-      case cCallsubr:
+      case CS::cCallsubr:
 	return callsubr_command();
 
-      case cCallgsubr:
+      case CS::cCallgsubr:
 	return callgsubr_command();
     
-      case cPut:
-      case cGet:
-      case cStore:
-      case cLoad:
+      case CS::cPut:
+      case CS::cGet:
+      case CS::cStore:
+      case CS::cLoad:
 	return vector_command(cmd);
     
-      case cBlend:
-      case cAbs:
-      case cAdd:
-      case cSub:
-      case cDiv:
-      case cNeg:
-      case cRandom:
-      case cMul:
-      case cSqrt:
-      case cDrop:
-      case cExch:
-      case cIndex:
-      case cRoll:
-      case cDup:
-      case cAnd:
-      case cOr:
-      case cNot:
-      case cEq:
-      case cIfelse:
-      case cPop:
+      case CS::cBlend:
+      case CS::cAbs:
+      case CS::cAdd:
+      case CS::cSub:
+      case CS::cDiv:
+      case CS::cNeg:
+      case CS::cRandom:
+      case CS::cMul:
+      case CS::cSqrt:
+      case CS::cDrop:
+      case CS::cExch:
+      case CS::cIndex:
+      case CS::cRoll:
+      case CS::cDup:
+      case CS::cAnd:
+      case CS::cOr:
+      case CS::cNot:
+      case CS::cEq:
+      case CS::cIfelse:
+      case CS::cPop:
 	return arith_command(cmd);
 
-      case cDotsection:
+      case CS::cDotsection:
 	break;
 
-      case cError:
+      case CS::cError:
       default:
 	return error(errUnimplemented, cmd);
     
@@ -1048,18 +1024,18 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 
 
 void
-Type1Interp::char_sidebearing(int cmd, double, double)
+CharstringInterp::char_sidebearing(int cmd, double, double)
 {
     error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_width(int, double, double)
+CharstringInterp::char_width(int, double, double)
 {
 }
 
 void
-Type1Interp::char_default_width(int cmd)
+CharstringInterp::char_default_width(int cmd)
 {
     double d = (_program ? _program->global_width_x(false) : UNKDOUBLE);
     if (KNOWN(d))
@@ -1067,7 +1043,7 @@ Type1Interp::char_default_width(int cmd)
 }
 
 void
-Type1Interp::char_nominal_width_delta(int cmd, double delta)
+CharstringInterp::char_nominal_width_delta(int cmd, double delta)
 {
     double d = (_program ? _program->global_width_x(true) : UNKDOUBLE);
     if (KNOWN(d))
@@ -1075,37 +1051,37 @@ Type1Interp::char_nominal_width_delta(int cmd, double delta)
 }
 
 void
-Type1Interp::char_seac(int cmd, double, double, double, int, int)
+CharstringInterp::char_seac(int cmd, double, double, double, int, int)
 {
     error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_rmoveto(int cmd, double, double)
+CharstringInterp::char_rmoveto(int cmd, double, double)
 {
     error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_setcurrentpoint(int cmd, double, double)
+CharstringInterp::char_setcurrentpoint(int cmd, double, double)
 {
     error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_rlineto(int cmd, double dx, double dy)
+CharstringInterp::char_rlineto(int cmd, double dx, double dy)
 {
     char_rrcurveto(cmd, 0, 0, dx, dy, 0, 0);
 }
 
 void
-Type1Interp::char_rrcurveto(int cmd, double, double, double, double, double, double)
+CharstringInterp::char_rrcurveto(int cmd, double, double, double, double, double, double)
 {
     error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_flex(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3, double dx4, double dy4, double dx5, double dy5, double dx6, double dy6, double flex_depth)
+CharstringInterp::char_flex(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3, double dx4, double dy4, double dx5, double dy5, double dx6, double dy6, double flex_depth)
 {
     (void) flex_depth;
     char_rrcurveto(cmd, dx1, dy1, dx2, dy2, dx3, dy3);
@@ -1113,25 +1089,25 @@ Type1Interp::char_flex(int cmd, double dx1, double dy1, double dx2, double dy2, 
 }
 
 void
-Type1Interp::char_closepath(int cmd)
+CharstringInterp::char_closepath(int cmd)
 {
     error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_hstem(int, double, double)
+CharstringInterp::char_hstem(int, double, double)
 {
     /* do nothing */
 }
 
 void
-Type1Interp::char_vstem(int, double, double)
+CharstringInterp::char_vstem(int, double, double)
 {
     /* do nothing */
 }
 
 void
-Type1Interp::char_hstem3(int cmd, double y0, double dy0, double y1, double dy1, double y2, double dy2)
+CharstringInterp::char_hstem3(int cmd, double y0, double dy0, double y1, double dy1, double y2, double dy2)
 {
     char_hstem(cmd, y0, dy0);
     char_hstem(cmd, y1, dy1);
@@ -1139,7 +1115,7 @@ Type1Interp::char_hstem3(int cmd, double y0, double dy0, double y1, double dy1, 
 }
 
 void
-Type1Interp::char_vstem3(int cmd, double x0, double dx0, double x1, double dx1, double x2, double dx2)
+CharstringInterp::char_vstem3(int cmd, double x0, double dx0, double x1, double dx1, double x2, double dx2)
 {
     char_vstem(cmd, x0, dx0);
     char_vstem(cmd, x1, dx1);

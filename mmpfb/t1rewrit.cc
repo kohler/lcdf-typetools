@@ -107,8 +107,8 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 
     if (frac != 0) {
 	_ncs.append((char)(_precision + 139));
-	_ncs.append((char)Type1Interp::cEscape);
-	_ncs.append((char)(Type1Interp::cDiv - Type1Interp::cEscapeDelta));
+	_ncs.append((char)Charstring::cEscape);
+	_ncs.append((char)(Charstring::cDiv - Charstring::cEscapeDelta));
     }
 
     float_val = (double)big_val / _precision;
@@ -132,17 +132,17 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 void
 Type1CharstringGen::gen_command(int command)
 {
-    if (command >= Type1Interp::cEscapeDelta) {
-	_ncs.append((char)Type1Interp::cEscape);
-	_ncs.append((char)(command - Type1Interp::cEscapeDelta));
+    if (command >= Charstring::cEscapeDelta) {
+	_ncs.append((char)Charstring::cEscape);
+	_ncs.append((char)(command - Charstring::cEscapeDelta));
     } else
 	_ncs.append((char)command);
 }
 
 void
-Type1CharstringGen::gen_stack(Type1Interp &interp, int for_cmd)
+Type1CharstringGen::gen_stack(CharstringInterp &interp, int for_cmd)
 {
-    const char *str = (for_cmd <= Type1Interp::cLastCommand ? command_desc[for_cmd] : (const char *)0);
+    const char *str = (for_cmd <= Charstring::cLastCommand ? command_desc[for_cmd] : (const char *)0);
     int i;
     for (i = 0; str && *str && i < interp.size(); i++, str++)
 	gen_number(interp.at(i), *str);
@@ -170,7 +170,7 @@ Type1CharstringGen::output(Type1Charstring &cs)
  * HintReplacementDetector
  **/
 
-class HintReplacementDetector : public Type1Interp {
+class HintReplacementDetector : public CharstringInterp {
 
     Vector<int> _hint_replacements;
     Vector<int> _call_counts;
@@ -192,7 +192,7 @@ class HintReplacementDetector : public Type1Interp {
 };
 
 HintReplacementDetector::HintReplacementDetector(Type1Font *f, Vector<double> *wv, int b)
-    : Type1Interp(f, wv),
+    : CharstringInterp(f, wv),
       _hint_replacements(f->nsubrs(), 0), _call_counts(f->nsubrs(), 0),
       _count_calls_below(b)
 {
@@ -202,7 +202,7 @@ void
 HintReplacementDetector::init()
 {
     _subr_level = 0;
-    Type1Interp::init();
+    CharstringInterp::init();
 }
 
 bool
@@ -210,36 +210,36 @@ HintReplacementDetector::type1_command(int cmd)
 {
     switch (cmd) {
 	
-      case cCallothersubr: {
+      case CS::cCallothersubr: {
 	  if (size() < 2)
 	      goto unknown;
 	  int command = (int)top(0);
 	  int n = (int)top(1);
-	  if (command == othcReplacehints && n == 1) {
+	  if (command == CS::othcReplacehints && n == 1) {
 	      pop(2);
 	      _hint_replacements[(int)top()] = 1;
 	      ps_clear();
 	      ps_push(top());
 	      pop();
 	      break;
-	  } else if (command >= othcMM1 && command <= othcMM6) {
+	  } else if (command >= CS::othcMM1 && command <= CS::othcMM6) {
 	      pop(2);
 	      return mm_command(command, n);
-	  } else if (command >= othcITC_load && command <= othcITC_random) {
+	  } else if (command >= CS::othcITC_load && command <= CS::othcITC_random) {
 	      pop(2);
 	      return itc_command(command, n);
 	  } else
 	      goto unknown;
       }
 
-      case cCallsubr: {
+      case CS::cCallsubr: {
 	  if (size() < 1)
 	      return error(errUnderflow, cmd);
 	  int which = (int)pop();
 	  if (!_count_calls_below || _subr_level < _count_calls_below)
 	      _call_counts[which]++;
      
-	  EfontCharstring *subr_cs = get_subr(which);
+	  Charstring *subr_cs = get_subr(which);
 	  if (!subr_cs)
 	      return error(errSubr, which);
 
@@ -252,32 +252,32 @@ HintReplacementDetector::type1_command(int cmd)
 	  return !done();
       }
 
-      case cEndchar:
-      case cReturn:
-	return Type1Interp::type1_command(cmd);
+      case CS::cEndchar:
+      case CS::cReturn:
+	return CharstringInterp::type1_command(cmd);
     
-      case cBlend:
-      case cAbs:
-      case cAdd:
-      case cSub:
-      case cDiv:
-      case cNeg:
-      case cRandom:
-      case cMul:
-      case cSqrt:
-      case cDrop:
-      case cExch:
-      case cIndex:
-      case cRoll:
-      case cDup:
-      case cAnd:
-      case cOr:
-      case cNot:
-      case cEq:
-      case cIfelse:
+      case CS::cBlend:
+      case CS::cAbs:
+      case CS::cAdd:
+      case CS::cSub:
+      case CS::cDiv:
+      case CS::cNeg:
+      case CS::cRandom:
+      case CS::cMul:
+      case CS::cSqrt:
+      case CS::cDrop:
+      case CS::cExch:
+      case CS::cIndex:
+      case CS::cRoll:
+      case CS::cDup:
+      case CS::cAnd:
+      case CS::cOr:
+      case CS::cNot:
+      case CS::cEq:
+      case CS::cIfelse:
 	return arith_command(cmd);
 
-      case cPop:
+      case CS::cPop:
 	if (ps_size() >= 1)
 	    push(ps_pop());
 	break;
@@ -304,7 +304,7 @@ HintReplacementDetector::run(Type1Charstring &cs)
  * Type1OneMMRemover
  **/
 
-class Type1OneMMRemover: public Type1Interp {
+class Type1OneMMRemover: public CharstringInterp {
   
     Type1MMRemover *_remover;
     Type1CharstringGen _prefix_gen;
@@ -364,7 +364,7 @@ class Type1OneMMRemover: public Type1Interp {
 
 
 Type1OneMMRemover::Type1OneMMRemover(Type1MMRemover *remover)
-    : Type1Interp(remover->program(), remover->weight_vector()),
+    : CharstringInterp(remover->program(), remover->weight_vector()),
       _remover(remover), _prefix_gen(remover->precision()),
       _main_gen(remover->precision())
 {
@@ -375,7 +375,7 @@ Type1OneMMRemover::init()
 {
     Vector<double> *scratch = scratch_vector();
     scratch->assign(scratch->size(), UNKDOUBLE);
-    Type1Interp::init();
+    CharstringInterp::init();
 }
 
 inline void
@@ -398,7 +398,7 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
     int base = size() - on_stack - 2;
     switch (command) {
 
-      case othcITC_load: {
+      case CS::othcITC_load: {
 	  if (on_stack != 1)
 	      return false;
 	  int offset = (int)at(base);
@@ -409,13 +409,13 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	  if (gen) {
 	      gen->gen_number(offset);
 	      gen->gen_number(1);
-	      gen->gen_number(othcITC_load);
-	      gen->gen_command(cCallothersubr);
+	      gen->gen_number(CS::othcITC_load);
+	      gen->gen_command(CS::cCallothersubr);
 	  }
 	  break;
       }
 
-      case othcITC_put: {
+      case CS::othcITC_put: {
 	  if (on_stack != 2)
 	      return false;
 	  int offset = (int)at(base+1);
@@ -426,13 +426,13 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	      gen->gen_number(at(base));
 	      gen->gen_number(offset);
 	      gen->gen_number(2);
-	      gen->gen_number(othcITC_put);
-	      gen->gen_command(cCallothersubr);
+	      gen->gen_number(CS::othcITC_put);
+	      gen->gen_command(CS::cCallothersubr);
 	  }
 	  break;
       }
    
-      case othcITC_get: {
+      case CS::othcITC_get: {
 	  if (on_stack != 1)
 	      return false;
 	  int offset = (int)at(base);
@@ -445,35 +445,35 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	  break;
       }
    
-      case othcITC_add: {
+      case CS::othcITC_add: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) + at(base+1));
 	  break;
       }
    
-      case othcITC_sub: {
+      case CS::othcITC_sub: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) - at(base+1));
 	  break;
       }
    
-      case othcITC_mul: {
+      case CS::othcITC_mul: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) * at(base+1));
 	  break;
       }
    
-      case othcITC_div: {
+      case CS::othcITC_div: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) / at(base+1));
 	  break;
       }
    
-      case othcITC_ifelse: {
+      case CS::othcITC_ifelse: {
 	  if (on_stack != 4)
 	      return false;
 	  if (at(base+2) <= at(base+3))
@@ -497,19 +497,19 @@ Type1OneMMRemover::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case cCallothersubr: {
+      case CS::cCallothersubr: {
 	  // Expand known othersubr calls. If we cannot expand the othersubr
 	  // call completely, then write it to the expander.
 	  if (size() < 2)
 	      goto partial_othersubr;
 	  int command = (int)top(0);
 	  int n = (int)top(1);
-	  if (command >= othcITC_load && command <= othcITC_random) {
+	  if (command >= CS::othcITC_load && command <= CS::othcITC_random) {
 	      if (!itc_complained)
 		  itc_complain();
 	      if (size() < 2 + n || !itc_command(command, n))
 		  goto partial_othersubr;
-	  } else if (command >= othcMM1 && command <= othcMM6) {
+	  } else if (command >= CS::othcMM1 && command <= CS::othcMM6) {
 	      if (size() < 2 + n)
 		  goto partial_othersubr;
 	      pop(2);
@@ -525,11 +525,11 @@ Type1OneMMRemover::type1_command(int cmd)
 	      goto normal;
 	  }
 	  _prefix_gen.gen_stack(*this, 0);
-	  _prefix_gen.gen_command(cCallothersubr);
+	  _prefix_gen.gen_command(CS::cCallothersubr);
 	  break;
       }
    
-      case cCallsubr: {
+      case CS::cCallsubr: {
 	  // expand subroutines in line if necessary
 	  if (size() < 1)
 	      goto normal;
@@ -547,24 +547,24 @@ Type1OneMMRemover::type1_command(int cmd)
 	  break;
       }
    
-      case cPop:
+      case CS::cPop:
 	if (ps_size() >= 1)
 	    push(ps_pop());
 	else if (_in_prefix && ps_size() == 0) {
 	    _prefix_gen.gen_stack(*this, 0);
-	    _prefix_gen.gen_command(cPop);
+	    _prefix_gen.gen_command(CS::cPop);
 	} else
 	    goto normal;
 	break;
     
-      case cDiv:
+      case CS::cDiv:
 	if (size() < 2)
 	    goto normal;
 	top(1) /= top(0);
 	pop();
 	break;
     
-      case cReturn:
+      case CS::cReturn:
 	return false;
     
       normal:
@@ -572,7 +572,7 @@ Type1OneMMRemover::type1_command(int cmd)
 	_main_gen.gen_stack(*this, cmd);
 	_main_gen.gen_command(cmd);
 	_in_prefix = 0;
-	return (cmd != cEndchar);
+	return (cmd != CS::cEndchar);
     
     }
     return true;
@@ -594,14 +594,14 @@ Type1OneMMRemover::run(const Type1Charstring &cs,
     cs.run(*this);
 
     if (in_subr) {
-	_main_gen.gen_stack(*this, cReturn);
-	_main_gen.gen_command(cReturn);
+	_main_gen.gen_stack(*this, CS::cReturn);
+	_main_gen.gen_command(CS::cReturn);
     }
     if (_must_expand)
 	return true;
     if (fresh && in_subr) {
 	if (_main_gen.length() == 0
-	    || (_main_gen.length() == 1 && _main_gen.data()[0] == cReturn))
+	    || (_main_gen.length() == 1 && _main_gen.data()[0] == CS::cReturn))
 	    return true;
     }
     return false;
@@ -629,7 +629,7 @@ Type1Charstring *
 Type1OneMMRemover::output_prefix()
 {
     if (_prefix_gen.length() > 0) {
-	_prefix_gen.gen_command(cReturn);
+	_prefix_gen.gen_command(CS::cReturn);
 	return _prefix_gen.output();
     } else
 	return 0;
@@ -646,7 +646,7 @@ Type1OneMMRemover::output_main(Type1Charstring &cs)
  * Type1BadCallRemover
  **/
 
-class Type1BadCallRemover: public Type1Interp {
+class Type1BadCallRemover: public CharstringInterp {
 
     Type1CharstringGen _gen;
   
@@ -661,7 +661,7 @@ class Type1BadCallRemover: public Type1Interp {
 };
 
 Type1BadCallRemover::Type1BadCallRemover(Type1MMRemover *remover)
-    : Type1Interp(remover->program(), remover->weight_vector()),
+    : CharstringInterp(remover->program(), remover->weight_vector()),
       _gen(remover->precision())
 {
 }
@@ -671,7 +671,7 @@ Type1BadCallRemover::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case cCallsubr: {
+      case CS::cCallsubr: {
 	  if (size() < 1)
 	      goto normal;
 	  int subrno = (int)top();
@@ -686,7 +686,7 @@ Type1BadCallRemover::type1_command(int cmd)
       default:
 	_gen.gen_stack(*this, 0);
 	_gen.gen_command(cmd);
-	return (cmd != cEndchar && cmd != cReturn);
+	return (cmd != CS::cEndchar && cmd != CS::cReturn);
     
     }
 }
@@ -865,7 +865,7 @@ Type1MMRemover::run()
  * SubrExpander
  **/
 
-class SubrExpander : public Type1Interp {
+class SubrExpander : public CharstringInterp {
   
     Type1CharstringGen _gen;
     Vector<bool> _expand;
@@ -886,7 +886,7 @@ class SubrExpander : public Type1Interp {
 };
 
 SubrExpander::SubrExpander(Type1Font *font)
-    : Type1Interp(font, 0), _gen(0), _expand(font->nsubrs(), false)
+    : CharstringInterp(font, 0), _gen(0), _expand(font->nsubrs(), false)
 {
 }
 
@@ -894,7 +894,7 @@ void
 SubrExpander::init()
 {
     _subr_level = 0;
-    Type1Interp::init();
+    CharstringInterp::init();
 }
 
 bool
@@ -902,11 +902,11 @@ SubrExpander::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case cCallsubr: {
+      case CS::cCallsubr: {
 	  if (size() < 1)
 	      goto unknown;
 	  int which = (int)top(0);
-	  EfontCharstring *subr_cs = get_subr(which);
+	  Charstring *subr_cs = get_subr(which);
 	  if (!subr_cs || !_expand[which])
 	      goto unknown;
 	  pop();
@@ -916,11 +916,11 @@ SubrExpander::type1_command(int cmd)
 	  return !done();
       }
    
-      case cEndchar:
+      case CS::cEndchar:
 	set_done();
 	goto end_cs;
     
-      case cReturn:
+      case CS::cReturn:
 	if (_subr_level)
 	    return false;
 	goto end_cs;

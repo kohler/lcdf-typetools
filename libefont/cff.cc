@@ -421,7 +421,7 @@ subr_bias(int charstring_type, int nsubrs)
 	return 32768;
 }
 
-EfontCharstring *
+Charstring *
 EfontCFF::gsubr(int i)
 {
     i += subr_bias(2, ngsubrs());
@@ -1115,7 +1115,7 @@ EfontCFF::Font::assign_standard_encoding(const int *standard_encoding)
     return 0;
 }
 
-EfontCharstring *
+Charstring *
 EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 {
     const unsigned char *s1 = iiter[which];
@@ -1129,7 +1129,7 @@ EfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 	return new Type2Charstring(cs);
 }
 
-EfontCharstring *
+Charstring *
 EfontCFF::Font::subr(int i) const
 {
     i += subr_bias(_charstring_type, nsubrs());
@@ -1140,7 +1140,7 @@ EfontCFF::Font::subr(int i) const
     return _subrs_cs[i];
 }
 
-EfontCharstring *
+Charstring *
 EfontCFF::Font::gsubr(int i) const
 {
     return _cff->gsubr(i);
@@ -1163,7 +1163,7 @@ EfontCFF::Font::glyph_names(Vector<PermString> &gnames) const
 	gnames[i] = _cff->sid_permstring(_charset.gid_to_sid(i));
 }
 
-EfontCharstring *
+Charstring *
 EfontCFF::Font::glyph(int gid) const
 {
     if (gid < 0 || gid >= nglyphs())
@@ -1173,7 +1173,7 @@ EfontCFF::Font::glyph(int gid) const
     return _charstrings_cs[gid];
 }
 
-EfontCharstring *
+Charstring *
 EfontCFF::Font::glyph(PermString name) const
 {
     int gid = _charset.sid_to_gid(_cff->sid(name));

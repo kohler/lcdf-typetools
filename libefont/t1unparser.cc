@@ -4,13 +4,13 @@
 #include "t1unparser.hh"
 
 Type1Unparser::Type1Unparser()
-    : Type1Interp(0, 0),
+    : CharstringInterp(0, 0),
       _one_command_per_line(false), _start_of_line(true)
 {
 }
 
 Type1Unparser::Type1Unparser(const Type1Unparser &o)
-    : Type1Interp(o),
+    : CharstringInterp(o),
       _one_command_per_line(o._one_command_per_line),
       _start_of_line(o._start_of_line)
 {
@@ -43,8 +43,8 @@ Type1Unparser::type1_command(int cmd)
 	_start_of_line = false;
     } else
 	_sa << ' ';
-    if (cmd >= 0 && cmd <= cLastCommand)
-	_sa << command_names[cmd];
+    if (cmd >= 0 && cmd <= CS::cLastCommand)
+	_sa << CS::command_names[cmd];
     else
 	_sa << "UNKNOWN_12_" << (cmd - 32);
     if (_one_command_per_line) {
@@ -70,13 +70,4 @@ Type1Unparser::unparse(const Type1Charstring *cs)
 	return u.value();
     } else
 	return "(null)";
-}
-
-String
-Type1Unparser::unparse_command(int cmd)
-{
-    if (cmd >= 0 && cmd <= cLastCommand)
-	return command_names[cmd];
-    else
-	return String("UNKNOWN_12_") + String(cmd - 32);
 }

@@ -11,10 +11,10 @@
 #define MIN_KNOWN_DOUBLE	-9.69696e97
 #define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
 
-class Type1Interp { public:
+class CharstringInterp { public:
 
-    Type1Interp(const EfontProgram *, Vector<double> *weight = 0);
-    virtual ~Type1Interp()			{ }
+    CharstringInterp(const EfontProgram *, Vector<double> *weight = 0);
+    virtual ~CharstringInterp()			{ }
 
     int error() const				{ return _error; }
     int error_data() const			{ return _error_data; }
@@ -38,9 +38,9 @@ class Type1Interp { public:
     Vector<double> *weight_vector();
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
   
-    EfontCharstring *get_subr(int) const;
-    EfontCharstring *get_gsubr(int) const;
-    EfontCharstring *get_glyph(PermString) const;
+    Charstring *get_subr(int) const;
+    Charstring *get_gsubr(int) const;
+    Charstring *get_glyph(PermString) const;
 
     virtual void init();
     bool error(int c)				{ return error(c, 0); }
@@ -77,98 +77,8 @@ class Type1Interp { public:
     virtual void char_hstem3(int, double, double, double, double, double, double);
     virtual void char_vstem3(int, double, double, double, double, double, double);
 
-    enum Commands {
-	cError		= 0,
-	cHstem		= 1,
-	cVstem		= 3,
-	cVmoveto	= 4,
-	cRlineto	= 5,
-	cHlineto	= 6,
-	cVlineto	= 7,
-	cRrcurveto	= 8,
-	cClosepath	= 9,
-	cCallsubr	= 10,
-	cReturn		= 11,
-	cEscape		= 12,
-	cHsbw		= 13,
-	cEndchar	= 14,
-	cBlend		= 16,
-	cHstemhm	= 18,
-	cHintmask	= 19,
-	cCntrmask	= 20,
-	cRmoveto	= 21,
-	cHmoveto	= 22,
-	cVstemhm	= 23,
-	cRcurveline	= 24,
-	cRlinecurve	= 25,
-	cVvcurveto	= 26,
-	cHhcurveto	= 27,
-	cShortint	= 28,
-	cCallgsubr	= 29,
-	cVhcurveto	= 30,
-	cHvcurveto	= 31,
+    typedef Charstring CS;
     
-	cEscapeDelta	= 32,
-	cDotsection	= 32 + 0,
-	cVstem3		= 32 + 1,
-	cHstem3		= 32 + 2,
-	cAnd		= 32 + 3,
-	cOr		= 32 + 4,
-	cNot		= 32 + 5,
-	cSeac		= 32 + 6,
-	cSbw		= 32 + 7,
-	cStore		= 32 + 8,
-	cAbs		= 32 + 9,
-	cAdd		= 32 + 10,
-	cSub		= 32 + 11,
-	cDiv		= 32 + 12,
-	cLoad		= 32 + 13,
-	cNeg		= 32 + 14,
-	cEq		= 32 + 15,
-	cCallothersubr	= 32 + 16,
-	cPop		= 32 + 17,
-	cDrop		= 32 + 18,
-	cPut		= 32 + 20,
-	cGet		= 32 + 21,
-	cIfelse		= 32 + 22,
-	cRandom		= 32 + 23,
-	cMul		= 32 + 24,
-	cSqrt		= 32 + 26,
-	cDup		= 32 + 27,
-	cExch		= 32 + 28,
-	cIndex		= 32 + 29,
-	cRoll		= 32 + 30,
-	cSetcurrentpoint = 32 + 33,
-	cHflex		= 32 + 34,
-	cFlex		= 32 + 35,
-	cHflex1		= 32 + 36,
-	cFlex1		= 32 + 37,
-
-	cLastCommand	= cFlex1
-    };
-
-    enum OthersubrCommands {
-	othcFlexend = 0,
-	othcFlexbegin = 1,
-	othcFlexmiddle = 2,
-	othcReplacehints = 3,
-	othcMM1 = 14,
-	othcMM2 = 15,
-	othcMM3 = 16,
-	othcMM4 = 17,
-	othcMM6 = 18,
-	othcITC_load = 19,
-	othcITC_add = 20,
-	othcITC_sub = 21,
-	othcITC_mul = 22,
-	othcITC_div = 23,
-	othcITC_put = 24,
-	othcITC_get = 25,
-	othcITC_unknown = 26,
-	othcITC_ifelse = 27,
-	othcITC_random = 28
-    };
-
     enum Errors {
 	errOK		= 0,
 	errInternal	= 1,
@@ -192,8 +102,6 @@ class Type1Interp { public:
     };
 
     enum { STACK_SIZE = 48, PS_STACK_SIZE = 24, SCRATCH_SIZE = 32 };
-
-    static const char * const command_names[];
     
   private:
   
@@ -230,7 +138,7 @@ class Type1Interp { public:
 
 
 inline void
-Type1Interp::push(double d)
+CharstringInterp::push(double d)
 {
     if (_sp < STACK_SIZE)
 	_s[_sp++] = d;
@@ -239,7 +147,7 @@ Type1Interp::push(double d)
 }
 
 inline void
-Type1Interp::ps_push(double d)
+CharstringInterp::ps_push(double d)
 {
     if (_ps_sp < PS_STACK_SIZE)
 	_ps_s[_ps_sp++] = d;
@@ -248,7 +156,7 @@ Type1Interp::ps_push(double d)
 }
 
 inline double &
-Type1Interp::vec(Vector<double> *v, int i)
+CharstringInterp::vec(Vector<double> *v, int i)
 {
     if (i < 0 || i >= v->size()) {
 	error(errVector);
@@ -257,26 +165,26 @@ Type1Interp::vec(Vector<double> *v, int i)
 	return v->at_u(i);
 }
 
-inline EfontCharstring *
-Type1Interp::get_subr(int n) const
+inline Charstring *
+CharstringInterp::get_subr(int n) const
 {
     return _program ? _program->subr(n) : 0;
 }
 
-inline EfontCharstring *
-Type1Interp::get_gsubr(int n) const
+inline Charstring *
+CharstringInterp::get_gsubr(int n) const
 {
     return _program ? _program->gsubr(n) : 0;
 }
 
-inline EfontCharstring *
-Type1Interp::get_glyph(PermString n) const
+inline Charstring *
+CharstringInterp::get_glyph(PermString n) const
 {
     return _program ? _program->glyph(n) : 0;
 }
 
 inline Vector<double> *
-Type1Interp::weight_vector()
+CharstringInterp::weight_vector()
 {
     if (!_weight_vector && _program)
 	_weight_vector = _program->weight_vector();

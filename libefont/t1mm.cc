@@ -242,7 +242,7 @@ EfontMMSpace::normalize_vector(ErrorHandler *errh) const
     norm_design.assign(_naxes, UNKDOUBLE);
   
     if (_ndv) {
-	Type1Interp ai(this);
+	CharstringInterp ai(this);
 	if (!_ndv->run(ai))
 	    return error(errh, "error in NDV program");
     
@@ -287,7 +287,7 @@ EfontMMSpace::convert_vector(ErrorHandler *errh) const
     weight.assign(_nmasters, 1);
   
     if (_cdv) {
-	Type1Interp ai(this);
+	CharstringInterp ai(this);
 	if (!_cdv->run(ai))
 	    return error(errh, "error in CDV program");
     

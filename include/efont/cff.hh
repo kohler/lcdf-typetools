@@ -28,7 +28,7 @@ class EfontCFF { public:
     PermString sid_permstring(int sid) const;
 
     int ngsubrs() const			{ return _gsubrs_index.nitems(); }
-    EfontCharstring *gsubr(int i);
+    Charstring *gsubr(int i);
     
     enum DictOperator {
 	oVersion = 0, oNotice = 1, oFullName = 2, oFamilyName = 3,
@@ -113,7 +113,7 @@ class EfontCFF { public:
     mutable HashMap<PermString, int> _strings_map;
 
     IndexIterator _gsubrs_index;
-    Vector<EfontCharstring *> _gsubrs_cs;
+    Vector<Charstring *> _gsubrs_cs;
 
     int parse_header(ErrorHandler *);
 
@@ -186,15 +186,15 @@ class EfontCFF::Font : public EfontProgram { public:
     PermString font_name() const	{ return _font_name; }
     
     int nsubrs() const			{ return _subrs_index.nitems(); }
-    EfontCharstring *subr(int) const;
+    Charstring *subr(int) const;
     int ngsubrs() const			{ return _cff->ngsubrs(); }
-    EfontCharstring *gsubr(int) const;
+    Charstring *gsubr(int) const;
 
     int nglyphs() const			{ return _charstrings_index.nitems(); }
     void glyph_names(Vector<PermString> &) const;
     PermString glyph_name(int) const;
-    EfontCharstring *glyph(int) const;
-    EfontCharstring *glyph(PermString) const;
+    Charstring *glyph(int) const;
+    Charstring *glyph(PermString) const;
 
     Type1Encoding *type1_encoding() const;
 
@@ -209,10 +209,10 @@ class EfontCFF::Font : public EfontProgram { public:
     EfontCFF::Charset _charset;
 
     IndexIterator _charstrings_index;
-    mutable Vector<EfontCharstring *> _charstrings_cs;
+    mutable Vector<Charstring *> _charstrings_cs;
 
     IndexIterator _subrs_index;
-    mutable Vector<EfontCharstring *> _subrs_cs;
+    mutable Vector<Charstring *> _subrs_cs;
 
     int _encoding[256];
     mutable Type1Encoding *_t1encoding;
@@ -224,7 +224,7 @@ class EfontCFF::Font : public EfontProgram { public:
 
     int parse_encoding(int pos, ErrorHandler *);
     int assign_standard_encoding(const int *standard_encoding);
-    EfontCharstring *charstring(const IndexIterator &, int) const;
+    Charstring *charstring(const IndexIterator &, int) const;
     
 };
 
