@@ -4,6 +4,7 @@
 #include "t1rewrit.hh"
 #include "t1item.hh"
 #include "error.hh"
+#include "straccum.hh"
 #include <stdio.h>
 
 static bool itc_complained = false;
@@ -116,7 +117,8 @@ class Type1OneMMRemover: public Type1Interp {
  public:
   
   Type1OneMMRemover(Type1MMRemover *);
-  
+
+  void init();
   bool command(int);
   
   bool run(const Type1Charstring &, bool do_expander);
@@ -161,6 +163,13 @@ Type1OneMMRemover::Type1OneMMRemover(Type1MMRemover *remover)
 {
 }
 
+void
+Type1OneMMRemover::init()
+{
+  Vector<double> *scratch = scratch_vector();
+  scratch->assign(scratch->size(), UNKDOUBLE);
+  Type1Interp::init();
+}
 
 inline void
 Type1OneMMRemover::run_subr(Type1Charstring *cs)
@@ -523,25 +532,17 @@ Type1MMRemover::run()
   if (bad_glyphs.size()) {
     qsort(&bad_glyphs[0], bad_glyphs.size(), sizeof(PermString), sort_permstring_compare);
     _errh->error("could not fully interpolate the following glyphs:");
-    char buf[100];
-    int pos = 0;
+    StringAccum sa;
     for (int i = 0; i < bad_glyphs.size(); i++) {
       PermString n = bad_glyphs[i];
       bool comma = (i < bad_glyphs.size() - 1);
-      if (pos && pos + comma + 1 > 70) {
-	buf[pos] = 0;
-	_errh->message("  %s", buf);
-	pos = 0;
+      if (sa.length() && sa.length() + 1 + n.length() + comma > 70) {
+	_errh->message("  %s", sa.cc());
+	sa.clear();
       }
-      if (pos)
-	buf[pos++] = ' ';
-      strcpy(buf + pos, n.cc());
-      pos += n.length();
-      if (comma)
-	buf[pos++] = ',';
+      sa << (sa.length() ? " " : "") << n << (comma ? "," : "");
     }
-    buf[pos] = 0;
-    _errh->message("  %s", buf);
+    _errh->message("  %s", sa.cc());
   }
 }
 
