@@ -159,7 +159,8 @@ static const char * const default_ligkerns[] = {
    "exclam quoteleft =: exclamdown ;",
    "hyphen hyphen =: endash ; endash hyphen =: emdash ;",
    "quoteleft quoteleft =: quotedblleft ;",
-   "quoteright quoteright =: quotedblright ;"
+   "quoteright quoteright =: quotedblright ;",
+   0
 };
 
 static const char *program_name;

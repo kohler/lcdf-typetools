@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.67   29.Nov.2003
+
+* otftotfm: Don't run off the end of an array. Bug reported and patch
+  provided by Akira Kakuto.
+
+
 Version 1.66   24.Nov.2003
 
 * cfftot1: Don't generate "currentfile eexec" twice. Bug reported by Adam
