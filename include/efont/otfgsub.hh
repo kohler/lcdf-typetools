@@ -151,11 +151,12 @@ class Substitution { public:
     inline Glyph left_glyph() const;
     inline int left_nglyphs() const;
     inline Glyph in_glyph() const;
+    inline Glyph in_glyph(int pos) const;
     inline bool in_glyphs(Vector<Glyph> &) const;
     inline int in_nglyphs() const;
     inline bool in_matches(int pos, Glyph) const;
     inline Glyph out_glyph() const;
-    inline Glyph out_glyph_0() const;
+    inline Glyph out_glyph(int pos) const;
     inline bool out_glyphs(Vector<Glyph> &) const;
     inline const Glyph *out_glyphptr() const;
     inline int out_nglyphs() const;
@@ -207,7 +208,7 @@ class Substitution { public:
     static bool substitute_in(const Substitute &, uint8_t, const GlyphSet &);
 
     static Glyph extract_glyph(const Substitute &, uint8_t) throw ();
-    static Glyph extract_glyph_0(const Substitute &, uint8_t) throw ();
+    static Glyph extract_glyph(const Substitute &, int which, uint8_t) throw ();
     static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &, bool coverage_ok) throw ();
     static const Glyph *extract_glyphptr(const Substitute &, uint8_t) throw ();
     static int extract_nglyphs(const Substitute &, uint8_t, bool coverage_ok) throw ();
@@ -300,6 +301,12 @@ Substitution::in_glyph() const
     return extract_glyph(_in, _in_is);
 }
 
+inline Glyph
+Substitution::in_glyph(int which) const
+{
+    return extract_glyph(_in, which, _in_is);
+}
+
 inline bool
 Substitution::in_glyphs(Vector<Glyph> &v) const
 {
@@ -325,9 +332,9 @@ Substitution::out_glyph() const
 }
 
 inline Glyph
-Substitution::out_glyph_0() const
+Substitution::out_glyph(int which) const
 {
-    return extract_glyph_0(_out, _out_is);
+    return extract_glyph(_out, which, _out_is);
 }
 
 inline bool

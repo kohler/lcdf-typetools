@@ -96,7 +96,8 @@ Substitution::assign(Substitute &s, uint8_t &t, const Substitute &os, uint8_t ot
 }
 
 Substitution::Substitution(const Substitution &o)
-    : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
+    : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE),
+      _alternate(o._alternate)
 {
     assign(_left, _left_is, o._left, o._left_is);
     assign(_in, _in_is, o._in, o._in_is);
@@ -186,6 +187,7 @@ Substitution::operator=(const Substitution &o)
     assign(_in, _in_is, o._in, o._in_is);
     assign(_out, _out_is, o._out, o._out_is);
     assign(_right, _right_is, o._right, o._right_is);
+    _alternate = o._alternate;
     return *this;
 }
 
@@ -257,16 +259,17 @@ Substitution::extract_glyph(const Substitute &s, uint8_t t) throw ()
 }
 
 Glyph
-Substitution::extract_glyph_0(const Substitute &s, uint8_t t) throw ()
+Substitution::extract_glyph(const Substitute &s, int which, uint8_t t) throw ()
 {
     switch (t) {
       case T_GLYPH:
-	return s.gid;
+	return (which == 0 ? s.gid : 0);
       case T_GLYPHS:
-	return (s.gids[0] >= 1 ? s.gids[1] : 0);
+	return (s.gids[0] > which ? s.gids[which + 1] : 0);
       case T_COVERAGE:
-	for (Coverage::iterator ci = s.coverage->begin(); ci; ci++)
-	    return *ci;
+	for (Coverage::iterator ci = s.coverage->begin(); ci; ci++, which--)
+	    if (which == 0)
+		return *ci;
 	return 0;
       default:
 	return 0;
@@ -521,6 +524,8 @@ Substitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 	    sa << "LIGATURE[";
 	else if (is_multiple())
 	    sa << "MULTIPLE[";
+	else if (is_alternate())
+	    sa << "ALTERNATE[";
 	else if (is_simple_context())
 	    sa << "SIMPLECONTEXT[";
 	else
