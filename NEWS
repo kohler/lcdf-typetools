@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.4   30.Jun.2004
+
+* cfftot1: Fix off-by-one bug where the encoding of the last encoded
+  character was ignored, reported by Detlev Droege.
+
+* otftotfm: Some internal changes; bugs are possible.
+
+
 Version 2.3   15.Jun.2004
 
 * otftotfm: Add '--default-ligkern' and '--no-encoding-commands' options,
