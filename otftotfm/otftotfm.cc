@@ -41,6 +41,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <algorithm>
+#include <math.h>
 #ifdef HAVE_CTIME
 # include <time.h>
 #endif
@@ -71,6 +72,7 @@ using namespace Efont;
 #define UNICODING_OPT		320
 #define BOUNDARY_CHAR_OPT	321
 #define DESIGN_SIZE_OPT		322
+#define MINIMUM_KERN_OPT	323
 
 #define AUTOMATIC_OPT		331
 #define FONT_NAME_OPT		332
@@ -112,6 +114,9 @@ static Clp_Option options[] = {
     { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
     { "letterspacing", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
     { "letterspace", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
+    { "min-kern", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
+    { "minimum-kern", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
+    { "kern-precision", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
@@ -180,6 +185,7 @@ static double extend;
 static double slant;
 static int letterspace;
 static double design_size;
+static double minimum_kern = 2.0;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -210,11 +216,11 @@ usage()
 {
     printf("\
 'Otftotfm' generates TeX font metrics files from an OpenType font (PostScript\n\
-flavor only), including ligatures, kerns and positionings that TeX supports.\n\
-Supply '-s SCRIPT[.LANG]' options to specify the relevant language, '-f FEAT'\n\
-options to turn on optional OpenType features, and a '-e ENC' option to\n\
-specify a base encoding. Output files are written to the current directory\n(\
-but see '--automatic' and the 'directory' options).\n\
+flavor only), including ligatures, kerns, and some positionings. Supply\n\
+'-s SCRIPT[.LANG]' options to specify a language system, '-f FEAT' options to\n\
+turn on optional OpenType features, and a '-e ENC' option to specify a base\n\
+encoding. Output files are written to the current directory (but see\n\
+'--automatic' and the 'directory' options).\n\
 \n\
 Usage: %s [-a] [OPTIONS] OTFFILE FONTNAME\n\n",
 	   program_name);
@@ -225,6 +231,7 @@ Font feature and transformation options:\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
+  -k, --min-kern=N             Omit kerns with absolute value < N [2.0].\n\
       --design-size=SIZE       Set font design size to SIZE.\n\
 \n\
 Encoding options:\n\
@@ -602,9 +609,12 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 		}
 		for (Vector<int>::const_iterator k2 = kern_code2.begin(); k2 < kern_code2.end(); k2++)
 		    if (!(used[*k2 >> 5] & (1 << (*k2 & 0x1F)))) {
-			fprintf(f, "   (KRN %s", glyph_ids[*k2].c_str());
-			fprint_real(f, "", kern_amt[k2 - kern_code2.begin()], du, "");
-			fprintf(f, ")%s\n", glyph_comments[*k2].c_str());
+			double this_kern = kern_amt[k2 - kern_code2.begin()];
+			if (fabs(this_kern) >= minimum_kern) {
+			    fprintf(f, "   (KRN %s", glyph_ids[*k2].c_str());
+			    fprint_real(f, "", this_kern, du, "");
+			    fprintf(f, ")%s\n", glyph_comments[*k2].c_str());
+			}
 		    }
 		fprintf(f, "   (STOP)\n");
 	    }
@@ -1417,6 +1427,10 @@ main(int argc, char *argv[])
 	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
 	    break;
 
+	  case MINIMUM_KERN_OPT:
+	    minimum_kern = clp->val.d;
+	    break;
+	    
 	  case MAP_FILE_OPT:
 	    if (clp->negated)
 		output_flags &= ~G_PSFONTSMAP;

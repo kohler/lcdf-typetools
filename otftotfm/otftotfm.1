@@ -1,5 +1,5 @@
 '\"t
-.ds V 1.67
+.ds V 1.70
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -28,13 +28,13 @@ and so forth. They are written into the current directory, or, with the
 .B \-a 
 option, into a TeX Directory Structure.
 .LP
-OpenType fonts come with
+OpenType fonts support a number of
 .IR features .
 Turning on the "small capitals" feature, for example, replaces lower-case
 letter glyphs with the corresponding small capitals. Other features control
 the spacing of capital letters, whether numbers are lining or old-style,
-and so forth. (You can check the features a font supports using "\fBotfinfo\fR \-f";
-see
+and so forth. (You can see what features a font supports using
+"\fBotfinfo\fR \-f"; see
 .M otfinfo 1 .)
 .LP
 OpenType features can be more complex than TeX can handle, but many
@@ -255,6 +255,14 @@ increases by
 .IR amt ,
 with half the space distributed to each sidebearing. Boundary-character
 kerns are added to maintain alignment at the ends of lines.
+'
+.Sp
+.TP 5
+.BI "\-k " "N\fR, " \-\-min\-kern= N
+Only output kerning pairs whose absolute value is
+.IR N
+or larger. Smaller minimum kerns make kerning more precise and the output
+TFM file bigger. The default minimum kern is 2.0.
 '
 .Sp
 .TP 5

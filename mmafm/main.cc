@@ -42,6 +42,8 @@ Clp_Option options[] = {
   { "style", 0, STYLE_OPT, Clp_ArgDouble, 0 },
   { "wt", 0, WEIGHT_OPT, Clp_ArgDouble, 0 },
   { "wd", 0, WIDTH_OPT, Clp_ArgDouble, 0 },
+  { "min-kern", 'k', KERN_PREC_OPT, Clp_ArgDouble, 0 },
+  { "minimum-kern", 'k', KERN_PREC_OPT, Clp_ArgDouble, 0 },
   { "kern-precision", 'k', KERN_PREC_OPT, Clp_ArgDouble, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "precision", 'p', PRECISION_OPT, Clp_ArgInt, 0 },
@@ -227,7 +229,7 @@ Interpolation settings:\n\
       --style=N                 Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N    Set first (second, third, fourth) axis to N.\n\
   -p, --precision=N             Allow N digits of fraction (default 3).\n\
-  -k, --kern-precision=N        Remove kerns smaller than N (default 2).\n\
+  -k, --min-kern=N              Remove kerns smaller than N (default 2).\n\
 \n\
 Report bugs to <kohler@icir.org>.\n", program_name);
 }

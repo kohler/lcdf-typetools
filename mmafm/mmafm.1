@@ -1,5 +1,5 @@
 .\" -*-nroff-*-
-.ds V 1.67
+.ds V 1.70
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -140,10 +140,11 @@ digits after the decimal point. Smaller numbers are less precise; `\fB\-p
 \fR0' rounds all numbers to integers. The default precision is 3.
 '
 .TP
-.OY \-\-kern\-precision N \-k N
-Remove output kerning pairs whose absolute value is less than
-.IR N .
-Smaller numbers are more precise. The default kern precision is 2.0.
+.OY \-\-min\-kern N \-k N
+Only output kerning pairs whose absolute value is
+.IR N
+or larger. Smaller minimum kerns make kerning more precise and the output
+AFM file bigger. The default minimum kern is 2.0.
 '
 .SH TROUBLESHOOTING
 .PP
