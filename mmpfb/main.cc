@@ -68,10 +68,10 @@ usage()
   fprintf(stderr, "Usage: %s [options] [outline font]\n\
 General options:\n\
   --amcp-info                  Print AMCP info, if necessary, and exit.\n\
-  --help, -h                   Print this message and exit.\n\
   --pfa, -a                    Output PFA font.\n\
   --pfb, -b                    Output PFB font.\n\
-  --output FILE, -o FILE       Write output to FILE.\n\
+  --output=FILE, -o FILE       Write output to FILE.\n\
+  --help, -h                   Print this message and exit.\n\
   --version                    Print version number and exit.\n\
 Multiple master settings:\n\
   --weight=N, -w N             Set weight to N.\n\
@@ -98,7 +98,7 @@ do_file(FILE *f)
   font = new MyFont(*reader);
   delete reader;
 
-  mmspace = Type1MMSpace::create(font, &errh);
+  mmspace = font->create_mmspace(&errh);
   if (!mmspace)
     errh.fatal("not a multiple master font");
 }
@@ -163,7 +163,7 @@ main(int argc, char **argv)
     Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
   program_name = Clp_ProgramName(clp);
   
-  bool write_pfb = false;
+  bool write_pfb = true;
   bool amcp_info = false;
   FILE *outfile = 0;
   

@@ -1,4 +1,4 @@
-#include "fontfind.hh"
+#include "findmet.hh"
 #include "linescan.hh"
 #include "afm.hh"
 #include "afmw.hh"
@@ -62,7 +62,7 @@ set_design(int a, double v)
 
 
 static void
-read_file(char *fn, FontFinder *finder)
+read_file(char *fn, MetricsFinder *finder)
 {
   Filename filename;
   FILE *file;
@@ -107,7 +107,7 @@ usage()
 {
   fprintf(stderr, "Usage: %s [options and filenames]\n\
 General options:\n\
-  --output FILE, -o FILE        Write output to FILE.\n\
+  --output=FILE, -o FILE        Write output to FILE.\n\
   --help, -h                    Print this message and exit.\n\
   --version                     Print version number and warranty and exit.\n\
 Multiple master settings:\n\
@@ -124,9 +124,9 @@ Multiple master settings:\n\
 int
 main(int argc, char **argv)
 {
-  FontFinder *finder = new CacheFontFinder;
+  MetricsFinder *finder = new CacheMetricsFinder;
   
-  PsresFontFinder *psres_finder = new PsresFontFinder;
+  PsresMetricsFinder *psres_finder = new PsresMetricsFinder;
   Vector<PermString> paths;
   char *token;
   if (char *path = getenv("AFMPATH"))

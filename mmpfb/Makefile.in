@@ -27,11 +27,11 @@ PROFILING	=
 LDFLAGS		= @LDFLAGS@
 
 PROGRAMS	= mmpfb
-MY_OBJS		= vectori.o hashmapi.o t1mm.o myfont.o main.o
+MY_OBJS		= vectori.o hashmapi.o myfont.o main.o
 OBJS		= ../edlib/permstr.o ../edlib/straccum.o \
 	../edlib/landmark.o ../edlib/error.o ../edlib/clp.o ../t1lib/t1cs.o \
 	../t1lib/t1interp.o ../t1lib/t1item.o ../t1lib/t1font.o \
-	../t1lib/t1rw.o ../t1lib/t1rewrit.o $(MY_OBJS)
+	../t1lib/t1mm.o ../t1lib/t1rw.o ../t1lib/t1rewrit.o $(MY_OBJS)
 
 all: $(PROGRAMS)
 
@@ -39,7 +39,7 @@ mmpfb: $(OBJS)
 	$(CXXLINKER) $(CFLAGS) -o mmpfb $(OBJS) $(LDFLAGS)
 
 t1mm.o: ../t1lib/t1mm.cc ../t1lib/t1mm.hh
-	$(CXX) $(CPPFLAGS) -DT1FONT $(CXXFLAGS) -c ../t1lib/t1mm.cc -o t1mm.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c ../t1lib/t1mm.cc -o t1mm.o
 
 main.o: main.cc
 	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
