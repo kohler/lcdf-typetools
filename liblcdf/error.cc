@@ -492,11 +492,14 @@ ErrorHandler::decorate_text(Seriousness, const String &prefix, const String &lan
     for (i = len - 1; i >= 0; i--)
       if (!isspace(landmark[i]))
 	break;
-    if (i >= 0 && landmark[i] == ':')
-      i--;
 
-    // prepend landmark
-    new_text = prepend_lines(landmark.substring(0, i+1) + ": ", text);
+    // prepend landmark, unless all spaces
+    if (i >= 0) {
+      if (landmark[i] == ':')
+	i--;
+      new_text = prepend_lines(landmark.substring(0, i+1) + ": ", text);
+    } else
+      new_text = text;
   }
 
   // prepend prefix, if any
