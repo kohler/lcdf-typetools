@@ -2,13 +2,21 @@
 #define T1INTERP_HH
 #include "vector.hh"
 #include "t1cs.hh"
+#include <cstdio>
+
+// Allow unknown doubles to have some `fuzz' -- so if an unknown double
+// is a bit off from the canonical UNKDOUBLE value, we'll still recognize
+// it as unknown. (Useful for interpolation.)
+#define UNKDOUBLE		-9.79797e97
+#define MIN_KNOWN_DOUBLE	-9.69696e97
+#define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
 
 class Type1Interp { public:
 
     Type1Interp(const PsfontProgram *, Vector<double> *weight = 0);
     virtual ~Type1Interp()			{ }
 
-    int errno() const				{ return _errno; }
+    int error() const				{ return _error; }
     int error_data() const			{ return _error_data; }
     bool done() const				{ return _done; }
     void set_done()				{ _done = true; }
@@ -53,7 +61,8 @@ class Type1Interp { public:
 
     virtual void char_sidebearing(int, double, double);
     virtual void char_width(int, double, double);
-    virtual void char_width_delta(int, double);
+    virtual void char_default_width(int);
+    virtual void char_nominal_width_delta(int, double);
     virtual void char_seac(int, double, double, double, int, int);
 
     virtual void char_rmoveto(int, double, double);
@@ -159,7 +168,7 @@ class Type1Interp { public:
 	othcITC_ifelse = 27,
 	othcITC_random = 28,
     };
-  
+
     enum Errors {
 	errOK		= 0,
 	errInternal	= 1,
@@ -181,18 +190,18 @@ class Type1Interp { public:
 	errHintmask	= 17,
 	errLastError	= 17
     };
-  
-    enum { StackSize = 24, ScratchSize = 32 };
+
+    enum { STACK_SIZE = 48, PS_STACK_SIZE = 24, SCRATCH_SIZE = 32 };
   
   private:
   
-    int _errno;
+    int _error;
     int _error_data;
     bool _done;
 
-    double _s[StackSize];
+    double _s[STACK_SIZE];
     int _sp;
-    double _ps_s[StackSize];
+    double _ps_s[PS_STACK_SIZE];
     int _ps_sp;
   
     Vector<double> *_weight_vector;
@@ -213,6 +222,7 @@ class Type1Interp { public:
     static double double_for_error;
   
     bool roll_command();
+    int type2_handle_width(int, bool);
 
 };
 
@@ -220,26 +230,26 @@ class Type1Interp { public:
 inline void
 Type1Interp::push(double d)
 {
-    if (_sp < StackSize)
+    if (_sp < STACK_SIZE)
 	_s[_sp++] = d;
     else
-	_errno = errOverflow;
+	error(errOverflow);
 }
 
 inline void
 Type1Interp::ps_push(double d)
 {
-    if (_ps_sp < StackSize)
+    if (_ps_sp < PS_STACK_SIZE)
 	_ps_s[_ps_sp++] = d;
     else
-	_errno = errOverflow;
+	error(errOverflow);
 }
 
 inline double &
 Type1Interp::vec(Vector<double> *v, int i)
 {
     if (i < 0 || i >= v->size()) {
-	_errno = errVector;
+	error(errVector);
 	return double_for_error;
     } else
 	return v->at_u(i);

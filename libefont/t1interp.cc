@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include "t1unparser.hh"
 
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STATE()		do { if (_t2state < T2_PATH) return error(errOrdering, cmd); } while (0)
@@ -12,8 +13,8 @@
 double Type1Interp::double_for_error;
 
 Type1Interp::Type1Interp(const PsfontProgram *prog, Vector<double> *weight)
-    : _errno(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
-      _scratch_vector(ScratchSize, 0), _program(prog)
+    : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
+      _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
 {
 }
 
@@ -23,7 +24,7 @@ Type1Interp::init()
     clear();
     ps_clear();
     _done = false;
-    _errno = errOK;
+    _error = errOK;
 
     _lsbx = _lsby = 0;
     _t2state = T2_INITIAL;
@@ -33,7 +34,7 @@ Type1Interp::init()
 bool
 Type1Interp::error(int err, int error_data)
 {
-    _errno = err;
+    _error = err;
     _error_data = error_data;
     return false;
 }
@@ -160,7 +161,7 @@ Type1Interp::roll_command()
 	amount += n;
   
     int i;
-    double copy_stack[StackSize];
+    double copy_stack[STACK_SIZE];
     for (i = 0; i < n; i++)
 	copy_stack[i] = _s[ base + (i+amount) % n ];
     for (i = 0; i < n; i++)
@@ -323,8 +324,8 @@ Type1Interp::callsubr_command()
 
     subr_cs->run(*this);
 
-    if (_errno != errOK)
-	return error(_errno, _error_data);
+    if (_error != errOK)
+	return false;
     return !done();
 }
 
@@ -335,15 +336,14 @@ Type1Interp::callgsubr_command()
     CHECK_STACK(1);
     int which = (int)pop();
 
-    // XXX
-    PsfontCharstring *subr_cs = get_subr(which);
+    PsfontCharstring *subr_cs = get_gsubr(which);
     if (!subr_cs)
 	return error(errSubr, which);
 
     subr_cs->run(*this);
 
-    if (_errno != errOK)
-	return error(_errno, _error_data);
+    if (_error != errOK)
+	return false;
     return !done();
 }
 
@@ -670,23 +670,40 @@ Type1Interp::type1_command(int cmd)
     }
 
     clear();
-    return errno() >= 0;
+    return error() >= 0;
 }
 
 
+#undef DEBUG_TYPE2
+
+int
+Type1Interp::type2_handle_width(int cmd, bool have_width)
+{
+    if (have_width) {
+	char_nominal_width_delta(cmd, at(0));
+	return 1;
+    } else {
+	char_default_width(cmd);
+	return 0;
+    }
+}
 
 bool
 Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 {
     int bottom = 0;
+
+#ifdef DEBUG_TYPE2
+    fprintf(stderr, "%s [%d/%d]\n", Type1Unparser::unparse_command(cmd).cc(), _t2nhints, size());
+#endif
     
     switch (cmd) {
 
       case cHstem:
       case cHstemhm:
 	CHECK_STACK(2);
-	if ((size() % 2) == 1 && _t2state == T2_INITIAL)
-	    char_width_delta(cmd, at(bottom++));
+	if (_t2state == T2_INITIAL)
+	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
 	if (_t2state > T2_HSTEM)
 	    return error(errOrdering, cmd);
 	_t2state = T2_HSTEM;
@@ -700,8 +717,8 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
       case cVstem:
       case cVstemhm:
 	CHECK_STACK(2);
-	if ((size() % 2) == 1 && _t2state == T2_INITIAL)
-	    char_width_delta(cmd, at(bottom++));
+	if (_t2state == T2_INITIAL)
+	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
 	if (_t2state > T2_VSTEM)
 	    return error(errOrdering, cmd);
 	_t2state = T2_VSTEM;
@@ -714,7 +731,7 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 
       case cHintmask:
       case cCntrmask:
-	if (_t2state == T2_HSTEM && size() > 2)
+	if (_t2state == T2_HSTEM && size() >= 2)
 	    for (double pos = 0; bottom + 1 < size(); bottom += 2) {
 		_t2nhints++;
 		char_vstem(cmd, pos + at(bottom), at(bottom + 1));
@@ -726,33 +743,42 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	    return error(errHintmask, cmd);
 	if (!data || !left)
 	    return error(errInternal, cmd);
-	if (((_t2nhints + 7) >> 3) > *left)
+	if (((_t2nhints - 1) >> 3) + 1 > *left)
 	    return error(errRunoff, cmd);
-	*left -= ((_t2nhints + 7) >> 3);
+	*left -= ((_t2nhints - 1) >> 3) + 1;
 	break;
 
       case cRmoveto:
 	CHECK_STACK(2);
-	if (size() > 2 && _t2state == T2_INITIAL)
-	    char_width_delta(cmd, at(bottom++));
+	if (_t2state == T2_INITIAL)
+	    bottom = type2_handle_width(cmd, size() > 2);
 	_t2state = T2_PATH;
 	char_rmoveto(cmd, at(bottom), at(bottom + 1));
+#if DEBUG_TYPE2
+	bottom += 2;
+#endif
 	break;
 
       case cHmoveto:
 	CHECK_STACK(1);
-	if (size() > 1 && _t2state == T2_INITIAL)
-	    char_width_delta(cmd, at(bottom++));
+	if (_t2state == T2_INITIAL)
+	    bottom = type2_handle_width(cmd, size() > 1);
 	_t2state = T2_PATH;
 	char_rmoveto(cmd, at(bottom), 0);
+#if DEBUG_TYPE2
+	bottom++;
+#endif
 	break;
 
       case cVmoveto:
 	CHECK_STACK(1);
-	if (size() > 1 && _t2state == T2_INITIAL)
-	    char_width_delta(cmd, at(bottom++));
+	if (_t2state == T2_INITIAL)
+	    bottom = type2_handle_width(cmd, size() > 1);
 	_t2state = T2_PATH;
 	char_rmoveto(cmd, 0, at(bottom));
+#if DEBUG_TYPE2
+	bottom++;
+#endif
 	break;
 
       case cRlineto:
@@ -813,6 +839,10 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 		bottom += 4;
 	    }
 	}
+#if DEBUG_TYPE2
+	if (bottom + 1 == size())
+	    bottom++;
+#endif
 	break;
 
       case cRcurveline:
@@ -821,6 +851,9 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	for (; bottom + 7 < size(); bottom += 6)
 	    char_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
 	char_rlineto(cmd, at(bottom), at(bottom + 1));
+#if DEBUG_TYPE2
+	bottom += 2;
+#endif
 	break;
 
       case cRlinecurve:
@@ -829,6 +862,9 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 	for (; bottom + 7 < size(); bottom += 2)
 	    char_rlineto(cmd, at(bottom), at(bottom + 1));
 	char_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
+#if DEBUG_TYPE2
+	bottom += 6;
+#endif
 	break;
 
       case cVhcurveto:
@@ -844,6 +880,10 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 		bottom += 4;
 	    }
 	}
+#if DEBUG_TYPE2
+	if (bottom + 1 == size())
+	    bottom++;
+#endif
 	break;
 
       case cVvcurveto:
@@ -865,6 +905,9 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 		  at(0), at(1), at(2), at(3), at(4), at(5),
 		  at(6), at(7), at(8), at(9), at(10), at(11),
 		  at(12));
+#if DEBUG_TYPE2
+	bottom += 13;
+#endif
 	break;
 
       case cHflex:
@@ -875,6 +918,9 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 		  at(0), 0, at(1), at(2), at(3), 0,
 		  at(4), 0, at(5), -at(2), at(6), 0,
 		  50);
+#if DEBUG_TYPE2
+	bottom += 7;
+#endif
 	break;
 
       case cHflex1:
@@ -885,6 +931,9 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 		  at(0), at(1), at(2), at(3), at(4), 0,
 		  at(5), 0, at(6), at(7), at(8), -(at(1) + at(3) + at(7)),
 		  50);
+#if DEBUG_TYPE2
+	bottom += 9;
+#endif
 	break;
 
       case cFlex1: {
@@ -904,11 +953,14 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
 			at(6), at(7), at(8), at(9), -dx, at(10),
 			50);
 	  break;
+#if DEBUG_TYPE2
+	  bottom += 11;
+#endif
       }
 	
       case cEndchar:
-	if (size() > 0 && size() != 4 && _t2state == T2_INITIAL)
-	    char_width_delta(cmd, at(bottom++));
+	if (_t2state == T2_INITIAL)
+	    bottom = type2_handle_width(cmd, size() > 0 && size() != 4);
 	if (bottom + 3 < size() && _t2state == T2_INITIAL)
 	    char_seac(cmd, 0, at(bottom), at(bottom + 1), (int)at(bottom + 2), (int)at(bottom + 3));
 	set_done();
@@ -961,8 +1013,13 @@ Type1Interp::type2_command(int cmd, const unsigned char *data, int *left)
     
     }
 
+#if DEBUG_TYPE2
+    if (bottom != size())
+	fprintf(stderr, "[left %d on stack] ", size() - bottom);
+#endif
+    
     clear();
-    return errno() >= 0;
+    return error() >= 0;
 }
 
 
@@ -975,13 +1032,22 @@ Type1Interp::char_sidebearing(int cmd, double, double)
 void
 Type1Interp::char_width(int cmd, double, double)
 {
-    error(errUnimplemented, cmd);
 }
 
 void
-Type1Interp::char_width_delta(int cmd, double)
+Type1Interp::char_default_width(int cmd)
 {
-    error(errUnimplemented, cmd);
+    double d = (_program ? _program->global_width_x(false) : UNKDOUBLE);
+    if (KNOWN(d))
+	char_width(cmd, d, 0);
+}
+
+void
+Type1Interp::char_nominal_width_delta(int cmd, double delta)
+{
+    double d = (_program ? _program->global_width_x(true) : UNKDOUBLE);
+    if (KNOWN(d))
+	char_width(cmd, d + delta, 0);
 }
 
 void

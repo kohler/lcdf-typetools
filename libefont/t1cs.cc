@@ -113,7 +113,7 @@ Type1Charstring::run(Type1Interp &interp) const
 	}
     
 	if (!more)
-	    return interp.errno() == Type1Interp::errOK;
+	    return interp.error() == Type1Interp::errOK;
     
 	data += ahead;
 	left -= ahead;
@@ -192,7 +192,7 @@ Type2Charstring::run(Type1Interp &interp) const
 	}
 
 	if (!more)
-	    return interp.errno() == Type1Interp::errOK;
+	    return interp.error() == Type1Interp::errOK;
 
 	data += ahead;
 	left -= ahead;
@@ -211,4 +211,10 @@ PsfontProgram::glyph_names(Vector<PermString> &gnames) const
     gnames.resize(n);
     for (int i = 0; i < n; i++)
 	gnames[i] = glyph_name(i);
+}
+
+double
+PsfontProgram::global_width_x(bool) const
+{
+    return UNKDOUBLE;
 }

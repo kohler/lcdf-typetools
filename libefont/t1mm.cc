@@ -3,14 +3,6 @@
 #endif
 #include "t1mm.hh"
 #include "t1interp.hh"
-#ifdef HAVE_T1FONT
-# include "t1item.hh"
-# include "t1font.hh"
-#else
-# define UNKDOUBLE		-9.79797e97
-# define MIN_KNOWN_DOUBLE	-9.69696e96
-# define KNOWN(d)		((d) >= MIN_KNOWN_DOUBLE)
-#endif
 #include "error.hh"
 #include <cstdarg>
 #include <cstdio>

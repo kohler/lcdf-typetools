@@ -25,6 +25,7 @@
 #include <cstring>
 #include <cctype>
 
+static String::Initializer initializer;
 String::Memo *String::null_memo = 0;
 String::Memo *String::permanent_memo = 0;
 String::Memo *String::oom_memo = 0;

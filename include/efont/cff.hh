@@ -1,17 +1,17 @@
 #ifndef T1LIB_CFF_HH
 #define T1LIB_CFF_HH
-#include "vector.hh"
-#include "permstring.hh"
+#include "hashmap.hh"
+#include "t1cs.hh"
 class ErrorHandler;
 class Type1Encoding;
 
 class PsfontCFF { public:
 
-    PsfontCFF(const String &);
+    PsfontCFF(const String &, ErrorHandler * = 0);
     ~PsfontCFF();
 
-    bool ok() const			{ return _errno >= 0; }
-    int errno() const			{ return _errno; }
+    bool ok() const			{ return _error >= 0; }
+    int error() const			{ return _error; }
 
     const String &data_string() const	{ return _data_string; }
     const unsigned char *data() const	{ return _data; }
@@ -25,7 +25,7 @@ class PsfontCFF { public:
     enum { NSTANDARD_STRINGS = 391 };
     int max_sid() const			{ return NSTANDARD_STRINGS - 1 + _strings.size(); }
     int sid(PermString);
-    PermString sid_permstring(int sid);
+    PermString sid_permstring(int sid) const;
 
     int ngsubrs() const			{ return _gsubrs_index.nitems(); }
     PsfontCharstring *gsubr(int i);
@@ -61,9 +61,40 @@ class PsfontCFF { public:
     class Dict;
     class IndexIterator;
     class Charset;
+    class Font;
 
     static const char * const operator_names[];
     static const int operator_types[];
+
+
+    class PsfontCFF::IndexIterator { public:
+
+	IndexIterator()		: _offset(0), _last_offset(0), _offsize(-1) { }
+	IndexIterator(const unsigned char *, int, int, ErrorHandler * = 0, const char *index_name = "INDEX");
+
+	int error() const	{ return (_offsize < 0 ? _offsize : 0); }
+    
+	bool live() const	{ return _offset < _last_offset; }
+	operator bool() const	{ return live(); }
+	int nitems() const;
+
+	const unsigned char *operator*() const;
+	const unsigned char *operator[](int) const;
+	const unsigned char *index_end() const;
+
+	void operator++()	{ _offset += _offsize; }
+	void operator++(int)	{ ++(*this); }
+	
+      private:
+    
+	const unsigned char *_contents;
+	const unsigned char *_offset;
+	const unsigned char *_last_offset;
+	int _offsize;
+
+	unsigned offset_at(const unsigned char *) const;
+    
+    };
     
   private:
 
@@ -71,71 +102,43 @@ class PsfontCFF { public:
     const unsigned char *_data;
     int _len;
 
-    int _errno;
+    int _error;
     
-    int _name_index_pos;
     Vector<PermString> _name_index;
 
     IndexIterator _top_dict_index;
 
     IndexIterator _strings_index;
-    Vector<PermString> _strings;
-    HashMap<PermString, int> _strings_map;
+    mutable Vector<PermString> _strings;
+    mutable HashMap<PermString, int> _strings_map;
 
     IndexIterator _gsubrs_index;
     Vector<PsfontCharstring *> _gsubrs_cs;
 
-    typedef uint8_t OffSize;
+    typedef unsigned char OffSize;
     struct Header;
     enum { HEADER_SIZE = 4, INDEX_SIZE = 2 };
 
-    int parse_header();
+    int parse_header(ErrorHandler *);
     
 };
 
-
-class PsfontCFF::IndexIterator { public:
-
-    IndexIterator()			: _offset(0), _last_offset(0), _offsize(-1) { }
-    IndexIterator(const unsigned char *, int, int);
-
-    int errno() const			{ return (_offsize < 0 ? _offsize : 0); }
-    
-    bool live() const			{ return _offset < _last_offset; }
-    operator bool() const		{ return live(); }
-    int nitems() const;
-
-    void operator++()			{ _offset += _offsize; }
-    void operator++(int)		{ ++(*this); }
-
-    const unsigned char *operator*() const;
-    const unsigned char *operator[](int) const;
-    const unsigned char *index_end() const;
-    
-  private:
-    
-    const unsigned char *_data;
-    const unsigned char *_offset;
-    const unsigned char *_last_offset;
-    int _offsize;
-
-    uint32_t offset_at(const unsigned char *) const;
-    
-};
 
 class PsfontCFF::Dict { public:
 
-    Dict(const unsigned char *, int pos, int dict_len);
+    Dict(PsfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
 
-    bool ok() const			{ return _errno >= 0; }
-    int errno() const			{ return _errno; }
+    bool ok() const			{ return _error >= 0; }
+    int error() const			{ return _error; }
 
-    int check(bool is_private, ErrorHandler * = 0) const;
+    int check(bool is_private, ErrorHandler * = 0, const char *dict_name = "DICT") const;
 
     bool has(DictOperator) const;
     bool value(DictOperator, Vector<double> &) const;
     bool value(DictOperator, int, int *) const;
     bool value(DictOperator, double, double *) const;
+
+    void unparse(ErrorHandler *, const char *) const;
 
   private:
 
@@ -144,42 +147,43 @@ class PsfontCFF::Dict { public:
     Vector<int> _operators;
     Vector<int> _pointers;
     Vector<double> _operands;
+    int _error;
 
 };
 
 class PsfontCFF::Charset { public:
 
-    Charset()				: _errno(-1) { }
-    Charset(const PsfontCFF *, int pos, int nglyphs);
-    void assign(const PsfontCFF *, int pos, int nglyphs);
+    Charset()				: _error(-1) { }
+    Charset(const PsfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
+    void assign(const PsfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
 
-    int errno() const			{ return _errno; }
+    int error() const			{ return _error; }
     
     int nglyphs() const			{ return _sids.size(); }
     int nsids() const			{ return _gids.size(); }
     
-    int sid_of(int gid) const;
-    int gid_of(int sid) const;
+    int gid_to_sid(int gid) const;
+    int sid_to_gid(int sid) const;
     
   private:
 
     Vector<int> _sids;
     Vector<int> _gids;
-    int _errno;
+    int _error;
 
     void assign(const int *, int, int);
-    void parse(const unsigned char *, int pos, int len, int nglyphs, int max_sid);
+    int parse(const PsfontCFF *, int pos, int nglyphs, ErrorHandler *);
     
 };
 
 
-class PsfontCFFFont : public PsfontProgram {
+class PsfontCFF::Font : public PsfontProgram { public:
 
-    PsfontCFFFont(PsfontCFF *, PermString = PermString());
-    ~PsfontCFFFont();
+    Font(PsfontCFF *, PermString = PermString(), ErrorHandler * = 0);
+    ~Font();
 
-    bool ok() const			{ return _errno >= 0; }
-    int errno() const			{ return _errno; }
+    bool ok() const			{ return _error >= 0; }
+    int error() const			{ return _error; }
 
     PermString font_name() const	{ return _font_name; }
     
@@ -195,6 +199,8 @@ class PsfontCFFFont : public PsfontProgram {
     PsfontCharstring *glyph(PermString) const;
 
     Type1Encoding *type1_encoding() const;
+
+    double global_width_x(bool) const;
     
   private:
 
@@ -204,41 +210,41 @@ class PsfontCFFFont : public PsfontProgram {
 
     PsfontCFF::Charset _charset;
 
-    PsfontCFF::IndexIterator _charstrings_index;
-    Vector<PsfontCharstring *> _charstrings_cs;
+    IndexIterator _charstrings_index;
+    mutable Vector<PsfontCharstring *> _charstrings_cs;
 
-    PsfontCFF::IndexIterator _subrs_index;
+    IndexIterator _subrs_index;
     mutable Vector<PsfontCharstring *> _subrs_cs;
 
     int _encoding[256];
-    Type1Encoding *_t1encoding;
+    mutable Type1Encoding *_t1encoding;
 
     double _default_width_x;
     double _nominal_width_x;
 
-    int _errno;
+    int _error;
 
-    void parse_encoding(int pos);
-    int assign_standard_encoding(const int *standard_encoding) const;
+    int parse_encoding(int pos, ErrorHandler *);
+    int assign_standard_encoding(const int *standard_encoding);
     PsfontCharstring *charstring(const IndexIterator &, int) const;
     
 };
 
 
-inline uint32_t
-PsfontCFF::IndexIterator::offset_at(const unsigned char *data) const
+inline unsigned
+PsfontCFF::IndexIterator::offset_at(const unsigned char *x) const
 {
     switch (_offsize) {
       case 0:
 	return 0;
       case 1:
-	return data[0];
+	return x[0];
       case 2:
-	return (_data[0] << 8) | _data[1];
+	return (x[0] << 8) | x[1];
       case 3:
-	return (_data[0] << 16) | (_data[1] << 8) | _data[2];
+	return (x[0] << 16) | (x[1] << 8) | x[2];
       default:
-	return (_data[0] << 24) | (_data[1] << 16) | (_data[2] << 8) | _data[3];
+	return (x[0] << 24) | (x[1] << 16) | (x[2] << 8) | x[3];
     }
 }
 
@@ -246,18 +252,18 @@ inline const unsigned char *
 PsfontCFF::IndexIterator::operator*() const
 {
     assert(live());
-    return _data + offset_at(_offset);
+    return _contents + offset_at(_offset);
 }
 
 inline const unsigned char *
 PsfontCFF::IndexIterator::operator[](int which) const
 {
     assert(live() && _offset + which * _offsize <= _last_offset);
-    return _data + offset_at(_offset + which * _offsize);
+    return _contents + offset_at(_offset + which * _offsize);
 }
 
 inline int
-PsfontCFF::gid_to_sid(int gid)
+PsfontCFF::Charset::gid_to_sid(int gid) const
 {
     if (gid >= 0 && gid < _sids.size())
 	return _sids[gid];
@@ -266,7 +272,7 @@ PsfontCFF::gid_to_sid(int gid)
 }
 
 inline int
-PsfontCFF::sid_to_gid(int sid)
+PsfontCFF::Charset::sid_to_gid(int sid) const
 {
     if (sid >= 0 && sid < _gids.size())
 	return _gids[sid];

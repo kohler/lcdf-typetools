@@ -1,13 +1,20 @@
 #include "cff.hh"
 #include "error.hh"
 #include "t1item.hh"
-#include <errno.h>
+#include "straccum.hh"
+#include <cerrno>
 #include <cstdlib>
+#include <cstring>
+#include <cmath>
+
+#ifndef static_assert
+#define static_assert(c) switch (c) case 0: case (c):
+#endif
 
 struct PsfontCFF::Header {
-    uint8_t major;
-    uint8_t minor;
-    uint8_t hdrSize;
+    unsigned char major;
+    unsigned char minor;
+    unsigned char hdrSize;
     OffSize offSize;
 };
 
@@ -48,7 +55,7 @@ const int PsfontCFF::operator_types[] = {
     tNone, tP+tNumber, tP+tNumber, tP+tNumber, // 12 16, LanguageGroup, ExpansionFactor, initialRandomSeed
     tNumber, tSID, tSID, tArray, // SyntheticBase, PostScript, BaseFontName, BaseFontBlend
     tNone, tNone, tNone, tNone,	// 12 24, 12 25, 12 26, 12 27
-    tNone, tNone, tROS, tNumber, // 12 28, 12 29, ROS, CIDFontVersion
+    tNone, tNone, tArray, tNumber, // 12 28, 12 29, ROS, CIDFontVersion
     tNumber, tNumber, tNumber, tNumber,	// CIDFontRevision, CIDFontType, CIDCount, UIDBase
     tOffset, tOffset, tSID	// FDArray, FDSelect, FontName
 };
@@ -258,14 +265,14 @@ static const int expert_subset_charset[] = {
 #define POS_GT(pos1, pos2)	((unsigned)(pos1) > (unsigned)(pos2))
 
 
-PsfontCFF::PsfontCFF(const String &s)
+PsfontCFF::PsfontCFF(const String &s, ErrorHandler *errh)
     : _data_string(s), _data(reinterpret_cast<const unsigned char *>(_data_string.data())), _len(_data_string.length()),
       _strings_map(-2)
 {
     static_assert((sizeof(standard_strings) / sizeof(standard_strings[0])) == NSTANDARD_STRINGS);
     static_assert((sizeof(standard_encoding) / sizeof(standard_encoding[0])) == 256);
     static_assert((sizeof(expert_encoding) / sizeof(expert_encoding[0])) == 256);
-    _errno = parse_header();
+    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
 PsfontCFF::~PsfontCFF()
@@ -279,26 +286,26 @@ PsfontCFF::~PsfontCFF()
  */
 
 int
-PsfontCFF::parse_header()
+PsfontCFF::parse_header(ErrorHandler *errh)
 {
-    if (_gsubrs_index.errno() >= 0) // already done
+    if (_gsubrs_index.error() >= 0) // already done
 	return 0;
 
     // parse header
     if (_len < 4)
-	return -EINVAL;
+	return errh->error("CFF file too small for header"), -EINVAL;
     const Header *hdr = reinterpret_cast<const Header *>(_data);
-    if (hdr->major != 0)
-	return -ERANGE;
+    if (hdr->major != 1)
+	return errh->error("bad major version number %d", hdr->major), -ERANGE;
     if (hdr->hdrSize < 4 || hdr->hdrSize > _len
 	|| hdr->offSize < 1 || hdr->offSize > 4)
-	return -EINVAL;
-    _name_index_pos = hdr->hdrSize;
+	return errh->error("corrupted file header"), -EINVAL;
+    int name_index_pos = hdr->hdrSize;
 
     // parse name INDEX
-    IndexIterator niter(_data, _name_index_pos, _len);
-    if (niter.errno() < 0)
-	return niter.errno();
+    IndexIterator niter(_data, name_index_pos, _len, errh, "Name INDEX");
+    if (niter.error() < 0)
+	return niter.error();
     _name_index.clear();
     for (; niter; niter++) {
 	const unsigned char *d0 = niter[0];
@@ -306,31 +313,31 @@ PsfontCFF::parse_header()
 	if (d0 == d1 || d0[0] == 0)
 	    _name_index.push_back(PermString());
 	else
-	    _name_index.push_back(PermString(reinterpret_cast<const char *>(d0), d1));
+	    _name_index.push_back(PermString(reinterpret_cast<const char *>(d0), d1 - d0));
     }
     int top_dict_index_pos = niter.index_end() - _data;
 
     // check top DICT INDEX
-    _top_dict_index = IndexIterator(_data, top_dict_index_pos, _len);
-    if (_top_dict_index.errno() < 0)
-	return _top_dict_index.errno();
+    _top_dict_index = IndexIterator(_data, top_dict_index_pos, _len, errh, "Top DICT INDEX");
+    if (_top_dict_index.error() < 0)
+	return _top_dict_index.error();
     else if (_top_dict_index.nitems() != nfonts())
-	return -EINVAL;
+	return errh->error("invalid font: Top DICT INDEX has %d elements, but there are %d fonts", _top_dict_index.nitems(), nfonts()), -EINVAL;
     int string_index_pos = _top_dict_index.index_end() - _data;
 
     // check strings INDEX
-    _strings_index = IndexIterator(_data, string_index_pos, _len);
-    if (_strings_index.errno() < 0)
-	return _strings_index.errno();
+    _strings_index = IndexIterator(_data, string_index_pos, _len, errh, "Strings INDEX");
+    if (_strings_index.error() < 0)
+	return _strings_index.error();
     else if (_strings_index.nitems() > 65000 - NSTANDARD_STRINGS)
-	return -EINVAL;
+	return errh->error("too many strings defined in font"), -EINVAL;
     _strings.assign(_strings_index.nitems(), PermString());
     int global_subr_index_pos = _strings_index.index_end() - _data;
 
     // check gsubr INDEX
-    _gsubrs_index = IndexIterator(_data, global_subr_index_pos, _len);
-    if (_gsubrs_index.errno() < 0)
-	return _gsubrs_index.errno();
+    _gsubrs_index = IndexIterator(_data, global_subr_index_pos, _len, errh, "Gsubrs INDEX");
+    if (_gsubrs_index.error() < 0)
+	return _gsubrs_index.error();
     _gsubrs_cs.assign(ngsubrs(), 0);
     
     return 0;
@@ -343,10 +350,10 @@ PsfontCFF::sid(PermString s)
     if (standard_permstrings_map["a"] < 0)
 	for (int i = 0; i < NSTANDARD_STRINGS; i++) {
 	    if (!standard_permstrings[i])
-		standard_permstrings[i] = PermString(standard_strings[sid]);
+		standard_permstrings[i] = PermString(standard_strings[i]);
 	    standard_permstrings_map.insert(standard_permstrings[i], i);
 	}
-    int sid = standard_permstrings[s];
+    int sid = standard_permstrings_map[s];
     if (sid >= 0)
 	return sid;
 
@@ -367,7 +374,7 @@ PsfontCFF::sid(PermString s)
 }
 
 PermString
-PsfontCFF::sid_permstring(int sid)
+PsfontCFF::sid_permstring(int sid) const
 {
     if (sid < 0)
 	return PermString();
@@ -382,9 +389,9 @@ PsfontCFF::sid_permstring(int sid)
 	else if (_strings[sid])
 	    return _strings[sid];
 	else {
-	    PermString s = PermString(_strings_index[sid], _strings_index[sid + 1] - _strings_index[sid]);
+	    PermString s = PermString(reinterpret_cast<const char *>(_strings_index[sid]), _strings_index[sid + 1] - _strings_index[sid]);
 	    _strings[sid] = s;
-	    _strings_map.insert(s, sid);
+	    _strings_map.insert(s, sid + NSTANDARD_STRINGS);
 	    return s;
 	}
     }
@@ -395,9 +402,8 @@ PsfontCFF::font_offset(int findex, int &offset, int &length) const
 {
     if (findex < 0 || findex >= nfonts())
 	return -ENOENT;
-    IndexIterator tditer(_data, _top_dict_index_pos, _len);
-    offset = tditer[findex] - _data;
-    length = tditer[findex + 1] - tditer[findex];
+    offset = _top_dict_index[findex] - _data;
+    length = _top_dict_index[findex + 1] - _top_dict_index[findex];
     return 0;
 }
 
@@ -446,15 +452,19 @@ PsfontCFF::gsubr(int i)
  * PsfontCFF::Charset
  **/
 
-PsfontCFF::Charset::Charset(const PsfontCFF *cff, int pos, int nglyphs)
+PsfontCFF::Charset::Charset(const PsfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
-    assign(cff, pos, nglyphs);
+    assign(cff, pos, nglyphs, errh);
 }
 
 void
-PsfontCFF::Charset::assign(const PsfontCFF *cff, int pos, int nglyphs)
+PsfontCFF::Charset::assign(const PsfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+    
     _sids.reserve(nglyphs);
+    
     if (pos == 0)
 	assign(iso_adobe_charset, sizeof(iso_adobe_charset) / sizeof(int), nglyphs);
     else if (pos == 1)
@@ -462,13 +472,15 @@ PsfontCFF::Charset::assign(const PsfontCFF *cff, int pos, int nglyphs)
     else if (pos == 2)
 	assign(expert_subset_charset, sizeof(expert_subset_charset) / sizeof(int), nglyphs);
     else
-	_errno = parse(cff->data(), pos, cff->length(), nglyphs, cff->max_sid());
+	_error = parse(cff, pos, nglyphs, errh);
 
-    if (_errno >= 0) {
+    if (_error >= 0) {
 	_gids.assign(cff->max_sid() + 1, -1);
 	for (int g = 0; g < _sids.size(); g++) {
-	    if (_gids[_sids[g]] >= 0)
-		_errno = -EEXIST;
+	    if (_gids[_sids[g]] >= 0) {
+		errh->error("glyph '%s' in charset twice", cff->sid_permstring(_sids[g]).cc());
+		_error = -EEXIST;
+	    }
 	    _gids[_sids[g]] = g;
 	}
     }
@@ -481,55 +493,61 @@ PsfontCFF::Charset::assign(const int *data, int size, int nglyphs)
 	size = nglyphs;
     _sids.resize(size);
     memcpy(&_sids[0], data, sizeof(const int) * size);
-    _errno = 0;
+    _error = 0;
 }
 
 int
-PsfontCFF::Charset::parse(const unsigned char *data, int pos, int len, int nglyphs, int max_sid)
+PsfontCFF::Charset::parse(const PsfontCFF *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
-    if (pos + 1 > _len)
-	return -EINVAL;
+    const unsigned char *data = cff->data();
+    int len = cff->length();
+    int max_sid = cff->max_sid();
+    
+    if (pos + 1 > len)
+	return errh->error("charset position out of range"), -EFAULT;
 
     _sids.push_back(0);
 
-    int format = _data[pos];
+    int format = data[pos];
     if (format == 0) {
 	if (pos + 1 + (nglyphs - 1) * 2 > len)
-	    return -EINVAL;
-	const unsigned char *p = _data + pos + 1;
+	    return errh->error("charset[0] out of range"), -EFAULT;
+	const unsigned char *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 2) {
 	    int sid = (p[0] << 8) | p[1];
 	    if (sid > max_sid)
-		return -EINVAL;
+		return errh->error("charset[0] uses bad SID %d", sid), -EINVAL;
 	    _sids.push_back(sid);
 	}
 	
     } else if (format == 1) {
-	const unsigned char *p = _data + pos + 1;
+	const unsigned char *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 3) {
 	    if (p + 3 > data + len)
-		return -EINVAL;
+		return errh->error("charset[1] out of range"), -EFAULT;
 	    int sid = (p[0] << 8) | p[1];
 	    int n = p[2];
 	    if (sid + n > max_sid)
-		return -EINVAL;
+		return errh->error("charset[1] uses bad SID %d", sid + n), -EINVAL;
 	    for (int i = 0; i <= n; i++)
 		_sids.push_back(sid + i);
 	}
 
     } else if (format == 2) {
-	const unsigned char *p = _data + pos + 1;
+	const unsigned char *p = data + pos + 1;
 	for (; _sids.size() < nglyphs; p += 4) {
 	    if (p + 4 > data + len)
-		return -EINVAL;
+		return errh->error("charset[2] out of range"), -EFAULT;
 	    int sid = (p[0] << 8) | p[1];
 	    int n = (p[2] << 8) | p[3];
 	    if (sid + n > max_sid)
-		return -EINVAL;
+		return errh->error("charset[2] uses bad SID %d", sid + n), -EINVAL;
 	    for (int i = 0; i <= n; i++)
 		_sids.push_back(sid + i);
 	}
-    }
+	
+    } else
+	return errh->error("unknown charset format %d", format), -EINVAL;
 
     _sids.resize(nglyphs);
     return 0;
@@ -540,37 +558,45 @@ PsfontCFF::Charset::parse(const unsigned char *data, int pos, int len, int nglyp
  * PsfontCFF::IndexIterator
  **/
 
-void
-PsfontCFF::IndexIterator::IndexIterator(const unsigned char *data, int pos, int len)
-    : _data(0), _offset(0), _last_offset(0)
+PsfontCFF::IndexIterator::IndexIterator(const unsigned char *data, int pos, int len, ErrorHandler *errh, const char *index_name)
+    : _contents(0), _offset(0), _last_offset(0)
 {
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+    
     // check header
     int nitems = 0;
-    if (POS_GT(pos + 2, len))
+    if (POS_GT(pos + 2, len)) {
+	errh->error("%s: position out of range", index_name);
 	_offsize = -EINVAL;
-    else if (data[pos] == 0 && data[pos + 1] == 0) {
-	_data = data + 2;
+    } else if (data[pos] == 0 && data[pos + 1] == 0) {
+	_contents = data + 2;
 	_offsize = 0;
-    } else if (POS_GT(pos + 3, len) || data[pos + 2] < 1 || data[pos + 2] > 4)
+    } else if (POS_GT(pos + 3, len)) {
+	errh->error("%s: position out of range", index_name);
 	_offsize = -EINVAL;
-    else {
+    } else if ((_offsize = data[pos + 2]), _offsize < 1 || _offsize > 4) {
+	errh->error("%s: offset size %d out of range", index_name, _offsize);
+	_offsize = -EINVAL;
+    } else {
 	nitems = (data[pos] << 8) | data[pos + 1];
-	if (POS_GT(pos + 3 + (nitems + 1) * _offsize, len))
+	if (POS_GT(pos + 3 + (nitems + 1) * _offsize, len)) {
+	    errh->error("%s: data out of range", index_name);
 	    _offsize = -EINVAL;
-	else {
+	} else {
 	    _offset = data + pos + 3;
 	    _last_offset = _offset + nitems * _offsize;
-	    _data = _last_offset + _offsize - 1;
+	    _contents = _last_offset + _offsize - 1;
 	}
     }
 
     // check items in offset array
-    uint32_t max_doff_allowed = len - (pos + 2 + (nitems + 1) * _offsize);
-    uint32_t last_doff = 1;
+    unsigned max_doff_allowed = len - (pos + 2 + (nitems + 1) * _offsize);
+    unsigned last_doff = 1;
     for (const unsigned char *o = _offset; o <= _last_offset; o += _offsize) {
-	uint32_t doff = offset_at(o);
+	unsigned doff = offset_at(o);
 	if (doff > max_doff_allowed || doff < last_doff) {
-	    _offsize = -EINVAL;
+	    errh->error("%s: garbled elements", index_name);
 	    break;
 	}
 	last_doff = doff;
@@ -581,9 +607,9 @@ const unsigned char *
 PsfontCFF::IndexIterator::index_end() const
 {
     if (_offsize <= 0)
-	return _data;
+	return _contents;
     else
-	return _data + offset_at(_last_offset);
+	return _contents + offset_at(_last_offset);
 }
 
 int
@@ -601,11 +627,14 @@ PsfontCFF::IndexIterator::nitems() const
  * PsfontCFF::Dict
  **/
 
-PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
+PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len, ErrorHandler *errh, const char *dict_name)
     : _cff(cff), _pos(pos)
 {
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+    
     const unsigned char *data = cff->data() + pos;
-    const unsigned char *end_data = data() + dict_len;
+    const unsigned char *end_data = data + dict_len;
     
     _pointers.push_back(0);
     while (data < end_data)
@@ -615,26 +644,27 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 	  case 8: case 9: case 10: case 11: case 13: case 14: case 15:
 	  case 16: case 17: case 18: case 19: case 20: case 21:
 	    _operators.push_back(data[0]);
-	    _pointers.push_back(operands.size());
+	    _pointers.push_back(_operands.size());
 	    data++;
 	    break;
 	    
 	  case 22: case 23: case 24: case 25: case 26: case 27: case 31:
 	  case 255:		// reserved
-	    _errno = -ERANGE;
+	    _error = -ERANGE;
+	    errh->error("%s: reserved operator %d", dict_name, data[0]);
 	    return;
 	    
 	  case 12:
 	    if (data + 1 >= end_data)
-		goto invalid;
+		goto runoff;
 	    _operators.push_back(32 + data[1]);
-	    _pointers.push_back(operands.size());
+	    _pointers.push_back(_operands.size());
 	    data += 2;
 	    break;
 
 	  case 28: {
 	      if (data + 2 >= end_data)
-		  goto invalid;
+		  goto runoff;
 	      int16_t val = (data[1] << 8) | data[2];
 	      _operands.push_back(val);
 	      data += 3;
@@ -643,7 +673,7 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 
 	  case 29: {
 	      if (data + 4 >= end_data)
-		  goto invalid;
+		  goto runoff;
 	      int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
 	      _operands.push_back(val);
 	      data += 5;
@@ -654,7 +684,7 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 	      char buf[1024];
 	      int pos = 0;
 	      if (data + 1 >= end_data)
-		  goto invalid;
+		  goto runoff;
 	      for (data++; data < end_data && pos < 1020; data++) {
 		  int d = *data;
 		  for (int i = 0; i < 2; i++, d <<= 8) {
@@ -671,7 +701,8 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 			  buf[pos++] = '-';
 			  break;
 			case 13:
-			  return -EINVAL;
+			  errh->error("%s: bad digit in real number", dict_name);
+			  goto invalid;
 			case 14:
 			  buf[pos++] = '-';
 			  break;
@@ -684,20 +715,22 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 		  }
 	      }
 	      // number not found
-	      goto invalid;
+	      goto runoff;
 	    found:
 	      char *endptr;
 	      buf[pos] = '\0';
 	      _operands.push_back(strtod(buf, &endptr));
-	      if (*endptr)
+	      if (*endptr) {
+		  errh->error("%s: real number syntax error", dict_name);
 		  goto invalid;
+	      }
 	      data++;
 	      break;
 	  }
 	    
 	  case 247: case 248: case 249: case 250: {
 	      if (data + 1 >= end_data)
-		  goto invalid;
+		  goto runoff;
 	      int val = ((data[0] - 247) << 8) + data[1] + 108;
 	      _operands.push_back(val);
 	      data += 2;
@@ -706,7 +739,7 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 	    
 	  case 251: case 252: case 253: case 254: {
 	      if (data + 1 >= end_data)
-		  goto invalid;
+		  goto runoff;
 	      int val = -((data[0] - 251) << 8) - data[1] - 108;
 	      _operands.push_back(val);
 	      data += 2;
@@ -721,30 +754,33 @@ PsfontCFF::Dict::Dict(PsfontCFF *cff, int pos, int dict_len)
 	}
 
     // not closed by an operator?
-    if (pointers.back() != operands.size())
+    if (_pointers.back() != _operands.size()) {
+	errh->error("%s: not closed by an operator", dict_name);
 	goto invalid;
+    }
 
-    _errno = 0;
+    _error = 0;
     return;
 
+  runoff:
+    errh->error("%s: runoff end of DICT", dict_name);
   invalid:
-    _errno = -EINVAL;
+    _error = -EINVAL;
 }
 
-void
-PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh) const
+int
+PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) const
 {
     if (!errh)
 	errh = ErrorHandler::silent_handler();
     int before_nerrors = errh->nerrors();
-    const char *dict_name = (is_private ? "Private DICT" : "Top DICT");
 
     // keep track of operator reuse
     Vector<int> operators_used;
     
     for (int i = 0; i < _operators.size(); i++) {
 	int arity = _pointers[i+1] - _pointers[i];
-	double num = (arity == 0 ? 0 : _operands[pointers[i]]);
+	double num = (arity == 0 ? 0 : _operands[_pointers[i]]);
 	double truncnum = trunc(num);
 	int op = _operators[i];
 	int type = (op > oLastOperator ? tNone : operator_types[op]);
@@ -753,7 +789,7 @@ PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh) const
 	if (op >= operators_used.size())
 	    operators_used.resize(op + 1, 0);
 	if (operators_used[op] && (type & tTypeMask) != tNone)
-	    errh->error("DICT operator '%s' specified twice", operator_names[op]);
+	    errh->error("%s: operator '%s' specified twice", dict_name, operator_names[op]);
 	operators_used[op]++;
 	
 	// check data
@@ -761,9 +797,9 @@ PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh) const
 	    
 	  case tNone:
 	    if (op >= 32)
-		errh->warning("unknown operator '12 %d' in %s", op - 32, dict_name);
+		errh->warning("%s: unknown operator '12 %d'", dict_name, op - 32);
 	    else
-		errh->warning("unknown operator '%d' in %s", op, dict_name);
+		errh->warning("%s: unknown operator '%d'", dict_name, op);
 	    continue;
 	    
 	  case tSID:
@@ -780,7 +816,7 @@ PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh) const
 	    if (arity != 1)
 		goto bad_data;
 	    else if (num != 0 && num != 1)
-		errh->warning("data for Boolean operator '%s' not 0 or 1", operator_names[op]);
+		errh->warning("%s: data for Boolean operator '%s' not 0 or 1", dict_name, operator_names[op]);
 	    break;
 	    
 	  case tNumber:
@@ -801,7 +837,7 @@ PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh) const
 	  case tPrivateType: {
 	      if (arity != 2 || num != truncnum || num < 0)
 		  goto bad_data;
-	      double off = _operands[pointers[i] + 1];
+	      double off = _operands[_pointers[i] + 1];
 	      if (off < 0 || off + num >= _cff->length())
 		  goto bad_data;
 	      break;
@@ -820,12 +856,12 @@ PsfontCFF::Dict::check(bool is_private, ErrorHandler *errh) const
 
 	// check dict location
 	if (((type & tPrivate) != 0) != is_private)
-	    errh->warning("operator '%s' in wrong DICT", operator_names[op]);
+	    errh->warning("%s: operator '%s' in wrong DICT", dict_name, operator_names[op]);
 	
 	continue;
 
       bad_data:
-	errh->error("bad data for operator '%s' in %s", operator_names[op], dict_name);
+	errh->error("%s: bad data for operator '%s'", dict_name, operator_names[op]);
     }
 
     return (errh->nerrors() != before_nerrors ? -1 : 0);
@@ -876,38 +912,64 @@ PsfontCFF::Dict::value(DictOperator op, double def, double *val) const
     return false;
 }
 
+void
+PsfontCFF::Dict::unparse(ErrorHandler *errh, const char *dict_name) const
+{
+    StringAccum sa;
+    for (int i = 0; i < _operators.size(); i++) {
+	sa.clear();
+	if (_pointers[i] + 1 == _pointers[i+1])
+	    sa << _operands[_pointers[i]];
+	else {
+	    sa << "[";
+	    for (int j = _pointers[i]; j < _pointers[i+1]; j++)
+		sa << _operands[j] << ' ';
+	    sa.pop_back();
+	    sa << "]";
+	}
+	errh->message("%s: %s %s", dict_name, operator_names[_operators[i]], sa.cc());
+    }
+}
+
 
 /*****
  * PsfontCFFFont
  **/
 
-PsfontCFFFont::PsfontCFFFont(PsfontCFF *cff, PermString font_name)
-    : _cff(cff), _t1encoding(0)
+PsfontCFF::Font::Font(PsfontCFF *cff, PermString font_name, ErrorHandler *errh)
+    : _cff(cff), _font_name(font_name), _t1encoding(0)
 {
-    // check for a CFF file that contains exactly one font
-    _errno = -ENOENT;
-    if (!font_name) {
-	for (int i = 0; i < cff->nfonts(); i++)
-	    if (cff->font_name(i)) {
-		if (font_name)
-		    return;
-		font_name = cff->font_name(i);
-	    }
+    if (!errh)
+	errh = ErrorHandler::silent_handler();
+
+    if (!cff->ok()) {
+	errh->error("invalid CFF");
+	_error = -EINVAL;
+	return;
     }
+    
+    // check for a CFF file that contains exactly one font
+    _error = -ENOENT;
+    for (int i = 0; !_font_name && i < cff->nfonts(); i++)
+	if (cff->font_name(i))
+	    _font_name = cff->font_name(i);
 
     // find top DICT
     int td_offset, td_length;
-    if (cff->font_offset(font_name, td_offset, td_length) < 0)
+    if (cff->font_offset(_font_name, td_offset, td_length) < 0) {
+	errh->error("no font '%s' in CFF", _font_name.cc());
 	return;
+    }
 
     // parse top DICT
-    PsfontCFF::Dict dict(cff, td_offset, td_length);
-    if ((_errno = dict.errno()) < 0)
+    PsfontCFF::Dict dict(cff, td_offset, td_length, errh, "Top DICT");
+    if ((_error = dict.error()) < 0)
 	return;
-    _errno = -EINVAL;
-    if (dict.check(false) < 0 || !dict.has(oCharStrings)
+    _error = -EINVAL;
+    if (dict.check(false, errh, "Top DICT") < 0 || !dict.has(oCharStrings)
 	|| !dict.has(oPrivate))
 	return;
+    //dict.unparse(errh, "Top DICT");
 
     // extract offsets and information from TOP DICT
     dict.value(oCharstringType, 2, &_charstring_type);
@@ -916,50 +978,54 @@ PsfontCFFFont::PsfontCFFFont(PsfontCFF *cff, PermString font_name)
     
     int charstrings_offset;
     dict.value(oCharStrings, 0, &charstrings_offset);
-    _charstrings_index = PsfontCFF::IndexIterator(cff->data(), charstrings_offset, cff->length());
-    if (_charstrings_index.errno() < 0) {
-	_errno = _charstrings_index.errno();
+    _charstrings_index = PsfontCFF::IndexIterator(cff->data(), charstrings_offset, cff->length(), errh, "CharStrings INDEX");
+    if (_charstrings_index.error() < 0) {
+	_error = _charstrings_index.error();
 	return;
     }
     _charstrings_cs.assign(_charstrings_index.nitems(), 0);
 
     int charset;
     dict.value(oCharset, 0, &charset);
-    _charset.assign(cff, charset, _charstrings.nitems());
-    if (_charset.errno() < 0) {
-	_errno = _charset.errno();
+    _charset.assign(cff, charset, _charstrings_index.nitems(), errh);
+    if (_charset.error() < 0) {
+	_error = _charset.error();
 	return;
     }
 
     int Encoding;
     dict.value(oEncoding, 0, &Encoding);
-    if (parse_encoding(Encoding) < 0)
+    if (parse_encoding(Encoding, errh) < 0)
 	return;
 
     // extract information from Private DICT
     Vector<double> private_info;
     dict.value(oPrivate, private_info);
-    PsfontCFF::Dict pdict(cff, private_info[1], private_info[0]);
-    if ((_errno = pdict.errno()) < 0)
+    int private_offset = (int) private_info[1];
+    PsfontCFF::Dict pdict(cff, private_offset, (int) private_info[0], errh, "Private DICT");
+    if ((_error = pdict.error()) < 0)
 	return;
-    _errno = -EINVAL;
-    if (pdict.check(false) < 0)
+    _error = -EINVAL;
+    if (pdict.check(true, errh, "Private DICT") < 0)
 	return;
+    //pdict.unparse(errh, "Private DICT");
 
     pdict.value(oDefaultWidthX, 0, &_default_width_x);
     pdict.value(oNominalWidthX, 0, &_nominal_width_x);
     if (pdict.has(oSubrs)) {
 	int subrs_offset;
 	pdict.value(oSubrs, 0, &subrs_offset);
-	_subrs_index = PsfontCFF::IndexIterator(cff->data(), _pos + subrs_offset, cff->length());
-	if ((_errno = _subrs_index.errno()) < 0)
+	_subrs_index = PsfontCFF::IndexIterator(cff->data(), private_offset + subrs_offset, cff->length(), errh, "Subrs INDEX");
+	if ((_error = _subrs_index.error()) < 0)
 	    return;
-	_errno = -EINVAL;
     }
     _subrs_cs.assign(nsubrs(), 0);
+
+    // success!
+    _error = 0;
 }
 
-PsfontCFFFont::~PsfontCFFFont()
+PsfontCFF::Font::~Font()
 {
     for (int i = 0; i < _charstrings_cs.size(); i++)
 	delete _charstrings_cs[i];
@@ -969,7 +1035,7 @@ PsfontCFFFont::~PsfontCFFFont()
 }
 
 int
-PsfontCFFFont::parse_encoding(int pos)
+PsfontCFF::Font::parse_encoding(int pos, ErrorHandler *errh)
 {
     for (int i = 0; i < 256; i++)
 	_encoding[i] = 0;
@@ -984,7 +1050,7 @@ PsfontCFFFont::parse_encoding(int pos)
     const unsigned char *data = _cff->data();
     int len = _cff->length();
     if (pos + 1 > len)
-	return -EINVAL;
+	return errh->error("Encoding position out of range"), -EFAULT;
     bool supplemented = (data[pos] & 0x80) != 0;
     int format = (data[pos] & 0x7F);
 
@@ -993,7 +1059,7 @@ PsfontCFFFont::parse_encoding(int pos)
     if (format == 0) {
 	endpos = pos + 2 + data[pos + 1];
 	if (endpos > len)
-	    return -EINVAL;
+	    return errh->error("Encoding[0] out of range"), -EFAULT;
 	const unsigned char *p = data + pos + 2;
 	int n = data[pos + 1];
 	for (; g < n; g++, p++) {
@@ -1006,7 +1072,7 @@ PsfontCFFFont::parse_encoding(int pos)
     } else if (format == 1) {
 	endpos = pos + 2 + data[pos + 1] * 2;
 	if (endpos > len)
-	    return -EINVAL;
+	    return errh->error("Encoding[1] out of range"), -EFAULT;
 	const unsigned char *p = data + pos + 2;
 	int n = data[pos + 1];
 	for (int i = 0; i < n; i++, p += 2) {
@@ -1020,10 +1086,10 @@ PsfontCFFFont::parse_encoding(int pos)
 	}
 
     } else
-	return -EINVAL;
+	return errh->error("unknown Encoding format %d", format), -EINVAL;
 
     if (g > _charset.nglyphs())
-	return -EINVAL;
+	return errh->error("Encoding glyph %d out of range", g), -EINVAL;
     
     // check supplements
     if (supplemented) {
@@ -1037,8 +1103,8 @@ PsfontCFFFont::parse_encoding(int pos)
 	    if (_encoding[e])
 		retval = 1;
 	    if (g >= _charset.nglyphs())
-		return -EINVAL;
-	    encoding[e] = g;
+		return errh->error("Encoding glyph %d out of range", g), -EINVAL;
+	    _encoding[e] = g;
 	}
     }
 
@@ -1047,18 +1113,18 @@ PsfontCFFFont::parse_encoding(int pos)
 }
 
 int
-PsfontCFFFont::assign_standard_encoding(const int *standard_encoding) const
+PsfontCFF::Font::assign_standard_encoding(const int *standard_encoding)
 {
     for (int i = 0; i < 256; i++)
-	_encoding[i] = _charset.gid_of(standard_encoding[i]);
+	_encoding[i] = _charset.sid_to_gid(standard_encoding[i]);
     return 0;
 }
 
 PsfontCharstring *
-PsfontCFFFont::charstring(const IndexIterator &iiter, int which) const
+PsfontCFF::Font::charstring(const IndexIterator &iiter, int which) const
 {
-    const unsigned char *s1 = iiter[i];
-    int slen = iiter[i + 1] - s1;
+    const unsigned char *s1 = iiter[which];
+    int slen = iiter[which + 1] - s1;
     String cs = _cff->data_string().substring(s1 - _cff->data(), slen);
     if (slen == 0)
 	return 0;
@@ -1069,7 +1135,7 @@ PsfontCFFFont::charstring(const IndexIterator &iiter, int which) const
 }
 
 PsfontCharstring *
-PsfontCFFFont::subr(int i) const
+PsfontCFF::Font::subr(int i) const
 {
     i += subr_bias(_charstring_type, nsubrs());
     if (i < 0 || i >= nsubrs())
@@ -1080,13 +1146,13 @@ PsfontCFFFont::subr(int i) const
 }
 
 PsfontCharstring *
-PsfontCFFFont::gsubr(int i) const
+PsfontCFF::Font::gsubr(int i) const
 {
     return _cff->gsubr(i);
 }
 
 PermString
-PsfontCFFFont::glyph_name(int gid) const
+PsfontCFF::Font::glyph_name(int gid) const
 {
     if (gid >= 0 && gid < nglyphs())
 	return _cff->sid_permstring(_charset.gid_to_sid(gid));
@@ -1095,7 +1161,7 @@ PsfontCFFFont::glyph_name(int gid) const
 }
 
 void
-PsfontCFFFont::glyph_names(Vector<PermString> &gnames) const
+PsfontCFF::Font::glyph_names(Vector<PermString> &gnames) const
 {
     gnames.resize(nglyphs());
     for (int i = 0; i < nglyphs(); i++)
@@ -1103,7 +1169,7 @@ PsfontCFFFont::glyph_names(Vector<PermString> &gnames) const
 }
 
 PsfontCharstring *
-PsfontCFFFont::glyph(int gid) const
+PsfontCFF::Font::glyph(int gid) const
 {
     if (gid < 0 || gid >= nglyphs())
 	return 0;
@@ -1113,7 +1179,7 @@ PsfontCFFFont::glyph(int gid) const
 }
 
 PsfontCharstring *
-PsfontCFFFont::glyph(PermString name) const
+PsfontCFF::Font::glyph(PermString name) const
 {
     int gid = _charset.sid_to_gid(_cff->sid(name));
     if (gid < 0)
@@ -1124,7 +1190,7 @@ PsfontCFFFont::glyph(PermString name) const
 }
 
 Type1Encoding *
-PsfontCFFFont::type1_encoding() const
+PsfontCFF::Font::type1_encoding() const
 {
     if (!_t1encoding) {
 	_t1encoding = new Type1Encoding;
@@ -1133,4 +1199,10 @@ PsfontCFFFont::type1_encoding() const
 		_t1encoding->put(i, _cff->sid_permstring(_charset.gid_to_sid(_encoding[i])));
     }
     return _t1encoding;
+}
+
+double
+PsfontCFF::Font::global_width_x(bool is_nominal) const
+{
+    return (is_nominal ? _nominal_width_x : _default_width_x);
 }

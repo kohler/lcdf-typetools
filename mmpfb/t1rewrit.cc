@@ -181,8 +181,8 @@ HintReplacementDetector::type1_command(int cmd)
 	  subr_cs->run(*this);
 	  _subr_level--;
      
-	  if (errno() != errOK)
-	      return error(errno(), error_data());
+	  if (error() != errOK)
+	      return false;
 	  return !done();
       }
    
@@ -230,7 +230,7 @@ HintReplacementDetector::run(Type1Charstring &cs)
 {
     init();
     cs.run(*this);
-    return errno() == errOK;
+    return error() == errOK;
 }
 
 
@@ -630,7 +630,7 @@ Type1BadCallRemover::run(Type1Charstring &cs)
     init();
     cs.run(*this);
     _gen.output(cs);
-    return errno() == errOK;
+    return error() == errOK;
 }
 
 
@@ -879,7 +879,7 @@ SubrExpander::run(Type1Charstring &cs)
     init();
     cs.run(*this);
     _gen.output(cs);
-    return errno() == errOK;
+    return error() == errOK;
 }
 
 

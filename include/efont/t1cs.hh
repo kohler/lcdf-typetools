@@ -92,6 +92,8 @@ class PsfontProgram { public:
     virtual bool writable_vectors() const		{ return false; }
 
     virtual Type1Encoding *type1_encoding() const	{ return 0; }
+
+    virtual double global_width_x(bool is_nominal) const;
     
 };
 
