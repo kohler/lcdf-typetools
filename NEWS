@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 0.8   23.Jun.2003
+
+* otftopl has been renamed to otftotfm. The new program takes different
+  options; automatic mode is particularly different.
+
+* otftotfm:
+
+
 Version 0.7   13.Jun.2003
 
 * cfftot1: Fix bug to handle MinionPro-Italic without crashing.

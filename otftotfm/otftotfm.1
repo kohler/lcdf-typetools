@@ -12,13 +12,10 @@
 otftotfm \- create TeX PL metrics files from PostScript OpenType fonts
 .SH SYNOPSIS
 .B otftotfm
+\%[\fB-a\fR]
 \%[\fBoptions\fR]
 \%\fIotffile\fR [\fIfontname\fR]
-.br
-.B otftotfm
-\-a
-\%[\fBoptions\fR]
-\%\fIotffile\fR [\fIfontname\fR]
+'
 .SH DESCRIPTION
 .BR Otftotfm
 creates TeX font metrics and a 
@@ -76,13 +73,14 @@ containing the like "p +lcdftools.map" (or add that line to your existing
 .I config.ps
 file); this will help
 .M dvips 1
-find your new fonts. Now you can just run "otftotfm
+find your new fonts. Now, after running "otftotfm
 .B \-a
 .IR file .otf
-.IR fontname ,
-then refer to a font in TeX using the
+.IR fontname \&",
+you will immediately be able to refer to the font in TeX using the
 .I fontname
-supplied to otftotfm.
+you supplied to otftotfm. (Of course, you will have to do more work to make
+the font conveniently accessible from LaTeX or ConTeXt.)
 '
 .PP
 In automatic mode, otftotfm first searches your $TEXMF path for a writable
@@ -107,8 +105,11 @@ psfonts.map	TEXMF/dvips/	\fIvendor\fR.map
 font name supplied as otftotfm's second argument, and \fIPSfontname\fR is
 the PostScript name of the input font. The \fIvendor\fR and \fItypeface\fR
 strings are required by TDS; they default to "lcdftools" and the font's
-family name, respectively. \fISignature\fR is an opaque 6-character
-encoding signature.
+family name, respectively, but see the
+.B \-\-vendor
+and
+.B \-\-typeface
+options below. \fISignature\fR is an opaque 6-character encoding signature.
 .PP
 You can override these directories with environment variables and options
 as follows. Options take precedence over environment variables.
@@ -168,8 +169,13 @@ Defaults to any features required by the selected scripts.
 .BI \-e " encoding\fR, " \-\-encoding= encoding
 Selects the
 .M dvips 1
-encoding used as a starting point. See ENCODINGS, below, for more
-information. Defaults to the font's encoding.
+encoding used as a starting point. Otftotfm will search for
+.IR encoding [.enc]
+the same way that
+.B dvips
+would, so you may not need to give a full pathname. Defaults to the font's
+encoding. See ENCODINGS, below, for more information on how otftotfm uses
+encodings.
 '
 .Sp
 .TP 5
@@ -341,7 +347,7 @@ points. See ENCODINGS, below, for more information.
 .Sp
 .TP 5
 .BR \-V ", " \-\-verbose
-Write messages about the program's progress to standard error.
+Write progress messages to standard error.
 '
 .Sp
 .TP 5
@@ -454,3 +460,6 @@ http://www.tug.org/kpathsea/
 '
 .SH AUTHOR
 Eddie Kohler (kohler@icir.org)
+.PP
+Thanks to Karl Berry, Adam Lindsay, and Bruce D'Arcus for suggestions, bug
+reports, and help.
