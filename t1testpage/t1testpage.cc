@@ -19,8 +19,13 @@
 #include <efont/t1font.hh>
 #include <efont/t1item.hh>
 #include <efont/t1mm.hh>
+#include <efont/t1interp.hh>
+#include <efont/t1bounds.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
+#include <lcdf/globmatch.hh>
+#include <lcdf/transform.hh>
+#include <algorithm>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -40,11 +45,15 @@ using namespace Efont;
 #define VERSION_OPT	301
 #define HELP_OPT	302
 #define OUTPUT_OPT	303
+#define GLYPH_OPT	304
+#define SMOKE_OPT	305
 
 Clp_Option options[] = {
     { "help", 'h', HELP_OPT, 0, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
+    { "glyph", 'g', GLYPH_OPT, Clp_ArgString, 0 },
+    { "smoke", 's', SMOKE_OPT, 0, Clp_Negate }
 };
 
 
@@ -80,6 +89,8 @@ FONT is either the name of a PFA or PFB font file. If omitted, t1testpage will\n
 read a font file from the standard input.\n\
 \n\
 Options:\n\
+  -g, --glyph=GLYPH            Limit output to one or more GLYPHs.\n\
+  -s, --smoke                  Print smoke proofs, one character per page.\n\
   -o, --output=FILE            Write output to FILE instead of standard out.\n\
   -h, --help                   Print this message and exit.\n\
       --version                Print version number and exit.\n\
@@ -128,6 +139,276 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 
     delete reader;
 }
+
+
+static void
+output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_names)
+{
+    fprintf(outf, "%%!PS-Adobe-3.0\n%%%%LanguageLevel: 2\n%%%%BeginProlog\n");
+    fprintf(outf, "/magicstr 1 string def\n\
+/magicbox { %% row col char name encoding  magicbox  -\n\
+  5 3 roll 54 mul 36 add exch 54 mul neg 702 add moveto currentpoint\n\
+  .8 setgray 54 0 rlineto 0 54 rlineto -54 0 rlineto closepath stroke\n\
+  0 setgray moveto\n\
+  gsave /Helvetica 7 selectfont 3 1.5 rmoveto show grestore\n\
+  gsave /Helvetica 7 selectfont 3 45.5 rmoveto show grestore\n\
+  magicstr 0 3 -1 roll put\n\
+  magicstr stringwidth pop 54 sub -2 div 16 rmoveto magicstr show\n\
+} bind def\n");
+    Type1PFAWriter w(outf);
+    font->write(w);
+    fprintf(outf, "%%%%EndProlog\n");
+
+    HashMap<PermString, int> encodings(-1);
+    if (Type1Encoding *encoding = font->type1_encoding())
+	for (int i = 255; i >= 0; i--)
+	    encodings.insert(encoding->elt(i), i);
+    
+    int per_row = 10;
+    int nrows = 13;
+    int per_page = nrows * per_row;
+  
+    int page = 0;
+    for (int gi = 0; gi < glyph_names.size(); gi++) {
+    
+	if (gi % per_page == 0) {
+	    if (page)
+		fprintf(outf, "showpage restore\n");
+	    page++;
+	    fprintf(outf, "%%%%Page: %d %d\nsave\n", page, page);
+	    // make new font
+	    fprintf(outf, "/%s findfont dup length dict begin\n\
+ { 1 index /FID ne {def} {pop pop} ifelse } forall\n /Encoding [",
+		    font->font_name().c_str());
+	    for (int i = gi; i < gi + per_page && i < glyph_names.size(); i++) {
+		fprintf(outf, " /%s", glyph_names[i].c_str());
+		if (i % 10 == 9) fprintf(outf, "\n");
+	    }
+	    fprintf(outf, " ] def\n currentdict end /X exch definefont pop\n\
+/X 24 selectfont\n");
+	}
+	
+	int row = (gi % per_page) / per_row;
+	int col = gi % per_row;
+
+	fprintf(outf, "%d %d %d (%s)", row, col, gi % per_page, glyph_names[gi].c_str());
+	if (encodings[glyph_names[gi]] >= 0) {
+	    int e = encodings[glyph_names[gi]];
+	    if (e == '\\')
+		fprintf(outf, " ('\\\\\\\\')");
+	    else if (e == '\'')
+		fprintf(outf, " ('\\\\'')");
+	    else if (e == '(' || e == ')')
+		fprintf(outf, " ('\\%c')", e);
+	    else if (e >= 32 && e < 127)
+		fprintf(outf, " ('%c')", e);
+	    else
+		fprintf(outf, " ('\\\\%03o')", e);
+	} else
+	    fprintf(outf, " ()");
+	fprintf(outf, " magicbox\n");
+    }
+
+    if (page)
+	fprintf(outf, "showpage restore\n");
+    fprintf(outf, "%%%%EOF\n");
+    fclose(outf);
+}    
+
+
+/*****
+ * SMOKE PROOFS
+ **/
+
+inline StringAccum&
+operator<<(StringAccum& sa, const Point& p)
+{
+    return sa << p.x << ' ' << p.y;
+}
+
+class Smoker : public CharstringInterp { public:
+
+    Smoker(const Transform&);
+    
+    void act_line(int, const Point &, const Point &);
+    void act_curve(int, const Point &, const Point &, const Point &, const Point &);
+    void act_closepath(int);
+
+    String char_postscript()		{ return _char_sa.take_string(); }
+    String points_postscript()		{ return _points_sa.take_string(); }
+    
+    bool run(const CharstringContext&);
+
+  private:
+
+    Transform _xform;
+    StringAccum _char_sa;
+    StringAccum _points_sa;
+    Point _char_cp;
+
+    inline void maybe_move(const Point&);
+    
+};
+
+Smoker::Smoker(const Transform& xform)
+    : _xform(xform)
+{
+}
+
+void
+Smoker::maybe_move(const Point& p)
+{
+    if (_char_cp.x < -100000 || _char_cp != p) {
+	_char_sa << (p * _xform) << " moveto\n";
+	_points_sa << (p * _xform) << " pA\n";
+    }
+}
+
+void
+Smoker::act_line(int cmd, const Point& p0, const Point& p1)
+{
+    Point xp1 = p1 * _xform;
+
+    maybe_move(p0);
+    _char_sa << xp1 << " lineto\n";
+    if (cmd == Charstring::cRlineto
+	|| cmd == Charstring::cHlineto
+	|| cmd == Charstring::cVlineto)
+	_points_sa << xp1 << " pA\n";
+    _char_cp = p1;
+}
+
+void
+Smoker::act_curve(int, const Point &p0, const Point &p1, const Point &p2, const Point &p3)
+{
+    Point xp1 = p1 * _xform;
+    Point xp2 = p2 * _xform;
+    Point xp3 = p3 * _xform;
+
+    maybe_move(p0);
+    _char_sa << xp1 << ' ' << xp2 << ' ' << xp3 << " curveto\n";
+    _points_sa << xp1 << " pC " << xp2 << " pC " << xp3 << " pA\n";
+    _char_cp = p3;
+}
+
+void
+Smoker::act_closepath(int)
+{
+    _char_sa << "closepath\n";
+}
+
+bool
+Smoker::run(const CharstringContext& g)
+{
+    _char_sa.clear();
+    _points_sa.clear();
+    _char_cp.x = -200000;
+    return CharstringInterp::interpret(g);
+}
+
+#define LEFT_BOUND 72.
+#define RIGHT_BOUND (7.5 * 72)
+#define BOTTOM_BOUND 72.
+#define TOP_BOUND (7.5 * 72)
+
+static Transform
+bounds2xform(CharstringBounds& bounds, bool expand = false)
+{
+    if (expand) {
+	Point vec = bounds.bb_top_right() - bounds.bb_bottom_left();
+	bounds.act_line(0, bounds.bb_bottom_left() - 0.1 * vec, bounds.bb_top_right() + 0.1 * vec);
+    }
+    bounds.act_line(0, Point(0, 0), bounds.width());
+    bounds.act_line(0, Point(0, 0), Point(1, 1));
+    
+    double true_width = std::max(bounds.bb_right(), 0.) - std::min(bounds.bb_left(), 0.);
+    double true_height = std::max(bounds.bb_top(), 0.) - std::min(bounds.bb_bottom(), 0.);
+    double x_scale = (RIGHT_BOUND - LEFT_BOUND) / true_width;
+    double y_scale = (TOP_BOUND - BOTTOM_BOUND) / true_height;
+    double scale = std::min(x_scale, y_scale);
+    double origin_x = LEFT_BOUND;
+    if (bounds.bb_left() < 0)
+	origin_x += -bounds.bb_left() * scale;
+    double origin_y = BOTTOM_BOUND;
+    if (bounds.bb_bottom() < 0)
+	origin_y += -bounds.bb_bottom() * scale;
+    return Transform(scale, 0, 0, scale, origin_x, origin_y);
+}
+
+static const char* const bounds_glyphs[] = {
+    "A", "Eacute", "Ecircumflex", "l", "g", "p", "q", "j", "J", "emdash", 0
+};
+
+static void
+output_smoke(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_names)
+{
+    fprintf(outf, "%%!PS-Adobe-3.0\n%%%%LanguageLevel: 2\n%%%%BeginProlog\n");
+    fprintf(outf, "/pA { %% x y  pA  -\n\
+  moveto\n\
+  -2 -2 rmoveto 4 0 rlineto 0 4 rlineto -4 0 rlineto closepath\n\
+  gsave 1 setgray stroke grestore 0 setgray fill\n\
+} bind def\n\
+/pC { %% x y  pC  -\n\
+  2 copy moveto 2 0 rmoveto 2 0 360 arc\n\
+  gsave 1 setgray stroke grestore 0.1 setgray fill\n\
+} bind def\n\
+");
+    //Type1PFAWriter w(outf);
+    //font->write(w);
+    fprintf(outf, "%%%%EndProlog\n");
+
+    HashMap<PermString, int> encodings(-1);
+    if (Type1Encoding *encoding = font->type1_encoding())
+	for (int i = 255; i >= 0; i--)
+	    encodings.insert(encoding->elt(i), i);
+
+    // First, calculate font bounds, and from there, the transform.
+    CharstringBounds bounds;
+    for (const char* const* bg = bounds_glyphs; *bg; bg++)
+	if (CharstringContext cc = font->glyph_context(*bg))
+	    bounds.char_bounds(cc, false);
+    if (bounds.bb_left() == bounds.bb_right())
+	for (int gi = 0; gi < glyph_names.size(); gi++)
+	    bounds.char_bounds(font->glyph_context(glyph_names[gi]), false);
+    Transform font_xform = bounds2xform(bounds, true);
+    
+    for (int gi = 0; gi < glyph_names.size(); gi++) {
+	fprintf(outf, "%%%%Page: %d %d\nsave\n", gi + 1, gi + 1);
+
+	CharstringContext cc = font->glyph_context(glyph_names[gi]);
+	bounds.clear();
+	bounds.char_bounds(cc, false);
+
+	Transform xform(font_xform);
+	if (bounds.bb_known()) {
+	    Point lb = bounds.bb_bottom_left() * xform;
+	    Point rt = bounds.bb_top_right() * xform;
+	    Point wd = bounds.width() * xform;
+	    if (lb.x < LEFT_BOUND || lb.y < BOTTOM_BOUND
+		|| rt.x > RIGHT_BOUND || rt.y > TOP_BOUND
+		|| wd.x < LEFT_BOUND || wd.x > RIGHT_BOUND
+		|| wd.y < BOTTOM_BOUND || wd.y > TOP_BOUND)
+		xform = bounds2xform(bounds);
+	}
+
+	Smoker smoker(xform);
+	smoker.run(font->glyph_context(glyph_names[gi]));
+	fprintf(outf, "%g %g moveto 0 %g rlineto %g %g moveto 0 %g rlineto %g %g moveto %g 0 rlineto 0 setgray stroke\n",
+		(Point(0, 0) * xform).x, BOTTOM_BOUND - 36, TOP_BOUND - BOTTOM_BOUND + 72,
+		(bounds.width() * xform).x, BOTTOM_BOUND - 36, TOP_BOUND - BOTTOM_BOUND + 72,
+		LEFT_BOUND - 36, (Point(0, 0) * xform).y, RIGHT_BOUND - LEFT_BOUND + 72);
+	
+	fprintf(outf, "%s\n0.5 setgray fill\n\n1 setlinewidth\n%s\nshowpage\nrestore\n", smoker.char_postscript().c_str(), smoker.points_postscript().c_str());
+    }
+
+    fprintf(outf, "%%%%EOF\n");
+    fclose(outf);
+}    
+
+
+/*****
+ * MAIN PROGRAM
+ **/
 
 int
 click_strcmp(PermString a, PermString b)
@@ -203,6 +484,17 @@ glyphcompare(const void *lv, const void *rv)
 }
 }
 
+static bool
+glyph_matches(const String& glyph_name, const String* pattern_begin, const String* pattern_end)
+{
+    if (pattern_begin >= pattern_end)
+	return true;
+    for (; pattern_begin < pattern_end; pattern_begin++)
+	if (glob_match(glyph_name, *pattern_begin))
+	    return true;
+    return false;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -215,11 +507,31 @@ main(int argc, char *argv[])
   
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
     const char *output_file = 0;
+    Vector<String> glyph_patterns;
+    bool smoke = false;
   
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
-      
+
+	  case GLYPH_OPT: {
+	      const char* s = clp->arg, *end = s + strlen(s);
+	      while (s < end) {
+		  while (s < end && isspace(*s))
+		      s++;
+		  const char* word = s;
+		  while (s < end && !isspace(*s))
+		      s++;
+		  if (word < s)
+		      glyph_patterns.push_back(String(word, s - word));
+	      }
+	      break;
+	  }
+
+	  case SMOKE_OPT:
+	    smoke = !clp->negated;
+	    break;
+	    
 	  case OUTPUT_OPT:
 	    if (output_file)
 		errh->fatal("output file already specified");
@@ -273,24 +585,8 @@ particular purpose.\n");
     }
 
     //font->undo_synthetic();
-  
-    fprintf(outf, "%%!PS-Adobe-3.0\n%%%%LanguageLevel: 2\n%%%%BeginProlog\n");
-    fprintf(outf, "/magicstr 1 string def\n\
-/magicbox { %% row col char name encoding  magicbox  -\n\
-  5 3 roll 54 mul 36 add exch 54 mul neg 702 add moveto currentpoint\n\
-  .8 setgray 54 0 rlineto 0 54 rlineto -54 0 rlineto closepath stroke\n\
-  0 setgray moveto\n\
-  gsave /Helvetica 7 selectfont 3 1.5 rmoveto show grestore\n\
-  gsave /Helvetica 7 selectfont 3 45.5 rmoveto show grestore\n\
-  magicstr 0 3 -1 roll put\n\
-  magicstr stringwidth pop 54 sub -2 div 16 rmoveto magicstr show\n\
-} bind def\n");
-    Type1PFAWriter w(outf);
-    font->write(w);
-    fprintf(outf, "%%%%EndProlog\n");
 
-    // sort glyphs by name
-    // First, prepare names.
+    // Prepare glyph order table
     int gindex = 0;
     char buf[7] = "Asmall";
     for (int c = 0; c < 26; c++) {
@@ -331,67 +627,19 @@ particular purpose.\n");
     glyph_order.insert(".notdef", gindex++);
     glyph_order.insert("space", gindex++);
 
-    HashMap<PermString, int> encodings(-1);
-    Type1Encoding *encoding = font->type1_encoding();
-    if (encoding)
-	for (int i = 255; i >= 0; i--)
-	    encodings.insert(encoding->elt(i), i);
-    
+    // Get glyph names.
     Vector<PermString> glyph_names;
-    int nglyphs = font->nglyphs();
-    for (int i = 0; i < nglyphs; i++)
-	glyph_names.push_back(font->glyph_name(i));
-    qsort(&glyph_names[0], nglyphs, sizeof(PermString), glyphcompare);
+    for (int i = 0; i < font->nglyphs(); i++)
+	if (glyph_matches(font->glyph_name(i), glyph_patterns.begin(), glyph_patterns.end()))
+	    glyph_names.push_back(font->glyph_name(i));
+    if (glyph_names.size() == 0)
+	errh->fatal("no glyphs to print");
+    qsort(glyph_names.begin(), glyph_names.size(), sizeof(PermString), glyphcompare);
 
-    int per_row = 10;
-    int nrows = 13;
-    int per_page = nrows * per_row;
-  
-    int page = 0;
-    for (int gi = 0; gi < nglyphs; gi++) {
-    
-	if (gi % per_page == 0) {
-	    if (page)
-		fprintf(outf, "showpage restore\n");
-	    page++;
-	    fprintf(outf, "%%%%Page: %d %d\nsave\n", page, page);
-	    // make new font
-	    fprintf(outf, "/%s findfont dup length dict begin\n\
- { 1 index /FID ne {def} {pop pop} ifelse } forall\n /Encoding [",
-		    font->font_name().c_str());
-	    for (int i = gi; i < gi + per_page && i < nglyphs; i++) {
-		fprintf(outf, " /%s", glyph_names[i].c_str());
-		if (i % 10 == 9) fprintf(outf, "\n");
-	    }
-	    fprintf(outf, " ] def\n currentdict end /X exch definefont pop\n\
-/X 24 selectfont\n");
-	}
-	
-	int row = (gi % per_page) / per_row;
-	int col = gi % per_row;
-
-	fprintf(outf, "%d %d %d (%s)", row, col, gi % per_page, glyph_names[gi].c_str());
-	if (encodings[glyph_names[gi]] >= 0) {
-	    int e = encodings[glyph_names[gi]];
-	    if (e == '\\')
-		fprintf(outf, " ('\\\\\\\\')");
-	    else if (e == '\'')
-		fprintf(outf, " ('\\\\'')");
-	    else if (e == '(' || e == ')')
-		fprintf(outf, " ('\\%c')", e);
-	    else if (e >= 32 && e < 127)
-		fprintf(outf, " ('%c')", e);
-	    else
-		fprintf(outf, " ('\\\\%03o')", e);
-	} else
-	    fprintf(outf, " ()");
-	fprintf(outf, " magicbox\n");
-    }
-
-    if (page)
-	fprintf(outf, "showpage restore\n");
-    fprintf(outf, "%%%%EOF\n");
-    fclose(outf);
+    if (smoke)
+	output_smoke(outf, font, glyph_names);
+    else
+	output_testpage(outf, font, glyph_names);
   
     exit(0);
 }

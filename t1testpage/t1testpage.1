@@ -26,6 +26,22 @@ T1testpage is preliminary software.
 .SH OPTIONS
 .PD 0
 .TP 5
+.BR \-g " \fIglyphs\fR, " \-\-glyph= \fIglyphs
+Print only glyphs matching
+.IR glyphs .
+The argument is a glyph pattern, using shell-like matching rules; thus,
+.BR "\-g " 'A*'
+will match the glyphs 'A', 'Atilde', and 'Ampersand', among others.  You
+can give this option multiple times, or supply multiple space-separated
+patterns.
+'
+.Sp
+.TP 5
+.BR \-s ", " \-\-smoke
+Print smoke proofs, one glyph per page.  This option is preliminary.
+'
+.Sp
+.TP 5
 .BR \-o " \fIfile\fR, " \-\-output= \fIfile
 Write the output proof to
 .I file
