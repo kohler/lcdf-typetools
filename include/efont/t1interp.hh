@@ -37,7 +37,8 @@ class CharstringInterp { public:
     double &vec(Vector<double> *, int);
     Vector<double> *weight_vector();
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
-  
+
+    const EfontProgram *program() const		{ return _program; }
     Charstring *get_subr(int) const;
     Charstring *get_gsubr(int) const;
     Charstring *get_glyph(PermString) const;
