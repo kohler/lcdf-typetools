@@ -57,5 +57,5 @@ realclean: distclean
 dist:
 	mkdir -m 0777 ../$(PACKAGE)-$(VERSION)/mmpfb
 	cp Makefile.in hashmapi.cc vectori.cc myfont.cc myfont.hh main.cc \
-	mmpfb.min \
+	mmpfb.man \
 	../$(PACKAGE)-$(VERSION)/mmpfb

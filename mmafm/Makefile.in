@@ -55,5 +55,5 @@ realclean: distclean
 
 dist:
 	mkdir -m 0777 ../$(PACKAGE)-$(VERSION)/mmafm
-	cp Makefile.in hashmapi.cc vectori.cc main.cc mmafm.min \
+	cp Makefile.in hashmapi.cc vectori.cc main.cc mmafm.man \
 	../$(PACKAGE)-$(VERSION)/mmafm
