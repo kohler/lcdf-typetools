@@ -467,8 +467,16 @@ Substitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 	sa << " | ";
 	unparse_glyphid(sa, _right.gid, gns);
 	sa << ']';
+    } else if (is_single_lcontext()) {
+	sa << "SINGLE_LCONTEXT[";
+	unparse_glyphid(sa, _left.gid, gns);
+	sa << " | ";
+	unparse_glyphid(sa, _in.gid, gns);
+	sa << " => ";
+	unparse_glyphid(sa, _out.gid, gns);
+	sa << ']';
     } else
-	sa << "UNKNOWN[]";
+	sa << "UNKNOWN[" << (int)_left_is << ',' << (int)_in_is << ',' << (int)_out_is << ',' << (int)_right_is << "]";
 }
 
 String
@@ -966,6 +974,12 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v) const
 	bool any = false;
 	for (Coverage::iterator ci = c.begin(); ci; ci++)
 	    any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_RIGHT, *ci));
+	return any;
+    } else if (nbacktrack == 1 && ninput == 1 && nlookahead == 0) {
+	Coverage c(_d.offset_subtable(F3_HSIZE));
+	bool any = false;
+	for (Coverage::iterator ci = c.begin(); ci; ci++)
+	    any |= GsubContext::f3_unparse(_d, ninput, input_offset + F3_INPUT_HSIZE, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, v, Substitution(Substitution::C_LEFT, *ci));
 	return any;
     } else
 	return false;
