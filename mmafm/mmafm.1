@@ -1,5 +1,8 @@
 .\" -*-nroff-*-
 .ds V 1.20
+.de M
+.BR "\\$1" "(\\$2)\\$3"
+..
 .ds E " \-\- 
 .if t .ds E \(em
 .de OP
@@ -84,7 +87,7 @@ on the font outline files to create auxiliary AMCP files for these fonts.
 Each AMCP file should be in the same directory as its corresponding AMFM
 file and should have the same root filename, but with a `.amcp' extension
 instead of `.amfm'. See
-.BR mmpfb (1)
+.M mmpfb 1
 for more information.
 '
 '
@@ -152,7 +155,7 @@ with the
 option.
 '
 .SH SEE ALSO
-.BR mmpfb (1)
+.M mmpfb 1
 '
 .SH DIAGNOSTICS
 .TP 5

@@ -1,5 +1,8 @@
 .\" -*-nroff-*-
 .ds V 1.20
+.de M
+.BR "\\$1" "(\\$2)\\$3"
+..
 .ds E " \-\- 
 .if t .ds E \(em
 .de OP
@@ -45,7 +48,7 @@ programs that don't normally understand multiple master fonts, like
 supports fonts with intermediate masters, like Adobe Jenson and Kepler. It
 can also create AMCP (Adobe Multiple Master Conversion Program) files for
 use by
-.BR mmafm (1);
+.M mmafm 1 ;
 see
 .B \-\-amcp\-info
 below.
@@ -96,7 +99,7 @@ Output a PFA font.
 .OP \-\-amcp\-info
 '
 Do not create a font; instead, output an AMCP file for use by
-.BR mmafm (1).
+.M mmafm 1 .
 A message is printed if the font doesn't have intermediate masters, in
 which case no AMCP file is necessary.
 '
@@ -184,7 +187,7 @@ in the generated font with the
 option.
 '
 .SH SEE ALSO
-.BR mmafm (1)
+.M mmafm 1
 '
 .SH DIAGNOSTICS
 .TP 5
