@@ -10,8 +10,8 @@ class DvipsEncoding { public:
     DvipsEncoding();
 
     static int parse_glyphlist(String);
-    static int glyphname_unicode(const String &);
-    static void glyphname_unicode(String, Vector<int> &);
+    static int glyphname_unicode(const String &, bool *more = 0);
+    static void glyphname_unicode(String, Vector<int> &, bool *more = 0);
 
     operator bool() const			{ return _e.size() > 0; }
     const String &name() const			{ return _name; }
