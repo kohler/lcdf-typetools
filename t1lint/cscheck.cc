@@ -140,7 +140,7 @@ bool
 CharstringChecker::error(int which, int data)
 {
     CharstringInterp::error(which, data);
-    _errh->error("%s", error_string().cc());
+    _errh->error("%s", error_string().c_str());
     return false;
 }
 

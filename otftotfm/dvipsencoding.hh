@@ -23,7 +23,7 @@ class DvipsEncoding { public:
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
-    bool encoded(int e) const;
+    inline bool encoded(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
     const Vector<uint32_t> &unicodes() const;

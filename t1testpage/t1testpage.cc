@@ -138,8 +138,8 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 int
 click_strcmp(PermString a, PermString b)
 {
-    const char *ad = a.cc(), *ae = a.cc() + a.length();
-    const char *bd = b.cc(), *be = b.cc() + b.length();
+    const char *ad = a.c_str(), *ae = a.c_str() + a.length();
+    const char *bd = b.c_str(), *be = b.c_str() + b.length();
     
     while (ad < ae && bd < be) {
 	if (isdigit(*ad) && isdigit(*bd)) {
@@ -185,12 +185,12 @@ click_strcmp(PermString a, PermString b)
 	return (ae - ad) - (be - bd);
     else {
 	assert(a.length() == b.length());
-	return memcmp(a.cc(), b.cc(), a.length());
+	return memcmp(a.c_str(), b.c_str(), a.length());
     }
 }
 
 extern "C" {
-static int
+static int CDECL
 glyphcompare(const void *lv, const void *rv)
 {
     const PermString *ln = (const PermString *)lv;
@@ -364,9 +364,9 @@ particular purpose.\n");
 	    // make new font
 	    fprintf(outf, "/%s findfont dup length dict begin\n\
  { 1 index /FID ne {def} {pop pop} ifelse } forall\n /Encoding [",
-		    font->font_name().cc());
+		    font->font_name().c_str());
 	    for (int i = gi; i < gi + per_page && i < nglyphs; i++) {
-		fprintf(outf, " /%s", glyph_names[i].cc());
+		fprintf(outf, " /%s", glyph_names[i].c_str());
 		if (i % 10 == 9) fprintf(outf, "\n");
 	    }
 	    fprintf(outf, " ] def\n currentdict end /X exch definefont pop\n\
@@ -376,7 +376,7 @@ particular purpose.\n");
 	int row = (gi % per_page) / per_row;
 	int col = gi % per_row;
 
-	fprintf(outf, "%d %d %d (%s)", row, col, gi % per_page, glyph_names[gi].cc());
+	fprintf(outf, "%d %d %d (%s)", row, col, gi % per_page, glyph_names[gi].c_str());
 	if (encodings[glyph_names[gi]] >= 0) {
 	    int e = encodings[glyph_names[gi]];
 	    if (e == '\\')

@@ -34,6 +34,10 @@
 # include <fcntl.h>
 #endif
 
+#ifdef WIN32
+# define mkdir(dir, access) mkdir(dir)
+#endif
+
 static String::Initializer initializer;
 static String odir[NUMODIR];
 static String typeface;
