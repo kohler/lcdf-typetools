@@ -96,10 +96,11 @@ class FeatureList { public:
     bool ok() const			{ return _str.length() > 0; }
 
     Tag tag(int fid) const;
-    String params(int fid, int length, ErrorHandler * = 0) const;
+    String params(int fid, int length, ErrorHandler * = 0, bool old_style_offset = false) const;
     int lookups(int fid, Vector<int> &results, ErrorHandler * = 0, bool clear_results = true) const;
 
-    void filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
+    int find(Tag, const Vector<int> &fids) const;
+    void filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
 
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(const Vector<int> &required_fids, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;

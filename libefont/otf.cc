@@ -381,7 +381,7 @@ FeatureList::tag(int fid) const
 }
 
 String
-FeatureList::params(int fid, int length, ErrorHandler *errh) const
+FeatureList::params(int fid, int length, ErrorHandler *errh, bool old_style_offset) const
 {
     if (_str.length() == 0 || length < 0)
 	return String();
@@ -399,14 +399,34 @@ FeatureList::params(int fid, int length, ErrorHandler *errh) const
     int poff = USHORT_AT(data + foff);
     if (poff == 0)
 	return String();
-    else if (len < foff + poff + length)
+    if (!old_style_offset)
+	poff += foff;
+    if (len < poff + length)
 	return errh->error("OTF feature parameters for feature ID '%d' out of range", fid), String();
     else
-	return _str.substring(foff + poff, length);
+	return _str.substring(poff, length);
+}
+
+int
+FeatureList::find(Tag tag, const Vector<int> &fids) const
+{
+    if (fids.size() == 0 || _str.length() == 0)
+	return -1;
+
+    const uint8_t *data = _str.udata();
+    int nfeatures = USHORT_AT(data);
+    for (const int *fidp = fids.begin(); fidp != fids.end(); fidp++)
+	if (*fidp >= 0 && *fidp < nfeatures) {
+	    uint32_t ftag = ULONG_AT2(data + FEATURELIST_HEADERSIZE + (*fidp)*FEATURE_RECSIZE);
+	    if (ftag == tag)
+		return *fidp;
+	}
+
+    return -1;
 }
 
 void
-FeatureList::filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const
+FeatureList::filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const
 {
     if (_str.length() == 0)
 	fids.clear();
@@ -490,7 +510,7 @@ int
 FeatureList::lookups(const Vector<int> &required_fids, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
 {
     Vector<int> fidsx(fids);
-    filter_features(fidsx, sorted_ftags);
+    filter(fidsx, sorted_ftags);
     for (int i = 0; i < required_fids.size(); i++)
 	fidsx.push_back(required_fids[i]);
     return lookups(fidsx, results, errh);
@@ -500,7 +520,7 @@ int
 FeatureList::lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
 {
     Vector<int> fidsx(fids);
-    filter_features(fidsx, sorted_ftags);
+    filter(fidsx, sorted_ftags);
     if (required_fid >= 0)
 	fidsx.push_back(required_fid);
     return lookups(fidsx, results, errh);
@@ -513,7 +533,7 @@ FeatureList::lookups(const ScriptList &script_list, Tag script, Tag langsys, con
     Vector<int> fids;
     int result = script_list.features(script, langsys, required_fid, fids, errh);
     if (result >= 0) {
-	filter_features(fids, sorted_ftags);
+	filter(fids, sorted_ftags);
 	if (required_fid >= 0)
 	    fids.push_back(required_fid);
 	result = lookups(fids, results, errh);
