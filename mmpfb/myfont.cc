@@ -223,8 +223,8 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   PermString name;
   Type1Definition *def;
   while (dict_each(dBlend, i, name, def))
-    if (def) {
-      //errh->warning("didn't interpolate %s in Blend", name.cc());
+    if (def && name != "Private" && name != "FontInfo") {
+      errh->warning("didn't interpolate %s in Blend", name.cc());
       kill_def(def, dBlend);
     }
   
