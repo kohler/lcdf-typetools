@@ -107,7 +107,7 @@ class _HashMap_iterator : public _HashMap_const_iterator<K, V> { public:
     V &value() const			{ return _hm->_e[_pos].value; }
 
   private:
-    _HashMap_iterator(const HashMap<K, V> *hm, int pos) : const_iterator(hm, pos) { }
+    _HashMap_iterator(const HashMap<K, V> *hm, int pos) : _HashMap_const_iterator<K, V>(hm, pos) { }
     friend class HashMap<K, V>;
 };
 
