@@ -521,7 +521,9 @@ output_encoding(const GsubEncoding &gsub_encoding,
     md5_final_text(text_digest, &md5);
 
     // name encoding using digest
-    new_encoding_name = "AutoEnc_" + String(text_digest);
+    // 3.Jun.2003: switch from "AutoEnc_" to "AutoEnc-", since ps2pk
+    // idiotically thinks that '_' cannot be part of PostScript names
+    new_encoding_name = "AutoEnc-" + String(text_digest);
 
     // put encoding block in a StringAccum
     StringAccum contents;
