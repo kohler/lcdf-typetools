@@ -9,14 +9,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <netinet/in.h>		// for ntohl()
-
-#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
-#define SHORT_AT(d)		((int16_t) ntohs(*(const uint16_t *)(d)))
-#define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
-
-#define USHORT_ATX(d)		(((uint8_t)*(d) << 8) | (uint8_t)*((d)+1))
-#define ULONG_ATX(d)		((USHORT_ATX((d)) << 16) | USHORT_ATX((d)+2))
 
 namespace Efont { namespace OpenType {
 

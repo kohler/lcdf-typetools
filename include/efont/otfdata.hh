@@ -38,6 +38,7 @@ class Data { public:
     uint32_t u32(unsigned offset) const throw (Bounds);    
     int32_t s32(unsigned offset) const throw (Bounds);
 
+    Data subtable(unsigned offset) const throw (Bounds);
     Data offset_subtable(unsigned offset_offset) const throw (Bounds);
 
   private:

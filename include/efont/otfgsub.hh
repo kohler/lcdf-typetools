@@ -5,13 +5,77 @@
 #include <efont/otfdata.hh>
 namespace Efont { namespace OpenType {
 class GsubLookup;
+class Substitution;
 
-// Have: a list of Unicode characters
-// Want: the 'simple' substitutions concerning any of those Unicode characters
-// How to do: GlyphIndexSet == set of GlyphIndexes (4bits/12bits)
-// Single substitutions
-// Generate a list of substitutions of different types that apply?
-// Use: ??que?
+class Gsub { public:
+
+    Gsub(const Data &, ErrorHandler * = 0) throw (Error);
+    // default destructor
+
+    const ScriptList &script_list() const { return _script_list; }
+    const FeatureList &feature_list() const { return _feature_list; }
+
+    GsubLookup lookup(unsigned) const;
+
+    enum { HEADERSIZE = 10 };
+    
+  private:
+
+    ScriptList _script_list;
+    FeatureList _feature_list;
+    Data _lookup_list;
+    
+};
+
+class GsubLookup { public:
+    GsubLookup(const Data &) throw (Error);
+    int type() const			{ return _d.u16(0); }
+    uint16_t flags() const		{ return _d.u16(2); }
+    void unparse_automatics(Vector<Substitution> &) const;
+    enum {
+	HEADERSIZE = 6, RECSIZE = 2,
+	L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
+	L_CONTEXT = 5, L_CHAIN = 6, L_REVCHAIN = 8
+    };
+  private:
+    Data _d;
+};
+
+class GsubSingle { public:
+    GsubSingle(const Data &) throw (Error);
+    // default destructor
+    Coverage coverage() const throw ();
+    Glyph map(Glyph) const;
+    void unparse(Vector<Substitution> &) const;
+    enum { HEADERSIZE = 6, FORMAT2_RECSIZE = 2 };
+  private:
+    Data _d;
+};
+
+class GsubMultiple { public:
+    GsubMultiple(const Data &) throw (Error);
+    // default destructor
+    Coverage coverage() const throw ();
+    bool map(Glyph, Vector<Glyph> &) const;
+    void unparse(Vector<Substitution> &, bool alternate = false) const;
+    enum { HEADERSIZE = 6, RECSIZE = 2,
+	   SEQ_HEADERSIZE = 2, SEQ_RECSIZE = 2 };
+  private:
+    Data _d;
+};
+
+class GsubLigature { public:
+    GsubLigature(const Data &) throw (Error);
+    // default destructor
+    Coverage coverage() const throw ();
+    bool map(const Vector<Glyph> &, Glyph &, int &) const;
+    void unparse(Vector<Substitution> &) const;
+    enum { HEADERSIZE = 6, RECSIZE = 2,
+	   SET_HEADERSIZE = 2, SET_RECSIZE = 2,
+	   LIG_HEADERSIZE = 4, LIG_RECSIZE = 2 };
+  private:
+    Data _d;
+};
 
 class Substitution { public:
 
@@ -83,80 +147,6 @@ class Substitution { public:
     static Glyph extract_glyph(const Substitute &, uint8_t);
     static bool extract_glyphs(const Substitute &, uint8_t, Vector<Glyph> &);
     
-};
-
-class Gsub { public:
-
-    Gsub(const Data &, ErrorHandler * = 0) throw (Error);
-    // default destructor
-
-    const ScriptList &script_list() const { return _script_list; }
-    const FeatureList &feature_list() const { return _feature_list; }
-
-    GsubLookup lookup(unsigned) const;
-
-    enum {
-	HEADERSIZE = 10,
-	L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
-	L_CONTEXT = 5, L_CHAIN = 6, L_REVCHAIN = 8
-    };
-    
-  private:
-
-    ScriptList _script_list;
-    FeatureList _feature_list;
-    Data _lookup_list;
-    
-};
-
-class GsubLookup { public:
-    GsubLookup(const Data &) throw (Error);
-    int type() const			{ return _d.u16(0); }
-    uint16_t flags() const		{ return _d.u16(2); }
-    void unparse_automatics(Vector<Substitution> &) const;
-    enum {
-	HEADERSIZE = 6, RECSIZE = 2,
-	L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
-	L_CONTEXT = 5, L_CHAIN = 6, L_REVCHAIN = 8
-    };
-  public:
-    Data _d;
-};
-
-class GsubSingle { public:
-    GsubSingle(const Data &) throw (Error);
-    // default destructor
-    Coverage coverage() const throw ();
-    Glyph map(Glyph) const;
-    void unparse(Vector<Substitution> &) const;
-    enum { HEADERSIZE = 6, FORMAT2_RECSIZE = 2 };
-  private:
-    Data _d;
-};
-
-class GsubMultiple { public:
-    GsubMultiple(const Data &) throw (Error);
-    // default destructor
-    Coverage coverage() const throw ();
-    bool map(Glyph, Vector<Glyph> &) const;
-    void unparse(Vector<Substitution> &, bool alternate = false) const;
-    enum { HEADERSIZE = 6, RECSIZE = 2,
-	   SEQ_HEADERSIZE = 2, SEQ_RECSIZE = 2 };
-  private:
-    Data _d;
-};
-
-class GsubLigature { public:
-    GsubLigature(const Data &) throw (Error);
-    // default destructor
-    Coverage coverage() const throw ();
-    bool map(const Vector<Glyph> &, Glyph &, int &) const;
-    void unparse(Vector<Substitution> &) const;
-    enum { HEADERSIZE = 6, RECSIZE = 2,
-	   SET_HEADERSIZE = 2, SET_RECSIZE = 2,
-	   LIG_HEADERSIZE = 4, LIG_RECSIZE = 2 };
-  private:
-    Data _d;
 };
 
 inline

@@ -4,279 +4,192 @@
 #endif
 #include <efont/otfgpos.hh>
 #include <lcdf/error.hh>
+#include <lcdf/straccum.hh>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <netinet/in.h>		// for ntohl()
 
-#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
-#define SHORT_AT(d)		((int16_t) ntohs(*(const uint16_t *)(d)))
-#define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
+namespace Efont { namespace OpenType {
 
-#define USHORT_ATX(d)		(((uint8_t)*(d) << 8) | (uint8_t)*((d)+1))
-#define ULONG_ATX(d)		((USHORT_ATX((d)) << 16) | USHORT_ATX((d)+2))
 
-#define SCRIPTLIST_OFF		USHORT_AT(data + 4)
-#define FEATURELIST_OFF		USHORT_AT(data + 6)
-#define LOOKUPLIST_OFF		USHORT_AT(data + 8)
+/**************************
+ * Gpos                   *
+ *                        *
+ **************************/
 
-namespace Efont {
-
-OpenTypeGlyphTable::OpenTypeGlyphTable(const String &s, ErrorHandler *errh)
-    : _str(s)
+Gpos::Gpos(const Data &d, ErrorHandler *errh) throw (Error)
 {
-    _str.align(4);
-    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
-}
-
-int
-OpenTypeGlyphTable::parse_header(ErrorHandler *errh)
-{
-    // HEADER FORMAT:
     // Fixed	Version
     // Offset	ScriptList
     // Offset	FeatureList
     // Offset	LookupList
-    int len = _str.length();
-    const uint8_t *data = _str.udata();
-    const uint8_t *end_data = data + _str.length();
-    if (HEADER_SIZE > len)
-	return errh->error("OTF %s too small for header", table_name()), -EFAULT;
-    if (!(data[0] == '\000' && data[1] == '\001'))
-	return errh->error("bad %s version number", table_name()), -ERANGE;
-    
-    // LOOKUPLIST FORMAT:
-    // USHORT	LookupCount
-    // USHORT	Lookup[LookupCount]
-    const uint8_t *ldata = data + LOOKUPLIST_OFF;
-    int nlookup;
-    if (ldata + LOOKUPLIST_HEADER_SIZE > end_data
-	|| ((nlookup = USHORT_ATX(ldata)),
-	    ldata + LOOKUPLIST_HEADER_SIZE + nlookup * LOOKUP_RECORD_SIZE > end_data))
-	return errh->error("OTF %s LookupList out of range", table_name()), -EFAULT;
-    
-    // FEATURELIST FORMAT:
-    // USHORT	FeatureCount
-    // struct	FeatureRecord[FeatureCount]
-    //   Tag	FeatureTag
-    //   Offset	Feature
-    const uint8_t *fdata = data + FEATURELIST_OFF;
-    int nfeature;
-    if (fdata + FEATURELIST_HEADER_SIZE > end_data
-	|| ((nfeature = USHORT_ATX(fdata)),
-	    fdata + FEATURELIST_HEADER_SIZE + nfeature * FEATURE_RECORD_SIZE > end_data))
-	return errh->error("OTF %s FeatureList out of range", table_name()), -EFAULT;
-    
-    // SCRIPTLIST FORMAT:
-    // USHORT	ScriptCount
-    // struct	ScriptRecord[ScriptCount]
-    //   Tag	ScriptTag
-    //   Offset	Script
-    const uint8_t *sdata = data + SCRIPTLIST_OFF;
-    int n;
-    if (sdata + SCRIPTLIST_HEADER_SIZE > end_data
-	|| ((n = USHORT_ATX(sdata)),
-	    sdata + SCRIPTLIST_HEADER_SIZE + n * SCRIPT_RECORD_SIZE > end_data))
-	return errh->error("OTF %s ScriptList out of range", table_name()), -EFAULT;
-    
-    return 0;
+    if (d.u16(0) != 1)
+	throw Format("GPOS");
+    if (_script_list.assign(d.offset_subtable(4), errh) < 0)
+	throw Format("GPOS script list");
+    if (_feature_list.assign(d.offset_subtable(6), errh) < 0)
+	throw Format("GPOS feature list");
+    _lookup_list = d.offset_subtable(8);
+}
+
+GposLookup
+Gpos::lookup(unsigned i) const
+{
+    if (i >= _lookup_list.u16(0))
+	throw Error("GPOS lookup out of range");
+    else
+	return GposLookup(_lookup_list.offset_subtable(2 + i*2));
 }
 
 
-// fuck error handling.
+/**************************
+ * GposValue              *
+ *                        *
+ **************************/
 
-int
-OpenTypeGlyphTable::scripts(Vector<OpenTypeTag> &v) const
+const int GposValue::nibble_bitcount_x2[] = { 0, 2, 2, 4, 2, 4, 4, 6,
+					      2, 4, 4, 6, 4, 6, 6, 8 };
+
+
+/**************************
+ * GposLookup             *
+ *                        *
+ **************************/
+
+GposLookup::GposLookup(const Data &d) throw (Error)
+    : _d(d)
 {
-    if (_error >= 0) {
-	const uint8_t *data = _str.udata();
-	const uint8_t *sdata = data + SCRIPTLIST_OFF;
-	int nscripts = USHORT_ATX(sdata);
-	sdata += 2;
-	for (int i = 0; i < nscripts; i++, sdata += SCRIPT_RECORD_SIZE)
-	    v.push_back(ULONG_ATX(sdata));
-	return 0;
-    } else
-	return -1;
+    if (_d.length() < 6)
+	throw Format("GPOS Lookup table");
 }
 
-const uint8_t *
-OpenTypeGlyphTable::script_table(OpenTypeTag script, ErrorHandler *errh) const
+void
+GposLookup::unparse_automatics(Vector<Positioning> &v) const
 {
-    if (_error >= 0) {
-	const uint8_t *data = _str.udata();
-	const uint8_t *sdata = data + SCRIPTLIST_OFF;
-
-	const uint8_t *entry = script.table_entry(sdata + 2, USHORT_ATX(sdata), SCRIPT_RECORD_SIZE);
-	if (!entry)
-	    entry = OpenTypeTag("DFLT").table_entry(sdata + 2, USHORT_ATX(sdata), SCRIPT_RECORD_SIZE);
-	if (entry) {
-	    int off = SCRIPTLIST_OFF + USHORT_ATX(entry + 4);
-	    int n;
-	    if (off + SCRIPT_HEADER_SIZE <= _str.length()
-		&& ((n = USHORT_ATX(data + off + 2)),
-		    off + SCRIPT_HEADER_SIZE + n * LANGSYS_RECORD_SIZE <= _str.length()))
-		return data + off;
-	    else if (errh)
-		errh->error("OTF %s Script '%s' out of range", table_name(), script.text().cc());
-	}
+    int n = _d.u16(4);
+    switch (_d.u16(0)) {
+      case L_SINGLE:
+	for (int i = 0; i < n; i++)
+	    GposSingle(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	break;
+      default:
+	/* XXX */
+	break;
     }
-    return 0;
 }
 
-int
-OpenTypeGlyphTable::languages(OpenTypeTag script, Vector<OpenTypeTag> &v, ErrorHandler *errh) const
+
+/**************************
+ * GposSingle             *
+ *                        *
+ **************************/
+
+GposSingle::GposSingle(const Data &d) throw (Error)
+    : _d(d)
 {
-    if (const uint8_t *scdata = script_table(script, errh)) {
-	int n = USHORT_ATX(scdata + 2);
-	scdata += SCRIPT_HEADER_SIZE;
-	for (int i = 0; i < n; i++, scdata += LANGSYS_RECORD_SIZE)
-	    v.push_back(ULONG_ATX(scdata));
-	return 0;
-    } else
-	return -1;
+    if (_d[0] != 0
+	|| (_d[1] != 1 && _d[1] != 2))
+	throw Format("GPOS Single Adjustment");
+    Coverage coverage(_d.offset_subtable(2));
+    if (!coverage.ok()
+	|| (_d[1] == 2 && coverage.size() > _d.u16(6)))
+	throw Format("GPOS Single Adjustment coverage");
 }
 
-const uint8_t *
-OpenTypeGlyphTable::langsys_table(OpenTypeTag script, OpenTypeTag language, bool allow_default, ErrorHandler *errh) const
+Coverage
+GposSingle::coverage() const throw ()
 {
-    if (const uint8_t *scdata = script_table(script, errh)) {
-	const uint8_t *data = _str.udata();
-	
-	int off;
-	if (const uint8_t *lsentry = language.table_entry(scdata + SCRIPT_HEADER_SIZE, USHORT_ATX(scdata + 2), LANGSYS_RECORD_SIZE))
-	    off = USHORT_ATX(lsentry + 4);
-	else if (!allow_default
-		 || (off = USHORT_ATX(scdata)) == 0) // NULL; ignore
-	    return 0;
-	off += scdata - data;
-	
-	int n;
-	if (off + LANGSYS_HEADER_SIZE > _str.length()
-	    || ((n = USHORT_ATX(_str.data() + off + 4)),
-		off + LANGSYS_HEADER_SIZE + n * FEATINDEX_RECORD_SIZE > _str.length()))
-	    return (errh ? errh->error("OTF %s LangSys table for '%s.%s' out of range", table_name(), script.text().cc(), language.text().cc()) : 0), (const uint8_t *)0;
+    return Coverage(_d.offset_subtable(2), 0, false);
+}
 
-	// check contents of LangSys table for valid feature indices
-	int nfeatures = USHORT_AT(data + FEATURELIST_OFF);
-
-	const uint8_t *lsdata = data + off;
-	int required_findex = USHORT_AT(lsdata + 2);
-	if (required_findex != 0xFFFF && required_findex >= nfeatures)
-	    return (errh ? errh->error("OTF %s for '%s.%s' reference to feature %d out of range", table_name(), script.text().cc(), language.text().cc(), required_findex) : 0), (const uint8_t *)0;
-	const uint8_t *d = lsdata + LANGSYS_HEADER_SIZE;
-	const uint8_t *end_d = d + n * FEATINDEX_RECORD_SIZE;
-	for (; d < end_d; d += FEATINDEX_RECORD_SIZE) {
-	    int findex = USHORT_AT(d);
-	    if (findex >= nfeatures)
-		return (errh ? errh->error("OTF %s for '%s.%s' reference to feature %d out of range", table_name(), script.text().cc(), language.text().cc(), findex) : 0), (const uint8_t *)0;
-	}
-
-	// all OK if we get here
-	return lsdata;
+void
+GposSingle::unparse(Vector<Positioning> &v) const
+{
+    if (_d[1] == 1) {
+	int format = _d.u16(4);
+	Data value = _d.subtable(6);
+	for (Coverage::iterator i = coverage().begin(); i; i++)
+	    v.push_back(Positioning(Position(*i, format, value)));
+    } else {
+	int format = _d.u16(4);
+	int size = GposValue::size(format);
+	for (Coverage::iterator i = coverage().begin(); i; i++)
+	    v.push_back(Positioning(Position(*i, format, _d.subtable(8 + size*i.coverage_index()))));
     }
-    return 0;
 }
 
-int
-OpenTypeGlyphTable::features(Vector<OpenTypeTag> &v) const
+
+/**************************
+ * Positioning            *
+ *                        *
+ **************************/
+
+bool
+Positioning::context_in(const Coverage &c) const
 {
-    if (_error >= 0) {
-	const uint8_t *data = _str.udata();
-	const uint8_t *fdata = data + FEATURELIST_OFF;
-	int n = USHORT_ATX(fdata);
-	fdata += 2;
-	uint32_t last_tag = OpenTypeTag::FIRST_VALID_TAG;
-	for (int i = 0; i < n; i++, fdata += FEATURE_RECORD_SIZE) {
-	    uint32_t tag = ULONG_ATX(fdata);
-	    if (tag != last_tag)
-		v.push_back(last_tag = tag);
-	}
-	return 0;
+    return (c.covers(_left.g) || !_left.g) && (!_right.g || c.covers(_right.g));
+}
+
+bool
+Positioning::context_in(const GlyphSet &gs) const
+{
+    return (gs.covers(_left.g) || !_left.g) && (!_right.g || gs.covers(_right.g));
+}
+
+static void
+unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
+{
+    if (gid && gns && gns->size() > gid && (*gns)[gid])
+	sa << (*gns)[gid];
+    else
+	sa << "g" << gid;
+}
+
+static void
+unparse_position(StringAccum &sa, const Position &pos, const Vector<PermString> *gns)
+{
+    unparse_glyphid(sa, pos.g, gns);
+    if (pos.placed())
+	sa << '@' << pos.pdx << ',' << pos.pdy;
+    sa << '+' << pos.adx;
+    if (pos.ady)
+	sa << '/' << pos.ady;
+}
+
+void
+Positioning::unparse(StringAccum &sa, const Vector<PermString> *gns) const
+{
+    if (!*this)
+	sa << "NULL[]";
+    else if (is_single()) {
+	sa << "SINGLE[";
+	unparse_position(sa, _left, gns);
+	sa << ']';
+    } else if (is_pairkern()) {
+	sa << "KERN[";
+	unparse_glyphid(sa, _left.g, gns);
+	sa << ' ';
+	unparse_glyphid(sa, _right.g, gns);
+	sa << "+" << _left.adx << ']';
+    } else if (is_pair()) {
+	sa << "PAIR[";
+	unparse_position(sa, _left, gns);
+	sa << ' ';
+	unparse_position(sa, _right, gns);
+	sa << ']';
     } else
-	return -1;
+	sa << "UNKNOWN[]";
 }
 
-int
-OpenTypeGlyphTable::features(OpenTypeTag script, OpenTypeTag language, Vector<OpenTypeTag> &v, ErrorHandler *errh) const
+String
+Positioning::unparse(const Vector<PermString> *gns) const
 {
-    if (const uint8_t *lsdata = langsys_table(script, language, true, errh)) {
-	const uint8_t *data = _str.udata();
-	const uint8_t *fdata = data + FEATURELIST_OFF + FEATURELIST_HEADER_SIZE;
-
-	int findex = USHORT_ATX(lsdata + 2);
-	if (findex != 0xFFFF)
-	    v.push_back(ULONG_ATX(fdata + findex * FEATURE_RECORD_SIZE));
-
-	const uint8_t *end_lsdata = lsdata + LANGSYS_HEADER_SIZE + USHORT_ATX(lsdata + 4) * FEATINDEX_RECORD_SIZE;
-	for (lsdata += LANGSYS_HEADER_SIZE; lsdata < end_lsdata; lsdata += FEATINDEX_RECORD_SIZE) {
-	    findex = USHORT_ATX(lsdata);
-	    v.push_back(ULONG_ATX(fdata + findex * FEATURE_RECORD_SIZE));
-	}
-
-	return 0;
-    } else
-	return -1;
+    StringAccum sa;
+    unparse(sa, gns);
+    return sa.take_string();
 }
 
-int
-OpenTypeGlyphTable::lookups(int findex, Vector<const uint8_t *> &v, ErrorHandler *errh) const
-{
-    if (_error < 0)
-	return _error;
-    
-    const uint8_t *data = _str.udata();
-    const uint8_t *fdata = data + FEATURELIST_OFF;
+}}
 
-    // FeatureIndex points at valid table?
-    int off = USHORT_ATX(fdata + FEATURELIST_HEADER_SIZE + findex * FEATURE_RECORD_SIZE + 4);
-    int n;
-    if (fdata + off + FEATURE_HEADER_SIZE > _str.udata() + _str.length()
-	|| ((n = USHORT_ATX(fdata + off + 2)),
-	    fdata + off + FEATURE_HEADER_SIZE + n * LOOKUPINDEX_RECORD_SIZE > _str.udata() + _str.length()))
-	return (errh ? errh->error("OTF %s Feature table %d out of bounds", table_name(), findex) : 0), -EFAULT;
-    
-    // store lookups
-    const uint8_t *ldata = data + LOOKUPLIST_OFF;
-    int nlookup = USHORT_ATX(ldata);
-    const uint8_t *entry = fdata + off + FEATURE_HEADER_SIZE;
-    for (int i = 0; i < n; i++, entry += LOOKUPINDEX_RECORD_SIZE) {
-	int l = USHORT_ATX(entry);
-	if (l < 0 || l >= nlookup)
-	    return (errh ? errh->error("OTF %s Feature %d refers to invalid Lookup %d", table_name(), findex, l) : 0), -ERANGE;
-	v.push_back(ldata + USHORT_ATX(ldata + LOOKUPLIST_HEADER_SIZE + l * LOOKUP_RECORD_SIZE));
-    }
-    
-    return 0;
-}
-
-int
-OpenTypeGlyphTable::lookups(OpenTypeTag script, OpenTypeTag language, const Vector<OpenTypeTag> &features, Vector<const uint8_t *> &v, ErrorHandler *errh) const
-{
-    if (const uint8_t *lsdata = langsys_table(script, language, true, errh)) {
-	int required = USHORT_ATX(lsdata + 2);
-	if (required != 0xFFFF)
-	    lookups(required, v, errh);
-
-	const uint8_t *data = _str.udata();
-	const uint8_t *fdata = data + FEATURELIST_OFF;
-
-	Vector<OpenTypeTag> sorted_features(features);
-	std::sort(sorted_features.begin(), sorted_features.end());
-	
-	int n = USHORT_ATX(lsdata + 4);
-	lsdata += LANGSYS_HEADER_SIZE;
-	for (int i = 0; i < n; i++, lsdata += FEATINDEX_RECORD_SIZE) {
-	    int findex = USHORT_ATX(lsdata);
-	    uint32_t ftag = ULONG_ATX(fdata + FEATURELIST_HEADER_SIZE + findex * FEATURE_RECORD_SIZE);
-	    if (std::binary_search(sorted_features.begin(), sorted_features.end(), ftag))
-		lookups(findex, v, errh);
-	}
-
-	return 0;
-    } else
-	return -1;
-}
-
-}
+#include <lcdf/vector.cc>
