@@ -173,11 +173,14 @@ Type1Reader::test_charstring(StringAccum &str)
   
   if (s[0] == '/')
     s++;
-  else if (s[0] == 'd' && s[1] == 'u' && s[2] == 'p' && s[3] == ' ')
+  else if (s[0] == 'd' && s[1] == 'u' && s[2] == 'p' && isspace(s[3])) {
     s += 4;
-  else
+    // 17.Jan.2000 -- some fonts have extra space here.
+    while (isspace(*s))
+      s++;
+  } else
     goto not;
-  
+
   // Force one literal space rather than isspace().
   // Why? Consistency: we force 1 literal space around _charstring_definer.
   while (*s != ' ' && *s)
@@ -185,6 +188,7 @@ Type1Reader::test_charstring(StringAccum &str)
   if (*s++ != ' ' || !isdigit(*s))
     goto not;
   start = s;
+  s++;
   while (*s != ' ' && *s)
     s++;
   if (strncmp(s, _charstring_definer.cc(), _charstring_definer.length()) != 0)

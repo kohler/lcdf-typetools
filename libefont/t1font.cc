@@ -221,7 +221,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     while (1) {
       // skip spaces, look for `dup '
       while (isspace(pos[0])) pos++;
-      if (pos[0] != 'd' || pos[1] != 'u' || pos[2] != 'p' || pos[3] != ' ')
+      if (pos[0] != 'd' || pos[1] != 'u' || pos[2] != 'p' || !isspace(pos[3]))
 	break;
       
       // look for `INDEX */'

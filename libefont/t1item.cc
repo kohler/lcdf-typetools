@@ -622,8 +622,7 @@ Type1Subr::make(char *s_in, int s_len, int cs_pos, int cs_len)
      guarantee of this.
        A valid subroutine string is one of the following:
 	  /[char_name] ### charstring_start ........
-	  dup [subrno] ### charstring_start ....
-     Each space must be a single space character. */
+	  dup [subrno] ### charstring_start .... */
   
   char *s = s_in;
   PermString name;
@@ -632,12 +631,17 @@ Type1Subr::make(char *s_in, int s_len, int cs_pos, int cs_len)
   // Force literal spaces rather than isspace().
   if (*s == '/') {
     char *nstart = ++s;
-    while (*s != ' ' && *s)
+    while (!isspace(*s) && *s)
       s++;
     name = PermString(nstart, s - nstart);
     
-  } else // dup [subrno] ... case
-    subrno = strtol(s + 4, &s, 10);
+  } else {
+    // dup [subrno] ...
+    s += 3;
+    while (isspace(*s))
+      s++;
+    subrno = strtol(s, &s, 10);
+  }
   
   s = s_in + cs_pos;
 

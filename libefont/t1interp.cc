@@ -300,10 +300,8 @@ Type1Interp::callsubr_command()
   int which = (int)pop();
   
   Type1Charstring *subr_cs = get_subr(which);
-  if (!subr_cs) {
-    fprintf(stderr, "bad subr %d\n", which);
+  if (!subr_cs)
     return error(errSubr);
-  }
   
   subr_cs->run(*this);
   
