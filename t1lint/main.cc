@@ -99,6 +99,26 @@ get_num_array(Type1Font *font, int dictionary, const char *name,
   return false;
 }
 
+static bool
+get_integer(Type1Font *font, int dictionary, const char *name,
+	    int &v, ErrorHandler *errh, bool mandatory = false,
+	    bool unsigned = false)
+{
+  Type1Definition *d = font->dict(dictionary, name);
+  double scratch;
+  if (d && d->value_int(v))
+    return true;
+  else if (d && d->value_num(scratch)) {
+    errh->warning("%s not an integer", name);
+    v = (int)scratch;
+    return true;
+  } else if (d)
+    errh->error("%s not a number", name);
+  else if (mandatory)
+    errh->error("%s not defined", name);
+  return false;
+}
+
 // BLUES
 
 static void
@@ -112,7 +132,7 @@ check_blue_array(Vector<double> &blues, const char *name, double BlueScale,
   
   for (int i = 0; i < blues.size(); i++)
     if (blues[i] != (double)((int)blues[i])) {
-      errh->error("some %s entries are not integers", name);
+      errh->warning("some %s entries are not integers", name);
       break;
     }
   
@@ -150,6 +170,7 @@ static void
 check_blues(Type1Font *font, ErrorHandler *errh)
 {
   Type1Definition *d;
+  double scratch_real;
   
   // BlueScale
   double BlueScale;
@@ -166,35 +187,24 @@ check_blues(Type1Font *font, ErrorHandler *errh)
     }
   }
   if (!ok) BlueScale = 0.039625;
-
+  
   // BlueShift
-  int BlueShift;
-  ok = false;
-  if ((d = font->p_dict("BlueShift"))) {
-    if (!d->value_int(BlueShift))
-      errh->error("BlueShift not an integer");
-    else if (BlueShift < 0)
-      errh->error("BlueShift less than 0");
-    else
-      ok = true;
-  }
-  if (!ok) BlueShift = 7;
-
+  int BlueShift = -1;
+  if (get_integer(font, Type1Font::dP, "BlueShift", BlueShift, errh)
+      && BlueShift < 0)
+    errh->error("BlueShift less than 0");
+  if (BlueShift < 0)
+    BlueShift = 7;
+  
   // BlueFuzz
-  int BlueFuzz;
-  ok = false;
-  if ((d = font->p_dict("BlueFuzz"))) {
-    if (!d->value_int(BlueFuzz))
-      errh->error("BlueFuzz not an integer");
-    else if (BlueFuzz < 0)
-      errh->error("BlueFuzz less than 0");
-    else {
-      if (BlueFuzz > 10)
-	errh->warning("suspiciously large BlueFuzz (%d)", BlueFuzz);
-      ok = true;
-    }
-  }
-  if (!ok) BlueFuzz = 1;
+  int BlueFuzz = -1;
+  if (get_integer(font, Type1Font::dP, "BlueFuzz", BlueFuzz, errh)
+      && BlueFuzz < 0)
+    errh->error("BlueFuzz less than 0");
+  if (BlueFuzz < 0)
+    BlueFuzz = 1;
+  else if (BlueFuzz > 10)
+    errh->warning("suspiciously large BlueFuzz (%d)", BlueFuzz);
   
   // BlueValues
   Vector<double> BlueValues, OtherBlues;
@@ -207,7 +217,7 @@ check_blues(Type1Font *font, ErrorHandler *errh)
   check_blue_array(OtherBlues, "OtherBlues", BlueScale, errh);
   if (OtherBlues.size() > 10)
     errh->error("too many zones in OtherBlues (max 5)");
-
+  
   check_blue_overlap(BlueValues, "BlueValues", BlueValues, "BlueValues", BlueFuzz, errh);
   check_blue_overlap(OtherBlues, "OtherBlues", OtherBlues, "OtherBlues", BlueFuzz, errh);
   check_blue_overlap(BlueValues, "BlueValues", OtherBlues, "OtherBlues", BlueFuzz, errh);
@@ -223,7 +233,7 @@ check_blues(Type1Font *font, ErrorHandler *errh)
   check_blue_array(FamilyOtherBlues, "FamilyOtherBlues", BlueScale, errh);
   if (FamilyOtherBlues.size() > 10)
     errh->error("too many zones in FamilyOtherBlues (max 5)");
-
+  
   check_blue_overlap(FamilyBlues, "FamilyBlues", FamilyBlues, "FamilyBlues", BlueFuzz, errh);
   check_blue_overlap(FamilyOtherBlues, "FamilyOtherBlues", FamilyOtherBlues, "FamilyOtherBlues", BlueFuzz, errh);
   check_blue_overlap(FamilyBlues, "FamilyBlues", FamilyOtherBlues, "FamilyOtherBlues", BlueFuzz, errh);
