@@ -7,6 +7,7 @@
 #ifdef HAVE_PERMSTRING
 # include <lcdf/permstr.hh>
 #endif
+template<class T> class Vector;
 
 class StringAccum { public:
   
@@ -44,16 +45,17 @@ class StringAccum { public:
     void append(const char *, int);
     void append(const unsigned char *, int);
 
+    // word breaking
+    void append_fill_lines(const Vector<String> &words, int linelen, const String &parindent = String(), const String &leftmargin = String(), const String &wordsep = String(" "), const String &lineend = String("\n"));
+
     char *reserve(int);
     void set_length(int l)	{ assert(l>=0 && _len<=_cap);	_len = l; }
     void forward(int n)		{ assert(n>=0 && _len+n<=_cap);	_len += n; }
     void pop_back(int n = 1)	{ assert(n>=0 && _len>=n);	_len -= n; }
 
     StringAccum &snprintf(int, const char *, ...);
-  
-    void take(unsigned char *&s, int &l)	{ s = _s; l = _len; erase(); }
-    char *take();
-    unsigned char *take_bytes();
+
+    unsigned char *take_bytes(); 	// returns array allocated by new[]
     String take_string();
 
     // see also operator<< declarations below
@@ -169,12 +171,6 @@ StringAccum::take_bytes()
     unsigned char *str = _s;
     erase();
     return str;
-}
-
-inline char *
-StringAccum::take()
-{
-    return reinterpret_cast<char *>(take_bytes());
 }
 
 inline void

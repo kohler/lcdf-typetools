@@ -20,6 +20,7 @@
 # include <config.h>
 #endif
 #include <lcdf/straccum.hh>
+#include <lcdf/vector.hh>
 #include <cstdarg>
 #include <cstdio>
 
@@ -81,32 +82,32 @@ StringAccum::grow(int want)
 const char *
 StringAccum::c_str()
 {
-  if (_len < _cap || grow(_len))
-    _s[_len] = '\0';
-  return reinterpret_cast<char *>(_s);
+    if (_len < _cap || grow(_len))
+	_s[_len] = '\0';
+    return reinterpret_cast<char *>(_s);
 }
 
 String
 StringAccum::take_string()
 {
-  int len = length();
-  if (len) {
-    int capacity = _cap;
-    return String::claim_string(take(), len, capacity);
-  } else if (out_of_memory())
-    return String::out_of_memory_string();
-  else
-    return String();
+    int len = length();
+    if (len) {
+	int capacity = _cap;
+	return String::claim_string(reinterpret_cast<char *>(take_bytes()), len, capacity);
+    } else if (out_of_memory())
+	return String::out_of_memory_string();
+    else
+	return String();
 }
 
 StringAccum &
 operator<<(StringAccum &sa, long i)
 {
-  if (char *x = sa.reserve(24)) {
-    int len = sprintf(x, "%ld", i);
-    sa.forward(len);
-  }
-  return sa;
+    if (char *x = sa.reserve(24)) {
+	int len = sprintf(x, "%ld", i);
+	sa.forward(len);
+    }
+    return sa;
 }
 
 StringAccum &
@@ -145,4 +146,28 @@ StringAccum::snprintf(int n, const char *format, ...)
   }
   va_end(val);
   return *this;
+}
+
+void
+StringAccum::append_fill_lines(const Vector<String> &words, int linelen, const String &parindent, const String &leftmargin, const String &wordsep, const String &lineend)
+{
+    if (!words.size())
+	return;
+    *this << leftmargin << parindent;
+    int pos = leftmargin.length() + parindent.length();
+    int last_linebreak = 0;
+    for (int w = 0; w < words.size(); w++) {
+	if (w > last_linebreak
+	    && pos + wordsep.length() + words[w].length() > linelen) {
+	    *this << lineend << leftmargin;
+	    pos = leftmargin.length();
+	    last_linebreak = w;
+	} else if (w > last_linebreak) {
+	    *this << wordsep;
+	    pos += wordsep.length();
+	}
+	*this << words[w];
+	pos += words[w].length();
+    }
+    *this << lineend;
 }
