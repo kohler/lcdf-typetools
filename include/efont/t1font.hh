@@ -20,6 +20,8 @@ class Type1Encoding;
 class Type1Subr;
 class Type1Reader;
 class Type1Writer;
+class Type1MMSpace;
+class ErrorHandler;
 
 
 class Type1Font: public Type1Program {
@@ -52,6 +54,9 @@ class Type1Font: public Type1Program {
   PermString _charstring_definer;
   Type1Encoding *_encoding;
   
+  mutable bool _cached_mmspace;
+  mutable Type1MMSpace *_mmspace;
+  
   Type1Font(const Type1Font &);
   Type1Font &operator=(const Type1Font &);
   
@@ -62,7 +67,7 @@ class Type1Font: public Type1Program {
   
   Type1Font(Type1Reader &);
   ~Type1Font();
-
+  
   PermString font_name() const;
   
   int item_count() const		{ return _items.count(); }
@@ -78,6 +83,8 @@ class Type1Font: public Type1Program {
   Type1Subr *glyph(int i) const		{ return _glyphs[i]; }
   Type1Charstring *glyph(PermString) const;
 
+  Type1Encoding *encoding() const	{ return _encoding; }
+  
   Type1Definition *dict(Dict d, PermString s) const { return _dict[d][s]; }
   Type1Definition *dict(PermString s) const	{ return _dict[dF][s]; }
   Type1Definition *p_dict(PermString s) const	{ return _dict[dP][s]; }
@@ -86,6 +93,9 @@ class Type1Font: public Type1Program {
   Type1Definition *ensure(Dict, PermString);
   
   bool dict_each(Dict, int &, PermString &, Type1Definition *&) const;
+
+  Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
+  Type1MMSpace *mmspace() const;
   
   void write(Type1Writer &);
   
@@ -104,6 +114,13 @@ Type1Font::font_name() const
 {
   if (!_cached_defs) cache_defs();
   return _font_name;
+}
+
+inline Type1MMSpace *
+Type1Font::mmspace() const
+{
+  if (!_cached_mmspace) create_mmspace();
+  return _mmspace;
 }
 
 #endif

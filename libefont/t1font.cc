@@ -4,12 +4,15 @@
 #include "t1font.hh"
 #include "t1item.hh"
 #include "t1rw.hh"
+#include "t1mm.hh"
+#include "error.hh"
 #include <string.h>
 
 extern int chunk_count, chunk_len;
 
 Type1Font::Type1Font(Type1Reader &reader)
-  : _cached_defs(false), _glyph_map(-1), _encoding(0)
+  : _cached_defs(false), _glyph_map(-1), _encoding(0),
+    _cached_mmspace(0), _mmspace(0)
 {
   _dict = new HashMap<PermString, Type1Definition *>[4]((Type1Definition *)0);
   for (int i = 0; i < 6; i++)
@@ -280,4 +283,64 @@ Type1Font::cache_defs() const
   if (t1d) t1d->value_name(_font_name);
 
   _cached_defs = true;
+}
+
+
+Type1MMSpace *
+Type1Font::create_mmspace(ErrorHandler *errh = 0) const
+{
+  if (_cached_mmspace)
+    return _mmspace;
+  _cached_mmspace = 1;
+  
+  Type1Definition *t1d;
+  
+  Vector< Vector<double> > master_positions;
+  t1d = dict("BlendDesignPositions");
+  if (!t1d || !t1d->value_numvec_vec(master_positions))
+    return 0;
+  
+  int nmasters = master_positions.count();
+  if (nmasters <= 0) {
+    errh->error("bad BlendDesignPositions");
+    return 0;
+  }
+  int naxes = master_positions[0].count();
+  _mmspace = new Type1MMSpace(font_name(), naxes, nmasters);
+  _mmspace->set_master_positions(master_positions);
+  
+  Vector< Vector<double> > normalize_in, normalize_out;
+  t1d = dict("BlendDesignMap");
+  if (t1d && t1d->value_normalize(normalize_in, normalize_out))
+    _mmspace->set_normalize(normalize_in, normalize_out);
+  
+  Vector<PermString> axis_types;
+  t1d = dict("BlendAxisTypes");
+  if (t1d && t1d->value_namevec(axis_types) && axis_types.count() == naxes)
+    for (int a = 0; a < axis_types.count(); a++)
+      _mmspace->set_axis_type(a, axis_types[a]);
+  
+  int ndv, cdv;
+  t1d = p_dict("NDV");
+  if (t1d && t1d->value_int(ndv))
+    _mmspace->set_ndv(subr(ndv), false);
+  t1d = p_dict("CDV");
+  if (t1d && t1d->value_int(cdv))
+    _mmspace->set_cdv(subr(cdv), false);
+  
+  Vector<double> design_vector;
+  t1d = dict("DesignVector");
+  if (t1d && t1d->value_numvec(design_vector))
+    _mmspace->set_design_vector(design_vector);
+  
+  Vector<double> weight_vector;
+  t1d = dict("WeightVector");
+  if (t1d && t1d->value_numvec(weight_vector))
+    _mmspace->set_weight_vector(weight_vector);
+  
+  if (!_mmspace->check(errh)) {
+    delete _mmspace;
+    _mmspace = 0;
+  }
+  return _mmspace;
 }

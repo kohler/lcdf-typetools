@@ -83,8 +83,6 @@ class Type1MMSpace {
   bool weight_vector(const NumVector &, NumVector &,
 		     ErrorHandler * = 0) const; 
   
-  static Type1MMSpace *create(const Type1Font *, ErrorHandler * = 0);
-  
 };
 
 #endif
