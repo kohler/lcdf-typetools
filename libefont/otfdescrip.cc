@@ -20,7 +20,6 @@ static const Mapping scripts[] = {
     { T("byzm"), "Byzantine Music" },
     { T("cans"), "Canadian Syllabics" },
     { T("cher"), "Cherokee" },
-    { T("hani"), "CJK Ideographic" },
     { T("cyrl"), "Cyrillic" },
     { T("deva"), "Devanagari" },
     { T("ethi"), "Ethiopic" },
@@ -28,13 +27,13 @@ static const Mapping scripts[] = {
     { T("grek"), "Greek" },
     { T("gujr"), "Gujarati" },
     { T("guru"), "Gurmukhi" },
-    { T("jamo"), "Hangul Jamo" },
     { T("hang"), "Hangul" },
+    { T("hani"), "CJK Ideographic" },
     { T("hebr"), "Hebrew" },
-    { T("kana"), "Hiragana" },
-    { T("knda"), "Kannada" },
-    { T("kana"), "Katakana" },
+    { T("jamo"), "Hangul Jamo" },
+    { T("kana"), "Hiragana/Katakana" },
     { T("khmr"), "Khmer" },
+    { T("knda"), "Kannada" },
     { T("lao "), "Lao" },
     { T("latn"), "Latin" },
     { T("mlym"), "Malayalam" },
@@ -193,9 +192,9 @@ static const Mapping languages[] = {
     { T("ISM "), "Inari Sami" },
     { T("ITA "), "Italian" },
     { T("IWR "), "Hebrew" },
+    { T("JAN "), "Japanese" },
     { T("JAV "), "Javanese" },
     { T("JII "), "Yiddish" },
-    { T("JAN "), "Japanese" },
     { T("JUD "), "Judezmo" },
     { T("JUL "), "Jula" },
     { T("KAB "), "Kabardian" },
@@ -336,8 +335,8 @@ static const Mapping languages[] = {
     { T("PTG "), "Portuguese" },
     { T("QIN "), "Chin" },
     { T("RAJ "), "Rajasthani" },
-    { T("RCR "), "R-Cree" },
     { T("RBU "), "Russian Buriat" },
+    { T("RCR "), "R-Cree" },
     { T("RIA "), "Riang" },
     { T("RMS "), "Rhaeto-Romanic" },
     { T("ROM "), "Romanian" },
@@ -404,6 +403,7 @@ static const Mapping languages[] = {
     { T("TSG "), "Tsonga" },
     { T("TUA "), "Turoyo Aramaic" },
     { T("TUL "), "Tulu" },
+    { T("TUR "), "Turkish" },
     { T("TUV "), "Tuvin" },
     { T("TWI "), "Twi" },
     { T("UDM "), "Udmurt" },
@@ -442,6 +442,8 @@ static const Mapping features[] = {
     { T("blwf"), "Below-base Forms" },
     { T("blwm"), "Below-base Mark Positioning" },
     { T("blws"), "Below-base Substitutions" },
+    { T("c2pc"), "Petite Capitals From Capitals" },
+    { T("c2sc"), "Small Capitals From Capitals" },
     { T("calt"), "Contextual Alternates" },
     { T("case"), "Case-Sensitive Forms" },
     { T("ccmp"), "Glyph Composition/Decomposition" },
@@ -449,8 +451,6 @@ static const Mapping features[] = {
     { T("cpsp"), "Capital Spacing" },
     { T("cswh"), "Contextual Swash" },
     { T("curs"), "Cursive Positioning" },
-    { T("c2sc"), "Small Capitals From Capitals" },
-    { T("c2pc"), "Petite Capitals From Capitals" },
     { T("dist"), "Distances" },
     { T("dlig"), "Discretionary Ligatures" },
     { T("dnom"), "Denominators" },
@@ -568,11 +568,11 @@ find_description(uint32_t tag, const Mapping *maps, int n)
     while (l <= r) {
 	int m = (l + r) / 2;
 	if (maps[m].tag < tag)
-	    r = l + 1;
-	else if (tag < maps[m].tag)
-	    l = r - 1;
-	else
+	    l = m + 1;
+	else if (maps[m].tag == tag)
 	    return maps[m].description;
+	else
+	    r = m - 1;
     }
     return 0;
 }
