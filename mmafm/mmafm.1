@@ -46,11 +46,17 @@ AFM file to the standard output.
 Each
 .I font
 argument is either the filename of an AFM or AMFM font metrics file, or a
-PostScript font name. In the second case,
+PostScript font name. If you give a font name,
 .B mmafm
 will look up the actual font metrics file using the PSRESOURCEPATH
-environment variable. This path is searched for `PSres.upr' files, an Adobe
-method for indexing PostScript resources.
+environment variable. This colon-separated path is searched for `PSres.upr'
+files, an Adobe method for indexing PostScript resources.
+.PP
+You can also give the name of a multiple master font instance, like
+`MinionMM_367_400_12_'.
+.B Mmafm
+will parse the font name and create that instance for you. `PSres.upr'
+files must be set up for this to work.
 .PP
 Any multiple master font should be distributed with a single AMFM file and
 several AFM files (one for each master). For Myriad, for example, the AMFM

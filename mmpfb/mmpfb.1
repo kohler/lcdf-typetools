@@ -53,11 +53,17 @@ below.
 The
 .I font
 argument is either the name of a PFA or PFB font file, or a PostScript font
-name. In the second case,
+name. If you give a font name,
 .B mmpfb
 will find the actual outline file using the PSRESOURCEPATH environment
-variable. This path is searched for `PSres.upr' files, an Adobe method for
-indexing PostScript resources.
+variable. This colon-separated path is searched for `PSres.upr' files, an
+Adobe method for indexing PostScript resources.
+.PP
+You can also give the name of a multiple
+master font instance, like `MinionMM_367_400_12_'.
+.B Mmpfb
+will parse the font name and create that instance for you. `PSres.upr'
+files must be set up for this to work.
 '
 '
 .SH EXAMPLE
