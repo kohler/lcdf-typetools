@@ -16,6 +16,7 @@
 #endif
 #include "dvipsencoding.hh"
 #include "gsubencoding.hh"
+#include "secondary.hh"
 #include <lcdf/error.hh>
 #include <cstring>
 #include <cstdio>
@@ -158,6 +159,7 @@ DvipsEncoding::encode(int e, PermString what)
     if (e >= _e.size())
 	_e.resize(e + 1, dot_notdef);
     _e[e] = what;
+    _unicodes.clear();		// _unicodes isn't good any more
 }
 
 int
@@ -507,11 +509,12 @@ DvipsEncoding::bad_codepoint(int code)
 }
 
 void
-DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font)
+DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary)
 {
     for (int i = 0; i < _e.size(); i++)
 	if (_e[i] != dot_notdef) {
 	    Efont::OpenType::Glyph gid = 0;
+	    
 	    // check UNICODING map
 	    int m = _unicoding_map[_e[i]];
 	    if (m >= 0) {
@@ -531,9 +534,16 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 			    gid = cmap.map_uni(m);
 		    } while (!gid && more);
 		}
-		// if that didn't work, try the glyph name as a last resort
+		// if that didn't work, try the glyph name
 		if (!gid && font)
 		    gid = font->glyphid(_e[i]);
+		// as a last resort, try adding it with secondary
+		if (gid <= 0 && secondary
+		    && (m = glyphname_unicode(_e[i])) >= 0) {
+		    Vector<Setting> vs;
+		    if (secondary->setting(m, vs, *this))
+			gid = gsub_encoding.add_fake(_e[i], vs);
+		}
 		// map unknown glyphs to 0
 		if (gid < 0)
 		    gid = 0;
@@ -561,18 +571,31 @@ DvipsEncoding::make_literal_gsub_encoding(GsubEncoding &gsub_encoding, Efont::Cf
     gsub_encoding.set_coding_scheme(_coding_scheme);
 }
 
-void
-DvipsEncoding::unicodes(Vector<uint32_t> &unicodes) const
+const Vector<uint32_t> &
+DvipsEncoding::unicodes() const
 {
-    unicodes.assign(_e.size(), 0xFFFFFFFFU);
-    for (int i = 0; i < _e.size(); i++)
-	if (_e[i] != dot_notdef) {
-	    int m = _unicoding_map[_e[i]];
-	    if (m >= 0)
-		unicodes[i] = _unicoding[m];
-	    else if ((m = glyphname_unicode(_e[i])) >= 0)
-		unicodes[i] = m;
-	}
+    if (_unicodes.size() == 0) {
+	_unicodes.assign(_e.size(), 0xFFFFFFFFU);
+	for (int i = 0; i < _e.size(); i++)
+	    if (_e[i] != dot_notdef) {
+		int m = _unicoding_map[_e[i]];
+		if (m >= 0)
+		    _unicodes[i] = _unicoding[m];
+		else if ((m = glyphname_unicode(_e[i])) >= 0)
+		    _unicodes[i] = m;
+	    }
+    }
+    return _unicodes;
+}
+
+int
+DvipsEncoding::encoding_of_unicode(uint32_t uni) const
+{
+    (void) unicodes();		// make _unicodes array
+    for (int i = 0; i < _unicodes.size(); i++)
+	if (_unicodes[i] == uni)
+	    return i;
+    return -1;
 }
 
 void

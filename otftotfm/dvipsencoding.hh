@@ -4,6 +4,7 @@
 #include <efont/cff.hh>
 #include <lcdf/hashmap.hh>
 class GsubEncoding;
+class Secondary;
 
 class DvipsEncoding { public:
 
@@ -25,7 +26,8 @@ class DvipsEncoding { public:
     bool encoded(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
-    void unicodes(Vector<uint32_t> &) const;
+    const Vector<uint32_t> &unicodes() const;
+    int encoding_of_unicode(uint32_t) const;
     
     int parse(String filename, ErrorHandler *);
     int parse_ligkern(const String &ligkern_text, ErrorHandler *);
@@ -33,7 +35,7 @@ class DvipsEncoding { public:
 
     // also modifies 'this':
     void make_literal_gsub_encoding(GsubEncoding &, Efont::Cff::Font *);
-    void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::Cff::Font * = 0);
+    void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary * = 0);
     
     void apply_ligkern_lig(GsubEncoding &, ErrorHandler *) const;
     void apply_ligkern_kern(GsubEncoding &, ErrorHandler *) const;
@@ -56,6 +58,8 @@ class DvipsEncoding { public:
     Vector<Ligature> _lig;
     HashMap<PermString, int> _unicoding_map;
     Vector<int> _unicoding;
+
+    mutable Vector<uint32_t> _unicodes;
 
     String _name;
     String _filename;
