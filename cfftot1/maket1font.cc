@@ -193,12 +193,17 @@ static const char *othersubrs_code = "% Copyright (c) 1987-1990 Adobe Systems In
 "} executeonly\n"
 "] noaccess def";
 
+typedef unsigned CsRef;
+enum { CSR_GLYPH = 0x00000000, CSR_SUBR = 0x80000000,
+       CSR_GSUBR = 0xC0000000,
+       CSR_TYPE = 0xC0000000, CSR_NUM = 0x3FFFFFFF };
+
 class MakeType1CharstringInterp : public CharstringInterp { public:
 
-    MakeType1CharstringInterp(EfontProgram *program, Type1Font *output = 0, int hr_firstsubr = -1, int precision = 5);
+    MakeType1CharstringInterp(EfontProgram *program, int precision = 5);
 
+    void run(Type1Font *, PermString glyph_definer);
     void run(const Charstring &, Type1Charstring &);
-    Type1Charstring *run(const Charstring &);
     
     void char_sidebearing(int, double, double);
     void char_width(int, double, double);
@@ -217,6 +222,8 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
 
     int nhints() const			{ return _stem_pos.size(); }
     double max_flex_height() const	{ return _max_flex_height; }
+
+    class Subr;
     
   private:
 
@@ -230,50 +237,77 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     int _nhstem;
     
     Type1CharstringGen _csgen;
-    
+
+    // hint replacement
     Type1CharstringGen _hr_csgen;
     int _hr_firstsubr;
 
+    // Flex
     double _max_flex_height;
+
+    // subroutines
+    int _subr_bias;
+    int _gsubr_bias;
+    Vector<Subr *> _subrs;
+    Vector<Subr *> _gsubrs;
     
     Type1Font *_output;
 
     void gen_sbw(bool hints_follow);
     void gen_hintmask(Type1CharstringGen &, const unsigned char *, int) const;
+
+    inline Subr *csr_subr(CsRef) const;
+    void dfs_subrs(Subr *, CsRef, Vector<CsRef> &) const;
+    void topologically_ordered_csrs(Vector<CsRef> &) const;
     
 };
 
-MakeType1CharstringInterp::MakeType1CharstringInterp(EfontProgram *program, Type1Font *output, int hr_firstsubr, int precision)
+class MakeType1CharstringInterp::Subr { public:
+
+    Subr()			: _colored(false) { }
+
+    bool colored() const	{ return _colored; }
+    void color()		{ _colored = true; }
+    
+    void add_call(CsRef n)	{ _calls.push_back(n); }
+    void add_callee(CsRef, int, int);
+    
+  private:
+
+    Vector<CsRef> _calls;
+    
+    Vector<CsRef> _callee;
+    Vector<int> _callee_left;
+    Vector<int> _callee_right;
+
+    bool _colored : 1;
+
+    friend class MakeType1CharstringInterp;
+    
+};
+
+inline void
+MakeType1CharstringInterp::Subr::add_callee(CsRef callee, int left, int right)
+{
+    _callee.push_back(callee);
+    _callee_left.push_back(left);
+    _callee_right.push_back(right);
+}
+
+
+
+/*****
+ * MakeType1CharstringInterp
+ **/
+
+MakeType1CharstringInterp::MakeType1CharstringInterp(EfontProgram *program, int precision)
     : CharstringInterp(program), _csgen(precision), _hr_csgen(precision),
-      _hr_firstsubr(hr_firstsubr), _max_flex_height(0), _output(output)
+      _hr_firstsubr(-1), _max_flex_height(0)
 {
-    assert(_output || _hr_firstsubr < 0);
 }
 
-void
-MakeType1CharstringInterp::run(const Charstring &cs, Type1Charstring &out)
-{
-    _sidebearing = _width = Point(0, 0);
-    _state = S_INITIAL;
-    _csgen.clear();
-    _stem_pos.clear();
-    _stem_width.clear();
-    _nhstem = 0;
-    CharstringInterp::init();
-    cs.run(*this);
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    _csgen.gen_command(CS::cEndchar);
-    _csgen.output(out);
-}
 
-Type1Charstring *
-MakeType1CharstringInterp::run(const Charstring &cs)
-{
-    Type1Charstring *t1cs = new Type1Charstring;
-    run(cs, *t1cs);
-    return t1cs;
-}
+// generating charstring commands
 
 void
 MakeType1CharstringInterp::gen_sbw(bool hints_follow)
@@ -355,7 +389,6 @@ MakeType1CharstringInterp::char_hintmask(int cmd, const unsigned char *data, int
 	gen_sbw(true);
 	gen_hintmask(_csgen, data, nhints);
     } else if (_hr_firstsubr >= 0) {
-	fprintf(stderr, "trying HR\n");
 	_hr_csgen.clear();
 	gen_hintmask(_hr_csgen, data, nhints);
 	_hr_csgen.gen_command(CS::cReturn);
@@ -367,7 +400,6 @@ MakeType1CharstringInterp::char_hintmask(int cmd, const unsigned char *data, int
 	    if (Type1Subr *s = _output->subr_x(i))
 		if (s->t1cs() == hr_subr) {
 		    subrno = i;
-		    fprintf(stderr, "found %d for HR\n", subrno);
 		    break;
 		}
 	
@@ -378,8 +410,7 @@ MakeType1CharstringInterp::char_hintmask(int cmd, const unsigned char *data, int
 	    _csgen.gen_number(subrno);
 	    _csgen.gen_number(4);
 	    _csgen.gen_command(CS::cCallsubr);
-	} else
-	    fprintf(stderr, "fialed\n");
+	}
     }
 }
 
@@ -563,6 +594,93 @@ MakeType1CharstringInterp::char_closepath(int)
 }
 
 
+// subroutines
+
+inline MakeType1CharstringInterp::Subr *
+MakeType1CharstringInterp::csr_subr(CsRef csr) const
+{
+    const Vector<Subr *> *vp;
+    if ((csr & CSR_TYPE) == CSR_SUBR)
+	vp = &_subrs;
+    else if ((csr & CSR_TYPE) == CSR_GSUBR)
+	vp = &_gsubrs;
+    else
+	return 0;
+    return ((int)(csr & CSR_NUM) < vp->size() ? (*vp)[csr & CSR_NUM] : 0);
+}
+
+void
+MakeType1CharstringInterp::dfs_subrs(Subr *s, CsRef csr, Vector<CsRef> &output) const
+{
+    if (s && !s->colored()) {
+	s->color();
+	for (int i = 0; i < s->_calls.size(); i++) {
+	    CsRef ncsr = s->_calls[i];
+	    Subr *ns = csr_subr(ncsr);
+	    if (ns && !ns->colored())
+		dfs_subrs(ns, ncsr, output);
+	}
+	output.push_back(csr);
+    }
+}
+
+void
+MakeType1CharstringInterp::topologically_ordered_csrs(Vector<CsRef> &output) const
+{
+    output.clear();
+    for (int i = 0; i < _subrs.size(); i++)
+	dfs_subrs(csr_subr(CSR_SUBR | i), CSR_SUBR | i, output);
+    for (int i = 0; i < _gsubrs.size(); i++)
+	dfs_subrs(csr_subr(CSR_GSUBR | i), CSR_GSUBR | i, output);
+}
+
+
+// running
+
+void
+MakeType1CharstringInterp::run(const Charstring &cs, Type1Charstring &out)
+{
+    _sidebearing = _width = Point(0, 0);
+    _state = S_INITIAL;
+    _csgen.clear();
+    _stem_pos.clear();
+    _stem_width.clear();
+    _nhstem = 0;
+    CharstringInterp::init();
+    
+    cs.run(*this);
+    if (_state == S_INITIAL)
+	gen_sbw(false);
+    _csgen.gen_command(CS::cEndchar);
+    
+    _csgen.output(out);
+}
+
+void
+MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer)
+{
+    _output = output;
+    _hr_firstsubr = output->nsubrs();
+
+    const EfontProgram *p = program();
+    _subrs.assign(p->nsubrs(), 0);
+    _subr_bias = p->subr_bias();
+    _gsubrs.assign(p->ngsubrs(), 0);
+    _gsubr_bias = p->gsubr_bias();
+    
+    int nglyphs = p->nglyphs();
+    Type1Charstring receptacle;
+    for (int i = 0; i < nglyphs; i++) {
+	run(*p->glyph(i), receptacle);
+	output->add_glyph(Type1Subr::make_glyph(p->glyph_name(i), receptacle, glyph_definer));
+    }
+}
+
+
+/*****
+ * main
+ **/
+
 static void
 add_number_def(Type1Font *output, int dict, PermString name, const EfontCFF::Font *font, EfontCFF::DictOperator op)
 {
@@ -726,6 +844,7 @@ create_type1_font(EfontCFF::Font *font)
     // Subrs
     sa << "/Subrs 4 array";
     output->add_item(new Type1SubrGroupItem(output, true, sa.take_string()));
+    output->add_item(new Type1CopyItem("|-"));
 
     // - first four Subrs have fixed definitions
     // - 0: "3 0 callothersubr pop pop setcurrentpoint return"
@@ -763,13 +882,8 @@ mark currentfile closefile"));
 cleartomark"));
 
     // add glyphs
-    int n = font->nglyphs();
-    MakeType1CharstringInterp maker(font, output, 5);
-    Type1Charstring receptacle;
-    for (int i = 0; i < n; i++) {
-	maker.run(*font->glyph(i), receptacle);
-	output->add_glyph(Type1Subr::make_glyph(font->glyph_name(i), receptacle, " |-"));
-    }
+    MakeType1CharstringInterp maker(font, 5);
+    maker.run(output, " |-");
     
     return output;
 }

@@ -8,8 +8,8 @@
 #include "string.hh"
 class Type1Definition;
 
-template class Vector<bool>;
 template class Vector<int>;
+template class Vector<unsigned>;
 template class Vector<double>;
 template class Vector< Vector<double> >;
 
