@@ -726,10 +726,10 @@ GlyphSet::change(Glyph g, bool value)
  *                        *
  **************************/
 
-ClassDef::ClassDef(const String &str, ErrorHandler *errh)
+ClassDef::ClassDef(const String &str, ErrorHandler *errh) throw ()
     : _str(str)
 {
-    _str.align(4);
+    _str.align(2);
     if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
 	_str = String();
 }
@@ -746,14 +746,14 @@ ClassDef::check(ErrorHandler *errh)
 	return errh->error("OTF class def table too small for header");
     int classFormat = USHORT_AT(data);
     
-    if (classFormat == 1) {
+    if (classFormat == T_LIST) {
 	int count = USHORT_AT(data + 4);
-	if (len < 6 + count * 2)
+	if (len < LIST_HEADERSIZE + count * LIST_RECSIZE)
 	    return errh->error("OTF class def table (format 1) too short");
 	// XXX don't check sorting
-    } else if (classFormat == 2) {
+    } else if (classFormat == T_RANGES) {
 	int count = USHORT_AT(data + 2);
-	if (len < 4 + 12 * count)
+	if (len < RANGES_HEADERSIZE + count * RANGES_RECSIZE)
 	    return errh->error("OTF class def table (format 2) too short");
 	// XXX don't check sorting
     } else
@@ -761,9 +761,9 @@ ClassDef::check(ErrorHandler *errh)
 
     return 0;
 }
-
+	
 int
-ClassDef::lookup(Glyph g) const
+ClassDef::lookup(Glyph g) const throw ()
 {
     if (_str.length() == 0)
 	return -1;
@@ -771,19 +771,19 @@ ClassDef::lookup(Glyph g) const
     const uint8_t *data = _str.udata();
     int coverageFormat = USHORT_AT(data);
     
-    if (coverageFormat == 1) {
+    if (coverageFormat == T_LIST) {
 	Glyph start = USHORT_AT(data + 2);
 	int count = USHORT_AT(data + 4);
 	if (g < start || g >= start + count)
 	    return 0;
 	else
-	    return USHORT_AT(data + 4 + (g - start) * 2);
-    } else if (coverageFormat == 2) {
+	    return USHORT_AT(data + LIST_HEADERSIZE + (g - start) * LIST_RECSIZE);
+    } else if (coverageFormat == T_RANGES) {
 	int l = 0, r = USHORT_AT(data + 2) - 1;
-	data += 2;
+	data += RANGES_HEADERSIZE;
 	while (l <= r) {
 	    int m = (l + r) >> 1;
-	    const uint8_t *rec = data + m * 12;
+	    const uint8_t *rec = data + m * RANGES_RECSIZE;
 	    if (g < USHORT_AT(rec))
 		r = m - 1;
 	    else if (g <= USHORT_AT(rec + 2))
@@ -794,6 +794,77 @@ ClassDef::lookup(Glyph g) const
 	return 0;
     } else
 	return 0;
+}
+
+
+/******************************
+ * ClassDef::class_iterator   *
+ *                            *
+ ******************************/
+
+ClassDef::class_iterator::class_iterator(const String &str, int pos, int the_class)
+    : _str(str), _pos(pos), _value(0), _class(the_class)
+{
+    // XXX assume _str has been checked
+
+    // shrink _str to fit the coverage table
+    const uint8_t *data = _str.udata();
+    if (_str.length()) {
+	switch (USHORT_AT(data)) {
+	  case T_LIST:
+	    _str = _str.substring(0, LIST_HEADERSIZE + USHORT_AT(data + 4) * LIST_RECSIZE);
+	    break;
+	  case T_RANGES:
+	    _str = _str.substring(0, RANGES_HEADERSIZE + USHORT_AT(data + 2) * RANGES_RECSIZE);
+	    break;
+	  default:
+	    _str = String();
+	    break;
+	}
+    }
+    if (_pos >= _str.length())
+	_pos = _str.length();
+    else if (USHORT_AT(data) == T_LIST) {
+	// now, move _pos into the classdef table
+	_pos = LIST_HEADERSIZE - LIST_RECSIZE;
+	(*this)++;
+    } else {
+	_pos = RANGES_HEADERSIZE - RANGES_RECSIZE;
+	_value = 0x10000;	// *** see header
+	(*this)++;
+    }
+}
+
+int
+ClassDef::class_iterator::class_value() const
+{
+    const uint8_t *data = _str.udata();
+    assert(_pos < _str.length());
+    if (data[1] == T_LIST)
+	return USHORT_AT(data + _pos);
+    else
+	return USHORT_AT(data + _pos + 4);
+}
+
+void
+ClassDef::class_iterator::operator++(int)
+{
+    const uint8_t *data = _str.udata();
+    int len = _str.length();
+    bool is_list = (data[1] == T_LIST);
+    if (_pos >= len
+	|| (!is_list && ++_value <= USHORT_AT(data + _pos + 2)))
+	return;
+    do {
+	if (is_list) {
+	    _pos += LIST_RECSIZE;
+	    _value = (_pos >= len ? 0 : _value + 1);
+	} else {
+	    _pos += RANGES_RECSIZE;
+	    _value = (_pos >= len ? 0 : USHORT_AT(data + _pos));
+	}
+    } while (_pos < len
+	     && (is_list ? USHORT_AT(data + _pos) : USHORT_AT(data + _pos + 4)) != _class);
 }
 
 

@@ -44,10 +44,10 @@ class GposLookup { public:
 
 class GposValue { public:
     static int size(uint16_t format);
-    static uint16_t xplacement(uint16_t format, const Data &);
-    static uint16_t yplacement(uint16_t format, const Data &);
-    static uint16_t xadvance(uint16_t format, const Data &);
-    static uint16_t yadvance(uint16_t format, const Data &);
+    static int16_t xplacement(uint16_t format, const Data &);
+    static int16_t yplacement(uint16_t format, const Data &);
+    static int16_t xadvance(uint16_t format, const Data &);
+    static int16_t yadvance(uint16_t format, const Data &);
     enum {
 	F_XPLACEMENT = 0x0001,
 	F_YPLACEMENT = 0x0002,
@@ -67,7 +67,19 @@ class GposSingle { public:
     // default destructor
     Coverage coverage() const throw ();
     void unparse(Vector<Positioning> &) const;
-    enum { HEADERSIZE = 6, FORMAT2_RECSIZE = 2 };
+    enum { F2_HEADERSIZE = 8 };
+  private:
+    Data _d;
+};
+
+class GposPair { public:
+    GposPair(const Data &) throw (Error);
+    // default destructor
+    Coverage coverage() const throw ();
+    void unparse(Vector<Positioning> &) const;
+    enum { F1_HEADERSIZE = 10, F1_RECSIZE = 2,
+	   PAIRSET_HEADERSIZE = 2, PAIRVALUE_HEADERSIZE = 2,
+	   F2_HEADERSIZE = 16 };
   private:
     Data _d;
 };
@@ -78,6 +90,10 @@ struct Position {
     int adx, ady;		// advance
     Position();
     Position(Glyph, uint16_t format, const Data &);
+    Position(uint16_t format, const Data &);
+    Position(Glyph, const Position &);
+    bool empty() const		{ return pdx == 0 && pdy == 0 && adx == 0 && ady == 0; }
+    operator bool() const	{ return !empty(); }
     bool h_empty() const	{ return pdx == 0 && pdy == 0 && adx == 0; }
     bool placed() const		{ return pdx != 0 || pdy != 0; }
 };
@@ -100,6 +116,12 @@ class Positioning { public:
     bool is_single() const;
     bool is_pair() const;
     bool is_pairkern() const;
+
+    // extract data
+    const Position &left() const	{ return _left; }
+    Glyph left_glyph() const		{ return _left.g; }
+    const Position &right() const	{ return _right; }
+    Glyph right_glyph() const		{ return _right.g; }
     
     void unparse(StringAccum &, const Vector<PermString> * = 0) const;
     String unparse(const Vector<PermString> * = 0) const;
@@ -117,38 +139,38 @@ GposValue::size(uint16_t format)
     return (nibble_bitcount_x2[format & 15] + nibble_bitcount_x2[(format>>4) & 15]);
 }
 
-inline uint16_t
+inline int16_t
 GposValue::xplacement(uint16_t format, const Data &d)
 {
     if (format & F_XPLACEMENT)
-	return d.u16(0);
+	return d.s16(0);
     else
 	return 0;
 }
 
-inline uint16_t
+inline int16_t
 GposValue::yplacement(uint16_t format, const Data &d)
 {
     if (format & F_YPLACEMENT)
-	return d.u16((format & F_XPLACEMENT ? 2 : 0));
+	return d.s16((format & F_XPLACEMENT ? 2 : 0));
     else
 	return 0;
 }
 
-inline uint16_t
+inline int16_t
 GposValue::xadvance(uint16_t format, const Data &d)
 {
     if (format & F_XADVANCE)
-	return d.u16(nibble_bitcount_x2[format & (F_XADVANCE - 1)]);
+	return d.s16(nibble_bitcount_x2[format & (F_XADVANCE - 1)]);
     else
 	return 0;
 }
 
-inline uint16_t
+inline int16_t
 GposValue::yadvance(uint16_t format, const Data &d)
 {
     if (format & F_YADVANCE)
-	return d.u16(nibble_bitcount_x2[format & (F_YADVANCE - 1)]);
+	return d.s16(nibble_bitcount_x2[format & (F_YADVANCE - 1)]);
     else
 	return 0;
 }
@@ -161,9 +183,23 @@ Position::Position()
 
 inline
 Position::Position(Glyph g_, uint16_t format, const Data &value)
-    : g(g),
+    : g(g_),
       pdx(GposValue::xplacement(format, value)), pdy(GposValue::yplacement(format, value)),
       adx(GposValue::xadvance(format, value)), ady(GposValue::yadvance(format, value))
+{
+}
+
+inline
+Position::Position(uint16_t format, const Data &value)
+    : g(0),
+      pdx(GposValue::xplacement(format, value)), pdy(GposValue::yplacement(format, value)),
+      adx(GposValue::xadvance(format, value)), ady(GposValue::yadvance(format, value))
+{
+}
+
+inline
+Position::Position(Glyph g_, const Position &p)
+    : g(g_), pdx(p.pdx), pdy(p.pdy), adx(p.adx), ady(p.ady)
 {
 }
 

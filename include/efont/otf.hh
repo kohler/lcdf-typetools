@@ -206,13 +206,53 @@ class GlyphSet { public:
 
 class ClassDef { public:
 
-    ClassDef(const String &, ErrorHandler * = 0);
+    ClassDef(const String &, ErrorHandler * = 0) throw ();
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
+    int nclass() const throw ();
 
-    int lookup(Glyph) const;
-    int operator[](Glyph g) const	 { return lookup(g); }
+    int lookup(Glyph) const throw ();
+    int operator[](Glyph g) const throw () { return lookup(g); }
+
+    class class_iterator { public:
+	// private constructor
+	// default destructor
+
+	bool ok() const			{ return _pos < _str.length(); }
+	operator bool() const		{ return ok(); }
+	
+	Glyph operator*() const		{ return _value; }
+	Glyph value() const		{ return _value; }
+	int class_value() const;
+	
+	void operator++(int);
+	void operator++()		{ (*this)++; }
+
+	// XXX should check iterators are of same type
+	bool operator<(const class_iterator &o) { return _pos < o._pos || (_pos == o._pos && _value < o._value); }
+	bool operator<=(const class_iterator &o) { return _pos < o._pos || (_pos == o._pos && _value <= o._value); }
+	bool operator>=(const class_iterator &o) { return _pos > o._pos || (_pos == o._pos && _value >= o._value); }
+	bool operator>(const class_iterator &o) { return _pos > o._pos || (_pos == o._pos && _value > o._value); }
+	bool operator==(const class_iterator &o) { return _pos == o._pos && _value == o._value; }
+	bool operator!=(const class_iterator &o) { return _pos != o._pos || _value != o._value; }
+	
+      private:
+	String _str;
+	int _pos;
+	int _value;		// not a USHORT to avoid overflow at ***
+	int _class;
+	friend class ClassDef;
+	class_iterator(const String &, int, int);
+    };
+
+    // XXX does not work correctly for class 0
+    class_iterator begin(int c) const	{ return class_iterator(_str, 0, c); }
+    class_iterator end(int c) const	{ return class_iterator(_str, _str.length(), c); }
+
+    enum { T_LIST = 1, T_RANGES = 2,
+	   LIST_HEADERSIZE = 6, LIST_RECSIZE = 2,
+	   RANGES_HEADERSIZE = 4, RANGES_RECSIZE = 6 };
     
   private:
 
