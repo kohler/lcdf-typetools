@@ -400,7 +400,7 @@ Type1OneMMRemover::type1_command(int cmd)
 	  if (size() < 1)
 	      goto normal;
 	  int subrno = (int)pop();
-	  if (subrno == 44) fucker++;
+	  if (subrno == 378) fucker++;
 	  if (_subr_level < 1) { // otherwise, have already included prefix
 	      if (Type1Charstring *cs = _remover->subr_prefix(subrno))
 		  run_subr(cs);
@@ -409,10 +409,10 @@ Type1OneMMRemover::type1_command(int cmd)
 	      run_subr(cs);
 	  else {
 	      push(subrno);
-	      if (subrno == 44) fucker--;
+	      if (subrno == 378) fucker--;
 	      goto normal;
 	  }
-	  if (subrno == 44) fucker--;
+	  if (subrno == 378) fucker--;
 	  break;
       }
    
@@ -622,13 +622,13 @@ Type1MMRemover::subr_prefix(int subrno)
 	if (!subr)
 	    return 0;
 
-	if (subrno == 44) fucker++;
+	if (subrno == 378) fucker++;
 	Type1OneMMRemover one(this);
 	if (one.run_fresh_subr(*subr, !_hint_replacement_subr[subrno]))
 	    _must_expand_subr[subrno] = true;
 	_subr_prefix[subrno] = one.output_prefix();
 	one.output_main(*subr);
-	if (subrno == 44) fucker--;
+	if (subrno == 378) fucker--;
     }
 
     return _subr_prefix[subrno];
@@ -696,7 +696,7 @@ Type1MMRemover::run()
     for (int subrno = 4; subrno < _nsubrs; subrno++)
 	if (hr.call_count(subrno) || _hint_replacement_subr[subrno]) {
 	    Type1Charstring *cs = _font->subr(subrno);
-	    fucker = (subrno == 44);
+	    fucker = (subrno == 378);
 	    if (one.rerun_subr(*cs)) {
 		_expand_all_subrs = true;
 		if (one.rerun_subr(*cs))
@@ -787,9 +787,9 @@ SubrExpander::type1_command(int cmd)
 	  pop();
 	  if (Charstring *subr_cs = get_subr(subrno)) {
 	      _subr_level++;
-	      if (subrno == 44) fucker++;
+	      if (subrno == 378) fucker++;
 	      subr_cs->run(*this);
-	      if (subrno == 44) fucker--;
+	      if (subrno == 378) fucker--;
 	      _subr_level--;
 	  }
 	  return !done();
