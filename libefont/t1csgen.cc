@@ -84,7 +84,7 @@ Type1CharstringGen::gen_number(double float_val, int kind)
 	break;
     }
 
-    int big_val = (int)round(float_val * _f_precision);
+    int big_val = (int)floor(float_val * _f_precision + 0.5001);
     int frac = big_val % _precision;
     int val = (frac == 0 ? big_val / _precision : big_val);
     if (fucker)
