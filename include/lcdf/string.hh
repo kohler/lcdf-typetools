@@ -35,6 +35,7 @@ class String { public:
   static const String &null_string()	{ return *null_string_p; }
   static const String &out_of_memory_string() { return *oom_string_p; }
   static String garbage_string(int n);	// n garbage characters
+  static String fill_string(int c, int n); // n copies of c
   static String stable_string(const char *, int = -1); // stable read-only mem.
   
   bool out_of_memory() const		{ return _memo == oom_memo; }

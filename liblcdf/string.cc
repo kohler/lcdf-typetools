@@ -92,7 +92,7 @@ String::String(unsigned long u)
 String::String(double d)
 {
   char buf[128];
-  sprintf(buf, "%f", d);
+  sprintf(buf, "%g", d);
   assign(buf, -1);
 }
 
@@ -123,6 +123,14 @@ String::garbage_string(int len)
 {
   String s;
   s.append_garbage(len);
+  return s;
+}
+
+String
+String::fill_string(int c, int len)
+{
+  String s;
+  s.append_fill(c, len);
   return s;
 }
 
