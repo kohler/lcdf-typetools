@@ -923,6 +923,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     for (int i = 0; i < lookups.size(); i++)
 	if (lookups[i].used) {
 	    OpenType::GsubLookup l = gsub.lookup(i);
+	    subs.clear();
 	    bool understood = l.unparse_automatics(gsub, subs);
 
 	    // check for -ffina, which should apply only at the ends of words,
@@ -966,6 +967,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     for (int i = 0; i < lookups.size(); i++)
 	if (lookups[i].used) {
 	    OpenType::GposLookup l = gpos.lookup(i);
+	    poss.clear();
 	    bool understood = l.unparse_automatics(poss);
 	    int nunderstood = encoding.apply(poss);
 
