@@ -366,7 +366,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    lock.l_start = 0;
 	    lock.l_len = 0;
 	    int result;
-	    while ((result = fcntl(fd, F_SETLKW, &lock)) < 0 || errno == EINTR)
+	    while ((result = fcntl(fd, F_SETLKW, &lock)) < 0 && errno == EINTR)
 		/* try again */;
 	    if (result < 0) {
 		result = errno;
