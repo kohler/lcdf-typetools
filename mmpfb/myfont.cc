@@ -32,7 +32,7 @@ MyFont::kill_def(Type1Definition *t1d, int whichd = -1)
   if (whichd < 0 || whichd >= dLast || dict(whichd, t1d->name()) != t1d)
     return;
   
-  int icount = item_count();
+  int icount = nitems();
   for (int i = first_dict_item(whichd); i < icount; i++)
     if (item(i) == t1d) {
       StringAccum sa;
@@ -231,7 +231,8 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   PermString name;
   Type1Definition *def;
   while (dict_each(dBlend, i, name, def))
-    if (def && name != "Private" && name != "FontInfo")
+    if (def && name != "Private" && name != "FontInfo"
+	&& name != "ConvertDesignVector" && name != "NormalizeDesignVector")
       errh->warning("didn't interpolate %s in Blend", name.cc());
   
   i = 0;

@@ -170,9 +170,9 @@ do_file(const char *filename, PsresDatabase *psres)
   if (c == EOF)
     errh->fatal("%s: empty file", filename);
   if (c == 128)
-    reader = new Type1PfbReader(f);
+    reader = new Type1PFBReader(f);
   else
-    reader = new Type1PfaReader(f);
+    reader = new Type1PFAReader(f);
   
   font = new MyFont(*reader);
   delete reader;
@@ -180,6 +180,8 @@ do_file(const char *filename, PsresDatabase *psres)
   mmspace = font->create_mmspace(errh);
   if (!mmspace)
     errh->fatal("%s: not a multiple master font", filename);
+
+  font->undo_synthetic();
 }
 
 
@@ -368,7 +370,7 @@ particular purpose.\n");
   
   if (!font->set_design_vector(mmspace, design, errh))
     exit(1);
-  
+
   font->interpolate_dicts(errh);
   font->interpolate_charstrings(precision, errh);
   
@@ -396,10 +398,10 @@ particular purpose.\n");
   }
   
   if (write_pfb) {
-    Type1PfbWriter w(outfile);
+    Type1PFBWriter w(outfile);
     font->write(w);
   } else {
-    Type1PfaWriter w(outfile);
+    Type1PFAWriter w(outfile);
     font->write(w);
   }
   
