@@ -325,7 +325,7 @@ read_synthetic_string(Type1Reader &reader, StringAccum &wrong_accum,
     sscanf(accum.data(), format, value, &n);
   else
     sscanf(accum.data(), format, &n);
-  return (n != 0);
+  return (n != 0 && (isspace(accum[n]) || accum[n] == '\0'));
 }
 
 bool
@@ -337,8 +337,8 @@ Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
   {
     char *x = new char[strlen(first_line) + 1];
     int n = 0;
-    sscanf(first_line, "FontDirectory /%[^] \t\r\n[{}/] known { %n", x, &n);
-    if (n && first_line[n] == 0)
+    sscanf(first_line, "FontDirectory /%[^] \t\r\n[{}/] known {%n", x, &n);
+    if (n && (isspace(first_line[n]) || first_line[n] == 0))
       font_name = x;
     delete[] x;
     if (!font_name)
@@ -357,36 +357,36 @@ Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
     if (*y != '/' || strncmp(y + 1, font_name.cc(), font_name.length()) != 0)
       return false;
     int n = 0;
-    sscanf(y + font_name.length() + 1, " findfont %n", &n);
+    sscanf(y + font_name.length() + 1, " findfont%n", &n);
     y = strstr(y, "/UniqueID get ");
     if (n == 0 || y == 0)
       return false;
     n = 0;
-    sscanf(y + 14, "%d %n", &unique_id, &n);
+    sscanf(y + 14, "%d%n", &unique_id, &n);
     if (n == 0)
       return false;
   }
 
   // check lines that say how much text
   int multiplier;
-  if (!read_synthetic_string(reader, wrong_accum, "save userdict /fbufstr %d string put %n", &multiplier))
+  if (!read_synthetic_string(reader, wrong_accum, "save userdict /fbufstr %d string put%n", &multiplier))
     return false;
 
   int multiplicand;
-  if (!read_synthetic_string(reader, wrong_accum, "%d {currentfile fbufstr readstring { pop } { clear currentfile %n", &multiplicand))
+  if (!read_synthetic_string(reader, wrong_accum, "%d {currentfile fbufstr readstring { pop } { clear currentfile%n", &multiplicand))
     return false;
 
-  if (!read_synthetic_string(reader, wrong_accum, "closefile /fontdownload /unexpectedEOF /.error cvx exec } ifelse } repeat %n", 0))
+  if (!read_synthetic_string(reader, wrong_accum, "closefile /fontdownload /unexpectedEOF /.error cvx exec } ifelse } repeat%n", 0))
     return false;
 
   int extra;
-  if (!read_synthetic_string(reader, wrong_accum, "currentfile %d string readstring { pop } { clear currentfile %n", &extra))
+  if (!read_synthetic_string(reader, wrong_accum, "currentfile %d string readstring { pop } { clear currentfile%n", &extra))
     return false;
 
-  if (!read_synthetic_string(reader, wrong_accum, "closefile /fontdownload /unexpectedEOF /.error cvx exec } ifelse %n", 0))
+  if (!read_synthetic_string(reader, wrong_accum, "closefile /fontdownload /unexpectedEOF /.error cvx exec } ifelse%n", 0))
     return false;
 
-  if (!read_synthetic_string(reader, wrong_accum, "restore } if } if %n", 0))
+  if (!read_synthetic_string(reader, wrong_accum, "restore } if } if%n", 0))
     return false;
 
   Type1SubsetReader subreader(&reader, multiplier*multiplicand + extra);
