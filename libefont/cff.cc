@@ -1227,7 +1227,7 @@ Cff::Font::parse_encoding(int pos, ErrorHandler *errh)
 	    return errh->error("Encoding[0] out of range"), -EFAULT;
 	const uint8_t *p = data + pos + 2;
 	int n = data[pos + 1];
-	for (; g < n; g++, p++) {
+	for (; g <= n; g++, p++) {
 	    int e = p[0];
 	    if (_encoding[e])
 		retval = 1;
