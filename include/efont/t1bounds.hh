@@ -24,6 +24,7 @@ class CharstringBounds : public CharstringInterp { public:
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
     void mark(const Point &);
 
+    void clear();
     bool char_bounds(const CharstringContext &, bool shift = true);
     void translate(double dx, double dy);
     bool output(int bb[4], int &width, bool use_cur_width = false) const;

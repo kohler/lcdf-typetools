@@ -43,6 +43,12 @@ CharstringBounds::CharstringBounds(const Transform &nonfont_xf, const Vector<dou
 }
 
 void
+CharstringBounds::clear()
+{
+    _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
+}
+
+void
 CharstringBounds::xf_mark(const Bezier &b)
 {
     Bezier b1, b2;
