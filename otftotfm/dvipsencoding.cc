@@ -18,10 +18,10 @@
 #include "metrics.hh"
 #include "secondary.hh"
 #include <lcdf/error.hh>
-#include <cstring>
-#include <cstdio>
-#include <cctype>
-#include <cstdlib>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include <algorithm>
 #include "util.hh"
 

@@ -22,14 +22,14 @@
 #include "maket1font.hh"
 #include <efont/cff.hh>
 #include <efont/otf.hh>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-#include <cstdarg>
-#include <cctype>
-#include <cerrno>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <errno.h>
 #ifdef HAVE_CTIME
-# include <ctime>
+# include <time.h>
 #endif
 #if defined(_MSDOS) || defined(_WIN32)
 # include <fcntl.h>

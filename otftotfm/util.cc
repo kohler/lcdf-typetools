@@ -17,9 +17,9 @@
 #include "util.hh"
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
-#include <cstdio>
-#include <cerrno>
-#include <cstdlib>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
 #if defined(_MSDOS) || defined(_WIN32)
 # include <fcntl.h>
 # include <io.h>

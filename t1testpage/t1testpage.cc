@@ -21,14 +21,14 @@
 #include <efont/t1mm.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-#include <cstdarg>
-#include <cctype>
-#include <cerrno>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <errno.h>
 #ifdef HAVE_CTIME
-# include <ctime>
+# include <time.h>
 #endif
 
 using namespace Efont;

@@ -16,8 +16,8 @@
 #endif
 #include "metrics.hh"
 #include "dvipsencoding.hh"
-#include <cstring>
-#include <cstdio>
+#include <string.h>
+#include <stdio.h>
 #include <algorithm>
 #include <lcdf/straccum.hh>
 
