@@ -332,12 +332,12 @@ char *
 String::mutable_c_str()
 {
     (void) mutable_data();
-    (void) cc();
+    (void) c_str();
     return const_cast<char *>(_data);
 }
 
 const char *
-String::cc()
+String::c_str()
 {
     // If _memo has no capacity, then this is one of the special strings (null
     // or PermString). We are guaranteed, in these strings, that

@@ -55,8 +55,8 @@ class String { public:
   operator PermString() const		{ return PermString(_data, _length); }
 #endif
   
-  const char *cc();			// pointer returned is semi-transient
-  const char *c_str()			{ return cc(); }
+  const char *c_str();			// pointer returned is semi-transient
+  const char *cc()			{ return c_str(); }
   
   char operator[](int e) const		{ return _data[e]; }
   char back() const			{ return _data[_length-1]; }
@@ -351,8 +351,7 @@ operator+(String s1, char c2)
 inline void
 String::assign(PermString p)
 {
-  assert(p && "null PermString");
-  _data = p.cc();
+  _data = p.c_str();
   _length = p.length();
   _memo = permanent_memo;
   _memo->_refcount++;
@@ -367,25 +366,25 @@ String::String(PermString p)
 inline bool
 operator==(PermString p1, const String &s2)
 {
-  return p1 && s2.equals(p1.cc(), p1.length());
+  return p1 && s2.equals(p1.c_str(), p1.length());
 }
 
 inline bool
 operator==(const String &s1, PermString p2)
 {
-  return p2 && s1.equals(p2.cc(), p2.length());
+  return p2 && s1.equals(p2.c_str(), p2.length());
 }
 
 inline bool
 operator!=(PermString p1, const String &s2)
 {
-  return !s2.equals(p1.cc(), p1.length());
+  return !s2.equals(p1.c_str(), p1.length());
 }
 
 inline bool
 operator!=(const String &s1, PermString p2)
 {
-  return !s1.equals(p2.cc(), p2.length());
+  return !s1.equals(p2.c_str(), p2.length());
 }
 
 inline String &
@@ -399,14 +398,14 @@ String::operator=(PermString p)
 inline String &
 String::operator+=(PermString p)
 {
-  append(p.cc(), p.length());
+  append(p.c_str(), p.length());
   return *this;
 }
 
 inline String
 operator+(String s1, PermString p2)
 {
-  s1.append(p2.cc(), p2.length());
+  s1.append(p2.c_str(), p2.length());
   return s1;
 } 
 
