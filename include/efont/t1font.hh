@@ -77,7 +77,7 @@ class Type1Font: public Type1Program {
   Type1Item *item(int i) const		{ return _items[i]; }
   void set_item(int i, Type1Item *it)	{ _items[i] = it; }
   
-  bool is_mm() const			{ return !_dict[dBP].empty();}
+  bool is_mm() const			{ return mmspace() != 0;}
   
   int subr_count() const		{ return _subrs.size(); }
   Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
