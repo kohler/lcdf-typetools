@@ -15,3 +15,6 @@ t1lint_LDADD = ../t1lib/libt1lib.a ../edlib/libedlib.a
 INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib
 
 EXTRA_DIST = t1lint.1
+
+AUTODEPENDENCIES =
+@AUTODEPENDENCIES@

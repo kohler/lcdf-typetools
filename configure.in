@@ -12,6 +12,18 @@ if test -n "$GCC" ; then CC="$CC -Wall" ; CXX="$CXX -Wall" ; fi
 AC_PROG_RANLIB
 
 dnl
+dnl dependencies
+dnl
+
+AC_ARG_ENABLE(dependencies, [  --enable-dependencies   track dependencies (requires GCC, G++ and GNU Make)],
+[CC="$CC -MMD"; CXX="$CXX -MMD"
+AUTODEPENDENCIES='DEPFILES := $(wildcard *.d)\
+ifneq ($(DEPFILES),)\
+include $(DEPFILES)\
+endif'])
+AC_SUBST(AUTODEPENDENCIES)
+
+dnl
 dnl directory searching
 dnl
 

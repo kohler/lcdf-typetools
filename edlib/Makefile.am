@@ -17,6 +17,9 @@ libedlib_a_LIBADD = @FIXLIBC_O@
 
 EXTRA_DIST = hashmap.hh hashmap.cc vector.hh vector.cc fixlibc.c
 
+AUTODEPENDENCIES =
+@AUTODEPENDENCIES@
+
 permstr.o: permstr.hh permstr.cc
 straccum.o: straccum.hh straccum.cc
 landmark.o: landmark.hh landmark.cc

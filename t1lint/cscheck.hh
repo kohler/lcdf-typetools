@@ -39,7 +39,7 @@ class CharstringChecker : public Type1Interp {
   CharstringChecker(Type1Program *, Vector<double> *);
   
   void init();
-  bool error(int);
+  bool error(int, int);
   bool callothersubr();
   bool command(int);
   

@@ -4,6 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign check-news
 SUBDIRS = edlib t1lib t1lint
 
 EXTRA_DIST = rpm.spec
+AUTODEPENDENCIES =
 
 srclinks:
 	for i in clp.h clp.c hashmap.hh hashmap.cc vector.hh vector.cc \
@@ -13,7 +14,7 @@ srclinks:
 	ln -sf ../../edlib/$$i edlib/$$i ; done
 	for i in t1cs.hh t1cs.cc t1interp.hh t1interp.cc t1mm.hh t1mm.cc \
 	t1item.hh t1item.cc t1font.hh t1font.cc t1rw.hh t1rw.cc \
-	psres.hh psres.cc ; do \
+	t1unparser.hh t1unparser.cc psres.hh psres.cc ; do \
 	ln -sf ../../t1lib/$$i t1lib/$$i ; done
 
 versionize:

@@ -4,10 +4,10 @@
 #include "cscheck.hh"
 #include "t1item.hh"
 #include "error.hh"
+#include "t1unparser.hh"
 
-#define CHECK_STACK(numargs)	do { if (size() < numargs) ERROR(errUnderflow); } while (0)
-#define ERROR(what)		return error(what)
-#define CHECK_STACK_CP(numargs)	do { CHECK_STACK(numargs); if (!_cp_exists) ERROR(errCurrentPoint); } while (0)
+#define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
+#define CHECK_STACK_CP(numargs)	do { CHECK_STACK(numargs); if (!_cp_exists) return error(errCurrentPoint, cmd); } while (0)
 
 
 CharstringChecker::CharstringChecker(Type1Program *program, Vector<double> *weight)
@@ -118,27 +118,35 @@ CharstringChecker::rrcurveto(double, double, double, double, double, double)
 
 static char *error_strings[] = {
   "no error",
-  "charstring internal error",
+  "charstring internal error in `%s'",
   "charstring commands past end",
-  "charstring command unimplemented",
+  "charstring command `%s' unimplemented",
   "charstring stack overflow",
-  "charstring stack underflow",
-  "charstring bad vector operation",
-  "charstring bad value",
-  "charstring bad subroutine number",
+  "charstring stack underflow in `%s'",
+  "charstring bad vector operation in `%s'",
+  "charstring bad value in `%s'",
+  "charstring bad subroutine number %d",
   "charstring bad glyph",
-  "charstring no current point",
+  "charstring no current point in `%s'",
   "charstring flex error",
-  "charstring multiple master error",
+  "charstring multiple master error in `%s'",
   "charstring open stroke",
-  "charstring late sidebearing command",
+  "charstring late sidebearing command `%s'",
+  "charstring bad other subroutine %d",
 };
 
 bool
-CharstringChecker::error(int which)
+CharstringChecker::error(int which, int data)
 {
-  if (which > 0 && which < sizeof(error_strings)/sizeof(*error_strings))
-    _errh->error(error_strings[which]);
+  int nerror_messages = sizeof(error_strings) / sizeof(*error_strings);
+  if (which > 0 && which < nerror_messages) {
+    const char *error = error_strings[which];
+    if (strstr(error, "%s") != 0) {
+      String u = Type1Unparser::unparse_command(data);
+      _errh->error(error, u.cc());
+    } else
+      _errh->error(error, data);
+  }
   return false;
 }
 
@@ -200,7 +208,8 @@ CharstringChecker::callothersubr()
       _errh->error("wrong number of arguments to Flex");
       goto unknown;
     }
-    if (!_flex) ERROR(errFlex);
+    if (!_flex)
+      return error(errFlex, 0);
     ps_push(_cp.x);
     ps_push(_cp.y);
     break;
@@ -405,7 +414,8 @@ CharstringChecker::command(int cmd)
      point original_origin = _origin;
      
      Type1Encoding *adobe = Type1Encoding::standard_encoding();
-     if (!adobe) ERROR(errUnimplemented);
+     if (!adobe) 
+       return error(errInternal, cmd);
      Type1Charstring *t1cs = get_glyph((*adobe)[achar]);
      if (!t1cs) ERROR(errGlyph);
      _origin = point(ax, ay);
