@@ -29,16 +29,14 @@ StringAccum::StringAccum(const char *s)
     *this << s;
 }
 
-#ifdef HAVE_PERMSTRING
-StringAccum::StringAccum(PermString s)
+StringAccum::StringAccum(const String &s)
     : _s(0), _len(0), _cap(0)
 {
     *this << s;
 }
-#endif
 
-#ifdef HAVE_STRING
-StringAccum::StringAccum(const String &s)
+#ifdef HAVE_PERMSTRING
+StringAccum::StringAccum(PermString s)
     : _s(0), _len(0), _cap(0)
 {
     *this << s;
@@ -50,11 +48,7 @@ StringAccum::make_out_of_memory()
 {
   assert(_cap >= 0);
   delete[] _s;
-#ifdef HAVE_STRING
   _s = reinterpret_cast<unsigned char *>(const_cast<char *>(String::out_of_memory_string().data()));
-#else
-  _s = 0;
-#endif
   _cap = -1;
   _len = 0;
 }
@@ -92,7 +86,6 @@ StringAccum::c_str()
   return reinterpret_cast<char *>(_s);
 }
 
-#ifdef HAVE_STRING
 String
 StringAccum::take_string()
 {
@@ -105,7 +98,6 @@ StringAccum::take_string()
   else
     return String();
 }
-#endif
 
 StringAccum &
 operator<<(StringAccum &sa, long i)

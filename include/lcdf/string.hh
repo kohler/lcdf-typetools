@@ -2,7 +2,7 @@
 #ifndef LCDF_STRING_HH
 #define LCDF_STRING_HH
 #ifdef HAVE_PERMSTRING
-# include "permstr.hh"
+# include <lcdf/permstr.hh>
 #endif
 #include <cassert>
 
