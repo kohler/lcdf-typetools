@@ -884,7 +884,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 
       case CS::cHintmask:
       case CS::cCntrmask:
-	if (_state == S_HSTEM && size() >= 2)
+	if ((_state == S_HSTEM || _state == S_VSTEM) && size() >= 2)
 	    for (double pos = 0; bottom + 1 < size(); bottom += 2) {
 		_t2nhints++;
 		act_vstem(cmd, pos + at(bottom), at(bottom + 1));
