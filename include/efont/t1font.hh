@@ -26,7 +26,7 @@ class ErrorHandler;
 
 class Type1Font: public Type1Program {
  public:
-
+  
   enum Dict {
     dFont = 0,		dF = 0,
     dPrivate = 1,	dP = 1,
@@ -38,7 +38,7 @@ class Type1Font: public Type1Program {
   };
   
  private:
-
+  
   mutable bool _cached_defs;
   mutable PermString _font_name;
   
@@ -67,6 +67,7 @@ class Type1Font: public Type1Program {
   
   Type1Font(Type1Reader &);
   ~Type1Font();
+  bool ok() const;
   
   PermString font_name() const;
   
@@ -93,7 +94,7 @@ class Type1Font: public Type1Program {
   Type1Definition *ensure(Dict, PermString);
   
   bool dict_each(Dict, int &, PermString &, Type1Definition *&) const;
-
+  
   Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
   Type1MMSpace *mmspace() const;
   

@@ -93,7 +93,7 @@ Type1MMSpace::error(ErrorHandler *errh, const char *s, ...) const
     va_start(val, s);
     assert(strlen(s) < 900);
     sprintf(buf, "%.32s: %s", _font_name.cc(), s);
-    errh->verror(ErrorHandler::isError, Landmark(), buf, val);
+    errh->verror(ErrorHandler::ErrorKind, Landmark(), buf, val);
     va_end(val);
   }
   return false;

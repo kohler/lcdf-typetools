@@ -112,6 +112,7 @@ Type1Interp::vector_command(int cmd)
     break;
     
    default:
+    //fprintf(stderr, "%d\n", cmd);
     ERROR(errUnimplemented);
     
   }
@@ -282,11 +283,17 @@ Type1Interp::arith_command(int cmd)
       top(3) = top(2);
     pop(3);
     break;
-
+    
    case cPop:
     if (count_ps() < 1) ERROR(errUnderflow);
     push(pop_ps());
     break;
+    
+   case 15:
+    // this command is found with no explanation in JansonText-Roman
+    CHECK_STACK(2);
+    pop(2);
+    return true;
     
    default:
     ERROR(errUnimplemented);
@@ -396,9 +403,10 @@ Type1Interp::command(int cmd)
    case cIfelse:
    case cPop:
     return arith_command(cmd);
-    
+
    case cError:
    default:
+    //fprintf(stderr, "%d\n", cmd);
     ERROR(errUnimplemented);
     
   }

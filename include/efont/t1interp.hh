@@ -91,6 +91,8 @@ class Type1Interp {
     errCurrentPoint	= 10,
     errFlex		= 11,
     errMultipleMaster	= 12,
+    errOpenStroke	= 13,
+    errLateSidebearing	= 14,
   };
   
  private:

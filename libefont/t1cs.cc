@@ -3,8 +3,6 @@
 #endif
 #include "t1cs.hh"
 #include "t1interp.hh"
-#include <stdio.h>
-
 
 Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
   : _data(new unsigned char[l - lenIV]), _len(l - lenIV), _key(t1R_cs)
@@ -52,7 +50,7 @@ Type1Charstring::run(Type1Interp &t1interp)
       more = t1interp.number(data[0] - 139);
       ahead = 1;
       
-    } else if (*data == 28) {			// push short integer
+    } else if (*data == Type1Interp::cShortint) {	// push short integer
       if (left < 3) goto runoff_error;
       int val = (data[1] << 8) | data[2];
       if (val & (1L << 15))

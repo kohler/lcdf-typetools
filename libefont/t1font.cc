@@ -146,6 +146,13 @@ Type1Font::Type1Font(Type1Reader &reader)
 }
 
 
+bool
+Type1Font::ok() const
+{
+  return font_name() && _glyphs.count() > 0;
+}
+
+
 void
 Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
 {
@@ -158,7 +165,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
   
   _encoding = new Type1Encoding;
   _items.append(_encoding);
-
+  
   bool got_any = false;
   StringAccum accum;
   while (reader.next_line(accum)) {
@@ -168,6 +175,11 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     if (!x_length) continue;
     accum.push(0);		// ensure we don't run off the string
     char *x = accum.value();
+    
+    if (!got_any && strstr(x, "for") != 0) {
+      accum.clear();
+      continue;
+    }
     
     // check for `dup INDEX /CHARNAME put'
     if (x[0] == 'd' && x[1] == 'u' && x[2] == 'p' && x[3] == ' ') {
@@ -255,7 +267,7 @@ Type1Font::write(Type1Writer &w)
   int lenIV = 4;
   if (lenIV_def && !lenIV_def->value_int(lenIV)) lenIV = 4;
   Type1Subr::set_lenIV(lenIV);
-
+  
   // Set the /Subrs and /CharStrings integers correctly.
   // Make sure not to count extra nulls from the end of _subrs.
   Type1Definition *Subrs_def = p_dict("Subrs");
