@@ -497,7 +497,7 @@ ErrorHandler::decorate_text(Seriousness seriousness, const String &landmark, con
   
   // prepend 'warning: ' to every line if appropriate
   if (seriousness >= ERR_MIN_WARNING && seriousness < ERR_MIN_ERROR)
-    new_text = prepend_lines("warning: ", text);
+    new_text = prepend_lines("warning: ", text, true);
   else
     new_text = text;
 
@@ -509,7 +509,7 @@ ErrorHandler::decorate_text(Seriousness seriousness, const String &landmark, con
     // fix landmark: skip trailing spaces and trailing colon
     int i, len = landmark.length();
     for (i = len - 1; i >= 0; i--)
-      if (!isspace(landmark[i]))
+      if (!isspace((unsigned char) landmark[i]))
 	break;
     if (i >= 0 && landmark[i] == ':')
       i--;
@@ -548,7 +548,7 @@ ErrorHandler::set_error_code(int)
 }
 
 String
-ErrorHandler::prepend_lines(const String &prepend, const String &text)
+ErrorHandler::prepend_lines(const String &prepend, const String &text, bool inside_space)
 {
   if (!prepend)
     return text;
@@ -556,13 +556,16 @@ ErrorHandler::prepend_lines(const String &prepend, const String &text)
   StringAccum sa;
   const char *begin = text.begin();
   const char *end = text.end();
-  const char *nl;
-  while ((nl = std::find(begin, end, '\n')) < end) {
-    sa << prepend << text.substring(begin, nl + 1);
-    begin = nl + 1;
+  const char *space, *nl;
+  while (begin < end) {
+    nl = find(begin, end, '\n');
+    for (space = begin; inside_space && space < nl && isspace((unsigned char) *space); space++)
+      /* do nothing */;
+    if (nl < end)
+      nl++;
+    sa << text.substring(begin, space) << prepend << text.substring(space, nl);
+    begin = nl;
   }
-  if (begin < end)
-    sa << prepend << text.substring(begin, end);
   
   return sa.take_string();
 }
