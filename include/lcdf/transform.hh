@@ -2,7 +2,7 @@
 #ifndef LCDF_TRANSFORM_HH
 #define LCDF_TRANSFORM_HH
 #include <lcdf/bezier.hh>
-#include <cassert>
+#include <assert.h>
 
 class Transform { public:
 

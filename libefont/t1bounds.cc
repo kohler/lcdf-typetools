@@ -17,9 +17,9 @@
 # include <config.h>
 #endif
 #include <efont/t1bounds.hh>
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 namespace Efont {
 

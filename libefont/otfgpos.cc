@@ -19,9 +19,9 @@
 #include <efont/otfgpos.hh>
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 #include <algorithm>
 
 namespace Efont { namespace OpenType {

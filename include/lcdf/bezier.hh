@@ -3,7 +3,7 @@
 #define LCDF_BEZIER_HH
 #include <lcdf/point.hh>
 #include <lcdf/vector.hh>
-#include <cstring>
+#include <string.h>
 
 class Bezier { public:
   

@@ -18,9 +18,9 @@
 #endif
 #include <efont/otfcmap.hh>
 #include <lcdf/error.hh>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 #include <efont/otfdata.hh>	// for ntohl()
 
 #define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))

@@ -20,10 +20,10 @@
 #include <lcdf/error.hh>
 #include <efont/t1item.hh>
 #include <lcdf/straccum.hh>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <cmath>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <efont/t1unparser.hh>
 
 #ifndef static_assert
