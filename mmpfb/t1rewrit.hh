@@ -35,9 +35,9 @@ class Type1MMRemover {
   int _subr_count;
   Vector<int> _subr_done;
   Vector<Type1Charstring *> _subr_prefix;
-  Vector<int> _subr_contains_mm;
+  Vector<int> _must_expand_subr;
+  bool _expand_all_subrs;
   
-  bool _contains_mm_warned;
   ErrorHandler *_errh;
   
  public:
@@ -50,10 +50,11 @@ class Type1MMRemover {
   int nmasters() const			{ return _weight_vector->size(); }
   int precision() const			{ return _precision; }
   
-  Type1Charstring *subr_prefix(int);
   Type1Charstring *subr(int);
-  bool subr_empty(int);
-  bool subr_contains_mm(int);
+  
+  Type1Charstring *subr_expander(int);
+  Type1Charstring *subr_all_expander(int);
+  bool need_subr_call(int);
   
   void run();
   
@@ -78,6 +79,7 @@ class Type1SubrRemover {
   ~Type1SubrRemover();
   
   Type1Program *program() const			{ return _font; }
+  ErrorHandler *errh() const			{ return _errh; }
   
   void mark_save(int n);
   int save_count() const			{ return _save_count; }

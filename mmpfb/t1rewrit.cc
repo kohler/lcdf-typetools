@@ -6,6 +6,16 @@
 #include "error.hh"
 #include <stdio.h>
 
+static bool itc_complained = false;
+static ErrorHandler *itc_errh;
+
+void
+itc_complain()
+{
+  itc_errh->warning("strange `callothersubr'; is this an ITC font?");
+  itc_complained = true;
+}
+
 
 Type1CharstringGen::Type1CharstringGen(int precision = 5)
 {
@@ -62,7 +72,6 @@ Type1CharstringGen::gen_command(int command)
     _ncs.push(command);
 }
 
-
 void
 Type1CharstringGen::gen_stack(Type1Interp &interp)
 {
@@ -87,7 +96,6 @@ Type1CharstringGen::output(Type1Charstring &cs)
 }
 
 
-
 /*****
  * Type1OneMMRemover
  **/
@@ -95,16 +103,15 @@ Type1CharstringGen::output(Type1Charstring &cs)
 class Type1OneMMRemover: public Type1Interp {
   
   Type1MMRemover *_remover;
-  Type1CharstringGen _prefix_gen;
+  Type1CharstringGen _expander_gen;
   Type1CharstringGen _main_gen;
   
   int _subr_level;
-  bool _in_prefix;
-  bool _reduce;
-  bool _output_mm;
+  bool _in_expander;
+  bool _must_expand;
   
   void run_subr(Type1Charstring *);
-  bool run_once(const Type1Charstring &, bool do_prefix);
+  bool itc_command(int command, int on_stack);
   
  public:
   
@@ -112,11 +119,11 @@ class Type1OneMMRemover: public Type1Interp {
   
   bool command(int);
   
-  void run(const Type1Charstring &, bool do_prefix);
+  bool run(const Type1Charstring &, bool do_expander);
   
   Type1Charstring *output_prefix();
   void output_main(Type1Charstring &);
-  bool contained_mm() const			{ return _output_mm; }
+  bool must_expand() const			{ return _must_expand; }
   
 };
 
@@ -149,7 +156,7 @@ class Type1OneMMRemover: public Type1Interp {
 
 Type1OneMMRemover::Type1OneMMRemover(Type1MMRemover *remover)
   : Type1Interp(remover->program(), remover->weight_vector()),
-    _remover(remover), _prefix_gen(remover->precision()),
+    _remover(remover), _expander_gen(remover->precision()),
     _main_gen(remover->precision())
 {
 }
@@ -164,59 +171,163 @@ Type1OneMMRemover::run_subr(Type1Charstring *cs)
 }
 
 bool
+Type1OneMMRemover::itc_command(int command, int on_stack)
+{
+  Vector<double> *weight = weight_vector();
+  if (!weight) return error(errVector);
+  Vector<double> *scratch = scratch_vector();
+
+  int base = size() - on_stack - 2;
+  switch (command) {
+
+   case othcITC_load: {
+     if (on_stack != 1)
+       return false;
+     int offset = (int)at(base);
+     for (int i = 0; i < weight->size(); i++)
+       vec(scratch, offset+i) = weight->at_u(i);
+     // save load command, so we expand its effects into the scratch vector
+     _expander_gen.gen_number(offset);
+     _expander_gen.gen_number(1);
+     _expander_gen.gen_number(othcITC_load);
+     _expander_gen.gen_command(cCallothersubr);
+     break;
+   }
+
+   case othcITC_put: {
+     if (on_stack != 2)
+       return false;
+     int offset = (int)at(base+1);
+     vec(scratch, offset) = at(base);
+     // save put command, so we expand its effects into the scratch vector
+     _expander_gen.gen_number(at(base));
+     _expander_gen.gen_number(offset);
+     _expander_gen.gen_number(2);
+     _expander_gen.gen_number(othcITC_put);
+     _expander_gen.gen_command(cCallothersubr);
+     break;
+   }
+   
+   case othcITC_get: {
+     if (on_stack != 1)
+       return false;
+     int offset = (int)at(base);
+     double d = vec(scratch, offset);
+     if (!KNOWN(d)) {
+       _must_expand = true;
+       return false;
+     }
+     ps_push(d);
+     break;
+   }
+   
+   case othcITC_add: {
+     if (on_stack != 2)
+       return false;
+     ps_push(at(base) + at(base+1));
+     break;
+   }
+   
+   case othcITC_sub: {
+     if (on_stack != 2)
+       return false;
+     ps_push(at(base) - at(base+1));
+     break;
+   }
+   
+   case othcITC_mul: {
+     if (on_stack != 2)
+       return false;
+     ps_push(at(base) * at(base+1));
+     break;
+   }
+   
+   case othcITC_div: {
+     if (on_stack != 2)
+       return false;
+     ps_push(at(base) / at(base+1));
+     break;
+   }
+   
+   case othcITC_ifelse: {
+     if (on_stack != 4)
+       return false;
+     if (at(base+2) <= at(base+3))
+       ps_push(at(base));
+     else
+       ps_push(at(base+1));
+     break;
+   }
+   
+   default:
+    return false;
+
+  }
+  
+  pop(on_stack + 2);
+  return true;
+}
+
+bool
 Type1OneMMRemover::command(int cmd)
 {
   switch (cmd) {
     
    case cCallothersubr: {
-     if (size() < 2) goto normal;
-     int command = (int)top(0);
-     int n = (int)top(1);
-     if (command < othcMM1 || command > othcMM6)
-       goto normal;
-     else if (size() < 2 + n)
-       goto partial_mm_command;
-     pop(2);
-     mm_command(command, n);
-     break;
-   }
-     
-   partial_mm_command: {
-     if (!_in_prefix) {
-       _output_mm = true;
+     // Expand known othersubr calls. If we cannot expand the othersubr call
+     // completely, then write it to the expander.
+     if (size() < 2) {
+       _must_expand = true;
        goto normal;
      }
-     _prefix_gen.gen_stack(*this);
-     _prefix_gen.gen_command(cCallothersubr);
+     int command = (int)top(0);
+     int n = (int)top(1);
+     if (command >= othcITC_load && command <= othcITC_random) {
+       if (!itc_complained) itc_complain();
+       if (size() < 2 + n || !itc_command(command, n))
+	 goto partial_othersubr;
+     } else if (command >= othcMM1 && command <= othcMM6) {
+       if (size() < 2 + n)
+	 goto partial_othersubr;
+       pop(2);
+       mm_command(command, n);
+     } else
+       goto normal;
+     break;
+   }
+   
+   partial_othersubr: {
+     if (!_in_expander) {
+       _must_expand = true;
+       goto normal;
+     }
+     _expander_gen.gen_stack(*this);
+     _expander_gen.gen_command(cCallothersubr);
      break;
    }
    
    case cCallsubr: {
+     // expand subroutines in line if necessary
      if (size() < 1) goto normal;
      int subrno = (int)pop();
-     
-     Type1Charstring *prefix = _remover->subr_prefix(subrno);
-     if (prefix)
-       run_subr(prefix);
-     
-     if (!_remover->subr_empty(subrno)) {
-       Type1Charstring *main = _remover->subr(subrno);
-       if (main && (_reduce || _remover->subr_contains_mm(subrno)))
-	 run_subr(main);
-       else {
-	 push(subrno);
-	 goto normal;
-       }
+     if (Type1Charstring *cs = _remover->subr_expander(subrno))
+       run_subr(cs);
+     if (Type1Charstring *cs = _remover->subr_all_expander(subrno))
+       run_subr(cs);
+     if (_remover->need_subr_call(subrno)) {
+       push(subrno);
+       goto normal;
      }
      break;
    }
-     
+   
    case cPop:
     if (ps_size() >= 1)
       push(ps_pop());
-    else if (_in_prefix && size() == 0)
-      _prefix_gen.gen_command(cPop);
-    else
+    else if (_in_expander && size() == 0) {
+      _expander_gen.gen_stack(*this);
+      _expander_gen.gen_command(cPop);
+    } else
       goto normal;
     break;
     
@@ -235,14 +346,14 @@ Type1OneMMRemover::command(int cmd)
     
    case cEndchar:
     // _subr_level check FIXME
-    _in_prefix = 0;
+    _in_expander = 0;
     _main_gen.gen_stack(*this);
     _main_gen.gen_command(cmd);
     return false;
     
    normal:
    default:
-    _in_prefix = 0;
+    _in_expander = 0;
     _main_gen.gen_stack(*this);
     _main_gen.gen_command(cmd);
     break;
@@ -253,35 +364,25 @@ Type1OneMMRemover::command(int cmd)
 
 
 bool
-Type1OneMMRemover::run_once(const Type1Charstring &cs, bool do_prefix)
+Type1OneMMRemover::run(const Type1Charstring &cs, bool do_expander)
 {
-  _prefix_gen.clear();
+  _expander_gen.clear();
   _main_gen.clear();
-  _in_prefix = do_prefix;
+  _in_expander = do_expander;
   _subr_level = 0;
-  _output_mm = false;
+  _must_expand = false;
   init();
   
   cs.run(*this);
   
-  return !_output_mm;
-}
-
-void
-Type1OneMMRemover::run(const Type1Charstring &cs, bool do_prefix)
-{
-  _reduce = false;
-  if (!run_once(cs, do_prefix)) {
-    _reduce = true;
-    run_once(cs, do_prefix);
-  }
+  return _must_expand;
 }
 
 Type1Charstring *
 Type1OneMMRemover::output_prefix()
 {
-  if (_prefix_gen.length() > 0)
-    return _prefix_gen.output();
+  if (_expander_gen.length() > 0)
+    return _expander_gen.output();
   else
     return 0;
 }
@@ -303,9 +404,10 @@ Type1MMRemover::Type1MMRemover(Type1Font *font, Vector<double> *wv,
     _subr_count(font->subr_count()),
     _subr_done(_subr_count, 0),
     _subr_prefix(_subr_count, (Type1Charstring *)0),
-    _subr_contains_mm(_subr_count, 0),
-    _contains_mm_warned(false), _errh(errh)
+    _must_expand_subr(_subr_count, 0),
+    _expand_all_subrs(false), _errh(errh)
 {
+  itc_errh = _errh;
 }
 
 Type1MMRemover::~Type1MMRemover()
@@ -317,7 +419,7 @@ Type1MMRemover::~Type1MMRemover()
 
 
 Type1Charstring *
-Type1MMRemover::subr_prefix(int subrno)
+Type1MMRemover::subr_expander(int subrno)
 {
   if (subrno < 0 || subrno >= _subr_count) return 0;
   
@@ -328,14 +430,44 @@ Type1MMRemover::subr_prefix(int subrno)
     if (!subr) return 0;
     
     Type1OneMMRemover one(this);
-    one.run(*subr, true);
-    
-    _subr_prefix[subrno] = one.output_prefix();
-    one.output_main(*subr);
-    _subr_contains_mm[subrno] = one.contained_mm();
+    if (one.run(*subr, true))
+      _must_expand_subr[subrno] = true;
+    else {
+      _subr_prefix[subrno] = one.output_prefix();
+      one.output_main(*subr);
+    }
   }
-  
-  return _subr_prefix[subrno];
+
+  if (_must_expand_subr[subrno])
+    return _font->subr(subrno);
+  else
+    return _subr_prefix[subrno];
+}
+
+Type1Charstring *
+Type1MMRemover::subr_all_expander(int subrno)
+{
+  if (subrno < 0 || subrno >= _subr_count || !_expand_all_subrs)
+    return 0;
+  if (!_subr_done[subrno])
+    (void)subr_expander(subrno);
+  if (_must_expand_subr[subrno])
+    return 0;
+  else
+    return _font->subr(subrno);
+}
+
+bool
+Type1MMRemover::need_subr_call(int subrno)
+{
+  if (subrno < 0 || subrno >= _subr_count)
+    return true;
+  if (!_subr_done[subrno])
+    (void)subr_expander(subrno);
+  if (_must_expand_subr[subrno] || _expand_all_subrs)
+    return false;
+  Type1Charstring *subr = _font->subr(subrno);
+  return !subr || subr->length() > 1;
 }
 
 Type1Charstring *
@@ -346,77 +478,106 @@ Type1MMRemover::subr(int subrno)
   return _font->subr(subrno);
 }
 
-bool
-Type1MMRemover::subr_empty(int subrno)
+extern "C" {
+static int
+sort_permstring_compare(const void *v1, const void *v2)
 {
-  if (subrno < 0 || subrno >= _subr_count) return false;
-  assert(_subr_done[subrno]);
-  Type1Charstring *subr = _font->subr(subrno);
-  return subr && subr->length() <= 1;
+  const PermString *s1 = (const PermString *)v1;
+  const PermString *s2 = (const PermString *)v2;
+  return strcmp(s1->cc(), s2->cc());
 }
-
-bool
-Type1MMRemover::subr_contains_mm(int subrno)
-{
-  if (subrno < 0 || subrno >= _subr_count) return false;
-  assert(_subr_done[subrno]);
-  return _subr_contains_mm[subrno];
 }
-
 
 void
 Type1MMRemover::run()
 {
   Type1OneMMRemover one(this);
+  
+  // check subroutines
   for (int i = 0; i < _subr_count; i++)
-    (void)subr_prefix(i);
+    (void)subr_expander(i);
+
+  // expand glyphs
+  Vector<PermString> bad_glyphs;
   for (int i = 0; i < _font->glyph_count(); i++) {
     Type1Subr *g = _font->glyph(i);
     if (g) {
-      one.run(g->t1cs(), false);
-      one.output_main(g->t1cs());
-      if (one.contained_mm() && !_contains_mm_warned) {
-	if (_errh)
-	  _errh->warning("I couldn't remove all the multiple master commands.");
-	_contains_mm_warned = true;
+      if (one.run(g->t1cs(), false)) {
+	// Every glyph should be fully expandable without encountering a MM
+	// command. If we fail the first time, try again, expanding ALL
+	// subroutines. This catches, for example,
+	//   SUBR 1 { 1 0 return }; GLYPH g { 1 callsubr 2 blend };
+	// This will fail the first time, because `1 callsubr' will be left
+	// as a subroutine call, so `1 0' (required arguments to `blend')
+	// won't be visible.
+	_expand_all_subrs = true;
+	if (one.run(g->t1cs(), false))
+	  bad_glyphs.push_back(g->name());
+	_expand_all_subrs = false;
       }
+      one.output_main(g->t1cs());
     }
+  }
+
+  // report warnings
+  if (bad_glyphs.size()) {
+    qsort(&bad_glyphs[0], bad_glyphs.size(), sizeof(PermString), sort_permstring_compare);
+    _errh->error("could not fully interpolate the following glyphs:");
+    char buf[100];
+    int pos = 0;
+    for (int i = 0; i < bad_glyphs.size(); i++) {
+      PermString n = bad_glyphs[i];
+      bool comma = (i < bad_glyphs.size() - 1);
+      if (pos && pos + comma + 1 > 70) {
+	buf[pos] = 0;
+	_errh->message("  %s", buf);
+	pos = 0;
+      }
+      if (pos)
+	buf[pos++] = ' ';
+      strcpy(buf + pos, n.cc());
+      pos += n.length();
+      if (comma)
+	buf[pos++] = ',';
+    }
+    buf[pos] = 0;
+    _errh->message("  %s", buf);
   }
 }
 
 
 /*****
- * Type1SubrRemoverHR
+ * HintReplacementDetector
  **/
 
-class Type1SubrRemoverHR : public Type1Interp {
+class HintReplacementDetector : public Type1Interp {
   
   Type1SubrRemover *_remover;
   int _subr_level;
   
  public:
   
-  Type1SubrRemoverHR(Type1SubrRemover *);
+  HintReplacementDetector(Type1SubrRemover *);
   
   void init();
   bool command(int);
   
 };
 
-Type1SubrRemoverHR::Type1SubrRemoverHR(Type1SubrRemover *remover)
+HintReplacementDetector::HintReplacementDetector(Type1SubrRemover *remover)
   : Type1Interp(remover->program(), 0), _remover(remover)
 {
 }
 
 void
-Type1SubrRemoverHR::init()
+HintReplacementDetector::init()
 {
   _subr_level = 0;
   Type1Interp::init();
 }
 
 bool
-Type1SubrRemoverHR::command(int cmd)
+HintReplacementDetector::command(int cmd)
 {
   switch (cmd) {
     
@@ -434,6 +595,9 @@ Type1SubrRemoverHR::command(int cmd)
      } else if (command >= othcMM1 && command <= othcMM6) {
        pop(2);
        return mm_command(command, n);
+     } else if (command >= othcITC_load && command <= othcITC_random) {
+       pop(2);
+       return itc_command(command, n);
      } else
        goto unknown;
    }
@@ -494,21 +658,21 @@ Type1SubrRemoverHR::command(int cmd)
 
 
 /*****
- * Type1SubrRemoverSubr
+ * SubrExpander
  **/
 
-class Type1SubrRemoverSubr : public Type1Interp {
+class SubrExpander : public Type1Interp {
   
   Type1CharstringGen _gen;
-  Vector<bool> _kill;
+  Vector<bool> _expand;
   int _subr_level;
   
  public:
   
-  Type1SubrRemoverSubr(Type1Font *);
+  SubrExpander(Type1Font *);
   
-  void mark_kill(int n)			{ _kill[n] = true; }
-  bool kill(int n) const		{ return _kill[n]; }
+  void mark_expand(int n)		{ _expand[n] = true; }
+  bool expand(int n) const		{ return _expand[n]; }
 
   void init();
   bool command(int);
@@ -517,20 +681,20 @@ class Type1SubrRemoverSubr : public Type1Interp {
 
 };
 
-Type1SubrRemoverSubr::Type1SubrRemoverSubr(Type1Font *font)
-  : Type1Interp(font, 0), _gen(0), _kill(font->subr_count(), false)
+SubrExpander::SubrExpander(Type1Font *font)
+  : Type1Interp(font, 0), _gen(0), _expand(font->subr_count(), false)
 {
 }
 
 void
-Type1SubrRemoverSubr::init()
+SubrExpander::init()
 {
   _subr_level = 0;
   Type1Interp::init();
 }
 
 bool
-Type1SubrRemoverSubr::command(int cmd)
+SubrExpander::command(int cmd)
 {
   switch (cmd) {
     
@@ -538,7 +702,7 @@ Type1SubrRemoverSubr::command(int cmd)
      if (size() < 1) goto unknown;
      int which = (int)top(0);
      Type1Charstring *subr_cs = get_subr(which);
-     if (!subr_cs || !_kill[which])
+     if (!subr_cs || !_expand[which])
        goto unknown;
      pop();
      _subr_level++;
@@ -572,7 +736,7 @@ Type1SubrRemoverSubr::command(int cmd)
 }
 
 bool
-Type1SubrRemoverSubr::run(Type1Charstring &cs)
+SubrExpander::run(Type1Charstring &cs)
 {
   _gen.clear();
   init();
@@ -595,7 +759,7 @@ Type1SubrRemover::Type1SubrRemover(Type1Font *font, ErrorHandler *errh)
   for (int i = 0; i < 4; i++)
     mark_save(i);
   // save subroutines needed for hint replacement
-  Type1SubrRemoverHR hr(this);
+  HintReplacementDetector hr(this);
   for (int i = 0; i < _font->glyph_count(); i++) {
     Type1Subr *g = _font->glyph(i);
     if (g)
@@ -616,7 +780,6 @@ Type1SubrRemover::~Type1SubrRemover()
 static Vector<int> *sort_keys;
 
 extern "C" {
-
 static int
 sort_permute_compare(const void *v1, const void *v2)
 {
@@ -624,7 +787,6 @@ sort_permute_compare(const void *v1, const void *v2)
   const int *i2 = (const int *)v2;
   return (*sort_keys)[*i1] - (*sort_keys)[*i2];
 }
-
 }
 
 bool
@@ -640,7 +802,7 @@ Type1SubrRemover::run(int lower_to)
     return true;
   
   // count subroutine calls from other subroutines
-  Type1SubrRemoverHR hr(this);
+  HintReplacementDetector hr(this);
   for (int i = 0; i < _subr_count; i++) {
     Type1Charstring *cs = _font->subr(i);
     if (cs)
@@ -661,11 +823,11 @@ Type1SubrRemover::run(int lower_to)
   qsort(&permute[0], _subr_count, sizeof(int), sort_permute_compare);
   
   // mark first portion of `permute' to be removed
-  Type1SubrRemoverSubr rem0(_font);
+  SubrExpander rem0(_font);
   int removed = 0;
   for (int i = 0; i < _subr_count && removed < to_remove; i++)
     if (!_save[ permute[i] ]) {
-      rem0.mark_kill(permute[i]);
+      rem0.mark_expand(permute[i]);
       removed++;
     }
   assert(removed == to_remove);
@@ -675,7 +837,7 @@ Type1SubrRemover::run(int lower_to)
   Vector<int> renumber(_subr_count, -1);
   int renumber_pos = 0;
   for (int i = 0; i < _subr_count; i++)
-    if (!rem0.kill(i))
+    if (!rem0.expand(i))
       renumber[i] = renumber_pos++;
   rem0.set_renumbering(renumber);
 #endif
@@ -683,7 +845,7 @@ Type1SubrRemover::run(int lower_to)
   // go through and change them all
   for (int i = 0; i < _subr_count; i++) {
     Type1Charstring *cs = _font->subr(i);
-    if (cs && !rem0.kill(i))
+    if (cs && !rem0.expand(i))
       rem0.run(*cs);
   }
   for (int i = 0; i < _font->glyph_count(); i++) {
@@ -694,7 +856,7 @@ Type1SubrRemover::run(int lower_to)
   
   // actually remove subroutines
   for (int i = 0; i < _subr_count; i++)
-    if (rem0.kill(i))
+    if (rem0.expand(i))
       _font->remove_subr(i);
   
   return true;
