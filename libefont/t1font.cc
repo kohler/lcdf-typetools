@@ -176,10 +176,13 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     accum.push(0);		// ensure we don't run off the string
     char *pos = accum.value();
     
-    // check for `0 1 255 {1 index exch /.notdef put} for'
-    if (!got_any && strstr(pos, " for") != 0) {
-      accum.clear();
-      continue;
+    // skip to first `dup' token
+    if (!got_any) {
+      pos = strstr(pos, "dup");
+      if (!pos) {
+	accum.clear();
+	continue;
+      }
     }
     
     // parse as many `dup INDEX */CHARNAME put' as there are in the line
