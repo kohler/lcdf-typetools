@@ -64,8 +64,8 @@ Metrics::reserve_glyphs(int amt)
 GlyphIndex
 Metrics::add_glyph(PermString n)
 {
-  if (glyph_count() >= _wdv.size())
-    reserve_glyphs(glyph_count() ? glyph_count() * 2 : 64);
+  if (nglyphs() >= _wdv.size())
+    reserve_glyphs(nglyphs() ? nglyphs() * 2 : 64);
   GlyphIndex gi = _names.size();
   _names.push_back(n);
   _name_map.insert(n, gi);

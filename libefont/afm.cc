@@ -7,7 +7,6 @@
 #include <ctype.h>
 #include <assert.h>
 
-
 AfmReader::AfmReader(AfmParser &parser, Metrics *afm, AfmMetricsXt *afm_xt,
 		     ErrorHandler *errh)
   : _afm(afm), _afm_xt(afm_xt), _l(parser),

@@ -30,13 +30,13 @@ AfmWriter::write()
   
   write_prologue();
   
-  fprintf(_f, "StartCharMetrics %d\n", _m->glyph_count());
+  fprintf(_f, "StartCharMetrics %d\n", _m->nglyphs());
   
   GlyphIndex gi;
   for (int i = 0; i < 256; i++) //FIXME
     if ((gi = _m->find_code(i)) >= 0)
       write_char_metric_data(gi, i);
-  for (gi = 0; gi < _m->glyph_count(); gi++)
+  for (gi = 0; gi < _m->nglyphs(); gi++)
     if (_m->code(gi) == -1)
       write_char_metric_data(gi, -1);
   
@@ -155,7 +155,7 @@ AfmWriter::write_kerns() const
   
   fprintf(_f, "StartKernData\n");
   fprintf(_f, "StartKernPairs %d\n", numkerns);
-  for (GlyphIndex gi = 0; gi < _m->glyph_count(); gi++) {
+  for (GlyphIndex gi = 0; gi < _m->nglyphs(); gi++) {
     PairOpIndex opi = pairp.find_left(gi);
     while (opi >= 0) {
       const PairOp &op = pairp.op(opi);

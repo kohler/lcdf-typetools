@@ -110,9 +110,9 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
       PairProgram *sanity_pairp = _sanity_afm->pair_program();
       PairProgram *pairp = afm->pair_program();
       
-      if (_sanity_afm->glyph_count() != afm->glyph_count()
-	  || _sanity_afm->fd_count() != afm->fd_count()
-	  || _sanity_afm->kv_count() != afm->kv_count()
+      if (_sanity_afm->nglyphs() != afm->nglyphs()
+	  || _sanity_afm->nfd() != afm->nfd()
+	  || _sanity_afm->nkv() != afm->nkv()
 	  || sanity_pairp->op_count() != pairp->op_count()) {
 	if (errh)
 	  errh->error("%s: AFM for master `%s' failed sanity checks",

@@ -69,7 +69,7 @@ class Metrics {
   
   // GLYPHS
   
-  int glyph_count() const		{ return _names.size(); }
+  int nglyphs() const			{ return _names.size(); }
   PermString name(GlyphIndex gi) const	{ return _names[gi]; }
   GlyphIndex find(PermString n) const	{ return _name_map[n]; }
   
@@ -85,8 +85,8 @@ class Metrics {
   double scale() const			{ return _scale; }
   void set_scale(double d)		{ _scale = d; }
   
-  int fd_count() const			{ return _fdv.size(); }
-  int kv_count() const			{ return _kernv.size(); }
+  int nfd() const			{ return _fdv.size(); }
+  int nkv() const			{ return _kernv.size(); }
   
   double fd(int i) const		{ return _fdv[i]; }
   double wd(int i) const		{ return _wdv[i]; }
