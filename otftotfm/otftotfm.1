@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.21
+.ds V 2.22
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -493,11 +493,10 @@ Ignore any LIGKERN and/or UNICODING commands in the encoding file.
 '
 .Sp
 .TP 5
-.BI \-\-default\-ligkern
-Use
+.BI \-\-no\-default\-ligkern
+Don't include
 .BR otftotfm 's
-default LIGKERN commands, ignoring any from the encoding file.  See
-ENCODINGS, below.
+default LIGKERN commands.  See ENCODINGS, below.
 '
 .Sp
 .TP 5
@@ -930,18 +929,17 @@ has a default set of eight ligatures, namely:
     quoteleft quoteleft =: quotedblleft ; 
     quoteright quoteright =: quotedblright
 .fi
-LIGKERN commands in the encoding file and/or
+LIGKERN commands in the encoding file and
 .B \-\-ligkern
-options normally inhibit the defaults.
+options can override these defaults, or supply the
+.B \-\-no\-default\-ligkern
+option to turn them off.
 .PP
 Some common encoding files have commands that are inappropriate for
 OpenType fonts.  For example, "t1.enc" hard-codes f-ligatures, which can
 cause problems with small-cap fonts.  Supply the
 .B \-\-no\-encoding\-commands
-option to ignore all commands from the encoding file, or the
-.B \-\-default\-ligkern
-option to ignore LIGKERN commands (but apply the default ligatures).
-Explicit
+option to ignore all commands from the encoding file.  Explicit
 .B \-\-ligkern
 and
 .B \-\-unicoding

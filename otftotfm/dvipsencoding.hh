@@ -28,8 +28,8 @@ class DvipsEncoding { public:
     int encoding_size() const			{ return _e.size(); }
 
     int parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *);
-    int parse_ligkern(const String &ligkern_text, ErrorHandler *);
-    int parse_unicoding(const String &unicoding_text, ErrorHandler *);
+    int parse_ligkern(const String &ligkern_text, int override, ErrorHandler *);
+    int parse_unicoding(const String &unicoding_text, int override, ErrorHandler *);
 
     bool file_had_ligkern() const		{ return _file_had_ligkern; }
     
@@ -69,13 +69,15 @@ class DvipsEncoding { public:
     String _final_text;
     bool _file_had_ligkern;
 
-    int parse_ligkern_words(Vector<String> &, ErrorHandler *);
-    int parse_unicoding_words(Vector<String> &, ErrorHandler *);
-    int parse_words(const String &, int (DvipsEncoding::*)(Vector<String> &, ErrorHandler *), ErrorHandler *);
+    int parse_ligkern_words(Vector<String> &, int override, ErrorHandler *);
+    int parse_unicoding_words(Vector<String> &, int override, ErrorHandler *);
+    int parse_words(const String &, int override, int (DvipsEncoding::*)(Vector<String> &, int, ErrorHandler *), ErrorHandler *);
     void bad_codepoint(int);
     bool x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const;
     
     static PermString dot_notdef;
+    
+    friend inline bool operator==(const Ligature&, const Ligature&);
 
 };
 

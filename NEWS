@@ -1,5 +1,14 @@
 LCDF Typetools NEWS
 
+Version 2.22   2.Mar.2005
+
+* otftotfm: Include default ligatures unless '--no-default-ligkern' is
+  given.  This seems cleaner than the previous semantics (which included
+  the default ligatures unless there were ligatures in the encoding and/or
+  the command line), but it is incompatible.  Inspired by question from
+  Christopher Swingely.
+
+
 Version 2.21   16.Feb.2005
 
 * otftotfm: Base fonts include no kerns or ligatures.  Requested by Michael

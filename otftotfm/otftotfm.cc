@@ -149,7 +149,7 @@ static Clp_Option options[] = {
     { "kern-precision", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
     { "no-encoding-commands", 0, NO_ECOMMAND_OPT, 0, Clp_OnlyNegated },
-    { "default-ligkern", 0, DEFAULT_LIGKERN_OPT, 0, 0 },
+    { "default-ligkern", 0, DEFAULT_LIGKERN_OPT, 0, Clp_Negate },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
     { "boundary-char", 0, BOUNDARY_CHAR_OPT, CHAR_OPTTYPE, 0 },
@@ -1114,7 +1114,7 @@ report_underused_features(const HashMap<uint32_t, int> &feature_usage, ErrorHand
 		sa << *a << sep;
 	    sa << (x[i].size() > 1 ? "and " : "") << x[i].back()
 	       << (x[i].size() > 1 ? " features" : " feature") << (msg_pct+1);
-	    sa.append_break_lines(sa.take_string(), 61);
+	    sa.append_break_lines(sa.take_string(), 58);
 	    errh->warning("%s", sa.c_str());
 	}
 }
@@ -1446,7 +1446,7 @@ main(int argc, char *argv[])
     bool literal_encoding = false;
     Vector<String> ligkern;
     Vector<String> unicoding;
-    bool no_ecommand = false, default_ligkern = false;
+    bool no_ecommand = false, default_ligkern = true;
     String codingscheme;
 
     GlyphFilter current_substitution_filter;
@@ -1579,7 +1579,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case DEFAULT_LIGKERN_OPT:
-	    default_ligkern = true;
+	    default_ligkern = !clp->negated;
 	    break;
 
 	  case BOUNDARY_CHAR_OPT:
@@ -1819,7 +1819,7 @@ particular purpose.\n");
 	DvipsEncoding dvipsenc;
 	if (encoding_file) {
 	    if (String path = locate_encoding(encoding_file, errh))
-		dvipsenc.parse(path, no_ecommand || default_ligkern, no_ecommand, errh);
+		dvipsenc.parse(path, no_ecommand, no_ecommand, errh);
 	    else
 		errh->fatal("encoding '%s' not found", encoding_file.c_str());
 	} else {
@@ -1836,16 +1836,16 @@ particular purpose.\n");
 	}
 
 	// apply default ligkern commands
-	if (default_ligkern || (!dvipsenc.file_had_ligkern() && !ligkern.size() && !no_ecommand))
-	    dvipsenc.parse_ligkern(default_ligkerns, ErrorHandler::silent_handler());
+	if (default_ligkern)
+	    dvipsenc.parse_ligkern(default_ligkerns, 0, ErrorHandler::silent_handler());
     
 	// apply command-line ligkern commands and coding scheme
 	cerrh.set_landmark("--ligkern command");
 	for (int i = 0; i < ligkern.size(); i++)
-	    dvipsenc.parse_ligkern(ligkern[i], &cerrh);
+	    dvipsenc.parse_ligkern(ligkern[i], 1, &cerrh);
 	cerrh.set_landmark("--unicoding command");
 	for (int i = 0; i < unicoding.size(); i++)
-	    dvipsenc.parse_unicoding(unicoding[i], &cerrh);
+	    dvipsenc.parse_unicoding(unicoding[i], 1, &cerrh);
 	if (codingscheme)
 	    dvipsenc.set_coding_scheme(codingscheme);
 
