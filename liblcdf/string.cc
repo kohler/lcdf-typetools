@@ -35,20 +35,20 @@ String *String::oom_string_p = 0;
 
 inline
 String::Memo::Memo()
-  : _refcount(0), _capacity(0), _dirty(0), _real_data("")
+    : _refcount(0), _capacity(0), _dirty(0), _real_data("")
 {
 }
 
 inline
 String::Memo::Memo(char *data, int dirty, int capacity)
-  : _refcount(0), _capacity(capacity), _dirty(dirty),
-    _real_data(data)
+    : _refcount(0), _capacity(capacity), _dirty(dirty),
+      _real_data(data)
 {
 }
 
 String::Memo::Memo(int dirty, int capacity)
-  : _refcount(1), _capacity(capacity), _dirty(dirty),
-    _real_data(new char[capacity])
+    : _refcount(1), _capacity(capacity), _dirty(dirty),
+      _real_data(new char[capacity])
 {
     assert(_capacity >= _dirty);
 }

@@ -678,14 +678,14 @@ ErrorHandler::has_default_handler()
 ErrorHandler *
 ErrorHandler::default_handler()
 {
-  assert(the_default_handler);
+  assert(the_default_handler != 0);
   return the_default_handler;
 }
 
 ErrorHandler *
 ErrorHandler::silent_handler()
 {
-  assert(the_silent_handler);
+  assert(the_silent_handler != 0);
   return the_silent_handler;
 }
 
