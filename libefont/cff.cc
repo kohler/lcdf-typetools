@@ -1264,10 +1264,11 @@ Cff::Font::parse_encoding(int pos, ErrorHandler *errh)
 	int n = data[endpos];
 	for (int i = 0; i < n; i++, p += 3) {
 	    int e = p[0];
-	    int g = (p[1] << 8) | p[2];
+	    int s = (p[1] << 8) | p[2];
+	    int g = _charset.sid_to_gid(s);
 	    if (_encoding[e])
 		retval = 1;
-	    if (g >= _charset.nglyphs())
+	    if (g < 0 || g >= _charset.nglyphs())
 		return errh->error("Encoding glyph %d out of range", g), -EINVAL;
 	    _encoding[e] = g;
 	}
