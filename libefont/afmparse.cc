@@ -3,6 +3,7 @@
 # include <config.h>
 #endif
 #include <efont/afmparse.hh>
+#include <efont/t1cs.hh>
 #include <efont/metrics.hh>
 #include <lcdf/strtonum.h>
 #include <cstring>
