@@ -1,6 +1,11 @@
 LCDF Typetools NEWS
 
-Version 0.6   11.Jun.2003
+Version 0.7   13.Jun.2003
+
+* cfftot1: Fix bug to handle MinionPro-Italic without crashing.
+
+
+Version 0.6   12.Jun.2003
 
 * cfftot1: Fix definitions of Subrs entries 1 and 2; now fonts with flex
   hints will work.
@@ -17,6 +22,10 @@ Version 0.6   11.Jun.2003
 
 * otftopl: Prefer '--query-features' and '--query-scripts' to
   '--print-features' and '--print-scripts'.
+
+* otftopl: Better warnings and error messages for bad LIGKERN/UNICODING
+  commands in encoding files, and when there isn't enough room in an
+  encoding for ligature glyphs.
 
 * t1lint: Reads stdin if no filenames supplied on the command line.
 
