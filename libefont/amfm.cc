@@ -8,6 +8,7 @@
 #include <lcdf/error.hh>
 #include <efont/findmet.hh>
 #include <efont/t1cs.hh>
+#include <lcdf/straccum.hh>
 #include <cstdarg>
 #include <cstdlib>
 #include <cctype>
@@ -153,19 +154,6 @@ AmfmMetrics::find_primary_font(const Vector<double> &design_vector) const
 }
 
 
-HashMap<PermString, PermString> AmfmMetrics::axis_generic_label;
-
-void
-AmfmMetrics::make_axis_generic_label()
-{
-    if (axis_generic_label.size()) return;
-    axis_generic_label.insert("Weight", "wt");
-    axis_generic_label.insert("Width", "wd");
-    axis_generic_label.insert("OpticalSize", "op");
-    axis_generic_label.insert("Style", "st");
-}
-
-
 Metrics *
 AmfmMetrics::interpolate(const Vector<double> &design_vector,
 			 const Vector<double> &weight_vector,
@@ -187,40 +175,37 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
     /* 1.
      * Use the design vector to generate new FontName and FullName. */
   
-    make_axis_generic_label();
     AmfmPrimaryFont *pf = find_primary_font(design_vector);
     // The primary font is useless to us if it doesn't have axis labels.
-    if (pf && !pf->labels.size()) pf = 0;
-  
-    PermString new_font_name = _font_name;
-    PermString new_full_name = _full_name;
+    if (pf && !pf->labels.size())
+	pf = 0;
+
+    StringAccum font_name_sa, full_name_sa;
+    font_name_sa << _font_name;
+    full_name_sa << _full_name;
     for (int a = 0; a < _naxes; a++) {
 	double dv = design_vector[a];
-	new_font_name = permprintf("%p_%g", new_font_name.capsule(), dv);
+	font_name_sa << '_' << dv;
+	full_name_sa << (a == 0 ? '_' : ' ') << dv;
     
 	PermString label;
 	if (pf)
 	    label = pf->labels[a];
 	if (!label)
-	    label = axis_generic_label[ _mmspace->axis_type(a) ];
-    
-	new_full_name =
-	    permprintf((a == 0 ? "%p_%g" : "%p %g"), new_full_name.capsule(), dv);
-    
+	    label = _mmspace->axis_abbreviation(a);
 	if (label)
-	    new_full_name =
-		permprintf("%p %p", new_full_name.capsule(), label.capsule());
+	    full_name_sa << ' ' << label;
     }
     // Multiple master fonts require an underscore AFTER the font name too
-    new_font_name = permprintf("%p_", new_font_name.capsule());
-  
+    font_name_sa << '_';
+
     /* 2.
      * Set up the new AFM with the special constructor. */
   
     // Find the first master with a non-zero component.
     for (m = 0; m < _nmasters && weight_vector[m] == 0; m++)
 	;
-    Metrics *afm = new Metrics(new_font_name, new_full_name, *_masters[m].afm);
+    Metrics *afm = new Metrics(font_name_sa.cc(), full_name_sa.cc(), *_masters[m].afm);
     if (MetricsXt *xt = _masters[m].afm->find_xt("AFM")) {
 	AfmMetricsXt *new_xt = new AfmMetricsXt((AfmMetricsXt &)*xt);
 	afm->add_xt(new_xt);
@@ -492,7 +477,7 @@ AmfmReader::read()
   
   done:
     if (!_mmspace) {
-	_errh->error("`%s' is not an AMFM file", _l.landmark().file().cc());
+	_errh->error("`%s' is not an AMFM file", String(_l.landmark().file()).cc());
 	return false;
     }
   
@@ -504,7 +489,7 @@ AmfmReader::read()
     }
   
     if (!_mmspace->check_intermediate() && _l.filename().directory()) {
-	PermString name = permprintf("%p.amcp", l.filename().base().capsule());
+	String name = l.filename().base() + ".amcp";
 	Slurper slurp(_l.filename().from_directory(name));
 	add_amcp_file(slurp, _amfm, _errh);
     }
@@ -642,16 +627,17 @@ AmfmReader::read_axis(int ax) const
   
     PermString s;
     while (_l.next_line())
-	// Grok the whole line. Are we on a character metric data line?
 	switch (_l[0]) {
       
 	  case 'A':
 	    if (_l.is("AxisType %+s", &s)) {
-		if (ok) _mmspace->set_axis_type(ax, s);
+		if (ok)
+		    _mmspace->set_axis_type(ax, s);
 		break;
 	    }
 	    if (_l.is("AxisLabel %+s", &s)) {
-		if (ok) _mmspace->set_axis_label(ax, s);
+		if (ok)
+		    _mmspace->set_axis_label(ax, s);
 		break;
 	    }
 	    goto invalid;

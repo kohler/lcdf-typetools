@@ -58,7 +58,7 @@ class AmfmMetrics { public:
     int naxes() const			{ return _naxes; }
     int nmasters() const		{ return _nmasters; }
     EfontMMSpace *mmspace() const	{ return _mmspace; }
-  
+    
     int primary_label_value(int, PermString) const;
   
     Metrics *interpolate(const Vector<double> &design,
@@ -93,9 +93,6 @@ class AmfmMetrics { public:
     Metrics *_sanity_afm;
 
     unsigned _uses;
-  
-    static HashMap<PermString, PermString> axis_generic_label;
-    static void make_axis_generic_label();
   
     friend class AmfmReader;
   
