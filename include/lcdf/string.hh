@@ -42,22 +42,28 @@ class String { public:
   
     int length() const			{ return _length; }
     const char *data() const		{ return _data; }
+    const unsigned char *udata() const	{ return reinterpret_cast<const unsigned char *>(_data); }
+    
+    typedef const char *const_iterator;
+    typedef const_iterator iterator;
+    const_iterator begin() const	{ return _data; }
+    const_iterator end() const		{ return _data + _length; }
+    
     char *mutable_data();
     char *mutable_c_str();
-    const unsigned char *udata() const	{ return reinterpret_cast<const unsigned char *>(_data); }
     unsigned char *mutable_udata()	{ return reinterpret_cast<unsigned char *>(mutable_data()); }
   
     operator bool() const		{ return _length != 0; }
     bool operator!() const		{ return _length == 0; }
-  
+
 #ifdef HAVE_PERMSTRING
     operator PermString() const		{ return PermString(_data, _length); }
 #endif
   
-    const char *c_str();		// pointer returned is semi-transient
+    const char *c_str() const;		// pointer returned is semi-transient
   
-    char operator[](int e) const	{ return _data[e]; }
-    char back() const			{ return _data[_length-1]; }
+    char operator[](int i) const	{ return _data[i]; }
+    char back() const			{ return _data[_length - 1]; }
     int find_left(int c, int start = 0) const;
     int find_left(const String &s, int start = 0) const;
     int find_right(int c, int start = 0x7FFFFFFF) const;
@@ -78,8 +84,9 @@ class String { public:
     // bool operator>(const String &, const String &);
     // bool operator>=(const String &, const String &);
   
-    String substring(int, int) const;
-    String substring(int left) const	{ return substring(left, _length); }
+    String substring(const char *begin, const char *end) const;
+    String substring(int pos, int len) const;
+    String substring(int pos) const	{ return substring(pos, _length); }
 
     String lower() const;
     String upper() const;
@@ -93,7 +100,7 @@ class String { public:
 
     void append(const char *, int len);
     void append_fill(int c, int len);
-    void append_garbage(int len);
+    char *append_garbage(int len);
     inline String &operator+=(const String &);
     inline String &operator+=(const char *);
     inline String &operator+=(char);
@@ -127,18 +134,18 @@ class String { public:
 	~Memo();
     };
   
-    const char *_data;
-    int _length;
-    Memo *_memo;
+    mutable const char *_data;	// mutable for c_str()
+    mutable int _length;
+    mutable Memo *_memo;
   
     inline String(const char *, int, Memo *);
   
-    inline void assign(const String &);
+    inline void assign(const String &) const;
     void assign(const char *, int);
 #ifdef HAVE_PERMSTRING
-    inline void assign(PermString);
+    inline void assign(PermString) const;
 #endif
-    inline void deref();
+    inline void deref() const;
     void make_out_of_memory();
   
     static Memo *null_memo;
@@ -162,7 +169,7 @@ String::String(const char *data, int length, Memo *memo)
 }
 
 inline void
-String::assign(const String &s)
+String::assign(const String &s) const
 {
     _data = s._data;
     _length = s._length;
@@ -171,7 +178,7 @@ String::assign(const String &s)
 }
 
 inline void
-String::deref()
+String::deref() const
 {
     if (--_memo->_refcount == 0)
 	delete _memo;
@@ -208,6 +215,14 @@ String::~String()
     deref();
 }
 
+inline String
+String::substring(const char *begin, const char *end) const
+{
+    if (begin < end && begin >= _data && end <= _data + _length)
+	return String(begin, end - begin, _memo);
+    else
+	return String();
+}
 
 inline int
 String::compare(const String &a, const String &b)
@@ -347,7 +362,7 @@ operator+(String s1, char c2)
 #ifdef HAVE_PERMSTRING
 
 inline void
-String::assign(PermString p)
+String::assign(PermString p) const
 {
     _data = p.c_str();
     _length = p.length();
