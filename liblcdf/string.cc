@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
- * Copyright (c) 2001-2004 Eddie Kohler
+ * Copyright (c) 2001-2005 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -33,6 +33,7 @@ String::Memo *String::permanent_memo = 0;
 String::Memo *String::oom_memo = 0;
 String *String::null_string_p = 0;
 String *String::oom_string_p = 0;
+const char String::oom_string_data = 0;
 
 inline
 String::Memo::Memo()
@@ -518,10 +519,11 @@ String::static_initialize()
 	null_memo->_refcount++;
 	permanent_memo = new Memo;
 	permanent_memo->_refcount++;
-	// allocate a separate string for oom_memo's data, so we can
-	// distinguish the pointer
-	oom_memo = new Memo(0, 1);
-	oom_memo->_real_data[0] = '\0';
+	// use a separate string for oom_memo's data, so we can distinguish
+	// the pointer
+	oom_memo = new Memo;
+	oom_memo->_refcount++;
+	oom_memo->_real_data = oom_string_data;
 	null_string_p = new String;
 	oom_string_p = new String(oom_memo->_real_data, 0, oom_memo);
     }

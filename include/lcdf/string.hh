@@ -35,12 +35,13 @@ class String { public:
   
     static const String &null_string()	{ return *null_string_p; }
     static const String &out_of_memory_string() { return *oom_string_p; }
+    static const char *out_of_memory_data() { return &oom_string_data; }
     static String garbage_string(int n); // n garbage characters
     static String fill_string(int c, int n); // n copies of c
     static String stable_string(const char *, int = -1); // stable read-only memory
-  
-    bool out_of_memory() const		{ return _memo == oom_memo; }
-  
+
+    bool out_of_memory() const		{ return _data == &oom_string_data; }
+
     int length() const			{ return _length; }
     const char *data() const		{ return _data; }
     const unsigned char *udata() const	{ return reinterpret_cast<const unsigned char *>(_data); }
@@ -154,7 +155,8 @@ class String { public:
     static Memo *oom_memo;
     static String *null_string_p;
     static String *oom_string_p;
-  
+    static const char oom_string_data;
+
     static String claim_string(char *, int, int); // claim memory
 
     friend class StringAccum;
