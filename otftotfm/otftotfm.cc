@@ -11,6 +11,7 @@
 #include "gsubencoding.hh"
 #include "dvipsencoding.hh"
 #include "util.hh"
+#include "md5.h"
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
 #include <efont/cff.hh>
@@ -28,30 +29,53 @@
 
 using namespace Efont;
 
-#define VERSION_OPT	301
-#define HELP_OPT	302
-#define QUIET_OPT	303
-#define OUTPUT_OPT	304
-#define FEATURE_OPT	305
-#define GLYPHLIST_OPT	306
-#define ENCODING_OPT	307
+#define VERSION_OPT		301
+#define HELP_OPT		302
+#define QUIET_OPT		303
+#define OUTPUT_OPT		304
+#define FEATURE_OPT		305
+#define GLYPHLIST_OPT		306
+#define ENCODING_OPT		307
+#define LITERAL_ENCODING_OPT	308
+#define SCRIPT_OPT		309
+#define ENCODING_DIR_OPT	310
+#define ENCODING_NAME_OPT	311
+#define ENCODING_FILE_OPT	312
 
 Clp_Option options[] = {
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
+    { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ArgString, 0 },
+    { "encoding-file", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
+    { "encoding-name", 0, ENCODING_NAME_OPT, Clp_ArgString, 0 },
     { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
+    { "literal-encoding", 'E', LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
+    { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
 };
 
 
 static const char *program_name;
-static PermString::Initializer initializer;
+static String::Initializer initializer;
+static String current_time;
+static StringAccum invocation;
+
+static PermString::Initializer perm_initializer;
 static PermString dot_notdef(".notdef");
+
+static Vector<Efont::OpenType::Tag> interesting_scripts;
 static Vector<Efont::OpenType::Tag> interesting_features;
 static Vector<int> interesting_features_used;
+
+static String encoding_directory;
+static String encoding_name;
+static String encoding_file;
+static String encoded_font_name;
+
+static bool stdout_used = false;
 
 
 void
@@ -75,7 +99,11 @@ usage()
 \n\
 General options:\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
-  -e, --encoding=FILE          Use DVIPS encoding FILE.\n\
+  -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
+  -E, --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
+      --encoding-name=NAME     Output encoding name is NAME.\n\
+      --encoding-file=FILE     Output encoding to FILE.\n\
+      --encoding-directory=DIR Output encoding to a file in DIR.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
@@ -87,6 +115,7 @@ Report bugs to <kohler@icir.org>.\n", program_name);
 
 // MAIN
 
+#if 0
 struct AFMKeyword {
     Cff::DictOperator op;
     Cff::DictType type;
@@ -170,6 +199,7 @@ FontName %s\n",
     
     fprintf(f, "EndFontMetrics\n");
 }
+#endif
 
 static const char * const digit_names[] = {
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
@@ -177,18 +207,23 @@ static const char * const digit_names[] = {
 
 static void
 output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
-	   const GsubEncoding &gse, FILE *f)
+	   const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	   FILE *f)
 {
-    // get glyph names
-    Vector<PermString> glyph_names;
-    cff->glyph_names(glyph_names);
-    
-    //XXX is DESIGNSIZE in points?
-    fprintf(f, "(VTITLE foo)\n"
-	    "(COMMENT foo)\n"
-	    "(FAMILY foo)\n"
-	    "(CODINGSCHEME foo)\n"
-	    "(DESIGNSIZE R 10.0)\n"
+    // XXX check DESIGNSIZE and DESIGNUNITS for correctness
+
+    fprintf(f, "(VTITLE Created by '%s'%s)\n", invocation.c_str(), current_time.c_str());
+
+    // calculate a TeX FAMILY name using afm2tfm's algorithm
+    String family_name = String("TeX-") + cff->font_name();
+    if (family_name.length() > 19)
+	family_name = family_name.substring(0, 9) + family_name.substring(-10);
+    fprintf(f, "(FAMILY %s)\n", family_name.c_str());
+
+    if (encoding_name)
+	fprintf(f, "(CODINGSCHEME %.39s)\n", encoding_name.c_str());
+
+    fprintf(f, "(DESIGNSIZE R 10.0)\n"
 	    "(DESIGNUNITS R 1000)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
 	    "(COMMENT OTHER DIMENSIONS ARE MULTIPLES OF DESIGNSIZE/1000)\n"
@@ -226,10 +261,20 @@ output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	fprintf(f, "   (XHEIGHT D %d)\n", xheight);
     
     fprintf(f, "   (QUAD D 1000)\n"
-	    "   )\n"
-	    "(MAPFONT D 0\n"
-	    "   (FONTNAME XXX)\n"
 	    "   )\n");
+
+    // figure out our FONTNAME
+    encoded_font_name = cff->font_name();
+    if (encoding_file) {
+	int slash = encoding_file.find_right('/') + 1;
+	int dot = encoding_file.find_right('.');
+	if (dot < slash)
+	    dot = encoding_file.length();
+	encoded_font_name += String("--") + encoding_file.substring(slash, dot - slash);
+    }
+    fprintf(f, "(MAPFONT D 0\n"
+	    "   (FONTNAME %s)\n"
+	    "   )\n", encoded_font_name.c_str());
 
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
@@ -294,22 +339,99 @@ output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 }
 
 static void
-touch_features(int required_fid, const Vector<int> &fids, const OpenType::FeatureList &flist)
+find_lookups(const OpenType::ScriptList &scripts, const OpenType::FeatureList &features, Vector<int> &lookups, ErrorHandler *errh)
 {
-    for (int i = -1; i < fids.size(); i++) {
-	int fid = (i < 0 ? required_fid : fids[i]);
-	if (fid >= 0) {
-	    OpenType::Tag tag = flist.feature_tag(fid);
-	    for (int j = 0; j < interesting_features.size(); j++)
-		if (interesting_features[j] == tag)
-		    interesting_features_used[j] = 1;
+    Vector<int> fids;
+    int required;
+    Vector<int> all_fids, all_required;
+    
+    for (int i = 0; i < interesting_scripts.size(); i += 2) {
+	// collect features applying to this script
+	scripts.features(interesting_scripts[i], interesting_scripts[i+1],
+			 required, fids, errh);
+	if (required >= 0)
+	    all_required.push_back(required);
+	for (int j = 0; j < fids.size(); j++)
+	    all_fids.push_back(fids[j]);
+
+	// mark features as having been used
+	for (int j = -1; j < fids.size(); j++) {
+	    int fid = (j < 0 ? required : fids[j]);
+	    if (fid >= 0) {
+		OpenType::Tag tag = features.feature_tag(fid);
+		for (int k = 0; k < interesting_features.size(); k++)
+		    if (interesting_features[k] == tag)
+			interesting_features_used[k] = 1;
+	    }
 	}
     }
+
+    // finally, get lookups
+    features.lookups(all_required, all_fids, interesting_features, lookups, errh);
 }
 
 static void
-do_file(const char *infn, const char *outfn,
-	PsresDatabase *, const DvipsEncoding &dvipsenc_in, ErrorHandler *errh)
+output_encoding(const GsubEncoding &gsub_encoding,
+		const Vector<PermString> &glyph_names,
+		ErrorHandler *errh)
+{
+    static const char * const hex_digits = "0123456789ABCDEF";
+
+    if (!encoding_file && !encoding_directory)
+	// do not output encoding
+	return;
+
+    // collect encoding data
+    StringAccum sa;
+    for (int i = 0; i < 256; i++) {
+	if ((i & 0xF) == 0)
+	    sa << (i ? "\n%" : "%") << hex_digits[(i >> 4) & 0xF] << '0' << '\n' << ' ';
+	else if ((i & 0x7) == 0)
+	    sa << '\n' << ' ';
+	if (OpenType::Glyph g = gsub_encoding.glyph(i))
+	    sa << ' ' << '/' << glyph_names[g];
+	else
+	    sa << " /.notdef";
+    }
+    sa << '\n';
+
+    // digest encoding data
+    MD5_CONTEXT md5;
+    md5_init(&md5);
+    md5_update(&md5, (const unsigned char *)sa.data(), sa.length());
+    char text_digest[MD5_TEXT_DIGEST_SIZE + 1];
+    md5_final_text(text_digest, &md5);
+
+    // name encoding using digest
+    if (!encoding_name)
+	encoding_name = "Enc_" + String(text_digest);
+
+    // create encoding file
+    if (!encoding_file)
+	encoding_file = encoding_directory + String("/enc_") + String(text_digest) + ".enc";
+
+    // open encoding file
+    FILE *f;
+    if (!encoding_file || encoding_file == "-") {
+	f = stdout;
+	encoding_file = "";
+	stdout_used = true;
+    } else if (!(f = fopen(encoding_file.c_str(), "w")))
+	errh->error("%s: %s", encoding_file.c_str(), strerror(errno));
+    
+    fprintf(f, "%% Encoding created by '%s'\n", invocation.c_str());
+    if (current_time)
+	fprintf(f, "%%%s\n", current_time.c_str());
+    fprintf(f, "/%s [\n%s] def\n", encoding_name.c_str(), sa.c_str());
+
+    if (f != stdout)
+	fclose(f);
+}
+
+static void
+do_file(const char *infn, const char *outfn, PsresDatabase *,
+	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
+	ErrorHandler *errh)
 {
     FILE *f;
     if (!infn || strcmp(infn, "-") == 0) {
@@ -346,6 +468,8 @@ do_file(const char *infn, const char *outfn,
     Cff::Font font(&cff, PermString(), &cerrh);
     if (!font.ok())
 	return;
+    Vector<PermString> glyph_names;
+    font.glyph_names(glyph_names);
 
     // prepare encoding
     DvipsEncoding dvipsenc;
@@ -360,43 +484,36 @@ do_file(const char *infn, const char *outfn,
     GsubEncoding encoding;
     OpenType::Cmap cmap(otf.table("cmap"), &cerrh);
     assert(cmap.ok());
-    dvipsenc.make_gsub_encoding(encoding, cmap, &font);
+    if (dvipsenc_literal)
+	dvipsenc.make_literal_gsub_encoding(encoding, &font);
+    else
+	dvipsenc.make_gsub_encoding(encoding, cmap, &font);
     
-    // fetch glyph names
-    Vector<PermString> glyph_names;
-    font.glyph_names(glyph_names);
-
-    // get OpenType tables
-    OpenType::Gsub gsub(otf.table("GSUB"), &cerrh);
-    OpenType::Gpos gpos(otf.table("GPOS"), &cerrh);
-
     // feature variables
-    Vector<int> fids;
-    int required_fid;
     Vector<int> lookups;
     interesting_features_used.assign(interesting_features.size(), 0);
     
     // apply activated GSUB features
-    // XXX multiple scripts?
-    gsub.script_list().features("latn", 0U, required_fid, fids, &cerrh);
-    touch_features(required_fid, fids, gsub.feature_list());
-    gsub.feature_list().lookups(required_fid, fids, interesting_features, lookups, errh);
+    OpenType::Gsub gsub(otf.table("GSUB"), &cerrh);
+    find_lookups(gsub.script_list(), gsub.feature_list(), lookups, &cerrh);
     Vector<OpenType::Substitution> subs;
     for (int i = 0; i < lookups.size(); i++) {
 	OpenType::GsubLookup l = gsub.lookup(lookups[i]);
 	l.unparse_automatics(subs);
 	for (int i = 0; i < subs.size(); i++)
-	    encoding.apply(subs[i]);
+	    encoding.apply(subs[i], !dvipsenc_literal);
 	encoding.apply_substitutions();
     }
 
     encoding.simplify_ligatures(false);
-    encoding.shrink_encoding(256, dvipsenc_in, glyph_names);
+    if (dvipsenc_literal)
+	encoding.cut_encoding(256);
+    else
+	encoding.shrink_encoding(256, dvipsenc_in, glyph_names);
     
     // apply activated GPOS features
-    gpos.script_list().features("latn", 0U, required_fid, fids, &cerrh);
-    touch_features(required_fid, fids, gpos.feature_list());
-    gpos.feature_list().lookups(required_fid, fids, interesting_features, lookups, errh);
+    OpenType::Gpos gpos(otf.table("GPOS"), &cerrh);
+    find_lookups(gpos.script_list(), gpos.feature_list(), lookups, &cerrh);
     Vector<OpenType::Positioning> poss;
     for (int i = 0; i < lookups.size(); i++) {
 	OpenType::GposLookup l = gpos.lookup(lookups[i]);
@@ -405,7 +522,7 @@ do_file(const char *infn, const char *outfn,
 	    encoding.apply(poss[i]);
     }
 
-    //encoding.unparse(&glyph_names);
+    // apply LIGKERN commands to the result
     dvipsenc.apply_ligkern(encoding, &cerrh);
 
     // report unused features if any
@@ -416,16 +533,30 @@ do_file(const char *infn, const char *outfn,
     if (sa)
 	cerrh.warning("The following features you requested were not supported by this font:\n   %s", sa.c_str());
 
+    if (dvipsenc_literal) {
+	encoding_name = dvipsenc_in.name();
+    } else
+	output_encoding(encoding, glyph_names, errh);
+    
+    // output VPL code
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;
 	outfn = "<stdout>";
+	stdout_used = true;
     } else if (!(f = fopen(outfn, "w")))
 	errh->fatal("%s: %s", outfn, strerror(errno));
 
-    output_vpl(&font, cmap, encoding, f);
+    output_vpl(&font, cmap, encoding, glyph_names, f);
 
     if (f != stdout)
 	fclose(f);
+
+    // print DVIPS map line
+    FILE *map_file = stderr;
+    if (encoding_name)
+	fprintf(map_file, "%s %s \"%s ReEncodeFont\" <[%s\n",
+		encoded_font_name.c_str(), font.font_name().c_str(),
+		encoding_name.c_str(), encoding_file.c_str());
 }
 
 int
@@ -437,13 +568,22 @@ main(int argc, char **argv)
     Clp_Parser *clp =
 	Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-  
-    ErrorHandler *default_errh = new FileErrorHandler(stderr);
-    ErrorHandler *errh = default_errh;
+#ifdef HAVE_CTIME
+    {
+	time_t t = time(0);
+	char *c = ctime(&t);
+	current_time = " on " + String(c).substring(0, -1); // get rid of \n
+    }
+#endif
+    for (int i = 0; i < argc; i++)
+	invocation << (i ? " " : "") << argv[i];
+    
+    ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
     const char *input_file = 0;
     const char *output_file = 0;
     const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
     const char *encoding_file = 0;
+    bool literal_encoding = false;
   
     while (1) {
 	int opt = Clp_Next(clp);
@@ -460,7 +600,7 @@ main(int argc, char **argv)
       
 	  case QUIET_OPT:
 	    if (clp->negated)
-		errh = default_errh;
+		errh = ErrorHandler::default_handler();
 	    else
 		errh = ErrorHandler::silent_handler();
 	    break;
@@ -470,8 +610,54 @@ main(int argc, char **argv)
 	    break;
 	    
 	  case ENCODING_OPT:
+	    if (encoding_file)
+		usage_error(errh, "encoding specified twice");
 	    encoding_file = clp->arg;
 	    break;
+
+	  case ENCODING_NAME_OPT:
+	    if (encoding_name)
+		usage_error(errh, "encoding name specified twice");
+	    encoding_name = clp->arg;
+	    break;
+	    
+	  case ENCODING_FILE_OPT:
+	    if (encoding_file)
+		usage_error(errh, "encoding file specified twice");
+	    encoding_file = clp->arg;
+	    break;
+	    
+	  case ENCODING_DIR_OPT:
+	    if (encoding_directory)
+		usage_error(errh, "encoding directory specified twice");
+	    encoding_directory = clp->arg;
+	    break;
+	    
+	  case LITERAL_ENCODING_OPT:
+	    if (encoding_file)
+		usage_error(errh, "encoding specified twice");
+	    encoding_file = clp->arg;
+	    literal_encoding = true;
+	    break;
+
+	  case SCRIPT_OPT: {
+	      String arg = clp->arg;
+	      int period = arg.find_left('.');
+	      OpenType::Tag scr(period <= 0 ? arg : arg.substring(0, period));
+	      if (scr.ok() && period > 0) {
+		  OpenType::Tag lang(arg.substring(period + 1));
+		  if (lang.ok()) {
+		      interesting_scripts.push_back(scr);
+		      interesting_scripts.push_back(lang);
+		  } else
+		      usage_error(errh, "bad language tag");
+	      } else if (scr.ok()) {
+		  interesting_scripts.push_back(scr);
+		  interesting_scripts.push_back(OpenType::Tag(0U));
+	      } else
+		  usage_error(errh, "bad script tag");
+	      break;
+	  }
 	    
 	  case VERSION_OPT:
 	    printf("otftoafm (LCDF t1sicle) %s\n", VERSION);
@@ -524,11 +710,15 @@ particular purpose.\n");
     DvipsEncoding dvipsenc;
     if (encoding_file)
 	dvipsenc.parse(encoding_file, errh);
-    
+
+    if (!interesting_scripts.size()) {
+	interesting_scripts.push_back(Efont::OpenType::Tag("latn"));
+	interesting_scripts.push_back(Efont::OpenType::Tag(0U));
+    }
     if (interesting_features.size())
 	std::sort(interesting_features.begin(), interesting_features.end());
     
-    do_file(input_file, output_file, psres, dvipsenc, errh);
+    do_file(input_file, output_file, psres, dvipsenc, literal_encoding, errh);
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }

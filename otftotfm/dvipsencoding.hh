@@ -14,6 +14,7 @@ class DvipsEncoding { public:
     static void glyphname_unicode(String, Vector<int> &);
 
     operator bool() const			{ return _e.size() > 0; }
+    const String &name() const			{ return _name; }
 
     void encode(int, PermString);
     int encoding_of(PermString) const;
@@ -22,12 +23,14 @@ class DvipsEncoding { public:
     int parse(String filename, ErrorHandler *);
 
     // also modifies 'this':
+    void make_literal_gsub_encoding(GsubEncoding &, Efont::Cff::Font *);
     void make_gsub_encoding(GsubEncoding &, const Efont::OpenType::Cmap &, Efont::Cff::Font * = 0);
-    void apply_ligkern(GsubEncoding &, ErrorHandler *);
+    
+    void apply_ligkern(GsubEncoding &, ErrorHandler *) const;
     
   private:
 
-    enum { J_NOKERN = 100, J_ALL = 0x7FFFFFFF };
+    enum { J_BAD = -1, J_NOKERN = 100, J_ALL = 0x7FFFFFFF };
     
     struct Ligature {
 	int c1, c2, join, d;
@@ -46,6 +49,7 @@ class DvipsEncoding { public:
     int parse_ligkern(const Vector<String> &);
     int parse_unicoding(const Vector<String> &);
     int parse_words(const String &, int (DvipsEncoding::*)(const Vector<String> &));
+    void bad_codepoint(int);
 
     static PermString dot_notdef;
 

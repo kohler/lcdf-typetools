@@ -384,6 +384,16 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 }
 
 void
+DvipsEncoding::bad_codepoint(int code)
+{
+    for (int i = 0; i < _lig.size(); i++) {
+	Ligature &l = _lig[i];
+	if (l.c1 == code || l.c2 == code || l.d == code)
+	    l.join = J_BAD;
+    }
+}
+
+void
 DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font)
 {
     for (int i = 0; i < _e.size(); i++)
@@ -408,16 +418,26 @@ DvipsEncoding::make_gsub_encoding(GsubEncoding &gsub_encoding, const Efont::Open
 
 	    gsub_encoding.encode(i, gid);
 	    if (gid == 0)
-		for (int i = 0; i < _lig.size(); i++) {
-		    Ligature &l = _lig[i];
-		    if (l.c1 == i || l.c2 == i || l.d == i)
-			l.join = -1;
-		}
+		bad_codepoint(i);
 	}
 }
 
 void
-DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh)
+DvipsEncoding::make_literal_gsub_encoding(GsubEncoding &gsub_encoding, Efont::Cff::Font *font)
+{
+    for (int i = 0; i < _e.size(); i++)
+	if (_e[i] != dot_notdef) {
+	    Efont::OpenType::Glyph gid = font->glyphid(_e[i]);
+	    if (gid < 0)
+		gid = 0;
+	    gsub_encoding.encode(i, gid);
+	    if (gid == 0)
+		bad_codepoint(i);
+	}
+}
+
+void
+DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh) const
 {
     assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);
     for (int i = 0; i < _lig.size(); i++) {

@@ -7,6 +7,7 @@ man_MANS =
 otftoafm_SOURCES = \
 	dvipsencoding.cc dvipsencoding.hh \
 	gsubencoding.cc gsubencoding.hh \
+	md5.c md5.h \
 	otftoafm.cc \
 	templatei.cc \
 	util.cc util.hh

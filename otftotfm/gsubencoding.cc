@@ -53,12 +53,12 @@ GsubEncoding::apply_single_substitution(Glyph in, Glyph out)
 }
 
 void
-GsubEncoding::apply(const Substitution &s)
+GsubEncoding::apply(const Substitution &s, bool allow_single)
 {
-    if (s.is_single())
+    if (s.is_single() && allow_single)
 	apply_single_substitution(s.in_glyph(), s.out_glyph());
     
-    else if (s.is_alternate()) {
+    else if (s.is_alternate() && allow_single) {
 	Vector<Glyph> possibilities;
 	s.out_glyphs(possibilities);
 	apply_single_substitution(s.in_glyph(), possibilities[0]);
@@ -185,10 +185,47 @@ GsubEncoding::reassign_ligature(Ligature &l, const Vector<int> &reassignment)
 }
 
 void
+GsubEncoding::reassign_codes(const Vector<int> &reassignment)
+{
+    // reassign code points in ligature_data vector
+    for (int i = 0; i < _ligatures.size(); i++)
+	reassign_ligature(_ligatures[i], reassignment);
+    for (int i = 0; i < _fake_ligatures.size(); i++)
+	reassign_ligature(_fake_ligatures[i], reassignment);
+
+    // reassign code points in kern vector
+    for (int i = 0; i < _kerns.size(); i++) {
+	_kerns[i].left = reassignment[_kerns[i].left + 1];
+	_kerns[i].right = reassignment[_kerns[i].right + 1];
+    }
+}
+
+void
+GsubEncoding::cut_encoding(int size)
+{
+    if (_encoding.size() <= size)
+	_encoding.resize(size, 0);
+    else {
+	// reassign codes
+	Vector<int> reassignment(_encoding.size() + 1, -1);
+	for (int i = -1; i < size; i++)
+	    reassignment[i+1] = i;
+	for (int i = size; i < _encoding.size(); i++)
+	    reassignment[i+1] = -1;
+	reassign_codes(reassignment);
+
+	// shrink encoding for real
+	_encoding.resize(size, 0);
+    }
+}
+
+void
 GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names)
 {
-    if (_encoding.size() < size)
+    if (_encoding.size() <= size) {
 	_encoding.resize(size, 0);
+	return;
+    }
     
     // collect larger values
     Vector<Slot> slots;
@@ -236,24 +273,13 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 	    fprintf(stderr, "cannot shrink encoding!\n");
     }
 
-    // create reassignment vector
+    // reassign codes
     Vector<int> reassignment(_encoding.size() + 1, -1);
     for (int i = -1; i < size; i++)
 	reassignment[i+1] = i;
     for (int slotnum = 0; slotnum < slots.size(); slotnum++)
 	reassignment[slots[slotnum].position+1] = slots[slotnum].new_position;
-    
-    // reassign code points in ligature_data vector
-    for (int i = 0; i < _ligatures.size(); i++)
-	reassign_ligature(_ligatures[i], reassignment);
-    for (int i = 0; i < _fake_ligatures.size(); i++)
-	reassign_ligature(_fake_ligatures[i], reassignment);
-
-    // reassign code points in kern vector
-    for (int i = 0; i < _kerns.size(); i++) {
-	_kerns[i].left = reassignment[_kerns[i].left + 1];
-	_kerns[i].right = reassignment[_kerns[i].right + 1];
-    }
+    reassign_codes(reassignment);
 
     // finally, shrink encoding for real
     _encoding.resize(size, 0);
@@ -288,7 +314,7 @@ GsubEncoding::twoligatures(int code1, Vector<int> &code2, Vector<int> &outcode, 
     skip.clear();
     for (int i = 0; i < _ligatures.size(); i++) {
 	const Ligature &l = _ligatures[i];
-	if (l.in.size() == 2 && l.in[0] == code1) {
+	if (l.in.size() == 2 && l.in[0] == code1 && l.in[0] >= 0 && l.out >= 0) {
 	    code2.push_back(l.in[1]);
 	    outcode.push_back(l.out);
 	    skip.push_back(l.skip);
@@ -306,7 +332,7 @@ GsubEncoding::kerns(int code1, Vector<int> &code2, Vector<int> &amount) const
     amount.clear();
     for (int i = 0; i < _kerns.size(); i++) {
 	const Kern &k = _kerns[i];
-	if (k.left == code1) {
+	if (k.left == code1 && k.right >= 0) {
 	    code2.push_back(k.right);
 	    amount.push_back(k.amount);
 	    n++;

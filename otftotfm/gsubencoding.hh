@@ -19,11 +19,12 @@ class GsubEncoding { public:
     
     void encode(int code, Glyph g);
 
-    void apply(const Substitution &);
+    void apply(const Substitution &, bool allow_single);
     void apply_substitutions();
     void apply(const Positioning &);
 
     void simplify_ligatures(bool add_fake);
+    void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names);
 
     void add_twoligature(int code1, int code2, int outcode);
@@ -59,6 +60,7 @@ class GsubEncoding { public:
     
     void apply_single_substitution(Glyph, Glyph);
     static void reassign_ligature(Ligature &, const Vector<int> &);
+    void reassign_codes(const Vector<int> &);
     int find_skippable_twoligature(int, int, bool add_fake);
     
 };
