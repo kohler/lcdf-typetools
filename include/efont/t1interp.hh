@@ -37,6 +37,8 @@ class CharstringInterp { public:
     void ps_push(double);
     void ps_clear()				{ _ps_sp = 0; }
 
+    int subr_depth() const			{ return _subr_depth; }
+    
     double &vec(Vector<double> *, int);
     Vector<double> *weight_vector();
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
@@ -44,6 +46,7 @@ class CharstringInterp { public:
     const EfontProgram *program() const		{ return _program; }
     Charstring *get_subr(int) const;
     Charstring *get_gsubr(int) const;
+    Charstring *get_xsubr(bool g, int) const;
     Charstring *get_glyph(PermString) const;
 
     virtual void init();
@@ -56,6 +59,7 @@ class CharstringInterp { public:
     bool blend_command();
     bool callsubr_command();
     bool callgsubr_command();
+    bool callxsubr_command(bool g);
     bool mm_command(int, int);
     bool itc_command(int, int);
     
@@ -193,6 +197,12 @@ CharstringInterp::get_gsubr(int n) const
 }
 
 inline Charstring *
+CharstringInterp::get_xsubr(bool g, int n) const
+{
+    return _program ? _program->xsubr(g, n) : 0;
+}
+
+inline Charstring *
 CharstringInterp::get_glyph(PermString n) const
 {
     return _program ? _program->glyph(n) : 0;
@@ -204,6 +214,12 @@ CharstringInterp::weight_vector()
     if (!_weight_vector && _program)
 	_weight_vector = _program->weight_vector();
     return _weight_vector;
+}
+
+inline bool
+CharstringInterp::callxsubr_command(bool g)
+{
+    return (g ? callgsubr_command() : callsubr_command());
 }
 
 #endif
