@@ -4,6 +4,7 @@
 #pragma interface
 #endif
 #include "permstr.hh"
+#include "vector.hh"
 class Type1Interp;
 
 class Type1Charstring {
@@ -43,6 +44,11 @@ class Type1Program {
   
   virtual Type1Charstring *subr(int) const		{ return 0; }
   virtual Type1Charstring *glyph(PermString) const	{ return 0; }
+  
+  virtual Vector<double> *design_vector() const		{ return 0; }
+  virtual Vector<double> *norm_design_vector() const	{ return 0; }
+  virtual Vector<double> *weight_vector() const		{ return 0; }
+  virtual bool writable_vectors() const			{ return false; }
   
 };
 

@@ -106,11 +106,8 @@ class Type1Interp {
   double _ps_s[StackSize];
   int _ps_sp;
   
-  Vector<double> *_design_vector;
-  Vector<double> *_norm_design_vector;
   Vector<double> *_weight_vector;
   Vector<double> _scratch_vector;
-  bool _writable_vectors;
   
   Type1Program *_program;
   
@@ -118,12 +115,11 @@ class Type1Interp {
   
   bool blend_command();
   bool roll_command();
+  Vector<double> *weight_vector();
   
  public:
   
-  Type1Interp(Type1Program *, Vector<double> *dv, Vector<double> *ndv,
-	      Vector<double> *wv);
-  Type1Interp(Type1Program *, Vector<double> *wv);
+  Type1Interp(Type1Program *);
   virtual ~Type1Interp()			{ }
   
   int error() const				{ return _error; }
@@ -144,8 +140,6 @@ class Type1Interp {
   void clear_ps()				{ _ps_sp = 0; }
   
   double &vec(Vector<double> *, int);
-  
-  double &weight_vector(int i)			{ return(*_weight_vector)[i]; }
   
   Type1Charstring *get_subr(int) const;
   Type1Charstring *get_glyph(PermString) const;

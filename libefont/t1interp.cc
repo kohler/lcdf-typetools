@@ -12,20 +12,9 @@
 
 double Type1Interp::double_for_error;
 
-Type1Interp::Type1Interp(Type1Program *prog, Vector<double> *dv,
-			 Vector<double> *ndv, Vector<double> *wv)
-  : _error(errOK), _sp(0), _ps_sp(0),
-    _design_vector(dv), _norm_design_vector(ndv), _weight_vector(wv),
-    _scratch_vector(ScratchSize, 0), _writable_vectors(true),
-    _program(prog)
-{
-}
-
-
-Type1Interp::Type1Interp(Type1Program *prog, Vector<double> *wv)
-  : _error(errOK), _sp(0), _ps_sp(0),
-    _design_vector(0), _norm_design_vector(0), _weight_vector(wv),
-    _scratch_vector(ScratchSize, 0), _writable_vectors(false),
+Type1Interp::Type1Interp(Type1Program *prog)
+  : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(0),
+    _scratch_vector(ScratchSize, 0),
     _program(prog)
 {
 }
@@ -38,6 +27,7 @@ Type1Interp::init()
   clear_ps();
   _done = false;
   _error = errOK;
+  _weight_vector = 0;
 }
 
 
@@ -54,6 +44,14 @@ Type1Interp::number(double v)
 {
   push(v);
   return true;
+}
+
+
+inline Vector<double> *
+Type1Interp::weight_vector()
+{
+  if (!_weight_vector) _weight_vector = _program->weight_vector();
+  return _weight_vector;
 }
 
 
@@ -87,11 +85,11 @@ Type1Interp::vector_command(int cmd)
     pop(4);
     
     switch (which_vector) {
-     case 0: vector = _weight_vector; break;
-     case 1: vector = _norm_design_vector; break;
+     case 0: vector = weight_vector(); break;
+     case 1: vector = _program->norm_design_vector(); break;
     }
     if (!vector) ERROR(errVector);
-    if (!_writable_vectors) ERROR(errVector);
+    if (!_program->writable_vectors()) ERROR(errVector);
     
     for (i = 0; i < num; i++, offset++, vectoroff++)
       vec(vector, vectoroff) = vec(&_scratch_vector, offset);
@@ -105,9 +103,9 @@ Type1Interp::vector_command(int cmd)
     pop(3);
     
     switch (which_vector) {
-     case 0: vector = _weight_vector; break;
-     case 1: vector = _norm_design_vector; break;
-     case 2: vector = _design_vector; break;
+     case 0: vector = weight_vector(); break;
+     case 1: vector = _program->norm_design_vector(); break;
+     case 2: vector = _program->design_vector(); break;
     }
     if (!vector) ERROR(errVector);
     
@@ -129,11 +127,12 @@ Type1Interp::blend_command()
 {
   CHECK_STACK(1);
   int nargs = (int)pop();
-  
-  if (!_weight_vector)
+
+  Vector<double> *weight = weight_vector();
+  if (!weight)
     ERROR(errVector);
   
-  int nmasters = _weight_vector->count();
+  int nmasters = weight->count();
   CHECK_STACK(nargs * nmasters);
   
   int base = _sp - nargs * nmasters;
@@ -141,7 +140,7 @@ Type1Interp::blend_command()
   for (int j = 0; j < nargs; j++) {
     double &val = _s[base + j];
     for (int i = 1; i < nmasters; i++, off++)
-      val += _weight_vector->at_u(i) * _s[off];
+      val += weight->at_u(i) * _s[off];
   }
   
   pop(nargs * (nmasters - 1));
@@ -323,7 +322,8 @@ Type1Interp::callsubr_command()
 bool
 Type1Interp::mm_command(int command, int on_stack)
 {
-  if (!_weight_vector)
+  Vector<double> *weight = weight_vector();
+  if (!weight)
     ERROR(errVector);
   
   int nargs;
@@ -336,7 +336,7 @@ Type1Interp::mm_command(int command, int on_stack)
    default: ERROR(errInternal);
   }
   
-  int nmasters = _weight_vector->count();
+  int nmasters = weight->count();
   if (count() < nargs * nmasters
       || on_stack != nargs * nmasters)
     ERROR(errMultipleMaster);
@@ -347,7 +347,7 @@ Type1Interp::mm_command(int command, int on_stack)
   for (int j = 0; j < nargs; j++) {
     double &val = at(base + j);
     for (int i = 1; i < nmasters; i++, off++)
-      val += weight_vector(i) * at(off);
+      val += weight->at_u(i) * at(off);
   }
   
   for (int i = nargs - 1; i >= 0; i--)

@@ -35,7 +35,7 @@ class Type1MMSpace {
   NumVector _weight_vector;
   
   bool set_error(ErrorHandler *, const char *, ...) const;
-
+  
   Type1MMSpace(const Type1MMSpace &);
   Type1MMSpace &operator=(const Type1MMSpace &);
   
@@ -48,7 +48,7 @@ class Type1MMSpace {
   
   Type1MMSpace(PermString, int naxes, int nmasters);
   ~Type1MMSpace();
-
+  
   PermString font_name() const		{ return _font_name; }
   int naxes() const			{ return _naxes; }
   int nmasters() const			{ return _nmasters; }
@@ -59,7 +59,7 @@ class Type1MMSpace {
   
   PermString axis_type(int a) const	{ return _axis_types[a]; }
   PermString axis_label(int a) const	{ return _axis_labels[a]; }
-
+  
   Type1Charstring *ndv() const		{ return _ndv; }
   Type1Charstring *cdv() const		{ return _cdv; }
   
