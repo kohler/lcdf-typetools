@@ -393,8 +393,8 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
     if (v.size() == 2 || (v.size() == 3 && v[2] == dot_notdef))
 	/* no warnings to delete a glyph */;
     else {
-	bool more;		// some care to get all possibilities
 	for (int i = 2; i < v.size(); i++) {
+	    bool more;		// some care to get all possibilities
 	    int uni = glyphname_unicode(v[i], &more);
 	    if (uni < 0) {
 		errh->warning("can't map '%s' to Unicode", v[i].c_str());
@@ -598,7 +598,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 
 	// find all Unicodes
 	Vector<uint32_t> unicodes;
-	bool unicodes_explicit = x_unicodes(chname, unicodes);
+	(void) x_unicodes(chname, unicodes);
 
 	// find first Unicode supported by the font
 	Efont::OpenType::Glyph glyph = 0;
@@ -607,45 +607,67 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	    if ((glyph = map_uni(*u, cmap, metrics)) > 0)
 		glyph_uni = *u;
 
+	// find named glyph, if any
+	Efont::OpenType::Glyph named_glyph = 0;
+	if (font)
+	    named_glyph = font->glyphid(chname);
+
 	// do not use a Unicode-mapped glyph if literal
 	if (literal)
-	    glyph = 0;
-
-	// use named glyph if (1) name contains a dot, or (2) nothing found.
-	// special case for "UNICODING foo =: ;", which should turn off the
-	// character UNLESS it was explicitly requested or the encoding is
-	// literal.
-	bool named_glyph = !unicodes_explicit || unicodes.size() > 0
-	    || (_encoding_required.size() > code && _encoding_required[code])
-	    || literal;
-	if (font
-	    && named_glyph
-	    && (glyph <= 0
-		|| std::find(chname.begin(), chname.end(), '.') < chname.end()))
-	    if (Efont::OpenType::Glyph named_glyph = font->glyphid(chname))
-		glyph = named_glyph;
+	    glyph = named_glyph;
+	
+	// If we found a glyph, maybe use its named_glyph variant.
+	if (glyph > 0 && named_glyph > 0
+	    && std::find(chname.begin(), chname.end(), '.') < chname.end())
+	    glyph = named_glyph;
 
 	// assign slot
-	if (glyph >= 0)
+	if (glyph > 0)
 	    metrics.encode(code, glyph_uni, glyph);
     }
 
     // second pass: with secondaries
-    for (int code = 0; secondary && code < _e.size(); code++)
-	if (_e[code] != dot_notdef && metrics.glyph(code) <= 0) {
-	    PermString chname = _e[code];
-
-	    // the altselector character has its own glyph name
-	    if (code == _altselector_char)
-		chname = "altselector";
+    for (int code = 0; code < _e.size(); code++) {
+	// skip already-encoded characters and .notdef
+	if (literal || metrics.glyph(code) > 0 || _e[code] == dot_notdef)
+	    continue;
 	
-	    // loop over all Unicodes
-	    Vector<uint32_t> unicodes;
-	    (void) x_unicodes(chname, unicodes);
+	PermString chname = _e[code];
+
+	// the altselector character has its own glyph name
+	if (code == _altselector_char && !literal)
+	    chname = "altselector";
+
+	// find all Unicodes
+	Vector<uint32_t> unicodes;
+	bool unicodes_explicit = x_unicodes(chname, unicodes);
+
+	// find named glyph, if any
+	Efont::OpenType::Glyph named_glyph = 0;
+	if (font)
+	    named_glyph = font->glyphid(chname);
+
+	// 1. We were not able to find the glyph using Unicode.
+	// 2. There might be a named_glyph.
+	// May need to try secondaries later.  Store this slot.
+	// Try secondaries, if there is no named_glyph, or explicit unicoding.
+	if (unicodes_explicit || named_glyph <= 0)
 	    for (uint32_t *u = unicodes.begin(); u < unicodes.end(); u++)
 		if (secondary->encode_uni(code, chname, *u, metrics, errh))
-		    break;
-	}
+		    goto encoded;
+
+	// 1. We were not able to find the glyph using Unicode or secondaries.
+	// 2. There might be a named_glyph.
+	// Use named glyph, if any.  Special case for "UNICODING foo =: ;",
+	// which should turn off the character (even if a named_glyph exists),
+	// UNLESS the glyph was explicitly requested.
+	if (!unicodes_explicit || unicodes.size() > 0
+	    || (_encoding_required.size() > code && _encoding_required[code]))
+	    metrics.encode(code, unicodes.size() ? unicodes[0] : 0, named_glyph);
+
+      encoded:
+	/* all set */;
+    }
 
     // final pass: complain
     for (int code = 0; code < _e.size(); code++)

@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.23   8.Mar.2005
+
+* otftotfm: Fix bug present since 2.20 where, for example, '--unicoding
+  "germandbls =: SSsmall"' was ignored in favor of a named 'germandbls'
+  character.  Reported by Michael Zedler.
+
+
 Version 2.22   2.Mar.2005
 
 * otftotfm: Include default ligatures unless '--no-default-ligkern' is
