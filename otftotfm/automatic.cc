@@ -168,9 +168,11 @@ getodir(int o, ErrorHandler *errh)
 	    if (tds_1_1 < 0) {
 		// using a procedure suggested by Olaf Weber
 		char* encfonts = kpsei_path_expand("$TEXMFMAIN/fonts/enc");
-		if (!encfonts)
+		if (!encfonts || strcmp(encfonts, "") == 0) {
+		    free((void*) encfonts);
 		    encfonts = kpsei_path_expand("$TEXMFDIST/fonts/enc");
-		tds_1_1 = encfonts != 0;
+		}
+		tds_1_1 = (encfonts != 0 && strcmp(encfonts, "") != 0);
 		free((void*) encfonts);
 	    }
 	    if (tds_1_1 == 0)
