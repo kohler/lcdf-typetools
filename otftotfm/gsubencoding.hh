@@ -5,10 +5,12 @@
 class DvipsEncoding;
 
 struct Setting {
-    enum { SHOW, HMOVETO, VMOVETO };
+    enum { SHOW, KERN, MOVE, RULE };
     int op;
     int x;
-    Setting(int op_in, int x_in) : op(op_in), x(x_in) { }
+    int y;
+    Setting(int op_in, int x_in = 0, int y_in = 0)
+	: op(op_in), x(x_in), y(y_in) { }
 };
 
 class GsubEncoding { public:
@@ -26,11 +28,14 @@ class GsubEncoding { public:
 
     inline Glyph glyph(int) const;
     inline const char *debug_code_name(int) const;
-    bool setting(int, Vector<Setting> &) const;
+    PermString glyph_name(Glyph, const Vector<PermString> * = 0) const;
+    bool setting(int, Vector<Setting> &, bool clear = true) const;
     inline int encoding(Glyph) const;
     int force_encoding(Glyph);
     
     void encode(int code, Glyph g);
+
+    Glyph add_fake(PermString, const Vector<Setting> &);
 
     int apply(const Vector<Substitution> &, bool allow_single);
     void apply_substitutions();
@@ -41,7 +46,8 @@ class GsubEncoding { public:
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &, const Vector<PermString> &glyph_names, ErrorHandler *);
 
-    void add_twoligature(int code1, int code2, int outcode, int context = 0);
+    int add_twoligature(int code1, int code2, int outcode, int context = 0);
+    int add_threeligature(int code1, int code2, int code3, int outcode);
     void add_kern(int left, int right, int amount);
     void add_single_positioning(int code, int pdx, int pdy, int adx);
     enum { CODE_ALL = 0x7FFFFFFF };
@@ -53,11 +59,11 @@ class GsubEncoding { public:
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
     int kern(int code1, int code2) const;
     
-    bool need_virtual() const		{ return _vfpos.size() > 0 || _fake_ligatures; }
+    bool need_virtual() const		{ return _vfpos.size() > 0 || _fake_names.size() > 0; }
     
     void unparse(const Vector<PermString> * = 0) const;
     
-    enum { FAKE_LIGATURE = 0xFFFF };
+    enum { FIRST_FAKE = 0x10000 };
     
   private:
 
@@ -78,7 +84,10 @@ class GsubEncoding { public:
 	static inline bool deadp(const Ligature &);
     };
     Vector<Ligature> _ligatures;
-    bool _fake_ligatures;
+
+    Vector<Setting> _fakes;
+    Vector<int> _fake_ptrs;
+    Vector<PermString> _fake_names;
 
     struct Kern {
 	int left;
@@ -100,9 +109,10 @@ class GsubEncoding { public:
     void add_single_context_substitution(int, int, int, bool is_right);
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(const Vector<int> &);
-    int find_in_place_twoligature(int, int, Vector<int> &);
+    int find_in_place_twoligature(int, int, Vector<int> &, bool add_fake);
     int ligature_score(const Ligature &, Vector<int> &scores) const;
     const Ligature *find_ligature_for(int code) const;
+    String unparse_glyph(Glyph, const Vector<PermString> *) const;
 
     friend bool operator<(const Ligature &, const Ligature &);
     friend bool operator<(const Kern &, const Kern &);

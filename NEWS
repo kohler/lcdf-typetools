@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 0.18
+
+* otftotfm: Don't output a KRN between two characters if there exists a LIG
+  for those two characters.
+
+
 Version 0.17   6.Jul.2003
 
 * otftotfm: Ligatures removed with LIGKERN commands won't show up in the

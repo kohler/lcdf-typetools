@@ -24,6 +24,7 @@
 #include "gsubencoding.hh"
 #include "dvipsencoding.hh"
 #include "automatic.hh"
+#include "secondary.hh"
 #include "kpseinterface.h"
 #include "util.hh"
 #include "md5.h"
@@ -414,9 +415,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     if (cff->dict_value(Efont::Cff::oItalicAngle, 0, &val) && val)
 	fprintf(f, "   (SLANT R %g)\n", -tan(val * 3.1415926535 / 180.0));
 
-    if (OpenType::Glyph g = cmap.map_uni(' ')) {
-	Charstring *cs = cff->glyph(g);
-	boundser.run(*cs, bounds, width);
+    if (char_bounds(bounds, width, cff, cmap, ' ')) {
 	// advance space width by letterspacing
 	width += letterspace;
 	fprint_real(f, "   (SPACE", width, du);
@@ -432,15 +431,12 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	}
     }
 
+    // XXX what if 'x', 'm', 'z' were subject to substitution?
     int xheight = 1000;
     static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
     for (const int *x = xheight_unis; *x; x++)
-	if (OpenType::Glyph g = cmap.map_uni(*x)) {
-	    Charstring *cs = cff->glyph(g);
-	    boundser.run(*cs, bounds, width);
-	    if (bounds[3] < xheight)
-		xheight = bounds[3];
-	}
+	if (char_bounds(bounds, width, cff, cmap, 'x') && bounds[3] < xheight)
+	    xheight = bounds[3];
     if (xheight < 1000)
 	fprint_real(f, "   (XHEIGHT", xheight, du);
     
@@ -459,17 +455,19 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     Vector<String> glyph_comments(257, String());
     for (int i = 0; i < 256; i++)
 	if (OpenType::Glyph g = gse.glyph(i)) {
-	    PermString name = glyph_names[g];
-	    PermString expected_name;
+	    PermString name = gse.glyph_name(g, &glyph_names), expected_name;
 	    if (i >= '0' && i <= '9')
 		expected_name = digit_names[i - '0'];
 	    else if ((i >= 'A' && i <= 'Z') || (i >= 'a' && i <= 'z'))
 		expected_name = PermString((char)i);
-	    if (expected_name && name.length() >= expected_name.length()
+	    
+	    if (expected_name
+		&& name.length() >= expected_name.length()
 		&& memcmp(name.c_str(), expected_name.c_str(), expected_name.length()) == 0)
 		glyph_ids.push_back("C " + String((char)i));
 	    else
 		glyph_ids.push_back("D " + String(i));
+	    
 	    if (name != expected_name)
 		glyph_comments[i] = " (COMMENT " + String(name) + ")";
 	} else
@@ -480,24 +478,30 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     // LIGTABLE
     fprintf(f, "(LIGTABLE\n");
     Vector<int> lig_code2, lig_outcode, lig_context, kern_code2, kern_amt;
+    // don't print KRN x after printing LIG x
+    uint32_t used[8];
     for (int i = 0; i <= 256; i++)
 	if (gse.glyph(i)) {
 	    int any_lig = gse.twoligatures(i, lig_code2, lig_outcode, lig_context);
 	    int any_kern = gse.kerns(i, kern_code2, kern_amt);
 	    if (any_lig || any_kern) {
 		fprintf(f, "   (LABEL %s)%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
-		for (int j = 0; j < lig_code2.size(); j++)
+		memset(&used[0], 0, 32);
+		for (int j = 0; j < lig_code2.size(); j++) {
 		    fprintf(f, "   (%s %s %s)%s%s\n",
 			    lig_context_str(lig_context[j]),
 			    glyph_ids[lig_code2[j]].c_str(),
 			    glyph_ids[lig_outcode[j]].c_str(),
 			    glyph_comments[lig_code2[j]].c_str(),
 			    glyph_comments[lig_outcode[j]].c_str());
-		for (int j = 0; j < kern_code2.size(); j++) {
-		    fprintf(f, "   (KRN %s", glyph_ids[kern_code2[j]].c_str());
-		    fprint_real(f, "", kern_amt[j], du, "");
-		    fprintf(f, ")%s\n", glyph_comments[kern_code2[j]].c_str());
+		    used[lig_code2[j] >> 5] |= (1 << (lig_code2[j] & 0x1F));
 		}
+		for (Vector<int>::const_iterator k2 = kern_code2.begin(); k2 < kern_code2.end(); k2++)
+		    if (!(used[*k2 >> 5] & (1 << (*k2 & 0x1F)))) {
+			fprintf(f, "   (KRN %s", glyph_ids[*k2].c_str());
+			fprint_real(f, "", kern_amt[k2 - kern_code2.begin()], du, "");
+			fprintf(f, ")%s\n", glyph_comments[*k2].c_str());
+		    }
 		fprintf(f, "   (STOP)\n");
 	    }
 	}
@@ -517,14 +521,17 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	    for (int j = 0; j < settings.size(); j++) {
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
-		    boundser.run_incr(*(cff->glyph(s.x)));
-		    sa << "      (SETCHAR " << glyph_ids[i] << ')' << glyph_comments[i] << "\n";
-		} else if (s.op == Setting::HMOVETO && vpl) {
+		    boundser.run_incr(*(cff->glyph(gse.glyph(s.x))));
+		    sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_comments[s.x] << "\n";
+		} else if (s.op == Setting::MOVE && vpl) {
+		    boundser.translate(s.x, s.y);
+		    if (s.x)
+			sa << "      (MOVERIGHT R " << real_string(s.x, du) << ")\n";
+		    if (s.y)
+			sa << "      (MOVEUP R " << real_string(s.y, du) << ")\n";
+		} else if (s.op == Setting::RULE && vpl) {
 		    boundser.translate(s.x, 0);
-		    sa << "      (MOVERIGHT R " << real_string(s.x, du) << ")\n";
-		} else if (s.op == Setting::VMOVETO && vpl) {
-		    boundser.translate(0, s.x);
-		    sa << "      (MOVEUP R " << real_string(s.x, du) << ")\n";
+		    sa << "      (SETRULE R " << real_string(s.y, du) << " R " << real_string(s.x, du) << ")\n";
 		}
 	    }
 
@@ -703,7 +710,8 @@ output_encoding(const GsubEncoding &gsub_encoding,
 	    sa << (i ? "\n%" : "%") << hex_digits[(i >> 4) & 0xF] << '0' << '\n' << ' ';
 	else if ((i & 0x7) == 0)
 	    sa << '\n' << ' ';
-	if (OpenType::Glyph g = gsub_encoding.glyph(i))
+	OpenType::Glyph g = gsub_encoding.glyph(i);
+	if (g && g < GsubEncoding::FIRST_FAKE)
 	    sa << ' ' << '/' << glyph_names[g];
 	else
 	    sa << " /.notdef";
@@ -946,7 +954,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     if (dvipsenc_literal)
 	dvipsenc.make_literal_gsub_encoding(encoding, &font);
     else
-	dvipsenc.make_gsub_encoding(encoding, cmap, &font);
+	dvipsenc.make_gsub_encoding(encoding, cmap, &font, new T1Secondary(&font, cmap));
     // encode boundary glyph at 256
     encoding.encode(256, encoding.boundary_glyph());
     
@@ -993,9 +1001,12 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
     // apply LIGKERN ligature commands to the result
     dvipsenc.apply_ligkern_lig(encoding, errh);
+
+    // test fake ligature mechanism
+    // encoding.add_threeligature('T', 'a', 'e', '0');
     
     // simplify more-than-two-character ligatures
-    encoding.simplify_ligatures(false);
+    encoding.simplify_ligatures(!dvipsenc_literal);
 
     // reencode characters to fit within 8 bytes (+ 1 for the boundary)
     if (dvipsenc_literal)

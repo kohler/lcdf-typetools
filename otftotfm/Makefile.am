@@ -10,6 +10,7 @@ otftotfm_SOURCES = \
 	gsubencoding.cc gsubencoding.hh \
 	md5.c md5.h \
 	otftotfm.cc \
+	secondary.cc secondary.hh \
 	util.cc util.hh
 EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 
