@@ -41,6 +41,10 @@
 # define mkdir(dir, access) mkdir(dir)
 #endif
 
+#if HAVE_AUTO_T1DOTLESSJ
+enum { T1DOTLESSJ_EXIT_J_NODOT = 2 };
+#endif
+
 static String::Initializer initializer;
 static String odir[NUMODIR];
 static String typeface;
@@ -299,14 +303,20 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	return String();
 
 #if HAVE_KPATHSEA
-    // look for .pfb and .pfa
-    String attempt = ps_fontname + ".pfb";
-    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	return found;
+# if HAVE_AUTO_CFFTOT1
+    if (!(force && allow_generate && otf_filename && otf_filename != "-" && getodir(O_TYPE1, errh))) {
+# endif
+	// look for .pfb and .pfa
+	String attempt = ps_fontname + ".pfb";
+	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
+	    return found;
 
-    attempt = ps_fontname + ".pfa";
-    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	return found;
+	attempt = ps_fontname + ".pfa";
+	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
+	    return found;
+# if HAVE_AUTO_CFFTOT1
+    }
+# endif
 #endif
 
 #if HAVE_AUTO_CFFTOT1
@@ -338,21 +348,27 @@ String
 installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
     if (verbose)
-	errh->message("trying to create dotless-j font for %s", String(ps_fontname).c_str());
+	errh->message("trying to create dotless-j font for %s", ps_fontname.c_str());
     if (!ps_fontname)
 	return String();
     
     String j_ps_fontname = ps_fontname + "LCDFJ";
     
 #if HAVE_KPATHSEA
-    // look for existing .pfb or .pfa
-    String attempt = j_ps_fontname + ".pfb";
-    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	return found;
+# if HAVE_AUTO_T1DOTLESSJ
+    if (!(force && allow_generate && getodir(O_TYPE1, errh))) {
+# endif
+	// look for existing .pfb or .pfa
+	String attempt = j_ps_fontname + ".pfb";
+	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
+	    return found;
 
-    attempt = j_ps_fontname + ".pfa";
-    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	return found;
+	attempt = j_ps_fontname + ".pfa";
+	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
+	    return found;
+# if HAVE_AUTO_T1DOTLESSJ
+    }
+# endif
 #endif
 
 #if HAVE_AUTO_T1DOTLESSJ
@@ -365,15 +381,18 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
 	    String command = "t1dotlessj '" + base_filename + "' -n '" + j_ps_fontname + "' '" + pfb_filename + "'";
 	    int retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
-		errh->error("could not run '%s'", command.c_str());
+		errh->warning("could not run '%s'", command.c_str());
 	    else if (retval < 0)
-		errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+		errh->warning("could not run '%s': %s", command.c_str(), strerror(errno));
+	    else if (WEXITSTATUS(retval) == T1DOTLESSJ_EXIT_J_NODOT)
+		return String("\0", 1);
 	    else if (retval != 0)
-		errh->error("'%s' failed", command.c_str());
+		errh->warning("'%s' failed (%d)", command.c_str(), retval);
 	    if (retval == 0) {
 		update_odir(O_TYPE1, pfb_filename, errh);
 		return pfb_filename;
-	    }
+	    } else
+		errh->warning("output font will not contain a dotless-j character");
 	}
     }
 #endif

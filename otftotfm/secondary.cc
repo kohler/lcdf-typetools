@@ -139,6 +139,11 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	    return i;
     
     if (String filename = installed_type1_dotlessj(_otf_file_name, _cff->font_name(), (output_flags & G_DOTLESSJ) && (output_flags & G_TYPE1), errh)) {
+
+	// check for special case: "\0" means the font's "j" is already
+	// dotless
+	if (filename == String("\0", 1))
+	    return J_NODOT;
 	
 	// open dotless-j font file
 	FILE *f = fopen(filename.c_str(), "rb");
@@ -235,6 +240,10 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	      v.push_back(Setting(Setting::FONT, which));
 	      v.push_back(Setting(Setting::SHOW, 'j', dj_glyph));
 	      return true;
+	  } else if (which == J_NODOT) {
+	      int cj = dvipsenc.encoding_of_unicode('j');
+	      if (cj >= 0)
+		  v.push_back(Setting(Setting::SHOW, cj, metrics.base_glyph(cj)));
 	  }
 	  break;
       }

@@ -88,6 +88,7 @@ using namespace Efont;
 #define TYPEFACE_OPT		336
 #define NOCREATE_OPT		337
 #define VERBOSE_OPT		338
+#define FORCE_OPT		339
 
 #define VIRTUAL_OPT		341
 #define PL_OPT			342
@@ -155,6 +156,7 @@ static Clp_Option options[] = {
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
     { "no-create", 0, NOCREATE_OPT, 0, Clp_OnlyNegated },
+    { "force", 0, FORCE_OPT, 0, Clp_Negate },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
     { "kpathsea-debug", 0, KPATHSEA_DEBUG_OPT, Clp_ArgInt, 0 },
 
@@ -211,6 +213,7 @@ bool automatic = false;
 bool verbose = false;
 bool no_create = false;
 bool quiet = false;
+bool force = false;
 
 
 void
@@ -289,7 +292,8 @@ File location options:\n\
 Other options:\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
   -V, --verbose                Print progress information to standard error.\n\
-      --no-create              Print messages, don't modify any files.\n"
+      --no-create              Print messages, don't modify any files.\n\
+      --force                  Generate files even if versions already exist.\n"
 #if HAVE_KPATHSEA
 "      --kpathsea-debug=MASK    Set path searching debug flags to MASK.\n"
 #endif
@@ -1558,6 +1562,10 @@ main(int argc, char *argv[])
 
 	  case NOCREATE_OPT:
 	    no_create = clp->negated;
+	    break;
+
+	  case FORCE_OPT:
+	    force = !clp->negated;
 	    break;
 
 	  case KPATHSEA_DEBUG_OPT:
