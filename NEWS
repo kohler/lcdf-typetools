@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 0.3   3.Jun.2003
+
+* Fixed bug: cfftot1 produced invalid results for fonts with encodings
+  other than StandardEncoding, due to a misbehavior in the way Type 1 fonts
+  were stored. Reported by Vladimir Volovich <vvv@vsu.ru>.
+
+
 Version 0.2   3.Jun.2003
 
 * Fix CFF parsing bugs and configure errors reported by Vladimir Volovich
