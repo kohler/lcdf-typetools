@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
+#include <inttypes.h>
 
 static String::Initializer initializer;
 String::Memo *String::null_memo = 0;
@@ -552,6 +553,21 @@ String::compare(const char *s, int len) const
     int v = memcmp(_data, s, len);
     return (v ? v : 1);
   }
+}
+
+void
+String::align(int n)
+{
+    int offset = reinterpret_cast<uintptr_t>(_data) % n;
+    if (offset) {
+	String s;
+	s.append_garbage(_length + n + 1);
+	offset = reinterpret_cast<uintptr_t>(s._data) % n;
+	memcpy((char *)s._data + n - offset, _data, _length);
+	s._data += n - offset;
+	s._length = _length;
+	*this = s;
+    }
 }
 
 

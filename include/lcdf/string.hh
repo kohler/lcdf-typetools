@@ -45,7 +45,7 @@ class String { public:
   char *mutable_data();
   char *mutable_c_str();
   const unsigned char *udata() const	{ return reinterpret_cast<const unsigned char *>(_data); }
-  unsigned char *mutable_udata() const	{ return reinterpret_cast<unsigned char *>(mutable_data()); }
+  unsigned char *mutable_udata()	{ return reinterpret_cast<unsigned char *>(mutable_data()); }
   
   operator bool()			{ return _length != 0; }
   operator bool() const			{ return _length != 0; }
