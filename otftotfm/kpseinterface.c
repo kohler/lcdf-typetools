@@ -1,3 +1,4 @@
+#include <kpathsea/config.h>
 #include <stdio.h>
 #include <kpathsea/progname.h>
 #include <kpathsea/expand.h>
