@@ -140,6 +140,17 @@ Remove output kerning pairs whose absolute value is less than
 .IR N .
 Smaller numbers are more precise. The default kern precision is 2.0.
 '
+.SH TROUBLESHOOTING
+.PP
+Some programs, such as TeX's
+.BR fontinst ,
+can choke on AFM files that include fractional numbers. Therefore, if you
+have trouble with an AFM file, try rerunning
+.B mmafm
+with the
+.OP \-\-precision=0
+option.
+'
 .SH SEE ALSO
 .BR mmpfb (1)
 '
@@ -150,13 +161,13 @@ You haven't yet created an AMCP file for \fIFont\fR.
 '
 .SH AUTHOR
 .na
-Eddie Kohler, eddietwo@lcs.mit.edu
+Eddie Kohler, kohler@icir.org
 .br
 http://www.pdos.lcs.mit.edu/~eddietwo/
 .PP
 The latest version is available from:
 .br
-http://www.lcdf.org/~eddietwo/type/
+http://www.lcdf.org/type/
 .PP
 Thanks to Melissa O'Neill <oneill@cs.sfu.ca> for suggestions and patient
 debugging.

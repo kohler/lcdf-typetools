@@ -2,6 +2,14 @@
 # include <config.h>
 #endif
 #include <lcdf/vector.cc>
+#include <lcdf/hashmap.cc>
+
+#include <lcdf/permstr.hh>
+#include <lcdf/string.hh>
+
+#include <efont/pairop.hh>
+#include <efont/t1font.hh>
+
 // Instantiations.
 
 template class Vector<bool>;
@@ -9,10 +17,11 @@ template class Vector<int>;
 template class Vector<double>;
 template class Vector< Vector<double> >;
 
-#include <lcdf/permstr.hh>
 template class Vector<PermString>;
-#include <lcdf/string.hh>
 template class Vector<String>;
 
-#include <efont/pairop.hh>
 template class Vector<Efont::PairOp>;
+
+template class HashMap<PermString, Efont::Type1Definition *>;
+template class HashMap<PermString, int>;
+template class HashMap<PermString, PermString>;
