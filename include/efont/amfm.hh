@@ -7,7 +7,7 @@
 #include "hashmap.hh"
 #include "t1mm.hh"
 class LineScanner;
-class FontFinder;
+class MetricsFinder;
 class Type1Charstring;
 class ErrorHandler;
 
@@ -40,7 +40,7 @@ struct AmfmPrimaryFont {
 
 class AmfmMetrics {
   
-  FontFinder *_finder;
+  MetricsFinder *_finder;
   PermString _directory;
   
   Vector<double> _fdv;
@@ -80,7 +80,7 @@ class AmfmMetrics {
   
  public:
   
-  AmfmMetrics(FontFinder *);
+  AmfmMetrics(MetricsFinder *);
   ~AmfmMetrics();
   
   void read(LineScanner &);
@@ -107,7 +107,7 @@ class AmfmReader {
   typedef Vector<double> NumVector;
   
   AmfmMetrics *_amfm;
-  FontFinder *_finder;
+  MetricsFinder *_finder;
   LineScanner &_l;
   Type1MMSpace *_mmspace;
   ErrorHandler *_errh;
@@ -138,7 +138,7 @@ class AmfmReader {
   
  public:
   
-  AmfmReader(LineScanner &, FontFinder *, ErrorHandler *);
+  AmfmReader(LineScanner &, MetricsFinder *, ErrorHandler *);
   ~AmfmReader();
   
   bool ok() const				{ return _amfm; }

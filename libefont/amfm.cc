@@ -5,7 +5,7 @@
 #include "afm.hh"
 #include "linescan.hh"
 #include "error.hh"
-#include "fontfind.hh"
+#include "findmet.hh"
 #include "t1cs.hh"
 #include <stdarg.h>
 #include <stdlib.h>
@@ -13,7 +13,7 @@
 #include <assert.h>
 
 
-AmfmMetrics::AmfmMetrics(FontFinder *finder)
+AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
   : _finder(finder),
     _fdv(fdLast, Unkdouble),
     _nmasters(-1), _naxes(-1), _masters(0), _mmspace(0),
@@ -83,9 +83,9 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
   
   if (!master.loaded) {
     master.loaded = true;
-    DirectoryFontFinder directory_finder(_directory);
+    DirectoryMetricsFinder directory_finder(_directory);
     _finder->append(&directory_finder);
-    Metrics *afm = _finder->find(master.font_name);
+    Metrics *afm = _finder->find_metrics(master.font_name);
     
     if (!afm) {
       if (errh)
@@ -232,7 +232,8 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
  * AmfmReader
  **/
 
-AmfmReader::AmfmReader(LineScanner &l, FontFinder *finder, ErrorHandler *errh)
+AmfmReader::AmfmReader(LineScanner &l, MetricsFinder *finder,
+		       ErrorHandler *errh)
   : _amfm(0), _finder(finder), _l(l)
 {
   _errh = errh ? errh : ErrorHandler::null_handler();
