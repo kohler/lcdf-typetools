@@ -61,9 +61,10 @@ kpsei_string(char *x)
 
 #if HAVE_KPATHSEA
 static void
-find_writable_texdir(ErrorHandler *)
+find_writable_texdir(ErrorHandler *errh)
 {
-    String path = kpsei_string(kpsei_path_expand("$TEXMF"));
+    String actual_path = kpsei_string(kpsei_path_expand("$TEXMF"));
+    String path = actual_path;
     while (path && !writable_texdir) {
 	int colon = path.find_left(kpsei_env_sep_char);
 	String texdir = path.substring(0, (colon < 0 ? path.length() : colon));
@@ -73,6 +74,8 @@ find_writable_texdir(ErrorHandler *)
     }
     if (writable_texdir && writable_texdir.back() != '/')
 	writable_texdir += "/";
+    if (!writable_texdir)
+	errh->warning("no writable directory found in $TEXMF\nlooked in %s", actual_path.c_str());
 }
 #endif
 
@@ -186,11 +189,12 @@ update_odir(int o, String file, ErrorHandler *errh)
     // mktexupd's runtime is painful: a half second to update a file
     String ls_r = writable_texdir + "ls-R";
     bool success = false;
-    if (FILE *f = fopen(ls_r.c_str(), "a")) {
-	fprintf(f, "./%s:\n%s\n", directory.c_str(), file.c_str());
-	success = true;
-	fclose(f);
-    }
+    if (access(ls_r.c_str(), R_OK) >= 0) // make sure it already exists
+	if (FILE *f = fopen(ls_r.c_str(), "a")) {
+	    fprintf(f, "./%s:\n%s\n", directory.c_str(), file.c_str());
+	    success = true;
+	    fclose(f);
+	}
 
     // otherwise, run mktexupd
     if (!success && writable_texdir.find_left('\'') < 0 && directory.find_left('\'') < 0 && file.find_left('\'') < 0) {
@@ -426,8 +430,11 @@ locate_encoding(String encfile, ErrorHandler *errh, bool literal)
     }
     
 #if HAVE_KPATHSEA
-    if (String file = kpsei_string(kpsei_find_file(encfile.c_str(), KPSEI_FMT_ENCODING)))
+    if (String file = kpsei_string(kpsei_find_file(encfile.c_str(), KPSEI_FMT_ENCODING))) {
+	if (verbose)
+	    errh->message("encoding file %s found with kpathsea at %s", encfile.c_str(), file.c_str());
 	return file;
+    }
 #endif
 
     if (access(encfile.c_str(), R_OK) >= 0)

@@ -1334,6 +1334,8 @@ particular purpose.\n");
     if (encoding_file)
 	if (String path = locate_encoding(encoding_file, errh))
 	    dvipsenc.parse(path, errh);
+	else
+	    errh->fatal("encoding '%s' not found", encoding_file.c_str());
 
     do_file(input_file, otf, dvipsenc, literal_encoding, errh);
     
