@@ -431,23 +431,23 @@ Type1Font::undo_synthetic()
   // copy SubrGroupItem from `f' into `this'
   Type1SubrGroupItem *oth_subrs = 0, *oth_glyphs = 0;
   for (int i = 0; i < f->nitems(); i++)
-    if (Type1SubrGroupItem *sgi = f->_items[i]->cast_subr_group()) {
-      if (sgi->is_subrs())
-	oth_subrs = sgi;
+    if (Type1SubrGroupItem *subr_grp = f->_items[i]->cast_subr_group()) {
+      if (subr_grp->is_subrs())
+	oth_subrs = subr_grp;
       else
-	oth_glyphs = sgi;
+	oth_glyphs = subr_grp;
     }
 
   assert(oth_glyphs);
   
   for (int i = nitems() - 1; i >= 0; i--)
-    if (Type1SubrGroupItem *sgi = _items[i]->cast_subr_group()) {
-      assert(sgi->is_subrs());
+    if (Type1SubrGroupItem *subr_grp = _items[i]->cast_subr_group()) {
+      assert(subr_grp->is_subrs());
       if (oth_subrs)
-	sgi->set_end_text(oth_subrs->end_text());
+	subr_grp->set_end_text(oth_subrs->end_text());
       shift_indices(i + 1, 1);
-      Type1SubrGroupItem *nsgi = new Type1SubrGroupItem(*oth_glyphs, this);
-      _items[i + 1] = nsgi;
+      Type1SubrGroupItem *nsubr = new Type1SubrGroupItem(*oth_glyphs, this);
+      _items[i + 1] = nsubr;
       break;
     }
 
