@@ -4,6 +4,7 @@
 #include "error.hh"
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 const char *program_name;
 
@@ -69,11 +70,13 @@ void
 ErrorHandler::verror(Kind kind, const Landmark &landmark,
 		     const char *s, va_list val)
 {
-  assert(program_name);
-  if (!landmark)
+  if (landmark && landmark.has_line())
+    fprintf(stderr, "%s:%u: ", landmark.file().cc(), landmark.line());
+  else if (landmark)
+    fprintf(stderr, "%s: ", landmark.file().cc());
+  else if (program_name)
     fprintf(stderr, "%s: ", program_name);
-  else
-    landmark.print(stderr);
+  
   if (kind == WarningKind)
     fputs("warning: ", stderr);
   
@@ -99,7 +102,7 @@ ErrorHandler::verror(Kind kind, const Landmark &landmark,
 	   fputs(x, stderr);
 	   goto pctdone;
 	 }
-       
+	 
        case 'c':
 	 {
 	   int c = va_arg(val, char);
@@ -126,14 +129,14 @@ ErrorHandler::verror(Kind kind, const Landmark &landmark,
 	   fprintf(stderr, "%d", x);
 	   goto pctdone;
 	 }
-       
+	 
        case 'u':
 	 {
 	   unsigned x = va_arg(val, unsigned);
 	   fprintf(stderr, "%u", x);
 	   goto pctdone;
 	 }
-       
+	 
        case 'g':
 	 {
 	   double x = va_arg(val, double);

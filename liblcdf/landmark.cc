@@ -11,12 +11,3 @@ operator+(const Landmark &landmark, int offset)
   else
     return landmark;
 }
-
-void
-Landmark::print(FILE *f) const
-{
-  if (_line != ~0U)
-    fprintf(f, "%s:%u: ", _file.cc(), _line);
-  else
-    fprintf(f, "%s: ", _file.cc());
-}

@@ -11,7 +11,8 @@ static const int WorthMoving	= 256;
 Slurper::Slurper(const Filename &filename, FILE *f = 0)
   : _filename(filename), _lineno(0),
     _data(new unsigned char[DefChunkCap]), _cap(DefChunkCap),
-    _pos(0), _len(0), _peek(0), _peek_len(0)
+    _pos(0), _len(0), _line(0), _line_len(0),
+    _saved_line(false), _at_eof(false)
 {
   if (f) {
     _f = f;
@@ -70,19 +71,18 @@ Slurper::more_data()
 char *
 Slurper::peek_line()
 {
-  char *line = next_line();
-  _peek = (unsigned char *)line;
-  return line;
+  next_line();
+  _saved_line = true;
+  return (char *)_line;
 }
 
 
 char *
 Slurper::next_line()
 {
-  if (_peek) {
-    char *line = (char *)_peek;
-    _peek = 0;
-    return line;
+  if (_saved_line || _at_eof) {
+    _saved_line = false;
+    return (char *)_line;
   }
   
   unsigned pos = _pos;
@@ -100,8 +100,10 @@ Slurper::next_line()
     if (!got_more_data) {
       if (_pos < _len)		// last line in file doesn't end in \n
 	goto line_ends_at_pos;
-      else			// no more lines in files
+      else {			// no more lines in file
+	_at_eof = true;
 	return 0;
+      }
     }
   }
   
@@ -141,10 +143,10 @@ Slurper::next_line()
       next_pos = pos + 1;
   }
   
-  unsigned char *line = _data + _pos;
-  _peek_len = pos - _pos;
+  _line = _data + _pos;
+  _line_len = pos - _pos;
   _data[pos] = 0;
   _pos = next_pos;
-  _lineno++;
-  return (char *)line;
+  _lineno++;  
+  return (char *)_line;
 }

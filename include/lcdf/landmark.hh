@@ -4,7 +4,6 @@
 #pragma interface
 #endif
 #include "permstr.hh"
-#include <stdio.h>
 
 class Landmark {
   
@@ -24,8 +23,7 @@ class Landmark {
   unsigned line() const			{ return _line; }
   
   Landmark next_line() const;
-  
-  void print(FILE *) const;
+  Landmark whole_file() const		{ return Landmark(_file); }
   
 };
 

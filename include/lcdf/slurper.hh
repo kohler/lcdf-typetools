@@ -18,9 +18,12 @@ class Slurper {
   unsigned _cap;
   unsigned _pos;
   unsigned _len;
-
-  unsigned char *_peek;
-  unsigned _peek_len;
+  
+  unsigned char *_line;
+  unsigned _line_len;
+  
+  bool _saved_line;
+  bool _at_eof;
   
   void grow_buffer();
   int more_data();
@@ -39,7 +42,8 @@ class Slurper {
   const Filename &filename() const	{ return _filename; }
   char *peek_line();
   char *next_line();
-  unsigned length() const		{ return _peek_len; }
+  void save_line()			{ _saved_line = true; }
+  unsigned length() const		{ return _line_len; }
   
 };
 
