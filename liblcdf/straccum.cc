@@ -29,6 +29,14 @@ StringAccum::StringAccum(const char *s)
     *this << s;
 }
 
+#ifdef HAVE_PERMSTRING
+StringAccum::StringAccum(PermString s)
+    : _s(0), _len(0), _cap(0)
+{
+    *this << s;
+}
+#endif
+
 #ifdef HAVE_STRING
 StringAccum::StringAccum(const String &s)
     : _s(0), _len(0), _cap(0)

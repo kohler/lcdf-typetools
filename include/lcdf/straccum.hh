@@ -15,6 +15,9 @@ class StringAccum { public:
     StringAccum()			: _s(0), _len(0), _cap(0) { }
     explicit StringAccum(int);
     explicit StringAccum(const char *);
+#ifdef HAVE_PERMSTRING
+    explicit StringAccum(PermString);
+#endif
 #ifdef HAVE_STRING
     explicit StringAccum(const String &);
 #endif
