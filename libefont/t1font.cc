@@ -59,8 +59,11 @@ Type1Font::Type1Font(Type1Reader &reader)
     }
     
     // check for CHARSTRING START
+    // 5/29/1999: beware of charstring start-like things that don't have
+    // `readstring' in them!
     if (eexec_state == 1 && !_charstring_definer
-	&& strstr(x, "string currentfile") != 0) {
+	&& strstr(x, "string currentfile") != 0
+	&& strstr(x, "readstring") != 0) {
       char *sb = x;
       while (*sb && *sb != '/') sb++;
       char *se = sb + 1;
@@ -177,7 +180,12 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
     }
     
     // parse as many `dup INDEX */CHARNAME put' as there are in the line
-    while (pos[0] == 'd' && pos[1] == 'u' && pos[2] == 'p' && pos[3] == ' ') {
+    while (1) {
+      // skip spaces, look for `dup '
+      while (isspace(pos[0])) pos++;
+      if (pos[0] != 'd' || pos[1] != 'u' || pos[2] != 'p' || pos[3] != ' ')
+	break;
+      
       // look for `INDEX */'
       char *scan;
       int char_value = strtol(pos + 4, &scan, 10);
@@ -195,7 +203,6 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
       _encoding->put(char_value, PermString(name_pos, scan - name_pos));
       got_any = true;
       pos = scan + 4;
-      while (isspace(pos[0])) pos++;
     }
     
     // add COPY ITEM if necessary for leftovers we didn't parse
