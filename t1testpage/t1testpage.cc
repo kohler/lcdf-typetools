@@ -472,8 +472,23 @@ extern "C" {
 static int CDECL
 glyphcompare(const void *lv, const void *rv)
 {
-    const PermString *ln = (const PermString *)lv;
-    const PermString *rn = (const PermString *)rv;
+    const PermString* ln = (const PermString*)lv;
+    const PermString* rn = (const PermString*)rv;
+
+    // try first without the '.'s
+    const char* ldot = strchr(ln->c_str(), '.');
+    const char* rdot = strchr(rn->c_str(), '.');
+    if (ldot == ln->begin())
+	ldot = 0;
+    if (rdot == rn->begin())
+	rdot = 0;
+    if (ldot || rdot) {
+	PermString l(ln->begin(), ldot ? ldot : ln->end());
+	PermString r(rn->begin(), rdot ? rdot : rn->end());
+	int diff = glyphcompare(&l, &r);
+	if (diff != 0)
+	    return diff;
+    }
 
     int lorder = glyph_order[*ln];
     int rorder = glyph_order[*rn];
