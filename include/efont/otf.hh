@@ -49,6 +49,8 @@ class Font { public:
     int length() const			{ return _str.length(); }
 
     String table(Tag) const;
+    int ntables() const;
+    Tag table_tag(int) const;
 
   private:
 

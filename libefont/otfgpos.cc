@@ -218,6 +218,8 @@ GposPair::unparse(Vector<Positioning> &v) const
 static void
 unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
 {
+    if (!gns)
+	gns = &debug_glyph_names;
     if (gid && gns && gns->size() > gid && (*gns)[gid])
 	sa << (*gns)[gid];
     else

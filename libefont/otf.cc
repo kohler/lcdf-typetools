@@ -99,6 +99,23 @@ Font::table(Tag tag) const
 	return String();
 }
 
+int
+Font::ntables() const
+{
+    if (error() < 0)
+	return 0;
+    else
+	return USHORT_AT(data() + 4);
+}
+
+Tag
+Font::table_tag(int i) const
+{
+    if (error() < 0 || i < 0 || i >= ntables())
+	return Tag();
+    else
+	return Tag(ULONG_AT(data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i));
+}
 
 
 /**************************

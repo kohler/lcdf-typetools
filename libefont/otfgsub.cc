@@ -947,6 +947,7 @@ GsubContext::f3_unparse(const Data &data, int nglyph, int glyphtab_offset, int n
 	for (Coverage::iterator ci = c.begin(); ci; ci++)
 	    for (int j = 0; j < subs.size(); j++)
 		work_subs.push_back(subs[j].in_out_append_glyph(*ci));
+	subs.clear();
 	subs.swap(work_subs);
     }
 
