@@ -24,8 +24,13 @@ libefont_a_SOURCES = \
 	t1rw.hh t1rw.cc \
 	t1unparser.hh t1unparser.cc
 
-INCLUDES = -I$(top_srcdir)/edlib
+INCLUDES = -I$(top_srcdir)/include
 
 srclinks:
+	test $(top_srcdir) = ..
+	test -d ../include || mkdir ../include
+	test -d ../include/efont || mkdir ../include/efont
+	I=../../libefont/include/efont S=../../libefont/libefont; \
 	for i in $(libefont_a_SOURCES); do \
-	ln -sf ../../libefont/$$i $$i; done
+	test -f $$I/$$i && ln -sf ../$$I/$$i ../include/efont/$$i; \
+	test -f $$S/$$i && ln -sf $$S/$$i $$i; done

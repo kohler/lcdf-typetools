@@ -1,17 +1,14 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign check-news
 
-SUBDIRS = edlib libefont cfftot1 t1lint t1testpage
+SUBDIRS = liblcdf libefont cfftot1 t1lint t1testpage
 
 EXTRA_DIST = rpm.spec
 AUTODEPENDENCIES =
 
 srclinks:
-	for i in clp.h clp.c hashmap.hh hashmap.cc vector.hh vector.cc \
-	permstr.hh permstr.cc straccum.hh straccum.cc string.hh string.cc \
-	landmark.hh landmark.cc error.hh error.cc filename.hh filename.cc \
-	slurper.hh slurper.cc strtonum.h strtonum.c fixlibc.c vectorv.cc ; do \
-	ln -sf ../../edlib/$$i edlib/$$i ; done
+	test $(srcdir) = .
+	cd liblcdf && $(MAKE) srclinks
 	cd libefont && $(MAKE) srclinks
 
 versionize:

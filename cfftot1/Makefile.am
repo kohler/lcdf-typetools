@@ -10,6 +10,6 @@ cfftot1_SOURCES = cfftot1.cc \
 	transform.cc transform.hh \
 	templatei.cc
 
-cfftot1_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
+cfftot1_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/libefont
+INCLUDES = -I$(top_srcdir)/include

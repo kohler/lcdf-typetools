@@ -2,12 +2,14 @@
 # include <config.h>
 #endif
 #include "maket1font.hh"
-#include "t1interp.hh"
-#include "t1csgen.hh"
+#include <efont/t1interp.hh>
+#include <efont/t1csgen.hh>
 #include "point.hh"
-#include "t1font.hh"
-#include "t1item.hh"
-#include "t1unparser.hh"
+#include <efont/t1font.hh>
+#include <efont/t1item.hh>
+#include <efont/t1unparser.hh>
+
+using namespace Efont;
 
 static const char *othersubrs_code = "% Copyright (c) 1987-1990 Adobe Systems Incorporated.\n"
 "% All Rights Reserved.\n"
@@ -913,12 +915,10 @@ MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer)
     // unify Subrs
     for (int i = 0; i < _subrs.size(); i++)
 	if (_subrs[i] && _subrs[i]->unify(this))
-	    //fprintf(stderr,"==== %s\n", CharstringUnparser::unparse(*_glyphs[0x237]->charstring(this)).cc())
 	    ;
 
     for (int i = 0; i < _gsubrs.size(); i++)
 	if (_gsubrs[i] && _gsubrs[i]->unify(this))
-	    /*fprintf(stderr,"==== %s\n", CharstringUnparser::unparse(*_glyphs[0x237]->charstring(this)).cc())*/
 	    ;
 }
 
@@ -1134,4 +1134,4 @@ cleartomark"));
     return output;
 }
 
-#include "vector.cc"
+#include <lcdf/vector.cc>

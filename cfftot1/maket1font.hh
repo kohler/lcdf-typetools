@@ -1,8 +1,10 @@
 #ifndef EFONT_MAKET1FONT_HH
 #define EFONT_MAKET1FONT_HH
-#include "cff.hh"
+#include <efont/cff.hh>
+namespace Efont {
 class Type1Font;
+}
 
-Type1Font *create_type1_font(EfontCFF::Font *);
+Efont::Type1Font *create_type1_font(Efont::EfontCFF::Font *);
 
 #endif

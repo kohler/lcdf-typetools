@@ -1,20 +1,20 @@
 #ifndef CSCHECK_HH
 #define CSCHECK_HH
-#include "t1interp.hh"
+#include <efont/t1interp.hh>
 #include "point.hh"
-#include "vector.hh"
+#include <lcdf/vector.hh>
 class ErrorHandler;
 
-class CharstringChecker : public CharstringInterp { public:
+class CharstringChecker : public Efont::CharstringInterp { public:
   
-    CharstringChecker(EfontProgram *, Vector<double> *);
+    CharstringChecker(Efont::EfontProgram *, Vector<double> *);
   
     void init();
     bool error(int, int);
     bool callothersubr();
     bool type1_command(int);
   
-    bool check(Charstring &, ErrorHandler *);
+    bool check(Efont::Charstring &, ErrorHandler *);
   
   private:
     

@@ -1,14 +1,14 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "psres.hh"
-#include "t1rw.hh"
-#include "t1font.hh"
-#include "t1item.hh"
-#include "t1mm.hh"
+#include <efont/psres.hh>
+#include <efont/t1rw.hh>
+#include <efont/t1font.hh>
+#include <efont/t1item.hh>
+#include <efont/t1mm.hh>
 #include "cscheck.hh"
-#include "clp.h"
-#include "error.hh"
+#include <lcdf/clp.h>
+#include <lcdf/error.hh>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -18,6 +18,8 @@
 #ifdef HAVE_CTIME
 # include <time.h>
 #endif
+
+using namespace Efont;
 
 #define VERSION_OPT	301
 #define HELP_OPT	302

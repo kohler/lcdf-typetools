@@ -2,9 +2,11 @@
 # include <config.h>
 #endif
 #include "cscheck.hh"
-#include "t1item.hh"
-#include "error.hh"
-#include "t1unparser.hh"
+#include <efont/t1item.hh>
+#include <lcdf/error.hh>
+#include <efont/t1unparser.hh>
+
+using namespace Efont;
 
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STACK_CP(numargs)	do { CHECK_STACK(numargs); if (!_cp_exists) return error(errCurrentPoint, cmd); } while (0)

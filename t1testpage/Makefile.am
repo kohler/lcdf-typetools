@@ -7,6 +7,6 @@ man_MANS =
 t1testpage_SOURCES = t1testpage.cc \
 	templatei.cc
 
-t1testpage_LDADD = ../libefont/libefont.a ../edlib/libedlib.a
+t1testpage_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/libefont
+INCLUDES = -I$(top_srcdir)/include
