@@ -13,8 +13,9 @@ VERSION		= @VERSION@
 SHELL		= /bin/sh
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
-VPATH		= @srcdir@/mmafm
-srcdir		= @srcdir@/mmafm
+VPATH		= @srcdir@
+srcdir		= @srcdir@
+topdir		= @top_srcdir@
 bindir		= @bindir@
 mandir		= @mandir@/man$(manext)
 manext		= 1
@@ -22,6 +23,8 @@ manext		= 1
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
+mkinstalldirs	= $(SH) $(srcdir)/../mkinstalldirs
+PROG_TRANSFORM	= @program_transform_name@
 
 CC		= @CC@ $(PROFILING)
 CCLINKER	= @CC@ $(PROFILING)
@@ -29,9 +32,9 @@ CXX		= @CXX@ $(PROFILING)
 CXXLINKER	= @CXX@ $(PROFILING)
 CXXFLAGS	= @CFLAGS@
 CFLAGS		= @CFLAGS@
-CPPFLAGS	= @DEFS@ -I../edlib -I../t1lib -I../metricslib
+CPPFLAGS	= @DEFS@ -I$(topdir)/edlib -I$(topdir)/t1lib -I$(topdir)/metricslib
 PROFILING	= 
-LDFLAGS		= @LDFLAGS@
+LDFLAGS		= @LDFLAGS@ @LIBS@
 
 PROGRAMS	= mmafm
 MY_OBJS		= vectori.o hashmapi.o main.o
@@ -48,13 +51,19 @@ mmafm: $(OBJS)
 	$(CXXLINKER) $(CFLAGS) -o mmafm $(OBJS) $(LDFLAGS)
 
 main.o: main.cc
-	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
+	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 install: install-prog install-man
 install-prog: mmafm
-	$(INSTALL_PROGRAM) mmafm $(bindir)/mmafm
+	$(mkinstalldirs) $(bindir)
+	$(INSTALL_PROGRAM) mmafm $(bindir)/`echo mmafm|sed '$(PROG_TRANSFORM)'`
 install-man:
-	$(INSTALL_DATA) mmafm.man $(mandir)/mmafm.$(manext)
+	$(mkinstalldirs) $(mandir)
+	$(INSTALL_DATA) $(srcdir)/mmafm.man $(mandir)/`echo mmafm|sed '$(PROG_TRANSFORM)'`.$(manext)
+
+uninstall:
+	rm -f $(bindir)/`echo mmafm|sed '$(PROG_TRANSFORM)'`
+	rm -f $(mandir)/`echo mmafm|sed '$(PROG_TRANSFORM)'`.$(manext)
 
 #####
 # Cleaning and distribution
@@ -71,5 +80,5 @@ dist:
 	cp Makefile.in hashmapi.cc vectori.cc main.cc mmafm.man \
 	../$(PACKAGE)-$(VERSION)/mmafm
 
-.PHONY: all install install-prog install-man clean mostlyclean distclean \
-	realclean dist
+.PHONY: all install install-prog install-man uninstall \
+	clean mostlyclean distclean realclean dist

@@ -13,8 +13,9 @@ VERSION		= @VERSION@
 SHELL		= /bin/sh
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
-VPATH		= @srcdir@/mmpfb
-srcdir		= @srcdir@/mmpfb
+VPATH		= @srcdir@
+srcdir		= @srcdir@
+topdir		= @top_srcdir@
 bindir		= @bindir@
 mandir		= @mandir@/man$(manext)
 manext		= 1
@@ -22,6 +23,8 @@ manext		= 1
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
+mkinstalldirs	= $(SH) $(srcdir)/../mkinstalldirs
+PROG_TRANSFORM	= @program_transform_name@
 
 CC		= @CC@ $(PROFILING)
 CCLINKER	= @CC@ $(PROFILING)
@@ -29,9 +32,9 @@ CXX		= @CXX@ $(PROFILING)
 CXXLINKER	= @CXX@ $(PROFILING)
 CXXFLAGS	= @CFLAGS@
 CFLAGS		= @CFLAGS@
-CPPFLAGS	= @DEFS@ -I../edlib -I../t1lib
+CPPFLAGS	= @DEFS@ -I$(topdir)/edlib -I$(topdir)/t1lib
 PROFILING	= 
-LDFLAGS		= @LDFLAGS@
+LDFLAGS		= @LDFLAGS@ @LIBS@
 
 PROGRAMS	= mmpfb
 MY_OBJS		= vectori.o hashmapi.o t1rewrit.o myfont.o main.o
@@ -45,18 +48,22 @@ all: $(PROGRAMS)
 mmpfb: $(OBJS)
 	$(CXXLINKER) $(CFLAGS) -o mmpfb $(OBJS) $(LDFLAGS)
 
-t1mm.o: ../t1lib/t1mm.cc ../t1lib/t1mm.hh
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c ../t1lib/t1mm.cc -o t1mm.o
 t1rewrit.o: t1rewrit.cc t1rewrit.hh ../t1lib/t1interp.hh
 
 main.o: main.cc
-	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
+	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 install: install-prog install-man
 install-prog: mmpfb
-	$(INSTALL_PROGRAM) mmpfb $(bindir)/mmpfb
+	$(mkinstalldirs) $(bindir)
+	$(INSTALL_PROGRAM) mmpfb $(bindir)/`echo mmpfb|sed '$(PROG_TRANSFORM)'`
 install-man:
-	$(INSTALL_DATA) mmpfb.man $(mandir)/mmpfb.$(manext)
+	$(mkinstalldirs) $(mandir)
+	$(INSTALL_DATA) $(srcdir)/mmpfb.man $(mandir)/`echo mmpfb|sed '$(PROG_TRANSFORM)'`.$(manext)
+
+uninstall:
+	rm -f $(bindir)/`echo mmpfb|sed '$(PROG_TRANSFORM)'`
+	rm -f $(mandir)/`echo mmpfb|sed '$(PROG_TRANSFORM)'`.$(manext)
 
 #####
 # Cleaning and distribution
@@ -74,5 +81,5 @@ dist:
 	mmpfb.man \
 	../$(PACKAGE)-$(VERSION)/mmpfb
 
-.PHONY: all install install-prog install-man clean mostlyclean distclean \
-	realclean dist
+.PHONY: all install install-prog install-man uninstall \
+	clean mostlyclean distclean realclean dist
