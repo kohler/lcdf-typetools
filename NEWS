@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.13   20.Aug.2004
+
+* Add '--enable-selfauto-loc' configuration option, enabled by default, to
+  help otftotfm run with TeX configuration files that use SELFAUTODIR and
+  related variables.  Suggested by Thomas Esser; mechanism from dvipng.
+
+
 Version 2.12   19.Aug.2004
 
 * Catch bug that would affect otftotfm on 64-bit machines.

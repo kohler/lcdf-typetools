@@ -12,7 +12,11 @@
  */
 
 #include <kpathsea/config.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <stdio.h>
+#include <stdlib.h>
 #include <kpathsea/progname.h>
 #include <kpathsea/expand.h>
 #include <kpathsea/c-pathch.h>
@@ -25,6 +29,15 @@ void
 kpsei_init(const char* argv0)
 {
     kpse_set_progname(argv0);
+#ifdef SELFAUTODIR
+    putenv("SELFAUTODIR=" SELFAUTODIR);
+#endif
+#ifdef SELFAUTOLOC
+    putenv("SELFAUTOLOC=" SELFAUTOLOC);
+#endif
+#ifdef SELFAUTOPARENT
+    putenv("SELFAUTOPARENT=" SELFAUTOPARENT);
+#endif
 }
 
 char*

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.12)
+AM_INIT_AUTOMAKE(lcdf-typetools, 2.13)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_MAKE_SET
@@ -118,7 +118,7 @@ AC_SUBST(SELECTED_SUBDIRS)
 
 
 dnl
-dnl kpathsea, cfftot1
+dnl kpathsea, auto-cfftot1
 dnl
 
 AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
@@ -168,6 +168,29 @@ using --without-kpathsea.
 fi
 AC_SUBST([KPSEINTERFACE_O])
 AC_SUBST([LIBKPATHSEA])
+
+AC_ARG_ENABLE(selfauto-loc, [  --disable-selfauto-loc  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_loc=yes)
+
+if test "x$enable_selfauto_loc" = xyes -a "x$kpathsea" != xno; then
+    kpsewhich='kpsewhich'
+    [ "x$kpathsea" != xyes -a -x "$kpathsea/bin/kpsewhich" ] && kpsewhich="$kpathsea/bin/kpsewhich"
+    SELFAUTOLOC=`$kpsewhich --expand-var='$SELFAUTOLOC' 2>/dev/null`
+    SELFAUTODIR=`$kpsewhich --expand-var='$SELFAUTODIR' 2>/dev/null`
+    SELFAUTOPARENT=`$kpsewhich --expand-var='$SELFAUTOPARENT' 2>/dev/null`
+    if test -z "$SELFAUTODIR"; then
+	AC_MSG_WARN([
+=========================================
+
+Could not extract SELFAUTO variables from $kpsewhich.
+Either supply the correct PREFIX to --with-kpathsea, or supply
+--disable-selfauto-loc.
+
+=========================================])
+    fi
+    AC_DEFINE_UNQUOTED(SELFAUTOLOC, "$SELFAUTOLOC", [kpsewhich's $SELFAUTOLOC variable])
+    AC_DEFINE_UNQUOTED(SELFAUTODIR, "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
+    AC_DEFINE_UNQUOTED(SELFAUTOPARENT, "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
+fi
 
 AC_ARG_ENABLE(auto-cfftot1, [  --disable-auto-cfftot1  disable running cfftot1 from otftotfm], :, enable_auto_cfftot1=yes)
 AC_ARG_ENABLE(auto-t1dotlessj, [  --disable-auto-t1dotlessj disable running t1dotlessj from otftotfm], :, enable_auto_t1dotlessj=yes)
