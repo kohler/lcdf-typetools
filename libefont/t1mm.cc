@@ -170,12 +170,6 @@ Type1MMSpace::axis_high(int ax) const
 }
 
 
-Vector<double>
-Type1MMSpace::default_design_vector() const
-{
-  return _default_design_vector;
-}
-
 bool
 Type1MMSpace::set_design(NumVector &design_vector, int ax, double value,
 			 ErrorHandler *errh) const

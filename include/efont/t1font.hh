@@ -82,7 +82,7 @@ class Type1Font: public Type1Program {
   int glyph_count() const		{ return _glyphs.count(); }
   Type1Subr *glyph(int i) const		{ return _glyphs[i]; }
   Type1Charstring *glyph(PermString) const;
-
+  
   Type1Encoding *encoding() const	{ return _encoding; }
   
   Type1Definition *dict(Dict d, PermString s) const { return _dict[d][s]; }
@@ -96,7 +96,7 @@ class Type1Font: public Type1Program {
 
   Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
   Type1MMSpace *mmspace() const;
-
+  
   void write(Type1Writer &);
   
 };

@@ -115,7 +115,6 @@ class Type1Interp {
   
   bool blend_command();
   bool roll_command();
-  Vector<double> *weight_vector();
   
  public:
   
@@ -140,6 +139,7 @@ class Type1Interp {
   void clear_ps()				{ _ps_sp = 0; }
   
   double &vec(Vector<double> *, int);
+  Vector<double> *weight_vector();
   
   Type1Charstring *get_subr(int) const;
   Type1Charstring *get_glyph(PermString) const;

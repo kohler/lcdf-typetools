@@ -33,7 +33,7 @@ class Type1MMSpace: public Type1Program {
   
   NumVector _default_design_vector;
   NumVector _default_weight_vector;
-
+  
   mutable NumVector *_design_vector;
   mutable NumVector *_norm_design_vector;
   mutable NumVector *_weight_vector;
@@ -81,9 +81,11 @@ class Type1MMSpace: public Type1Program {
   
   bool check(ErrorHandler * = 0);
   
-  NumVector default_design_vector() const;
+  const NumVector &default_design_vector() const;
   bool set_design(NumVector &, int, double, ErrorHandler * = 0) const;
   bool set_design(NumVector &, PermString, double, ErrorHandler * = 0) const;
+
+  const NumVector &default_weight_vector() const;
   
   bool design_to_norm_design(const NumVector &, NumVector &,
 			     ErrorHandler * = 0) const;
@@ -91,5 +93,18 @@ class Type1MMSpace: public Type1Program {
 			ErrorHandler * = 0) const;
   
 };
+
+
+inline const Vector<double> &
+Type1MMSpace::default_design_vector() const
+{
+  return _default_design_vector;
+}
+
+inline const Vector<double> &
+Type1MMSpace::default_weight_vector() const
+{
+  return _default_weight_vector;
+}
 
 #endif

@@ -26,7 +26,6 @@ Type1Interp::init()
   clear_ps();
   _done = false;
   _error = errOK;
-  _weight_vector = 0;
 }
 
 
@@ -128,8 +127,7 @@ Type1Interp::blend_command()
   int nargs = (int)pop();
 
   Vector<double> *weight = weight_vector();
-  if (!weight)
-    ERROR(errVector);
+  if (!weight) ERROR(errVector);
   
   int nmasters = weight->count();
   CHECK_STACK(nargs * nmasters);
@@ -322,8 +320,7 @@ bool
 Type1Interp::mm_command(int command, int on_stack)
 {
   Vector<double> *weight = weight_vector();
-  if (!weight)
-    ERROR(errVector);
+  if (!weight) ERROR(errVector);
   
   int nargs;
   switch (command) {
