@@ -1012,12 +1012,14 @@ do_file(const String &input_filename, const OpenType::Font &otf,
     
     // simplify more-than-two-character ligatures
     encoding.simplify_ligatures(!dvipsenc_literal);
+    //encoding.unparse();
 
     // reencode characters to fit within 8 bytes (+ 1 for the boundary)
     if (dvipsenc_literal)
 	encoding.cut_encoding(257);
     else
 	encoding.shrink_encoding(257, dvipsenc_in, glyph_names, errh);
+    //encoding.unparse();
     
     // apply activated GPOS features
     OpenType::Gpos gpos(otf.table("GPOS"), errh);

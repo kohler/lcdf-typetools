@@ -617,9 +617,9 @@ DvipsEncoding::apply_ligkern_lig(GsubEncoding &gsub_encoding, ErrorHandler *errh
 	else if (l.join == J_LIG)
 	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d);
 	else if (l.join == J_LIGC)
-	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d, 1);
+	    gsub_encoding.add_twoligature(l.c1, l.c2, gsub_encoding.pair_fake_code(l.d, l.c2));
 	else if (l.join == J_CLIG)
-	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d, -1);
+	    gsub_encoding.add_twoligature(l.c1, l.c2, gsub_encoding.pair_fake_code(l.c1, l.d));
 	else {
 	    static int complex_join_warning = 0;
 	    if (!complex_join_warning) {

@@ -5,7 +5,7 @@
 class DvipsEncoding;
 
 struct Setting {
-    enum { SHOW, KERN, MOVE, RULE };
+    enum { SHOW, KERN, MOVE, RULE, DEAD };
     int op;
     int x;
     int y;
@@ -37,6 +37,7 @@ class GsubEncoding { public:
     void encode(int code, Glyph g);
 
     Glyph add_fake(PermString, const Vector<Setting> &);
+    int pair_fake_code(int code1, int code2);
 
     int apply(const Vector<Substitution> &, bool allow_single);
     void apply_substitutions();
@@ -47,7 +48,7 @@ class GsubEncoding { public:
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &, const Vector<PermString> &glyph_names, ErrorHandler *);
 
-    int add_twoligature(int code1, int code2, int outcode, int context = 0);
+    int add_twoligature(int code1, int code2, int outcode);
     int add_threeligature(int code1, int code2, int code3, int outcode);
     void add_kern(int left, int right, int amount);
     void add_single_positioning(int code, int pdx, int pdy, int adx);
@@ -69,6 +70,7 @@ class GsubEncoding { public:
   private:
 
     Vector<Glyph> _encoding;
+    int _first_context_code;
     mutable Vector<int> _emap;
     Glyph _boundary_glyph;
     Glyph _emptyslot_glyph;
@@ -78,12 +80,13 @@ class GsubEncoding { public:
 	Vector<int> in;
 	int out;
 	int skip;
-	int context;
 	int next;			// not usually valid
-	bool live() const		{ return in[0] >= 0; }
+	bool live() const throw ();
+	bool killed() const throw ()	{ return in[0] < 0; }
 	void kill()			{ in[0] = -1; }
 	String unparse(const GsubEncoding *) const;
-	static inline bool deadp(const Ligature &);
+	static inline bool deadp(const Ligature &); // true iff !live()
+	static inline bool killedp(const Ligature &); // true iff kill()ed
     };
     Vector<Ligature> _ligatures;
 
@@ -110,11 +113,12 @@ class GsubEncoding { public:
     inline void assign_emap(Glyph, int);
     void add_single_context_substitution(int, int, int, bool is_right);
     static void reassign_ligature(Ligature &, const Vector<int> &);
-    void reassign_codes(const Vector<int> &);
+    void reassign_codes(Vector<int> &);
     int find_in_place_twoligature(int, int, Vector<int> &, bool add_fake);
     int ligature_score(const Ligature &, Vector<int> &scores) const;
     const Ligature *find_ligature_for(int code) const;
     String unparse_glyph(Glyph, const Vector<PermString> *) const;
+    void clean_encoding();
 
     friend bool operator<(const Ligature &, const Ligature &);
     friend bool operator<(const Kern &, const Kern &);
