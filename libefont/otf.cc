@@ -17,9 +17,6 @@
 
 #define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
 #define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
-
-#define USHORT_ATX(d)		(((uint8_t)*(d) << 8) | (uint8_t)*((d)+1))
-#define ULONG_ATX(d)		((USHORT_ATX((d)) << 16) | USHORT_ATX((d)+2))
 #define ULONG_AT2(d)		((USHORT_AT((d)) << 16) | USHORT_AT((d)+2))
 
 namespace Efont { namespace OpenType {
@@ -44,9 +41,9 @@ Font::parse_header(ErrorHandler *errh)
     const uint8_t *data = this->data();
     if (HEADER_SIZE > len)
 	return errh->error("OTF too small for header"), -EFAULT;
-    if (!(data[0] == 'O' && data[1] == 'T' && data[2] == 'T' && data[3] == 'O')
-	&& !(data[0] == '\000' && data[1] == '\001'))
-	return errh->error("bad OTF version number"), -ERANGE;
+    if ((data[0] != 'O' || data[1] != 'T' || data[2] != 'T' || data[3] != 'O')
+	&& (data[0] != '\000' || data[1] != '\001'))
+	return errh->error("not an OpenType font (bad magic number)"), -ERANGE;
     int ntables = USHORT_AT(data + 4);
     if (ntables == 0)
 	return errh->error("OTF contains no tables"), -EINVAL;
@@ -127,7 +124,7 @@ Tag::Tag(const String &s)
 }
 
 bool
-Tag::check_valid() const
+Tag::valid() const
 {
     uint32_t tag = _tag;
     for (int i = 0; i < 4; i++, tag >>= 8)
@@ -220,6 +217,19 @@ ScriptList::script_offset(Tag script) const
 }
 
 int
+ScriptList::check_script(Tag tag, int script_off, ErrorHandler *errh) const
+{
+    const uint8_t *data = _str.udata();
+    int langSysCount;
+    if (_str.length() < script_off + SCRIPT_HEADERSIZE
+	|| (langSysCount = USHORT_AT(data + script_off + 2),
+	    (_str.length() < script_off + SCRIPT_HEADERSIZE + langSysCount*LANGSYS_RECSIZE)))
+	return (errh ? errh->error("OTF Script table for '%s' out of range", tag.text().c_str()) : -1);
+    // XXX check that langsys are sorted
+    return 0;
+}
+
+int
 ScriptList::langsys_offset(Tag script, Tag langsys, ErrorHandler *errh) const
 {
     int script_off = script_offset(script);
@@ -231,15 +241,12 @@ ScriptList::langsys_offset(Tag script, Tag langsys, ErrorHandler *errh) const
 	return script_off;
 
     // check script bounds
-    const uint8_t *data = _str.udata();
-    int langSysCount;
-    if (_str.length() < script_off + SCRIPT_HEADERSIZE
-	|| (langSysCount = USHORT_AT(data + script_off + 2),
-	    (_str.length() < script_off + SCRIPT_HEADERSIZE + langSysCount*LANGSYS_RECSIZE)))
-	return (errh ? errh->error("OTF Script table for '%s' out of range", script.text().c_str()) : -1);
-    // XXX check that langsys are sorted
+    if (check_script(script, script_off, errh) < 0)
+	return -1;
 
     // search script table
+    const uint8_t *data = _str.udata();
+    int langSysCount = USHORT_AT(data + script_off + 2);
     if (const uint8_t *entry = langsys.table_entry(data + script_off + SCRIPT_HEADERSIZE, langSysCount, LANGSYS_RECSIZE))
 	return script_off + USHORT_AT(entry + 4);
 
@@ -249,6 +256,32 @@ ScriptList::langsys_offset(Tag script, Tag langsys, ErrorHandler *errh) const
 	return script_off + defaultLangSys;
     else
 	return 0;
+}
+
+int
+ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHandler *errh) const
+{
+    script.clear();
+    langsys.clear();
+    
+    const uint8_t *data = _str.udata();
+    int nscripts = USHORT_AT(data);
+    for (int i = 0; i < nscripts; i++) {
+	Tag script_tag = ULONG_AT2(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE);
+	int script_off = USHORT_AT(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE + 4);
+	if (check_script(script_tag, script_off, errh) < 0)
+	    return -1;
+	const uint8_t *script_table = data + script_off;
+	if (USHORT_AT(script_table) != 0) // default LangSys
+	    script.push_back(script_tag), langsys.push_back(Tag());
+	int nlangsys = USHORT_AT(script_table + 2);
+	for (int j = 0; j < nlangsys; j++) {
+	    Tag langsys_tag = ULONG_AT2(script_table + SCRIPT_HEADERSIZE + j*LANGSYS_RECSIZE);
+	    script.push_back(script_tag), langsys.push_back(langsys_tag);
+	}
+    }
+    
+    return 0;
 }
 
 int

@@ -11,14 +11,14 @@ class Tag { public:
     
     enum { FIRST_VALID_TAG = 0x20202020U, LAST_VALID_TAG = 0x7E7E7E7EU };
 
-    Tag()				: _tag(FIRST_VALID_TAG) { }
+    Tag()				: _tag(0U) { }
     Tag(uint32_t tag)			: _tag(tag) { }
     Tag(const char *);
     Tag(const String &);
     // default destructor
 
-    bool ok() const			{ return _tag != 0; }
-    bool check_valid() const;
+    bool null() const			{ return _tag == 0; }
+    bool valid() const;
     uint32_t value() const		{ return _tag; }
     String text() const;
 
@@ -68,6 +68,7 @@ class ScriptList { public:
 
     bool ok() const			{ return _str.length() > 0; }
 
+    int language_systems(Vector<Tag> &scripts, Vector<Tag> &langsys, ErrorHandler * = 0) const;
     int features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0) const;
     
   private:
@@ -80,6 +81,7 @@ class ScriptList { public:
 
     int check_header(ErrorHandler *);
     int script_offset(Tag) const;
+    int check_script(Tag, int, ErrorHandler *) const;
     int langsys_offset(Tag, Tag, ErrorHandler * = 0) const;
     
 };
