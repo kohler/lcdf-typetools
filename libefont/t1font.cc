@@ -31,9 +31,8 @@ static PermString lenIV_str = "lenIV";
 static PermString FontInfo_str = "FontInfo";
 
 Type1Font::Type1Font(PermString name)
-    : _cached_defs(false), _font_name(name), _glyph_map(-1), _encoding(0),
-      _cached_mmspace(0), _mmspace(0),
-      _synthetic_item(0)
+    : _cached_defs(false), _built(true), _font_name(name), _glyph_map(-1),
+      _encoding(0), _cached_mmspace(0), _mmspace(0), _synthetic_item(0)
 {
     _dict = new HashMap<PermString, Type1Definition *>[dLast];
     for (int i = 0; i < dLast; i++) {
@@ -44,9 +43,8 @@ Type1Font::Type1Font(PermString name)
 }
 
 Type1Font::Type1Font(Type1Reader &reader)
-    : _cached_defs(false), _glyph_map(-1), _encoding(0),
-      _cached_mmspace(0), _mmspace(0),
-      _synthetic_item(0)
+    : _cached_defs(false), _built(false), _glyph_map(-1), _encoding(0),
+      _cached_mmspace(0), _mmspace(0), _synthetic_item(0)
 {
     _dict = new HashMap<PermString, Type1Definition *>[dLast];
     for (int i = 0; i < dLast; i++) {
@@ -77,19 +75,20 @@ Type1Font::set_item(int i, Type1Item *it)
     _items[i] = it;
 }
 
+static const char * const dict_starters[] = {
+    "0 dict begin", "/FontInfo 0 dict dup begin", "dup /Private 0 dict dup begin", "/Blend 0 dict dup begin", 0, 0
+};
+
 void
 Type1Font::add_definition(int dict, Type1Definition *t1d)
 {
+    if (_index[dict] < 0) {
+	if (_built && dict_starters[dict])
+	    add_item(new Type1CopyItem(dict_starters[dict]));
+	_index[dict] = _items.size();
+    }
     add_item(t1d);
     set_dict(dict, t1d->name(), t1d);
-    if (_index[dict] < 0)
-	_index[dict] = _items.size() - 1;
-}
-
-void
-Type1Font::add_dict_size(int dict, int delta)
-{
-    _dict_deltas[dict] += delta;
 }
 
 void
@@ -681,6 +680,11 @@ Type1Font::dict_size_item(int d) const
 {
     switch (d) {
 
+      case dF:
+	if (_built && _index[d] > 0)
+	    return _items[_index[d] - 1];
+	break;
+
       case dFI: case dP: case dB:
 	if (_index[d] > 0)
 	    return _items[_index[d] - 1];
@@ -761,7 +765,7 @@ Type1Font::write(Type1Writer &w)
     w.set_lenIV(lenIV);
   
     // change dict sizes
-    for (int i = dFI; i < dLast; i++)
+    for (int i = dF; i < dLast; i++)
 	set_dict_size(i, _dict[i].size() + _dict_deltas[i]);
     // XXX what if dict had nothing, but now has something?
   

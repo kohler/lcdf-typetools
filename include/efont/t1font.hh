@@ -17,7 +17,6 @@ class MultipleMasterSpace;
 
 class Type1Font : public CharstringProgram { public:
 
-    Type1Font(PermString);
     Type1Font(Type1Reader &);
     ~Type1Font();
 
@@ -33,7 +32,6 @@ class Type1Font : public CharstringProgram { public:
     void add_item(Type1Item *it)	{ _items.push_back(it); }
     void set_item(int, Type1Item *);	// for experts only
     void add_definition(int dict, Type1Definition *);
-    void add_dict_size(int dict, int delta); // for experts only
 
     int nsubrs() const			{ return _subrs.size(); }
     Type1Charstring *subr(int) const;
@@ -89,10 +87,18 @@ class Type1Font : public CharstringProgram { public:
     void set_type1_encoding(Type1Encoding *e)	{ assert(!_encoding); _encoding = e; }
     
     void write(Type1Writer &);
+
+    // font skeletons
+    static Type1Font *skeleton_make(PermString, const String &version = String());
+    void skeleton_comments_end();
+    void skeleton_fontinfo_end();
+    void skeleton_fontdict_end();
+    void skeleton_private_end();
   
   private:
   
     mutable bool _cached_defs;
+    bool _built;
     mutable PermString _font_name;
   
     Vector<Type1Item *> _items;
@@ -113,6 +119,7 @@ class Type1Font : public CharstringProgram { public:
 
     Type1IncludedFont *_synthetic_item;
   
+    Type1Font(PermString);
     Type1Font(const Type1Font &);
     Type1Font &operator=(const Type1Font &);
 
