@@ -14,28 +14,28 @@ struct Point {
     Point(const Point &p, double dx, double dy) : x(p.x + dx), y(p.y + dy) { }
     // ~Point()				use compiler default
 
-    double squared_length() const;
-    double length() const;
-    double magnitude() const;
-    static double distance(const Point &, const Point &);
-    static double dot(const Point &, const Point &);
-    static Point midpoint(const Point &, const Point &);
+    double squared_length() const throw ();
+    double length() const throw ();
+    double magnitude() const throw ();
+    static double distance(const Point &, const Point &) throw ();
+    static double dot(const Point &, const Point &) throw ();
+    static Point midpoint(const Point &, const Point &) throw ();
 
-    double angle() const;
+    double angle() const throw ();
 
     void shift(double dx, double dy)	{ x += dx; y += dy; }
     
-    Point shifted(double dx, double dy) const;
-    Point rotated(double) const;
-    Point normal() const;
+    Point shifted(double dx, double dy) const throw ();
+    Point rotated(double) const throw ();
+    Point normal() const throw ();
 
-    bool on_line(const Point &, const Point &, double) const;
-    bool on_segment(const Point &, const Point &, double) const;
+    bool on_line(const Point &, const Point &, double) const throw ();
+    bool on_segment(const Point &, const Point &, double) const throw ();
 
-    Point &operator+=(const Point &);
-    Point &operator-=(const Point &);
-    Point &operator*=(double);
-    Point &operator/=(double);
+    Point &operator+=(const Point &) throw ();
+    Point &operator-=(const Point &) throw ();
+    Point &operator*=(double) throw ();
+    Point &operator/=(double) throw ();
 
     // Point operator+(Point, const Point &);
     // Point operator-(Point, const Point &);
@@ -49,44 +49,44 @@ struct Point {
 };
 
 inline double
-Point::squared_length() const
+Point::squared_length() const throw ()
 {
     return x*x + y*y;
 }
 
 inline double
-Point::length() const
+Point::length() const throw ()
 {
     return sqrt(x*x + y*y);
 }
 
 inline double
-Point::magnitude() const
+Point::magnitude() const throw ()
 {
     return length();
 }
 
 inline double
-Point::angle() const
+Point::angle() const throw ()
 {
     return atan2(y, x);
 }
 
 inline Point
-Point::shifted(double dx, double dy) const
+Point::shifted(double dx, double dy) const throw ()
 {
     return Point(x + dx, y + dy);
 }
 
 inline Point
-Point::normal() const
+Point::normal() const throw ()
 {
     double l = length();
     return (l ? Point(x/l, y/l) : *this);
 }
 
 inline Point &
-Point::operator+=(const Point &p)
+Point::operator+=(const Point &p) throw ()
 {
     x += p.x;
     y += p.y;
@@ -94,7 +94,7 @@ Point::operator+=(const Point &p)
 }
 
 inline Point &
-Point::operator-=(const Point &p)
+Point::operator-=(const Point &p) throw ()
 {
     x -= p.x;
     y -= p.y;
@@ -102,7 +102,7 @@ Point::operator-=(const Point &p)
 }
 
 inline Point &
-Point::operator*=(double d)
+Point::operator*=(double d) throw ()
 {
     x *= d;
     y *= d;
@@ -110,7 +110,7 @@ Point::operator*=(double d)
 }
 
 inline Point &
-Point::operator/=(double d)
+Point::operator/=(double d) throw ()
 {
     x /= d;
     y /= d;
@@ -118,66 +118,66 @@ Point::operator/=(double d)
 }
 
 inline bool
-operator==(const Point &a, const Point &b)
+operator==(const Point &a, const Point &b) throw ()
 {
     return a.x == b.x && a.y == b.y;
 }
 
 inline bool
-operator!=(const Point &a, const Point &b)
+operator!=(const Point &a, const Point &b) throw ()
 {
     return a.x != b.x || a.y != b.y;
 }
 
 inline Point
-operator+(Point a, const Point &b)
+operator+(Point a, const Point &b) throw ()
 {
     a += b;
     return a;
 }
 
 inline Point
-operator-(Point a, const Point &b)
+operator-(Point a, const Point &b) throw ()
 {
     a -= b;
     return a;
 }
 
 inline Point
-operator-(const Point &a)
+operator-(const Point &a) throw ()
 {
     return Point(-a.x, -a.y);
 }
 
 inline Point
-operator*(Point a, double scale)
+operator*(Point a, double scale) throw ()
 {
     a *= scale;
     return a;
 }
 
 inline Point
-operator*(double scale, Point a)
+operator*(double scale, Point a) throw ()
 {
     a *= scale;
     return a;
 }
 
 inline Point
-operator/(Point a, double scale)
+operator/(Point a, double scale) throw ()
 {
     a /= scale;
     return a;
 }
 
 inline double
-Point::distance(const Point &a, const Point &b)
+Point::distance(const Point &a, const Point &b) throw ()
 {
     return (a - b).length();
 }
 
 inline double
-Point::dot(const Point &a, const Point &b)
+Point::dot(const Point &a, const Point &b) throw ()
 {
     return a.x*b.x + a.y*b.y;
 }

@@ -5,7 +5,7 @@
 #include <lcdf/point.hh>
 
 Point
-Point::rotated(double rotation) const
+Point::rotated(double rotation) const throw ()
 {
     double r = length();
     double theta = angle() + rotation;
@@ -13,13 +13,13 @@ Point::rotated(double rotation) const
 }
 
 Point
-Point::midpoint(const Point &a, const Point &b)
+Point::midpoint(const Point &a, const Point &b) throw ()
 {
     return Point((a.x + b.x)/2, (a.y + b.y)/2);
 }
 
 bool
-Point::on_line(const Point &a, const Point &b, double tolerance) const
+Point::on_line(const Point &a, const Point &b, double tolerance) const throw ()
 {
     Point c = b - a;
     double d = c.x * (y - a.y) - c.y * (x - a.x);
@@ -27,7 +27,7 @@ Point::on_line(const Point &a, const Point &b, double tolerance) const
 }
 
 bool
-Point::on_segment(const Point &a, const Point &b, double t) const
+Point::on_segment(const Point &a, const Point &b, double t) const throw ()
 {
     double tt;
     Point c = b - a;

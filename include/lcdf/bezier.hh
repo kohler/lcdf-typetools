@@ -8,30 +8,30 @@
 class Bezier { public:
   
     Bezier()				: _bb(-1) { }
-    Bezier(Point p[4]);
-    Bezier(const Point &, const Point &, const Point &, const Point &);
+    Bezier(Point p[4]) throw ();
+    Bezier(const Point &, const Point &, const Point &, const Point &) throw ();
   
     const Point *points() const		{ return _p; }
     const Point &point(int i) const	{ assert(i>=0&&i<4); return _p[i]; }
     Point &mpoint(int i)		{ assert(i>=0&&i<4); _bb = -1; return _p[i]; }
     void set_point(int i, const Point &p) { mpoint(i) = p; }
 
-    Point eval(double) const;
-    bool is_flat(double) const;
-    bool in_bb(const Point &, double) const;
-    bool hit(const Point &, double) const;
+    Point eval(double) const throw ();
+    bool is_flat(double) const throw ();
+    bool in_bb(const Point &, double) const throw ();
+    bool hit(const Point &, double) const throw ();
 
-    double bb_left() const;
-    double bb_right() const;
-    double bb_top() const;
-    double bb_bottom() const;
+    double bb_left() const throw ();
+    double bb_right() const throw ();
+    double bb_top() const throw ();
+    double bb_bottom() const throw ();
 
-    double bb_left_x() const;
-    double bb_right_x() const;
-    double bb_top_x() const;
-    double bb_bottom_x() const;
+    double bb_left_x() const throw ();
+    double bb_right_x() const throw ();
+    double bb_top_x() const throw ();
+    double bb_bottom_x() const throw ();
     
-    void halve(Bezier &, Bezier &) const;
+    void halve(Bezier &, Bezier &) const throw ();
 
     void segmentize(Vector<Point> &) const;
     void segmentize(Vector<Point> &, bool) const;
@@ -43,23 +43,23 @@ class Bezier { public:
     Point _p[4];
     mutable int _bb;
 
-    void make_bb() const;
-    void ensure_bb() const;
+    void make_bb() const throw ();
+    void ensure_bb() const throw ();
   
-    double hit_recurse(const Point &, double, double, double, double, double) const;
+    double hit_recurse(const Point &, double, double, double, double, double) const throw ();
 
 };
 
 
 inline
-Bezier::Bezier(Point p[4])
+Bezier::Bezier(Point p[4]) throw ()
     : _bb(-1)
 {
     memcpy(_p, p, sizeof(Point) * 4);
 }
 
 inline
-Bezier::Bezier(const Point &p0, const Point &p1, const Point &p2, const Point &p3)
+Bezier::Bezier(const Point &p0, const Point &p1, const Point &p2, const Point &p3) throw ()
 {
     _p[0] = p0;
     _p[1] = p1;
@@ -69,59 +69,59 @@ Bezier::Bezier(const Point &p0, const Point &p1, const Point &p2, const Point &p
 }
 
 inline void
-Bezier::ensure_bb() const
+Bezier::ensure_bb() const throw ()
 {
     if (_bb < 0)
 	make_bb();
 }
 
 inline double
-Bezier::bb_top_x() const
+Bezier::bb_top_x() const throw ()
 {
     return _p[(_bb >> 4) & 3].y;
 }
 
 inline double
-Bezier::bb_left_x() const
+Bezier::bb_left_x() const throw ()
 {
     return _p[(_bb >> 2) & 3].x;
 }
 
 inline double
-Bezier::bb_bottom_x() const
+Bezier::bb_bottom_x() const throw ()
 {
     return _p[(_bb >> 6) & 3].y;
 }
 
 inline double
-Bezier::bb_right_x() const
+Bezier::bb_right_x() const throw ()
 {
     return _p[(_bb >> 0) & 3].x;
 }
 
 inline double
-Bezier::bb_top() const
+Bezier::bb_top() const throw ()
 {
     ensure_bb();
     return bb_top_x();
 }
 
 inline double
-Bezier::bb_left() const
+Bezier::bb_left() const throw ()
 {
     ensure_bb();
     return bb_left_x();
 }
 
 inline double
-Bezier::bb_bottom() const
+Bezier::bb_bottom() const throw ()
 {
     ensure_bb();
     return bb_bottom_x();
 }
 
 inline double
-Bezier::bb_right() const
+Bezier::bb_right() const throw ()
 {
     ensure_bb();
     return bb_right_x();

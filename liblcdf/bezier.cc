@@ -9,7 +9,7 @@
 //
 
 void
-Bezier::make_bb() const
+Bezier::make_bb() const throw ()
 {
     _bb = 0;
     for (int i = 1; i < 4; i++) {
@@ -30,7 +30,7 @@ Bezier::make_bb() const
 //
 
 bool
-Bezier::is_flat(double t) const
+Bezier::is_flat(double t) const throw ()
 {
     return (_p[2].on_segment(_p[0], _p[3], t)
 	    && _p[1].on_segment(_p[0], _p[3], t));
@@ -52,7 +52,7 @@ eval_bezier(Point *b_in, int degree, double u)
 }
 
 Point
-Bezier::eval(double u) const
+Bezier::eval(double u) const throw ()
 {
     Bezier b = *this;
     double m = 1.0 - u;
@@ -68,7 +68,7 @@ Bezier::eval(double u) const
 //
 
 void
-Bezier::halve(Bezier &l, Bezier &r) const
+Bezier::halve(Bezier &l, Bezier &r) const throw ()
 {
     Point half = Point::midpoint(_p[1], _p[2]);
     l._p[0] = _p[0];
@@ -86,7 +86,7 @@ Bezier::halve(Bezier &l, Bezier &r) const
 //
 
 bool
-Bezier::in_bb(const Point &p, double tolerance) const
+Bezier::in_bb(const Point &p, double tolerance) const throw ()
 {
     ensure_bb();
     if (bb_right() + tolerance < p.x
@@ -100,7 +100,7 @@ Bezier::in_bb(const Point &p, double tolerance) const
 
 double
 Bezier::hit_recurse(const Point &p, double tolerance, double leftd,
-		    double rightd, double leftt, double rightt) const
+		    double rightd, double leftt, double rightt) const throw ()
 {
     Bezier left, right;
     double middled, resultt;
@@ -132,7 +132,7 @@ Bezier::hit_recurse(const Point &p, double tolerance, double leftd,
 }
 
 bool
-Bezier::hit(const Point &p, double tolerance) const
+Bezier::hit(const Point &p, double tolerance) const throw ()
 {
     double leftd = (_p[0] - p).squared_length();
     double rightd = (_p[3] - p).squared_length();
