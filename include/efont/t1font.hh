@@ -30,7 +30,6 @@ class Type1Font : public CharstringProgram { public:
     int nitems() const			{ return _items.size(); }
     Type1Item *item(int i) const	{ return _items[i]; }
     void add_item(Type1Item *it)	{ _items.push_back(it); }
-    void set_item(int, Type1Item *);	// for experts only
     void add_definition(int dict, Type1Definition *);
     void add_type1_encoding(Type1Encoding *);
 
@@ -77,7 +76,7 @@ class Type1Font : public CharstringProgram { public:
     int first_dict_item(int d) const		{ return _index[d]; }
 
     Type1Definition *ensure(Dict, PermString);
-    void add_header_comment(const char *);
+    void add_header_comment(const String &);
   
     MultipleMasterSpace *create_mmspace(ErrorHandler * = 0) const;
     MultipleMasterSpace *mmspace() const;
@@ -97,6 +96,11 @@ class Type1Font : public CharstringProgram { public:
     void skeleton_private_end();
     void skeleton_common_subrs();
   
+    // for experts only
+    void set_item(int, Type1Item *);
+    inline void set_dict(int dict, PermString, Type1Definition *);
+    void uncache_defs();
+
   private:
   
     mutable bool _cached_defs;
@@ -134,11 +138,6 @@ class Type1Font : public CharstringProgram { public:
     int get_dict_size(int) const;
     void set_dict_size(int, int);
 
-  protected:
-
-    void uncache_defs();
-    inline void set_dict(int dict, PermString, Type1Definition *);
-  
 };
 
 

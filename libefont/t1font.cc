@@ -675,7 +675,7 @@ Type1Font::ensure(Dict dict, PermString name)
 }
 
 void
-Type1Font::add_header_comment(const char *comment)
+Type1Font::add_header_comment(const String &comment)
 {
     int i;
     for (i = 0; i < _items.size(); i++) {
