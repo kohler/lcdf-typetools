@@ -117,7 +117,7 @@ class Metrics { public:
 	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8, BASE_LIVE = 16 };
 	int flags;
 	
-	Char()			: glyph(0), base_code(-1), ligatures(0), virtual_char(0), pdx(0), pdy(0), adx(0), built_in1(-1), built_in2(-1), lookup_source(-1), flags(0) { }
+	Char()			: glyph(0), base_code(-1), virtual_char(0), pdx(0), pdy(0), adx(0), built_in1(-1), built_in2(-1), lookup_source(-1), flags(0) { }
 	void clear();
 	void swap(Char &);
 	bool visible() const		{ return glyph != 0; }
