@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
-#include "t1unparser.hh"
 
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STATE()		do { if (_t2state < T2_PATH) return error(errOrdering, cmd); } while (0)
