@@ -99,9 +99,9 @@ find_writable_texdir(ErrorHandler *errh, const char *)
     
     String path = actual_path;
     while (path && !writable_texdir) {
-	int colon = path.find_left(kpsei_env_sep_char);
-	String texdir = path.substring(0, (colon < 0 ? path.length() : colon));
-	path = path.substring(colon < 0 ? path.length() : colon + 1);
+	const char* colon = std::find(path.begin(), path.end(), kpsei_env_sep_char);
+	String texdir = path.substring(path.begin(), colon);
+	path = path.substring(colon + 1, path.end());
 	if (access(texdir.c_str(), W_OK) >= 0)
 	    writable_texdir = texdir;
     }   
@@ -171,7 +171,7 @@ getodir(int o, ErrorHandler *errh)
 		free((void*) encfonts);
 	    }
 	    if (tds_encfonts == 0)
-		suffix = suffix.substring(std::find(suffix.begin() + 1, suffix.end(), '#'), suffix.end());
+		suffix = suffix.substring(std::find(suffix.begin() + 1, suffix.end(), '#') + 1, suffix.end());
 	    else
 		suffix = suffix.substring(suffix.begin() + 1, std::find(suffix.begin() + 1, suffix.end(), '#'));
 	}
