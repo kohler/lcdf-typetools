@@ -1188,11 +1188,13 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 void
 CharstringInterp::act_sidebearing(int, const Point &)
 {
+    /* do nothing */
 }
 
 void
 CharstringInterp::act_width(int, const Point &)
 {
+    /* do nothing */
 }
 
 void
@@ -1278,9 +1280,9 @@ CharstringInterp::act_rrflex(int cmd, double dx1, double dy1, double dx2, double
 }
 
 void
-CharstringInterp::act_closepath(int cmd)
+CharstringInterp::act_closepath(int)
 {
-    error(errUnimplemented, cmd);
+    /* do nothing */
 }
 
 void
