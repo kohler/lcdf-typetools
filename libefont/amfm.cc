@@ -322,7 +322,7 @@ AmfmReader::check_mmspace()
   if (!_mmspace && _amfm->_naxes >= 0 && _amfm->_nmasters >= 0
       && _amfm->_font_name) {
     _mmspace = _amfm->_mmspace =
-      new PsfontMMSpace(_amfm->_font_name, _amfm->_naxes, _amfm->_nmasters);
+      new EfontMMSpace(_amfm->_font_name, _amfm->_naxes, _amfm->_nmasters);
   }
 }
 

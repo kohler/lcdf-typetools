@@ -192,7 +192,7 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
   AmfmMetrics *amfm = finder->find_amfm(amfm_name, errh);
   if (!amfm) return 0;
   
-  PsfontMMSpace *mmspace = amfm->mmspace();
+  EfontMMSpace *mmspace = amfm->mmspace();
   if (!mmspace->check_intermediate() && _call_mmpfb) {
     char *buf = new char[amfm->font_name().length() + 30];
     sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().cc());

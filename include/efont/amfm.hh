@@ -59,7 +59,7 @@ class AmfmMetrics {
   int _nmasters;
   int _naxes;
   AmfmMaster *_masters;
-  PsfontMMSpace *_mmspace;
+  EfontMMSpace *_mmspace;
   
   AmfmPrimaryFont *_primary_fonts;
   
@@ -97,7 +97,7 @@ class AmfmMetrics {
   
   int naxes() const			{ return _naxes; }
   int nmasters() const			{ return _nmasters; }
-  PsfontMMSpace *mmspace() const	{ return _mmspace; }
+  EfontMMSpace *mmspace() const	{ return _mmspace; }
   
   int primary_label_value(int, PermString) const;
   
@@ -114,7 +114,7 @@ class AmfmReader {
   AmfmMetrics *_amfm;
   MetricsFinder *_finder;
   AfmParser &_l;
-  PsfontMMSpace *_mmspace;
+  EfontMMSpace *_mmspace;
   ErrorHandler *_errh;
   
   double &fd(int i) const		{ return _amfm->fd(i); }
