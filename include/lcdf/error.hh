@@ -90,7 +90,7 @@ class ErrorHandler { public:
 
   virtual void set_error_code(int);
 
-  static String prepend_lines(const String &, const String &);
+  static String prepend_lines(const String &prefix, const String &text);
 
   // error conversions
   struct Conversion;
@@ -144,11 +144,12 @@ class ErrorVeneer : public ErrorHandler { public:
 };
 
 class ContextErrorHandler : public ErrorVeneer { public:
-  ContextErrorHandler(ErrorHandler *, const String &context, const String &indent = "  ");
+  ContextErrorHandler(ErrorHandler *, const String &context, const String &indent = "  ", const String &context_landmark = "");
   String decorate_text(Seriousness, const String &, const String &, const String &);
  private:
   String _context;
   String _indent;
+  String _context_landmark;
 };
 
 class PrefixErrorHandler : public ErrorVeneer { public:
