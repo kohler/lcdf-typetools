@@ -1,0 +1,904 @@
+'\"t
+.ds V 1.50b1
+.de M
+.BR "\\$1" "(\\$2)\\$3"
+..
+.de Sp
+.if n .sp
+.if t .sp 0.4
+..
+.TH OTFINFO 1 "LCDF Typetools" "Version \*V"
+.SH NAME
+otfinfo \- report information about OpenType fonts
+.SH SYNOPSIS
+.B otftotfm
+\%[\fB-a\fR]
+\%[\fBoptions\fR]
+\%\fIotffile\fR [\fIfontname\fR]
+'
+.SH DESCRIPTION
+.BR Otftotfm
+creates TeX font metrics and a 
+.M dvips 1 -like
+encoding file that correspond, as far as possible, to a PostScript-flavored
+OpenType font. The generated files are named
+.IR fontname .vf,
+.IR fontname .tfm,
+and so forth. They are written into the current directory, or, with the
+.B \-a 
+option, into a TeX Directory Structure.
+.LP
+OpenType fonts come with
+.IR features .
+Turning on the "small capitals" feature, for example, replaces lower-case
+letter glyphs with the corresponding small capitals. Other features control
+the spacing of capital letters, whether numbers are lining or old-style,
+and so forth. (You can check the features a font supports using otftotfm's
+.B \-\-query\-features
+option.)
+.LP
+OpenType features can be more complex than TeX can handle, but many
+features useful for Western scripts (Latin, Greek, and Cyrillic, for
+example) are supported by TeX, including:
+.IP * 3
+Glyph substitutions, such as replacing 'a' with small caps 
+.SM 'A'.
+.IP * 3
+Pair kerns, such as moving 'AV' closer together.
+.IP * 3
+Ligatures, such as replacing 'f' and 'i' with an integrated 'fi'
+glyph.
+.IP * 3
+Simple glyph positionings, such as adding extra space on either side of 'W'.
+.LP
+Otftotfm reads an OpenType font, turns on any font features you choose, and
+generates font metrics and a dvips encoding file that, together, implement
+as much of those features as possible. By default otftotfm creates TFM and
+VF files using the
+.M pltotf 1
+and
+.M vptovf 1
+programs, but supply the
+.B \-\-pl
+option and it will generate human-readable PL and VPL files.
+'
+.SS Common features
+.PP
+Even "default" ligatures and pair kerns are optional in OpenType
+fonts, so you'll generally provide the
+.BR \-f kern
+and 
+.BR \-f liga
+options to turn them on. Other features you may be interested in include
+.BR \-f cpsp,
+for capital spacing;
+.BR \-f dlig,
+for optional ligatures;
+.BR \-f lnum,
+.BR \-f onum,
+.BR \-f "pnum, and"
+.BR \-f tnum,
+to control digit glyphs;
+.BR \-f smcp,
+for small capitals;
+.BR \-f swsh,
+for swash variants; and
+.BR \-f cswh,
+for contextual swash. See the OPENTYPE FEATURES section below for more
+information on these and other features.
+'
+.SS Automatic mode
+.PP
+Automatic mode, triggered by the
+.BR \-a / \-\-automatic
+option, is the easiest way to use otftotfm. In automatic mode, otftotfm
+will install the font metrics and encoding files where TeX can find them,
+and additionally install a Type 1 font and mapping for dvips. This requires
+a TeX installation that follows the TeX Directory Structure standard
+(http://www.tug.org/tds/), such as most Unix TeX installations.
+'
+.PP
+Simple instructions for web2c-based installations: First, create a
+.I $HOME/texmf
+directory, if you don't have one already. Add a
+.I $HOME/texmf/dvips
+subdirectory, and create a file
+.I $HOME/texmf/dvips/config.ps
+containing the line "p +lcdftools.map" (or add that line to your 
+.I ~/.dvipsrc
+or an existing
+.IR config.ps );
+this will help
+.M dvips 1
+find your new fonts. Now, after running "otftotfm
+.B \-a
+.IR file .otf
+.IR fontname \&",
+you will immediately be able to refer to the font in TeX using the
+.I fontname
+you supplied to otftotfm. Of course, you will have to write .fd files
+and/or typescripts to make the font conveniently accessible from LaTeX or
+ConTeXt. See the DIAGNOSTICS section if you have problems with these
+instructions.
+'
+.PP
+In automatic mode, otftotfm first searches your $TEXMF path for a writable
+directory. Often this will be your "$HOME/texmf" directory; you might want
+to create this directory now. It then installs files under that directory
+tree. Specifically, it places files in type-specific subdirectories,
+as follows:
+'
+.TS
+l	l	l	.
+\fBFile type\fR	\fBDirectory\fR	\fBFilename\fR
+TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR[--base].tfm
+VF	TEXMF/fonts/vf/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR.vf
+PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR[--base].pl
+VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fIfontname\fR.vpl
+encoding	TEXMF/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
+PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPSfontname\fR.pfb
+psfonts.map	TEXMF/dvips/\fIvendor\fR/	\fIvendor\fR.map
+.TE
+.PP
+"TEXMF" stands for the writable $TEXMF directory. \fIFontname\fR is the
+font name supplied as otftotfm's second argument, and \fIPSfontname\fR is
+the PostScript name of the input font. The \fIvendor\fR and \fItypeface\fR
+strings are required by TDS; they default to "lcdftools" and the font's
+family name, respectively, but see the
+.B \-\-vendor
+and
+.B \-\-typeface
+options below. \fISignature\fR is an opaque 6-character encoding signature.
+.PP
+You can override these directories with environment variables and options
+as follows. Options take precedence over environment variables.
+'
+.TS
+l	l	l	.
+\fBFile type\fR	\fBEnvironment variable\fR	\fBOption\fR
+TFM	TFMDESTDIR	\-\-tfm\-directory
+VF	VFDESTDIR	\-\-vf\-directory
+PL	PLDESTDIR	\-\-pl\-directory
+VPL	VPLDESTDIR	\-\-vpl\-directory
+encoding	ENCODINGDESTDIR	\-\-encoding\-directory
+PFB font	T1DESTDIR	\-\-type1\-directory
+psfonts.map	\-	\-\-map\-file
+.TE
+.PP
+Otftotfm will update the
+.I TEXMF/ls-R
+file when installing files under TEXMF.
+'
+.SH OPTIONS
+With long options, you need type only as many characters as will make the
+option unique.
+.SS Font feature and transformation options
+.PD 0
+.TP 5
+.BI \-s " script\fR[.\fIlang\fR], " \-\-script= "script\fR[.\fIlang\fR]"
+Apply features suitable to the script system
+.I script
+and language system
+.IR lang .
+Scripts and language systems are two-to-four-letter names assigned by
+Microsoft and Adobe. Examples include "latn" (Latin script), "grek" (Greek
+script), and "yi.YIC" (Yi script with classic characters). If
+.I lang
+is not specified, otftotfm will use the default language system for that
+script. You can give this option multiple times. Run "otftotfm
+\-\-query\-scripts \fIfont\fR" to see the list of scripts and languages a
+font supports. Defaults to "latn".
+'
+.Sp
+.TP 5
+.BI \-f " feature\fR, " \-\-feature= "feature"
+Activate the feature named
+.IR feature .
+Features are four-letter names assigned by Microsoft and Adobe; they are
+meant to correspond to font behaviors, such as kerning or small-capitals.
+Examples include "liga" (default ligatures), "dlig" (discretionary
+ligatures), "kern" (kerning), and "c2sc" (replacing capitals with small
+capitals). Give this option multiple times to apply multiple features. Run
+"otftotfm \-\-query\-features [--script options] \fIfont\fR" to see the list
+of features a font supports for the specified collection of scripts.
+Defaults to any features required by the selected scripts.
+'
+.Sp
+.TP 5
+.BI \-E " amt\fR, " \-\-extend= amt
+Widen, or extend, the font by a factor of
+.IR amt .
+Like
+.M afm2tfm 1 's
+.B \-e
+option.
+'
+.Sp
+.TP 5
+.BI \-S " amt\fR, " \-\-slant= amt
+Oblique, or slant, the font by
+.IR amt .
+Like
+.M afm2tfm 1 's
+.B \-s
+option.
+'
+.Sp
+.TP 5
+.BI \-L " amt\fR, " \-\-letterspacing= amt
+Letterspace each character by
+.IR amt
+units, where 1000 units equals one em. The width of each character
+increases by
+.IR amt ,
+with half the space distributed to each sidebearing. Boundary-character
+kerns are added to maintain alignment at the ends of lines.
+.PD
+'
+'
+.SS Encoding options
+'
+.PD 0
+.TP 5
+.BI \-e " encoding\fR, " \-\-encoding= encoding
+Selects the
+.M dvips 1
+encoding used as a starting point. Otftotfm will search for
+.IR encoding [.enc]
+the same way that
+.B dvips
+would, so you may not need to give a full pathname. Defaults to the font's
+encoding. See ENCODINGS, below, for more information on how otftotfm uses
+encodings.
+'
+.Sp
+.TP 5
+.BI \-\-literal\-encoding= encoding
+Selects the
+.M dvips 1
+encoding used for the font. No glyph substitutions will be permitted, so
+the output encoding will equal the input encoding (and otftotfm will not
+generate an output encoding).
+'
+.Sp
+.TP 5
+.BI \-\-ligkern= command
+Executes the specified LIGKERN
+.IR command
+in addition to any in the encoding. See ENCODINGS, below, for more
+information on LIGKERN syntax. For example, "\fB\-\-ligkern\fR 'T {L} h'"
+suppresses any T_h ligature in the font. You can supply multiple
+.B \-\-ligkern
+options.
+'
+.Sp
+.TP 5
+.BI \-\-unicoding= command
+Executes the specified UNICODING
+.IR command
+in addition to any in the encoding. See ENCODINGS, below, for more
+information on UNICODINGs. For example, "\fB\-\-unicoding\fR 'pi1 =:
+uni03D6'" tells otftotfm to encode "/pi1" as U+03D6 GREEK PI SYMBOL. You can
+supply multiple
+.B \-\-unicoding
+options.
+'
+.Sp
+.TP 5
+.BI \-\-coding\-scheme= scheme
+Sets the font's TFM coding scheme to
+.IR scheme ,
+which must be a string less than 40 characters long containing no
+parentheses. The default is the encoding's PostScript name. Most tools
+ignore the coding scheme, so you probably don't need to worry about this
+command unless you are using fontinst. As a side effect, if you specify a
+coding scheme, the PL output will have DESIGNUNITS set to 1 instead of the
+default of 1000. This won't change the eventual TFM metrics, but fontinst
+seems to prefer DESIGNUNITS 1.
+'
+.Sp
+.TP 5
+.BI \-\-boundary\-char= char
+Sets the font's boundary character to
+.IR char ,
+which should be a number between -1 and 255. The default is taken from the
+encoding.
+.PD
+'
+'
+.SS Automatic mode options
+'
+.PD 0
+.TP 5
+.BI \-a "\fR, " \-\-automatic
+Select automatic mode.
+'
+.Sp
+.TP 5
+.BI \-v " vendor\fR, " \-\-vendor= vendor
+Set the font vendor name, which is used to locate files within the TDS.
+Defaults to "lcdftools".
+.IP
+In automatic mode, TeX and friends will generally find required font files
+independently of the vendor you select. However, you will need to
+explicitly tell
+.M dvips 1
+to include
+.IR vendor .map
+as a psfonts.map file, using a configuration line such as "p
++\fIvendor\fR.map".
+'
+.Sp
+.TP 5
+.BI \-\-typeface= typeface
+Set the font typeface name, which is used to locate files within the TDS.
+Defaults to the current font's family name with unsuiable characters
+removed.
+'
+.Sp
+.TP 5
+.BI \-\-no\-type1
+Do not use
+.M cfftot1 1
+to create Type 1 fonts corresponding to the OpenType input fonts.
+.PD
+'
+'
+.SS Output options
+.PD 0
+.TP 5
+.BI \-n " fontname\fR, " \-\-name= fontname
+Set the name of the output font, which is used in the
+.M dvips 1
+.I psfonts.map
+line and, in automatic mode, to generate the output filename. The default
+is derived from the OpenType font's name and the features you selected.
+'
+.Sp
+.TP 5
+.BI \-p "\fR, " \-\-pl
+Output human-readable PL and VPL metrics, not binary TFM and VF metrics.
+'
+.Sp
+.TP 5
+.BI \-\-no\-virtual
+Do not generate virtual fonts (VFs and VPLs). Otftotfm will warn if the
+selected font features cannot be implemented without virtual fonts.
+'
+.Sp
+.TP 5
+.BI \-\-no\-encoding
+Do not generate an encoding file.
+'
+.Sp
+.TP 5
+.BI \-\-no\-map
+Do not generate a
+.I psfonts.map
+line for the font.
+.PD
+'
+'
+.SS File location options
+.PD 0
+.TP 5
+.BI \-\-tfm\-directory= dir
+The directory used for output TFM font metrics. Defaults to the TFMDESTDIR
+environment variable. If that's not set, it defaults to "." in manual mode,
+or a TDS directory in automatic mode (see above).
+'
+.Sp
+.TP 5
+.BI \-\-pl\-directory= dir
+.TP 5
+.BI \-\-vf\-directory= dir
+.TP 5
+.BI \-\-vpl\-directory= dir
+.TP 5
+.BI \-\-encoding\-directory= dir
+.TP 5
+.BI \-\-type1\-directory= dir
+These options act like
+.BR \-\-tfm\-directory
+for other file types. The default environment variables are described
+above. All default to ".".
+'
+.Sp
+.TP 5
+.BI \-\-map\-file= filename
+Set file in which otftotfm will write a
+.I psfonts.map
+line for the font. The default is the standard output in manual mode, and
+"TEXMF/dvips/\fIvendor\fR.map" elsewhere.
+.PD
+'
+'
+.SS Miscellaneous options
+.PD 0
+.TP 5
+.BR \-\-qs ", " \-\-query\-scripts
+Print the scripts and language systems supported by the specified font and
+exit. The scripts are printed one per line, with human-readable
+descriptions; for example:
+.nf
+  cyrl            Cyrillic
+  grek            Greek
+  latn            Latin
+  latn.TUR        Latin/Turkish
+.fi
+'
+.Sp
+.TP 5
+.BR \-\-qf ", " \-\-query\-features
+Print the features supported by the specified font, in the specified
+scripts and language systems, and exit. The scripts are printed one per
+line, with human-readable descriptions; for example:
+.nf
+  aalt    Access All Alternates
+  c2sc    Small Capitals From Capitals
+  case    Case-Sensitive Forms
+  cpsp    Capital Spacing
+  \&...
+  zero    Slashed Zero
+.fi
+'
+.Sp
+.TP 5
+.BI \-\-glyphlist= file
+Use
+.I file
+as the Adobe glyph list, which helps translate glyph names to Unicode code
+points. See ENCODINGS, below, for more information.
+'
+.Sp
+.TP 5
+.BR \-V ", " \-\-verbose
+Write progress messages to standard error.
+'
+.Sp
+.TP 5
+.BR \-\-no\-create
+Do not create or modify any files. Instead, write messages about the
+program's hypothetical progress to standard error.
+'
+.Sp
+.TP 5
+.BR \-q ", " \-\-quiet
+Do not generate any error messages.
+'
+.Sp
+.TP 5
+.BI \-\-kpathsea\-debug= flags
+Sets path searching debugging flags. See the
+.I Kpathsea
+manual for details.
+'
+.Sp
+.TP 5
+.BR \-h ", " \-\-help
+Print usage information and exit.
+'
+.Sp
+.TP 5
+.BR \-\-version
+Print the version number and some short non-warranty information and exit.
+.PD
+'
+.SH ENCODINGS
+.SS Commands
+.PP
+Otftotfm uses its input encodings by translating glyph names into Unicode
+code points. For example, if an input encoding has "/dotlessi" at position
+10, then otftotfm detects that the user wants to encode Unicode character
+U+0131 LATIN SMALL LETTER DOTLESS I at position 10. The output encoding
+will use whatever glyph the font suggests for that code point, given the
+collection of features you chose.
+.PP
+You can control this process with "UNICODING" comments in the input
+encoding file. UNICODING comments have the following format:
+.nf
+  % UNICODING \fIglyph\fR =: \fIchoice1\fR [\fIchoice2\fR ...] ;
+.fi
+\fIGlyph\fR and the
+.IR choice s
+are PostScript glyph names. This comment tells otftotfm that the glyph named
+.I glyph 
+translates into the first Unicode value in the
+.I choice
+list that has a character in the font. For example,
+.nf
+  % UNICODING pi1 =: uni03D6 ;
+.fi
+tells otftotfm that the character "/pi1" encodes as U+03D6 GREEK PI SYMBOL,
+and
+.nf
+  % UNICODING Delta =: uni0394 uni2206 ;
+.fi
+tells it that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
+U+2206 INCREMENT as an encoding for "/Delta". You can also supply regular
+glyph names:
+.nf
+  % UNICODING Delta =: Deltagreek Delta ;
+.fi
+Otftotfm uses Adobe's
+.I glyphlist.txt
+file to translate regular glyph names to Unicode; see
+.IR http://partners.adobe.com/asn/developer/type/unicodegn.html .
+.LP
+You can also map a glyph to nothing to remove that glyph from the input
+encoding. This is useful to remove optional characters; for instance:
+.nf
+  % UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
+.fi
+The f-ligatures will be added back to the encoding, preferably at their
+original locations, if some font feature requires them.
+.LP
+Map a glyph to 'emptyslot' if you don't want otftotfm to use the slot for a
+ligature character. For example, given this UNICODING,
+.nf
+ % UNICODING ff =: ff emptyslot ;
+.fi
+otftotfm will leave the 'ff' encoding slot unused if the font has no 'ff'
+glyph. (Note that most OpenType fonts provide a visible representation for
+unused encoding slots, namely a box with an X inside.)
+.LP
+Each UNICODING line can contain multiple commands, separated by spaced
+semicolons.
+.PP
+Ligatures can be added and kerns inhibited by LIGKERN comments in the
+encoding, as in
+.M afm2tfm 1 .
+To add a ligature, use this command form:
+.nf
+  % LIGKERN \fIglyph1\fR \fIglyph2\fR =: \fIresult\fR ;
+.fi
+The "=:" operator indicates a normal ligature, where both the input glyphs
+are removed and replaced by
+.IR result .
+To preserve the left-hand glyph, for an effect like "\fIglyph1\fR
+\fIglyph2\fR =: \fIglyph1\fR \fIresult\fR", use the "|=:" operator instead.
+You can also say "=:|" to preserve the right-hand glyph. Otftotfm does not
+yet support the other five ligature operators ("|=:|", "|=:>", "=:|>",
+"|=:|>", and "|=:|>>").
+.PP
+To remove all kerns between two characters, say:
+.nf
+  % LIGKERN \fIglyph1\fR {} \fIglyph2\fR ;
+.fi
+Use a star "*" for one
+.I glyph
+to inhibit all matching kerns. For instance,
+.nf
+  % LIGKERN a {} * ;
+.fi
+removes all kerns with "a" as the left-hand character, and
+.nf
+  % LIGKERN * {} * ;
+.fi
+removes all kerns.
+.PP
+Otftotfm also supports extended syntax for inhibiting ligatures. This
+command:
+.nf
+  % LIGKERN \fIglyph1\fR {L} \fIglyph2\fR ;
+.fi
+inhibits any ligature between
+.I glyph1
+and
+.IR glyph2 .
+"{K}", like "{}", inhibits kerns only, and "{LK}" and "{KL}" inhibit both
+ligatures and kerns. Otftotfm parses "% LIGKERNX" comments as well as "%
+LIGKERN" comments; it's probably better to put the extended commands in
+LIGKERNX blocks, since that avoids confusing
+.M afm2tfm 1 .
+.PP
+As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
+commands, separated by spaced semicolons.
+.PP
+The
+.B --unicoding
+and
+.B --ligkern
+command line arguments let you add virtual UNICODING and LIGKERN comments
+to an encoding.
+.PP
+Finally,  CODINGSCHEME command specifies a default
+.B --coding-scheme
+for the encoding; for example:
+.nf
+  % CODINGSCHEME EXTENDED TEX FONT ENCODING
+.fi
+'
+.SS New glyphs
+.PP
+New glyphs, such as ligatures and contextual substitutions, are added to
+the encoding in any empty spaces, using their original locations when
+possible. If the encoding doesn't have enough space for all new glyphs,
+shorter ligatures composed of unaccented letters get precedence.
+'
+.SS Synthetic glyphs
+.PP
+Otftotfm can synthesize some glyphs using virtual font manipulations, if a
+required glyph is not available in the input font. Specifically, it will
+synthesize "IJ", "ij", "Germandbls" (a capital "sharp-s", namely "SS"),
+"cwm" (the TeX T1 encoding's compound word mark), and "visualspace" (the
+TeX T1 encoding's visible space).
+'
+.SH "OPENTYPE FEATURES"
+.LP
+This section lists features common to Western OpenType fonts and describes
+how otftotfm handles them for common fonts. Please send the author mail if
+otftotfm does not handle a feature you need, or you believe it handles some
+feature incorrectly.
+.Sp
+.PD 0
+.TP 5
+.IR aalt ", Access All Alternates"
+Lets the user choose between all available alternate forms for a character.
+This includes things like superscript and subscript variants, as well as
+different styles (swash, for example). This is not likely useful for TeX,
+since a TeX user can't interactively choose a given alternate form. Not
+well supported. See also
+.IR salt .
+.TP 5
+.IR c2sc ", Small Capitals From Capitals"
+Replaces capital letters with small capitals: a sort of converse of the
+more conventional
+.I smcp
+feature, which replaces lower-case letters with small capitals. Supported.
+.TP 5
+.IR calt ", Contextual Alternates"
+Lets the user choose between context-appropriate swash forms for each
+character. For example, given the word "DREW" in a cursive typeface, the "R
+E W" might be translated to calmer forms than the initial "D". There may be
+more than one choice for a given letter, in which case the user should be
+able to select among them. TeX can't support complex contextual alternates,
+or alternate selection, but otftotfm supports some fonts quite well. The
+input encoding should have lots of empty space for variants, and it should
+specify a boundary character. See also
+.IR cswh .
+.TP 5
+.IR case ", Case-Sensitive Forms"
+Shifts punctuation marks up to a position that works well with
+all-capital-letter sequences. For example, the hyphen character, which
+generally centers vertically on the x-height, is raised up to center
+vertically on a capital letter. Also replaces text figures with lining
+figures, and accent marks with forms more appropriate for capitals.
+Supported.
+.TP 5
+.IR cpsp ", Capital Spacing"
+Adds a bit of space on either side of each capital letter. Supported.
+(However, the OpenType tag registry suggests that
+.I cpsp
+be on by default, but applying to all-caps text only; TeX cannot easily
+implement that contextual intelligence.)
+.TP 5
+.IR cswh ", Contextual Swash"
+Lets the user choose between context-appropriate swash forms for each
+character. For example, in the words "Ab AC", the first "A" might be
+translated to a swash form, while the second might not. There may be more
+than one choice for a given letter, in which case the user should be able
+to select among them. TeX can't support complex contextual swashes, or
+alternate selection, but otftotfm supports some fonts quite well. The input
+encoding should have lots of empty space for swash variants, and it should
+specify a boundary character. See also
+.IR calt .
+.TP 5
+.IR dlig ", Discretionary Ligatures"
+Activates uncommon ligatures, such as "c_t", "s_p", and "s_t". Supported.
+.TP 5
+.IR dnom ", Denominators"
+Replaces digits and some punctuation marks with smaller forms sitting on
+the baseline, intended for fraction denominators. Supported.
+.TP 5
+.IR fina ", Terminal Forms"
+Substitutes appropriate forms for letters occurring at the ends of words.
+This feature doesn't select swash variants; it's intended for normal use,
+and the specification recommends that it be on by default. Partially
+supported: TeX will only treat spaces as the ends of words, where a correct
+implementation would probably include punctuation too. See
+.IR cswh
+for selecting swash variants active at the ends of words.
+.TP 5
+.IR frac ", Fractions"
+Replaces simple sequences like "1/2" with nice-looking fractions.
+Supported, but beware: many fonts will translate "11/32" into "1" + "1/3" +
+"2".
+.TP 5
+.IR hist ", Historical Forms"
+Replaces characters with historical variants. Usually, this means at least
+translating regular "s" to long "s". Supported.
+.TP 5
+.IR kern ", Kerning"
+Adjusts the space between characters (pair kerning). Generally supported,
+and you should probably turn it on.
+.TP 5
+.IR liga ", Standard Ligatures"
+Activates common ligatures, such as "f_f", "f_i", "f_f_j", and (in some
+Adobe fonts) "T_h". Generally supported, and you should probably turn it
+on.
+.TP 5
+.IR lnum ", Lining Figures"
+Uses lining figures, the set of digits that are all about as high as
+capital letters.
+Supported. Compare
+.IR onum ;
+see also
+.IR pnum
+and
+.IR tnum.
+.TP 5
+.IR numr ", Numerators"
+Replaces digits and some punctuation marks with smaller, raised forms
+intended for fraction numerators. Supported, but not usually useful.
+.TP 5
+.IR onum ", Oldstyle Figures"
+Uses old-style figures, also known as text figures. This is the set of
+digits that have ascenders and descenders like lower-case letters.
+Supported. Compare
+.IR lnum ;
+see also
+.IR pnum
+and
+.IR tnum .
+.TP 5
+.IR ordn ", Ordinals"
+Designed for Spanish and French. Replaces ordinal numbers, such as "2.o",
+with forms where the "o" is raised, and replaces the sequence "No" with an
+integrated glyph. Supported.
+.TP 5
+.IR ornm ", Ornaments"
+Replaces some alphabetic characters in the font with ornaments, and links
+the bullet character to a set of all bullet-like ornaments, from which the
+user can choose. Partially supported: TeX can handle alphabetic
+substitutions, but not bullet choice.
+.TP 5
+.IR pnum ", Proportional Figures"
+Digits will have different widths. Supported. Compare
+.IR tnum ;
+see also
+.IR lnum
+and
+.IR onum.
+.TP 5
+.IR salt ", Stylistic Alternates"
+Lets the user choose between stylistic alternate forms for a character.
+Partially supported: A TeX user can't interactively choose a given
+alternate form, so otftotfm takes the first option whenever there's more
+than one choice. See also
+.IR aalt
+and
+.IR ss01 ;
+.IR salt
+is generally more useful than
+.IR aalt
+for TeX, since it refers exclusively to stylistic alternates.
+.TP 5
+.IR sinf ", Scientific Inferiors"
+Replaces digits and some punctuation marks with smaller, lowered forms
+intended for subscripts. Supported.
+.TP 5
+.IR size ", Optical Size"
+This feature stores information about the range of optical sizes for which
+the font was intended. There is no point in selecting it with otftotfm,
+since it should not change the font's appearance in any way.
+.TP 5
+.IR smcp ", Small Capitals"
+Replaces lower-case letters with small capitals. Supported. Compare
+.IR c2sc .
+.TP 5
+.IR ss01 - ss20 ", Stylistic Sets 1-20"
+Replaces characters with a uniform set of stylistic alternates. Differs
+from features like
+.I salt
+in that a Stylistic Set is uniform: an
+.I ssXX
+feature should never involve selection from a set of possible alternate
+characters. Supported.
+.TP 5
+.IR sups ", Superscript"
+Replaces digits, some punctuation marks, and some lower-case letters with
+smaller, raised forms intended for superscripts. Supported.
+.TP 5
+.IR swsh ", Swash"
+Activates all swash forms for each character. There may be more than one
+swash form, in which case otftotfm will pick the first one listed.
+Supported, except that swash variants other than the first are
+inaccessible.
+.TP 5
+.IR tnum ", Tabular Figures"
+All digits will have the same width, so that tables and the like will align
+visually. Supported. Compare
+.IR pnum ;
+see also
+.IR lnum
+and
+.IR onum.
+.TP 5
+.IR zero ", Slashed Zero"
+Replaces the zero character with a slashed zero. Supported.
+.PD
+'
+.SH "DIAGNOSTICS AND TROUBLESHOOTING"
+'
+.TP 5
+no writable directory found in $TEXMF
+'
+Otftotfm could not find a writable directory in your $TEXMF path. Did you
+create a 
+.I $HOME/texmf
+directory? If so, run the command "kpsewhich --expand-path='$TEXMF'" to
+verify that directory is not being found. You may need to set your TEXMF
+environment variable, to '{!!'"$HOME"'/texmf,!!$TEXMFMAIN}', for instance
+(note the different kinds of quotes; on my machine, this expands to
+\&'{!!/home/kohler/texmf,!!$TEXMFMAIN}').
+'
+.TP 5
+\&'\fIchar\fR' has no encoding, ignoring kern removal
+.PD 0
+.TP 5
+(or ligature removal, lig/kern removal, or ligature)
+.PD
+'
+These messages indicate a slight problem with your encoding file: one of
+the LIGKERN commands referred to a character not present in the encoding.
+This might be due to a misspelling in the LIGKERN command or the encoding
+file, or it might be an oversight. Either fix the encoding file or ignore
+the warning.
+'
+.TP 5
+can't map '\fIchar\fR' to Unicode
+'
+Another encoding file problem: One of the glyph names in an UNICODING block
+could not be converted to Unicode. This is problematic since UNICODING
+exists wholly to translate glyph names into Unicode. Fix the encoding file
+or ignore the warning.
+'
+.TP 5
+ignoring unencodable glyph(s) ...
+'
+There wasn't space in the encoding for all the glyphs referred to by the
+features you selected. For example, maybe the font had more ligatures than
+there were empty slots in the encoding. Fix this warning by selecting fewer
+features, or by using an encoding with more empty slots, such as the 7t.enc
+encoding distributed with otftotfm.
+'
+.SH "BUGS"
+.LP
+Presumably some context-sensitive positionings and ligatures could be
+implemented with TeX's boundary character, but otftotfm doesn't do that yet.
+.LP
+More positionings and ligatures could be supported with the help of virtual
+fonts.
+'
+.SH "SEE ALSO"
+.LP
+.M pltotf 1 ,
+.M tftopl 1 ,
+.M vptovf 1 ,
+.M afm2tfm 1 ,
+.M dvips 1 ,
+.M cfftot1 1 ,
+.M kpsewhich 1
+.LP
+.I "Adobe Type 1 Font Format"
+.LP
+Adobe Technical Notes #5176,
+.IR "The Compact Font Format Specification" ,
+and #5177,
+.I "The Type 2 Charstring Format"
+.LP
+.IR "OpenType Specification" ,
+Version 1.4
+.LP
+.IR "A Directory Structure for TeX Files" ,
+http://www.tug.org/tds/
+.LP
+.IR "Kpathsea: A library for path searching" ,
+http://www.tug.org/kpathsea/
+'
+.SH AUTHOR
+Eddie Kohler (kohler@icir.org)
+.PP
+Thanks to Karl Berry, Marco Kuhlmann, Adam Lindsay, Bruce D'Arcus, and
+Claire Connelly for suggestions, bug reports, and help.
