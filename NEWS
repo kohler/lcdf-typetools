@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.25   10.Mar.2005
+
+* otftotfm: Ignore unencoded default ligkerns (don't try to encode their
+  characters).  Reported by Michael Zedler.
+
+
 Version 2.24   10.Mar.2005
 
 * otftotfm: Fix assertion failure introduced in 2.23.

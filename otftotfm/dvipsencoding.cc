@@ -359,15 +359,15 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	    return -1;
     } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= J_LIG
 	       && op <= J_CLIGC_SS) {
-	int av = encoding_of(v[0], true);
+	int av = encoding_of(v[0], override > 0);
 	if (av < 0)
-	    return errh->warning("'%s' has no encoding, ignoring ligature", v[0].c_str());
-	int bv = encoding_of(v[1], true);
+	    return (override > 0 ? errh->warning("'%s' has no encoding, ignoring ligature", v[0].c_str()) : -1);
+	int bv = encoding_of(v[1], override > 0);
 	if (bv < 0)
-	    return errh->warning("'%s' has no encoding, ignoring ligature", v[1].c_str());
-	int cv = encoding_of(v[3], true);
+	    return (override > 0 ? errh->warning("'%s' has no encoding, ignoring ligature", v[1].c_str()) : -1);
+	int cv = encoding_of(v[3], override > 0);
 	if (cv < 0)
-	    return errh->warning("'%s' has no encoding, ignoring ligature", v[3].c_str());
+	    return (override > 0 ? errh->warning("'%s' has no encoding, ignoring ligature", v[3].c_str()) : -1);
 	Ligature lig = { av, bv, op, cv };
 	Ligature *what = std::find(_lig.begin(), _lig.end(), lig);
 	if (override > 0 && what < _lig.end())
