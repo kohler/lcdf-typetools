@@ -299,7 +299,7 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     if (extend)
 	boundser.extend(extend);
     if (slant)
-	boundser.shear(1 + slant);
+	boundser.shear(slant);
     int bounds[4], width;
     
     double val;
