@@ -229,6 +229,7 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
 
     int nhints() const			{ return _stem_pos.size(); }
     double max_flex_height() const	{ return _max_flex_height; }
+    String landmark() const;
 
     class Subr;
     
@@ -255,6 +256,7 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
 
     // Flex
     double _max_flex_height;
+    bool _flex_message;
 
     // subroutines
     int _subr_bias;
@@ -264,6 +266,7 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
     mutable Vector<Subr *> _gsubrs;
 
     Subr *_cur_subr;
+    int _cur_glyph;
 
     void gen_number(double, int = 0);
     void gen_command(int);
@@ -289,35 +292,35 @@ class MakeType1CharstringInterp::Subr { public:
     Subr *call(int i) const		{ return _calls[i]; }
     bool has_call(Subr *) const;
 
-    struct Callee {
+    struct Caller {
 	Subr *subr;
 	int pos;
 	int len;
 	String s;
-	Callee(Subr *s, int p, int l)	: subr(s), pos(p), len(l) { }
+	Caller(Subr *s, int p, int l)	: subr(s), pos(p), len(l) { }
 	String charstring(MakeType1CharstringInterp *mcsi) const { return subr->charstring(mcsi)->substring(pos, len); }
     };
 
-    int ncallees() const		{ return _callees.size(); }
-    const Callee &callee(int i) const	{ return _callees[i]; }
+    int ncallers() const		{ return _callers.size(); }
+    const Caller &caller(int i) const	{ return _callers[i]; }
     
     void add_call(Subr *s)		{ _calls.push_back(s); }
-    void add_callee(Subr *, int, int);
+    void add_caller(Subr *, int, int);
 
     int output_subrno() const		{ return _output_subrno; }
     void set_output_subrno(int n)	{ _output_subrno = n; }
 
-    void transfer_nested_calls(int pos, int length, Subr *new_callee) const;
-    void change_callees(Subr *, int pos, int length, int new_length);
+    void transfer_nested_calls(int pos, int length, Subr *new_caller) const;
+    void change_callers(Subr *, int pos, int length, int new_length);
     bool unify(MakeType1CharstringInterp *);
     
-    void callee_data(bool assign, MakeType1CharstringInterp *mcsi);
+    void caller_data(bool assign, MakeType1CharstringInterp *mcsi);
     
   private:
 
     CsRef _csr;
     Vector<Subr *> _calls;
-    Vector<Callee> _callees;
+    Vector<Caller> _callers;
 
     int _output_subrno;
     int _stamp;
@@ -331,9 +334,9 @@ class MakeType1CharstringInterp::Subr { public:
 int MakeType1CharstringInterp::Subr::max_stamp = 1;
 
 inline void
-MakeType1CharstringInterp::Subr::add_callee(Subr *s, int pos, int len)
+MakeType1CharstringInterp::Subr::add_caller(Subr *s, int pos, int len)
 {
-    _callees.push_back(Callee(s, pos, len));
+    _callers.push_back(Caller(s, pos, len));
 }
 
 bool
@@ -352,7 +355,8 @@ MakeType1CharstringInterp::Subr::has_call(Subr *s) const
 
 MakeType1CharstringInterp::MakeType1CharstringInterp(EfontProgram *program, int precision)
     : CharstringInterp(program), _csgen(precision), _errh(0),
-      _hr_csgen(precision), _hr_firstsubr(-1), _max_flex_height(0)
+      _hr_csgen(precision), _hr_firstsubr(-1), _max_flex_height(0),
+      _flex_message(0), _cur_glyph(-1)
 {
 }
 
@@ -364,6 +368,15 @@ MakeType1CharstringInterp::~MakeType1CharstringInterp()
 	delete _subrs[i];
     for (int i = 0; i < _gsubrs.size(); i++)
 	delete _gsubrs[i];
+}
+
+String
+MakeType1CharstringInterp::landmark() const
+{
+    if (_cur_glyph >= 0 && _cur_glyph < program()->nglyphs())
+	return String("glyph '") + program()->glyph_name(_cur_glyph) + "'";
+    else
+	return String();
 }
 
 
@@ -618,10 +631,10 @@ MakeType1CharstringInterp::act_flex(int cmd, const Point &p0, const Point &p1, c
 	if (flex_height > _max_flex_height)
 	    _max_flex_height = flex_height;
     } else {
-	static int messaged = 0;
-	if (!messaged) {
-	    _errh->warning("complex flex hint replaced with curves\n(This Type 2 format font contains flex hints that\nType 1 prohibits.)");
-	    messaged = 1;
+	if (!_flex_message) {
+	    _errh->lwarning(landmark(), "complex flex hint replaced with curves");
+	    _errh->message("(This Type 2 format font contains flex hints prohibited by Type 1.\nI've safely replaced them with ordinary curves.)");
+	    _flex_message = 1;
 	}
 	act_curve(cmd, p0, p1, p2, p3_4);
 	act_curve(cmd, p3_4, p5, p6, p7);
@@ -679,24 +692,24 @@ MakeType1CharstringInterp::Subr::charstring(const MakeType1CharstringInterp *mcs
 }
 
 void
-MakeType1CharstringInterp::Subr::transfer_nested_calls(int pos, int length, Subr *new_callee) const
+MakeType1CharstringInterp::Subr::transfer_nested_calls(int pos, int length, Subr *new_caller) const
 {
     int right = pos + length;
     for (int i = 0; i < _calls.size(); i++) {
 	Subr *cs = _calls[i];
-	for (int j = 0; j < cs->_callees.size(); j++) {
-	    Callee &c = cs->_callees[j];
+	for (int j = 0; j < cs->_callers.size(); j++) {
+	    Caller &c = cs->_callers[j];
 	    if (c.subr == this && pos <= c.pos && c.pos + c.len <= right) {
-		c.subr = new_callee;
+		c.subr = new_caller;
 		c.pos -= pos;
-		new_callee->add_call(cs);
+		new_caller->add_call(cs);
 	    }
 	}
     }
 }
 
 void
-MakeType1CharstringInterp::Subr::change_callees(Subr *callee, int pos, int length, int new_length)
+MakeType1CharstringInterp::Subr::change_callers(Subr *caller, int pos, int length, int new_length)
 {
     if (up_to_date())
 	return;
@@ -704,16 +717,16 @@ MakeType1CharstringInterp::Subr::change_callees(Subr *callee, int pos, int lengt
 
     int right = pos + length;
     int delta = new_length - length;
-    for (int i = 0; i < _callees.size(); i++) {
-	Callee &c = _callees[i];
-	if (c.subr != callee)
+    for (int i = 0; i < _callers.size(); i++) {
+	Caller &c = _callers[i];
+	if (c.subr != caller)
 	    /* nada */;
 	else if (pos <= c.pos && c.pos + c.len <= right) {
 	    // erase
-	    //fprintf(stderr, "  ERASE callee %08x:%d+%d\n", c.subr->_csr, c.pos, c.len);
+	    //fprintf(stderr, "  ERASE caller %08x:%d+%d\n", c.subr->_csr, c.pos, c.len);
 	    c.subr = 0;
 	} else if (right <= c.pos) {
-	    //fprintf(stderr, "  ADJUST callee %08x:%d+%d -> %d+%d\n", c.subr->_csr, c.pos, c.len, c.pos+delta, c.len);
+	    //fprintf(stderr, "  ADJUST caller %08x:%d+%d -> %d+%d\n", c.subr->_csr, c.pos, c.len, c.pos+delta, c.len);
 	    c.pos += delta;
 	} else if (c.pos <= pos && right <= c.pos + c.len) {
 	    c.len += delta;
@@ -723,17 +736,17 @@ MakeType1CharstringInterp::Subr::change_callees(Subr *callee, int pos, int lengt
 }
 
 void
-MakeType1CharstringInterp::Subr::callee_data(bool assign, MakeType1CharstringInterp *mcsi)
+MakeType1CharstringInterp::Subr::caller_data(bool assign, MakeType1CharstringInterp *mcsi)
 {
-    for (int i = 0; i < _callees.size(); i++) {
-	Callee &c = _callees[i];
+    for (int i = 0; i < _callers.size(); i++) {
+	Caller &c = _callers[i];
 	if (!c.subr)
 	    continue;
 	String s = c.subr->charstring(mcsi)->substring(c.pos, c.len);
 	if (assign)
 	    c.s = s;
 	else if (c.s != s) {
-	    //fprintf(stderr, "FAIL %08x callee %08x:%d+%d\n", _csr, c.subr->_csr, c.pos, c.len);
+	    //fprintf(stderr, "FAIL %08x caller %08x:%d+%d\n", _csr, c.subr->_csr, c.pos, c.len);
 	    //assert(0);
 	}
 	assert(c.subr->has_call(this));
@@ -743,23 +756,23 @@ MakeType1CharstringInterp::Subr::callee_data(bool assign, MakeType1CharstringInt
 bool
 MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
 {
-    // clean up callee list
-    for (int i = 0; i < _callees.size(); i++)
-	if (!_callees[i].subr) {
-	    _callees[i] = _callees.back();
-	    _callees.pop_back();
+    // clean up caller list
+    for (int i = 0; i < _callers.size(); i++)
+	if (!_callers[i].subr) {
+	    _callers[i] = _callers.back();
+	    _callers.pop_back();
 	    i--;
 	}
     
-    if (!_callees.size())
+    if (!_callers.size())
 	return false;
     assert(!_calls.size());
 
     // Find the smallest shared substring.
-    String substr = _callees[0].charstring(mcsi);
+    String substr = _callers[0].charstring(mcsi);
     int suboff = 0;
-    for (int i = 1; i < _callees.size(); i++) {
-	String substr1 = _callees[i].charstring(mcsi);
+    for (int i = 1; i < _callers.size(); i++) {
+	String substr1 = _callers[i].charstring(mcsi);
 	const char *d = substr.data() + suboff, *d1 = substr1.data();
 	const char *dx = substr.data() + substr.length(), *d1x = d1 + substr1.length();
 	while (dx > d && d1x > d1 && dx[-1] == d1x[-1])
@@ -769,8 +782,8 @@ MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
     substr = substr.substring(Type1Charstring(substr).first_caret_after(suboff));
     if (!substr.length())
 	return false;
-    for (int i = 0; i < _callees.size(); i++) {
-	Callee &c = _callees[i];
+    for (int i = 0; i < _callers.size(); i++) {
+	Caller &c = _callers[i];
 	if (int delta = c.len - substr.length()) {
 	    c.pos += delta;
 	    c.len -= delta;
@@ -782,23 +795,26 @@ MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
     mcsi->output()->set_subr(_output_subrno, Type1Charstring(substr + "\013"));
 
     // note calls
-    _callees[0].subr->transfer_nested_calls(_callees[0].pos, _callees[0].len, this);
+    _callers[0].subr->transfer_nested_calls(_callers[0].pos, _callers[0].len, this);
     
     // adapt callers
     String callsubr_string = Type1CharstringGen::callsubr_string(_output_subrno);
-    for (int i = 0; i < _callees.size(); i++)
-	if (_callees[i].subr != this) {
-	    Subr::Callee c = _callees[i];
+    for (int i = 0; i < _callers.size(); i++)
+	// 13.Jun.2003 - must check whether _callers[i].subr exists: if we
+	// called a subroutine more than once, change_callers() might have
+	// zeroed it out.
+	if (_callers[i].subr && _callers[i].subr != this) {
+	    Subr::Caller c = _callers[i];
 	    //fprintf(stderr, " SUBSTRING %08x:%d+%d\n", c.subr->_csr, c.pos, c.len);
 	    c.subr->charstring(mcsi)->assign_substring(c.pos, c.len, callsubr_string);
 	    Subr::bump_date();
 	    for (int j = 0; j < c.subr->ncalls(); j++)
-		c.subr->call(j)->change_callees(c.subr, c.pos, c.len, callsubr_string.length());
-	    assert(!_callees[i].subr);
+		c.subr->call(j)->change_callers(c.subr, c.pos, c.len, callsubr_string.length());
+	    assert(!_callers[i].subr);
 	}
 
     // this subr is no longer "called"/interpolated from anywhere
-    _callees.clear();
+    _callers.clear();
 
     //fprintf(stderr, "Succeeded %x\n", _csr);
     return true;
@@ -828,7 +844,7 @@ MakeType1CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left
 
 	    int right = _csgen.length();
 	    if (error() >= 0 && callee)
-		callee->add_callee(_cur_subr, left, right - left);
+		callee->add_caller(_cur_subr, left, right - left);
 	    return more;
 	} else {
 	    //fprintf(stderr, "failed %d\n", (int) top());
@@ -879,11 +895,10 @@ MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer, Erro
     // run over the glyphs
     int nglyphs = p->nglyphs();
     Type1Charstring receptacle;
-    LandmarkErrorHandler lerrh(errh, "");
     for (int i = 0; i < nglyphs; i++) {
 	_cur_subr = _glyphs[i] = new Subr(CSR_GLYPH | i);
-	lerrh.set_landmark(p->glyph_name(i));
-	run(*p->glyph(i), receptacle, &lerrh);
+	_cur_glyph = i;
+	run(*p->glyph(i), receptacle, errh);
 #if 0
 	PermString n = p->glyph_name(i);
 	if (n == "one") {
