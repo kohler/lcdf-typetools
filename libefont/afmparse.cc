@@ -6,6 +6,7 @@
 #endif
 #include "afmparse.hh"
 #include "metrics.hh"
+#include "strtonum.h"
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -81,19 +82,6 @@ AfmParser::set_ends_names(unsigned char c, bool ends_name)
 // %<   hex string; arguments are unsigned char **stored, int *length
 // %.   any non-alphanumeric
 // ???????????? EOS vs. don't-skip-to-EOS ???????????
-
-
-static double
-strtonumber(const char *f, char **endf)
-{
-  int v = strtol((char *)f, endf, 10);
-  if (**endf == '.')
-    return v + strtod(*endf, endf);
-  else if (**endf == 'E' || **endf == 'e')
-    return strtod(f, endf);
-  else
-    return v;
-}
 
 
 #define FAIL(s)		do { _message = s; return 0; } while (0)
