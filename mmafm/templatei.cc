@@ -24,4 +24,3 @@ template class Vector<Efont::PairOp>;
 
 template class HashMap<PermString, Efont::Type1Definition *>;
 template class HashMap<PermString, int>;
-template class HashMap<PermString, PermString>;
