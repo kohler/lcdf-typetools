@@ -66,12 +66,23 @@ read_file(char *fn, MetricsFinder *finder)
 {
   Filename filename;
   FILE *file;
+  
   if (strcmp(fn, "-") == 0) {
     filename = Filename("<stdin>");
     file = stdin;
   } else {
     filename = Filename(fn);
     file = filename.open_read();
+  }
+  
+  if (!file) {
+    AmfmMetrics *new_amfm = finder->find_amfm(fn, &errh);
+    if (new_amfm && amfm)
+      errh.fatal("already read one AMFM file");
+    else if (!new_amfm)
+      errh.fatal("can't open `%s' for reading", fn);
+    amfm = new_amfm;
+    return;
   }
   
   LineScanner l(filename, file);
