@@ -12,7 +12,7 @@ template<class T> class Vector;
 class StringAccum { public:
   
     StringAccum()			: _s(0), _len(0), _cap(0) { }
-    explicit StringAccum(int);
+    explicit inline StringAccum(int);
     explicit StringAccum(const char *);
     explicit StringAccum(const String &);
 #ifdef HAVE_PERMSTRING
@@ -28,34 +28,34 @@ class StringAccum { public:
 
     bool out_of_memory() const		{ return _cap < 0; }
   
-    const char *cc()			{ return c_str(); }
     const char *c_str();
+    const char *cc()			{ return c_str(); }
   
     char operator[](int i) const{ assert(i>=0&&i<_len); return (char)_s[i]; }
     char &operator[](int i)	{ assert(i>=0&&i<_len); return (char &)_s[i]; }
     char back() const		{ assert(_len>0); return (char)_s[_len-1]; }
     char &back()		{ assert(_len>0); return (char &)_s[_len-1]; }
 
-    void clear();
+    inline void clear();
   
-    char *extend(int, int = 0);
+    inline char *extend(int, int = 0);
   
-    void append(char);
-    void append(unsigned char);
-    void append(const char *, int);
-    void append(const unsigned char *, int);
+    inline void append(char);
+    inline void append(unsigned char);
+    inline void append(const char *, int);
+    inline void append(const unsigned char *, int);
 
     // word joining
     void append_fill_lines(const Vector<String> &words, int linelen, const String &parindent = String(), const String &leftmargin = String(), const String &wordsep = String(" "), const String &lineend = String("\n"));
 
-    char *reserve(int);
+    inline char *reserve(int);
     void set_length(int l)	{ assert(l>=0 && _len<=_cap);	_len = l; }
     void forward(int n)		{ assert(n>=0 && _len+n<=_cap);	_len += n; }
     void pop_back(int n = 1)	{ assert(n>=0 && _len>=n);	_len -= n; }
 
     StringAccum &snprintf(int, const char *, ...);
 
-    unsigned char *take_bytes(); 	// returns array allocated by new[]
+    inline unsigned char *take_bytes();	// returns array allocated by new[]
     String take_string();
 
     // see also operator<< declarations below
@@ -67,7 +67,7 @@ class StringAccum { public:
     int _cap;
   
     void make_out_of_memory();
-    void safe_append(const char *, int);
+    inline void safe_append(const char *, int);
     bool grow(int);
     void erase()		{ _s = 0; _len = 0; _cap = 0; }
 
@@ -81,20 +81,20 @@ class StringAccum { public:
   
 };
 
-StringAccum &operator<<(StringAccum &, char);
-StringAccum &operator<<(StringAccum &, unsigned char);
-StringAccum &operator<<(StringAccum &, const char *);
-StringAccum &operator<<(StringAccum &, const String &);
-StringAccum &operator<<(StringAccum &, const StringAccum &);
+inline StringAccum &operator<<(StringAccum &, char);
+inline StringAccum &operator<<(StringAccum &, unsigned char);
+inline StringAccum &operator<<(StringAccum &, const char *);
+inline StringAccum &operator<<(StringAccum &, const String &);
+inline StringAccum &operator<<(StringAccum &, const StringAccum &);
 #ifdef HAVE_PERMSTRING
-StringAccum &operator<<(StringAccum &, PermString);
+inline StringAccum &operator<<(StringAccum &, PermString);
 #endif
 
-StringAccum &operator<<(StringAccum &, bool);
-StringAccum &operator<<(StringAccum &, short);
-StringAccum &operator<<(StringAccum &, unsigned short);
-StringAccum &operator<<(StringAccum &, int);
-StringAccum &operator<<(StringAccum &, unsigned);
+inline StringAccum &operator<<(StringAccum &, bool);
+inline StringAccum &operator<<(StringAccum &, short);
+inline StringAccum &operator<<(StringAccum &, unsigned short);
+inline StringAccum &operator<<(StringAccum &, int);
+inline StringAccum &operator<<(StringAccum &, unsigned);
 StringAccum &operator<<(StringAccum &, long);
 StringAccum &operator<<(StringAccum &, unsigned long);
 StringAccum &operator<<(StringAccum &, double);

@@ -67,7 +67,7 @@ class HashMap { public:
 
     void increase(int);
     inline void check_capacity();
-    int bucket(const K &) const;
+    inline int bucket(const K &) const;
 
     friend class _HashMap_const_iterator<K, V>;
     friend class _HashMap_iterator<K, V>;
