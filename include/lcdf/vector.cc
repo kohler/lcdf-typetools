@@ -23,7 +23,7 @@
 
 template <class T>
 Vector<T>::Vector(const Vector<T> &o)
-    : _l(0), _n(0), _cap(0)
+    : _l(0), _n(0), _capacity(0)
 {
     *this = o;
 }
@@ -60,16 +60,35 @@ Vector<T>::assign(int n, const T &e)
     return *this;
 }
 
+template <class T> typename Vector<T>::iterator
+Vector<T>::erase(iterator a, iterator b)
+{
+  if (b > a) {
+    assert(a >= begin() && b <= end());
+    iterator i = a, j = b;
+    for (; j < end(); i++, j++) {
+      i->~T();
+      new((void*) i) T(*j);
+    }
+    for (; i < end(); i++)
+      i->~T();
+    _n -= b - a;
+    return a;
+  } else
+    return b;
+}
+
 template <class T> bool
 Vector<T>::reserve(int want)
 {
     if (want < 0)
-	want = _cap > 0 ? _cap * 2 : 4;
-    if (want <= _cap)
+	want = _capacity > 0 ? _capacity * 2 : 4;
+    if (want <= _capacity)
 	return true;
   
     T *new_l = (T *)new unsigned char[sizeof(T) * want];
-    if (!new_l) return false;
+    if (!new_l)
+	return false;
   
     for (int i = 0; i < _n; i++) {
 	new(velt(new_l, i)) T(_l[i]);
@@ -78,24 +97,14 @@ Vector<T>::reserve(int want)
     delete[] (unsigned char *)_l;
   
     _l = new_l;
-    _cap = want;
+    _capacity = want;
     return true;
-}
-
-template <class T> void
-Vector<T>::shrink(int nn)
-{
-    if (nn < _n) {
-	for (int i = nn; i < _n; i++)
-	    _l[i].~T();
-	_n = nn;
-    }
 }
 
 template <class T> void
 Vector<T>::resize(int nn, const T &e)
 {
-    if (nn <= _cap || reserve(nn)) {
+    if (nn <= _capacity || reserve(nn)) {
 	for (int i = nn; i < _n; i++)
 	    _l[i].~T();
 	for (int i = _n; i < nn; i++)
@@ -109,13 +118,13 @@ Vector<T>::swap(Vector<T> &o)
 {
     T *l = _l;
     int n = _n;
-    int cap = _cap;
+    int cap = _capacity;
     _l = o._l;
     _n = o._n;
-    _cap = o._cap;
+    _capacity = o._capacity;
     o._l = l;
     o._n = n;
-    o._cap = cap;
+    o._capacity = cap;
 }
 
 #endif
