@@ -91,19 +91,19 @@ PostScript font name. In the second case, mmpfb will find the actual outline\n\
 file using the PSRESOURCEPATH environment variable.\n\
 \n\
 General options:\n\
-  --amcp-info                  Print AMCP info, if necessary, and exit.\n\
-  --pfa, -a                    Output PFA font.\n\
-  --pfb, -b                    Output PFB font. This is the default.\n\
-  --output=FILE, -o FILE       Write output to FILE.\n\
-  --help, -h                   Print this message and exit.\n\
-  --quiet, -q                  Do not generate any error messages.\n\
-  --version                    Print version number and exit.\n\
+      --amcp-info              Print AMCP info, if necessary, and exit.\n\
+  -a, --pfa                    Output PFA font.\n\
+  -b, --pfb                    Output PFB font. This is the default.\n\
+  -o, --output=FILE            Write output to FILE.\n\
+  -h, --help                   Print this message and exit.\n\
+  -q, --quiet                  Do not generate any error messages.\n\
+      --version                Print version number and exit.\n\
 \n\
 Interpolation settings:\n\
-  --weight=N, -w N             Set weight to N.\n\
-  --width=N, -W N              Set width to N.\n\
-  --optical-size=N, -O N       Set optical size to N.\n\
-  --style=N                    Set style axis to N.\n\
+  -w, --weight=N               Set weight to N.\n\
+  -W, --width=N                Set width to N.\n\
+  -O, --optical-size=N         Set optical size to N.\n\
+      --style=N                Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N   Set first (second, third, fourth) axis to N.\n\
 \n\
 Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
