@@ -784,10 +784,9 @@ encoding slots, namely a box with an X inside.)
 Each UNICODING line can contain multiple commands, separated by spaced
 semicolons.
 .PP
-Ligatures can be added and kerns inhibited by LIGKERN comments in the
-encoding, as in
+LIGKERN comments in the encoding can add ligatures and inhibit kerns, as in
 .M afm2tfm 1 .
-To add a ligature, use this command form:
+To add a ligature, say:
 .nf
     % LIGKERN \fIglyph1\fR \fIglyph2\fR =: \fIresult\fR ;
 .fi
@@ -795,17 +794,14 @@ The "=:" operator indicates a normal ligature, where both the input glyphs
 are removed and replaced by
 .IR result .
 To preserve the left-hand glyph, for an effect like "\fIglyph1\fR
-\fIglyph2\fR =: \fIglyph1\fR \fIresult\fR", use the "|=:" operator instead.
-You can also say "=:|" to preserve the right-hand glyph. 
-.B Otftotfm
-does not yet support the other five ligature operators ("|=:|", "|=:>",
-"=:|>", "|=:|>", and "|=:|>>").
-.PP
+\fIglyph2\fR =: \fIglyph1\fR \fIresult\fR", use "|=:" instead; to preserve
+the right-hand glyph, use "=:|".  The other five ligature operators are not
+yet supported.
 To remove all kerns between two characters, say:
 .nf
     % LIGKERN \fIglyph1\fR {} \fIglyph2\fR ;
 .fi
-A "*" matches any character.  For instance,
+A "*" matches any character, so
 .nf
     % LIGKERN a {} * ;
 .fi
@@ -851,8 +847,7 @@ The
 .B \-\-unicoding
 and
 .B \-\-ligkern
-command line arguments let you add virtual UNICODING and LIGKERN comments
-to an encoding.
+options let you add virtual UNICODING and LIGKERN comments to an encoding.
 .PP
 .B Otftotfm
 has a default set of eight ligatures, namely:
@@ -867,9 +862,9 @@ LIGKERN commands in the encoding file and/or
 .B \-\-ligkern
 options normally inhibit the defaults.
 .PP
-Some common encoding files have commands that are generally inappropriate
-for OpenType fonts.  For example, "t1.enc" hard-codes its "f" ligatures,
-which can cause problems with small-cap fonts.  Supply the
+Some common encoding files have commands that are inappropriate for
+OpenType fonts.  For example, "t1.enc" hard-codes f-ligatures, which can
+cause problems with small-cap fonts.  Supply the
 .B \-\-no\-encoding\-commands
 option to ignore all commands from the encoding file, or the
 .B \-\-default\-ligkern
