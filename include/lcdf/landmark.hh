@@ -28,4 +28,6 @@ class Landmark {
   
 };
 
+Landmark operator+(const Landmark &, int);
+
 #endif
