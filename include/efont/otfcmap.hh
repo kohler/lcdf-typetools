@@ -2,18 +2,18 @@
 #ifndef EFONT_OTFCMAP_HH
 #define EFONT_OTFCMAP_HH
 #include <efont/otf.hh>
-namespace Efont {
+namespace Efont { namespace OpenType {
 
-class OpenType_cmap { public:
+class Cmap { public:
 
-    OpenType_cmap(const String &, ErrorHandler * = 0);
+    Cmap(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
 
-    OpenTypeGlyph map_uni(uint32_t c) const;
-    int map_uni(const Vector<uint32_t> &in, Vector<OpenTypeGlyph> &out) const;
+    Glyph map_uni(uint32_t c) const;
+    int map_uni(const Vector<uint32_t> &in, Vector<Glyph> &out) const;
     
   private:
 
@@ -32,17 +32,17 @@ class OpenType_cmap { public:
     int first_unicode_table() const	{ return _first_unicode_table; }
     int first_table(int platform, int encoding) const;
     int check_table(int t, ErrorHandler * = 0) const;
-    OpenTypeGlyph map_table(int t, uint32_t uni, ErrorHandler * = 0) const;
+    Glyph map_table(int t, uint32_t uni, ErrorHandler * = 0) const;
     void dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, ErrorHandler * = 0) const;
     
 };
 
 
-inline OpenTypeGlyph
-OpenType_cmap::map_uni(uint32_t c) const
+inline Glyph
+Cmap::map_uni(uint32_t c) const
 {
     return map_table(_first_unicode_table, c);
 }
 
-}
+}}
 #endif

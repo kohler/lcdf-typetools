@@ -558,7 +558,7 @@ static const Mapping features[] = {
     { T("zero"), "Slashed Zero" }
 };
 
-namespace Efont {
+namespace Efont { namespace OpenType {
 
 static const char *
 find_description(uint32_t tag, const Mapping *maps, int n)
@@ -578,21 +578,21 @@ find_description(uint32_t tag, const Mapping *maps, int n)
 }
 
 const char *
-OpenTypeTag::script_description() const
+Tag::script_description() const
 {
     return find_description(value(), scripts, sizeof(scripts) / sizeof(Mapping));
 }
 
 const char *
-OpenTypeTag::language_description() const
+Tag::language_description() const
 {
     return find_description(value(), languages, sizeof(languages) / sizeof(Mapping));
 }
 
 const char *
-OpenTypeTag::feature_description() const
+Tag::feature_description() const
 {
     return find_description(value(), features, sizeof(features) / sizeof(Mapping));
 }
 
-}
+}}

@@ -1,20 +1,20 @@
 // -*- related-file-name: "../../libefont/otf.cc" -*-
 #ifndef EFONT_OTF_HH
 #define EFONT_OTF_HH
-#include <efont/t1cs.hh>		/* for uintXX_t definitions */
+#include <efont/otfdata.hh>
 class ErrorHandler;
-namespace Efont {
+namespace Efont { namespace OpenType {
 
-typedef int OpenTypeGlyph;		// 16-bit integer
+typedef int Glyph;			// 16-bit integer
 
-class OpenTypeTag { public:
+class Tag { public:
     
     enum { FIRST_VALID_TAG = 0x20202020U, LAST_VALID_TAG = 0x7E7E7E7EU };
 
-    OpenTypeTag()			: _tag(FIRST_VALID_TAG) { }
-    OpenTypeTag(uint32_t tag)		: _tag(tag) { }
-    OpenTypeTag(const char *);
-    OpenTypeTag(const String &);
+    Tag()				: _tag(FIRST_VALID_TAG) { }
+    Tag(uint32_t tag)			: _tag(tag) { }
+    Tag(const char *);
+    Tag(const String &);
     // default destructor
 
     bool ok() const			{ return _tag != 0; }
@@ -34,9 +34,9 @@ class OpenTypeTag { public:
 
 };
 
-class OpenTypeFont { public:
+class Font { public:
 
-    OpenTypeFont(const String &, ErrorHandler * = 0);
+    Font(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _error >= 0; }
@@ -46,7 +46,7 @@ class OpenTypeFont { public:
     const uint8_t *data() const		{ return _str.udata(); }
     int length() const			{ return _str.length(); }
 
-    String table(OpenTypeTag) const;
+    String table(Tag) const;
 
   private:
 
@@ -59,16 +59,16 @@ class OpenTypeFont { public:
     
 };
 
-class OpenTypeScriptList { public:
+class ScriptList { public:
 
-    OpenTypeScriptList()		{ }
-    OpenTypeScriptList(const String &, ErrorHandler * = 0);
+    ScriptList()		{ }
+    ScriptList(const String &, ErrorHandler * = 0);
     int assign(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
 
-    int features(OpenTypeTag script, OpenTypeTag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0) const;
+    int features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler * = 0) const;
     
   private:
 
@@ -79,25 +79,25 @@ class OpenTypeScriptList { public:
     String _str;
 
     int check_header(ErrorHandler *);
-    int script_offset(OpenTypeTag) const;
-    int langsys_offset(OpenTypeTag, OpenTypeTag, ErrorHandler * = 0) const;
+    int script_offset(Tag) const;
+    int langsys_offset(Tag, Tag, ErrorHandler * = 0) const;
     
 };
 
-class OpenTypeFeatureList { public:
+class FeatureList { public:
 
-    OpenTypeFeatureList()		{ }
-    OpenTypeFeatureList(const String &, ErrorHandler * = 0);
+    FeatureList()		{ }
+    FeatureList(const String &, ErrorHandler * = 0);
     int assign(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
 
-    int feature_tags(const Vector<int> &fids, Vector<OpenTypeTag> &ftags) const;
-    void filter_features(Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags) const;
+    int feature_tags(const Vector<int> &fids, Vector<Tag> &ftags) const;
+    void filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
-    int lookups(int required_fid, const Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
-    int lookups(const OpenTypeScriptList &, OpenTypeTag script, OpenTypeTag langsys, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
+    int lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
+    int lookups(const ScriptList &, Tag script, Tag langsys, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
     
   private:
 
@@ -107,23 +107,23 @@ class OpenTypeFeatureList { public:
     String _str;
 
     int check_header(ErrorHandler *);
-    int script_offset(OpenTypeTag) const;
-    int langsys_offset(OpenTypeTag, OpenTypeTag, ErrorHandler * = 0) const;
+    int script_offset(Tag) const;
+    int langsys_offset(Tag, Tag, ErrorHandler * = 0) const;
     
 };
 
-class OpenTypeCoverage { public:
+class Coverage { public:
 
-    OpenTypeCoverage();			// empty coverage
-    OpenTypeCoverage(const String &, ErrorHandler * = 0, bool check = true);
+    Coverage() throw ();		// empty coverage
+    Coverage(const String &, ErrorHandler * = 0, bool check = true) throw ();
     // default destructor
 
-    bool ok() const			{ return _str.length() > 0; }
-    int size() const;
+    bool ok() const throw ()		{ return _str.length() > 0; }
+    int size() const throw ();
 
-    int lookup(OpenTypeGlyph) const;
-    int operator[](OpenTypeGlyph g) const { return lookup(g); }
-    bool covers(OpenTypeGlyph g) const	{ return lookup(g) >= 0; }
+    int lookup(Glyph) const throw ();
+    int operator[](Glyph g) const throw () { return lookup(g); }
+    bool covers(Glyph g) const throw ()	{ return lookup(g) >= 0; }
 
     class iterator { public:
 	// private constructor
@@ -132,13 +132,13 @@ class OpenTypeCoverage { public:
 	bool ok() const			{ return _pos < _str.length(); }
 	operator bool() const		{ return ok(); }
 	
-	OpenTypeGlyph operator*() const	{ return _value; }
-	OpenTypeGlyph value() const	{ return _value; }
+	Glyph operator*() const		{ return _value; }
+	Glyph value() const		{ return _value; }
 	int coverage_index() const;
 	
 	void operator++(int);
 	void operator++()		{ (*this)++; }
-	void forward_to(OpenTypeGlyph);
+	bool forward_to(Glyph);
 
 	// XXX should check iterators are of same type
 	bool operator<(const iterator &o) { return _pos < o._pos || (_pos == o._pos && _value < o._value); }
@@ -151,8 +151,8 @@ class OpenTypeCoverage { public:
       private:
 	String _str;
 	int _pos;
-	OpenTypeGlyph _value;
-	friend class OpenTypeCoverage;
+	Glyph _value;
+	friend class Coverage;
 	iterator(const String &, int);
     };
     
@@ -170,15 +170,48 @@ class OpenTypeCoverage { public:
     
 };
 
-class OpenTypeClassDef { public:
+Coverage operator&(const Coverage &, const Coverage &);
+bool operator<=(const Coverage &, const Coverage &);
+inline bool
+operator>=(const Coverage &a, const Coverage &b)
+{
+    return b <= a;
+}
 
-    OpenTypeClassDef(const String &, ErrorHandler * = 0);
+class GlyphSet { public:
+
+    GlyphSet();
+    ~GlyphSet();
+
+    bool covers(Glyph g) const;
+    int change(Glyph, bool);
+    void insert(Glyph g)		{ change(g, true); }
+    void remove(Glyph g)		{ change(g, false); }
+    
+  private:
+
+    enum { GLYPHBITS = 16, SHIFT = 8,
+	   MAXGLYPH = (1 << GLYPHBITS) - 1, UNSHIFT = GLYPHBITS - SHIFT,
+	   MASK = (1 << UNSHIFT) - 1, VLEN = (1 << SHIFT),
+	   VULEN = (1 << UNSHIFT) >> 5
+    };
+
+    uint32_t *_v[VLEN];
+
+    GlyphSet(const GlyphSet &);
+    GlyphSet &operator=(const GlyphSet &);
+
+};
+
+class ClassDef { public:
+
+    ClassDef(const String &, ErrorHandler * = 0);
     // default destructor
 
     bool ok() const			{ return _str.length() > 0; }
 
-    int lookup(OpenTypeGlyph) const;
-    int operator[](OpenTypeGlyph g) const { return lookup(g); }
+    int lookup(Glyph) const;
+    int operator[](Glyph g) const	 { return lookup(g); }
     
   private:
 
@@ -190,70 +223,81 @@ class OpenTypeClassDef { public:
 
 
 inline bool
-operator==(OpenTypeTag t1, uint32_t t2)
+operator==(Tag t1, uint32_t t2)
 {
     return t1.value() == t2;
 }
 
 inline bool
-operator!=(OpenTypeTag t1, uint32_t t2)
+operator!=(Tag t1, uint32_t t2)
 {
     return t1.value() != t2;
 }
 
 inline bool
-operator<(OpenTypeTag t1, uint32_t t2)
+operator<(Tag t1, uint32_t t2)
 {
     return t1.value() < t2;
 }
 
 inline bool
-operator>(OpenTypeTag t1, uint32_t t2)
+operator>(Tag t1, uint32_t t2)
 {
     return t1.value() > t2;
 }
 
 inline bool
-operator<=(OpenTypeTag t1, uint32_t t2)
+operator<=(Tag t1, uint32_t t2)
 {
     return t1.value() <= t2;
 }
 
 inline bool
-operator>=(OpenTypeTag t1, uint32_t t2)
+operator>=(Tag t1, uint32_t t2)
 {
     return t1.value() >= t2;
 }
 
 inline bool
-operator==(OpenTypeTag t1, OpenTypeTag t2)
+operator==(Tag t1, Tag t2)
 {
     return t1.value() == t2.value();
 }
 
 inline bool
-operator!=(OpenTypeTag t1, OpenTypeTag t2)
+operator!=(Tag t1, Tag t2)
 {
     return t1.value() != t2.value();
 }
 
 inline bool
-operator<(OpenTypeTag t1, OpenTypeTag t2)
+operator<(Tag t1, Tag t2)
 {
     return t1.value() < t2.value();
 }
 
 inline
-OpenTypeScriptList::OpenTypeScriptList(const String &str, ErrorHandler *errh)
+ScriptList::ScriptList(const String &str, ErrorHandler *errh)
 {
     assign(str, errh);
 }
 
 inline
-OpenTypeFeatureList::OpenTypeFeatureList(const String &str, ErrorHandler *errh)
+FeatureList::FeatureList(const String &str, ErrorHandler *errh)
 {
     assign(str, errh);
 }
 
+inline bool
+GlyphSet::covers(Glyph g) const
+{
+    if ((unsigned)g > MAXGLYPH)
+	return false;
+    else if (const uint32_t *u = _v[g >> SHIFT])
+	return u[(g & MASK) >> 5] & (1 << (g & 0x1F));
+    else
+	return false;
 }
+
+}}
 #endif

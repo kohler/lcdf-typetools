@@ -13,9 +13,9 @@
 #define SHORT_AT(d)		((int16_t) ntohs(*(const uint16_t *)(d)))
 #define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
 
-namespace Efont {
+namespace Efont { namespace OpenType {
 
-OpenType_cmap::OpenType_cmap(const String &s, ErrorHandler *errh)
+Cmap::Cmap(const String &s, ErrorHandler *errh)
     : _str(s)
 {
     _str.align(4);
@@ -23,7 +23,7 @@ OpenType_cmap::OpenType_cmap(const String &s, ErrorHandler *errh)
 }
 
 int
-OpenType_cmap::parse_header(ErrorHandler *errh)
+Cmap::parse_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // USHORT	version
@@ -73,7 +73,7 @@ OpenType_cmap::parse_header(ErrorHandler *errh)
 }
 
 int
-OpenType_cmap::first_table(int platform, int encoding) const
+Cmap::first_table(int platform, int encoding) const
 {
     if (error() < 0)
 	return -1;
@@ -88,7 +88,7 @@ OpenType_cmap::first_table(int platform, int encoding) const
 }
 
 int
-OpenType_cmap::check_table(int t, ErrorHandler *errh) const
+Cmap::check_table(int t, ErrorHandler *errh) const
 {
     if (!errh)
 	errh = ErrorHandler::silent_handler();
@@ -219,8 +219,8 @@ OpenType_cmap::check_table(int t, ErrorHandler *errh) const
     return 0;
 }
 
-OpenTypeGlyph
-OpenType_cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
+Glyph
+Cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 {
     if (check_table(t, errh) < 0)
 	return 0;
@@ -320,7 +320,7 @@ OpenType_cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
 }
 
 void
-OpenType_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, ErrorHandler *errh) const
+Cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, ErrorHandler *errh) const
 {
     if (check_table(t, errh) < 0)
 	return;
@@ -419,7 +419,7 @@ OpenType_cmap::dump_table(int t, Vector<uint32_t> &cs, Vector<uint32_t> &gs, Err
 }
 
 int
-OpenType_cmap::map_uni(const Vector<uint32_t> &vin, Vector<OpenTypeGlyph> &vout) const
+Cmap::map_uni(const Vector<uint32_t> &vin, Vector<Glyph> &vout) const
 {
     int t = first_unicode_table();
     if (check_table(t) < 0)
@@ -430,4 +430,4 @@ OpenType_cmap::map_uni(const Vector<uint32_t> &vin, Vector<OpenTypeGlyph> &vout)
     return 0;
 }
 
-}
+}}

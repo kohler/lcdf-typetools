@@ -22,9 +22,9 @@
 #define ULONG_ATX(d)		((USHORT_ATX((d)) << 16) | USHORT_ATX((d)+2))
 #define ULONG_AT2(d)		((USHORT_AT((d)) << 16) | USHORT_AT((d)+2))
 
-namespace Efont {
+namespace Efont { namespace OpenType {
 
-OpenTypeFont::OpenTypeFont(const String &s, ErrorHandler *errh)
+Font::Font(const String &s, ErrorHandler *errh)
     : _str(s)
 {
     _str.align(4);
@@ -32,7 +32,7 @@ OpenTypeFont::OpenTypeFont(const String &s, ErrorHandler *errh)
 }
 
 int
-OpenTypeFont::parse_header(ErrorHandler *errh)
+Font::parse_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // Fixed	sfnt version
@@ -58,7 +58,7 @@ OpenTypeFont::parse_header(ErrorHandler *errh)
     // ULONG	checksum
     // ULONG	offset
     // ULONG	length
-    uint32_t last_tag = OpenTypeTag::FIRST_VALID_TAG;
+    uint32_t last_tag = Tag::FIRST_VALID_TAG;
     for (int i = 0; i < ntables; i++) {
 	int loc = HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
 	uint32_t tag = ULONG_AT(data + loc);
@@ -67,7 +67,7 @@ OpenTypeFont::parse_header(ErrorHandler *errh)
 	if (tag <= last_tag)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (uint32_t) len)
-	    return errh->error("OTF data for '%s' out of range", OpenTypeTag(tag).text().cc()), -EFAULT;
+	    return errh->error("OTF data for '%s' out of range", Tag(tag).text().cc()), -EFAULT;
 	last_tag = tag;
     }
     
@@ -75,7 +75,7 @@ OpenTypeFont::parse_header(ErrorHandler *errh)
 }
 
 String
-OpenTypeFont::table(OpenTypeTag tag) const
+Font::table(Tag tag) const
 {
     if (error() < 0)
 	return String();
@@ -89,11 +89,11 @@ OpenTypeFont::table(OpenTypeTag tag) const
 
 
 /**************************
- * OpenTypeTag            *
+ * Tag                    *
  *                        *
  **************************/
 
-OpenTypeTag::OpenTypeTag(const char *s)
+Tag::Tag(const char *s)
     : _tag(0)
 {
     if (!s)
@@ -110,7 +110,7 @@ OpenTypeTag::OpenTypeTag(const char *s)
 	_tag = 0;
 }
 
-OpenTypeTag::OpenTypeTag(const String &s)
+Tag::Tag(const String &s)
     : _tag(0)
 {
     if (s.length() <= 4) {
@@ -127,7 +127,7 @@ OpenTypeTag::OpenTypeTag(const String &s)
 }
 
 bool
-OpenTypeTag::check_valid() const
+Tag::check_valid() const
 {
     uint32_t tag = _tag;
     for (int i = 0; i < 4; i++, tag >>= 8)
@@ -137,7 +137,7 @@ OpenTypeTag::check_valid() const
 }
 
 String
-OpenTypeTag::text() const
+Tag::text() const
 {
     StringAccum sa;
     uint32_t tag = _tag;
@@ -153,7 +153,7 @@ OpenTypeTag::text() const
 }
 
 const uint8_t *
-OpenTypeTag::table_entry(const uint8_t *table, int n, int entry_size) const
+Tag::table_entry(const uint8_t *table, int n, int entry_size) const
 {
     assert(((uintptr_t)table & 1) == 0);
     int l = 0;
@@ -175,12 +175,12 @@ OpenTypeTag::table_entry(const uint8_t *table, int n, int entry_size) const
 
 
 /**************************
- * OpenTypeScriptList     *
+ * ScriptList             *
  *                        *
  **************************/
 
 int
-OpenTypeScriptList::assign(const String &str, ErrorHandler *errh)
+ScriptList::assign(const String &str, ErrorHandler *errh)
 {
     _str = str;
     _str.align(4);
@@ -191,7 +191,7 @@ OpenTypeScriptList::assign(const String &str, ErrorHandler *errh)
 }
 
 int
-OpenTypeScriptList::check_header(ErrorHandler *errh)
+ScriptList::check_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // USHORT	scriptCount
@@ -208,7 +208,7 @@ OpenTypeScriptList::check_header(ErrorHandler *errh)
 }
 
 int
-OpenTypeScriptList::script_offset(OpenTypeTag script) const
+ScriptList::script_offset(Tag script) const
 {
     if (_str.length() == 0)
 	return -1;
@@ -220,11 +220,11 @@ OpenTypeScriptList::script_offset(OpenTypeTag script) const
 }
 
 int
-OpenTypeScriptList::langsys_offset(OpenTypeTag script, OpenTypeTag langsys, ErrorHandler *errh) const
+ScriptList::langsys_offset(Tag script, Tag langsys, ErrorHandler *errh) const
 {
     int script_off = script_offset(script);
     if (script_off == 0) {
-	script = OpenTypeTag("DFLT");
+	script = Tag("DFLT");
 	script_off = script_offset(script);
     }
     if (script_off <= 0)
@@ -252,7 +252,7 @@ OpenTypeScriptList::langsys_offset(OpenTypeTag script, OpenTypeTag langsys, Erro
 }
 
 int
-OpenTypeScriptList::features(OpenTypeTag script, OpenTypeTag langsys, int &required_fid, Vector<int> &fids, ErrorHandler *errh) const
+ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fids, ErrorHandler *errh) const
 {
     required_fid = -1;
     fids.clear();
@@ -283,12 +283,12 @@ OpenTypeScriptList::features(OpenTypeTag script, OpenTypeTag langsys, int &requi
 
 
 /**************************
- * OpenTypeFeatureList    *
+ * FeatureList            *
  *                        *
  **************************/
 
 int
-OpenTypeFeatureList::assign(const String &str, ErrorHandler *errh)
+FeatureList::assign(const String &str, ErrorHandler *errh)
 {
     _str = str;
     _str.align(4);
@@ -299,7 +299,7 @@ OpenTypeFeatureList::assign(const String &str, ErrorHandler *errh)
 }
 
 int
-OpenTypeFeatureList::check_header(ErrorHandler *errh)
+FeatureList::check_header(ErrorHandler *errh)
 {
     int featureCount;
     if (_str.length() < FEATURELIST_HEADERSIZE
@@ -310,7 +310,7 @@ OpenTypeFeatureList::check_header(ErrorHandler *errh)
 }
 
 int
-OpenTypeFeatureList::feature_tags(const Vector<int> &fids, Vector<OpenTypeTag> &ftags) const
+FeatureList::feature_tags(const Vector<int> &fids, Vector<Tag> &ftags) const
 {
     ftags.clear();
     if (_str.length() == 0)
@@ -321,12 +321,12 @@ OpenTypeFeatureList::feature_tags(const Vector<int> &fids, Vector<OpenTypeTag> &
 	if (fids[i] >= 0 && fids[i] < nfeatures)
 	    ftags.push_back(ULONG_AT2(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE));
 	else
-	    ftags.push_back(OpenTypeTag());
+	    ftags.push_back(Tag());
     return 0;
 }
 
 void
-OpenTypeFeatureList::filter_features(Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags) const
+FeatureList::filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const
 {
     if (_str.length() == 0)
 	fids.clear();
@@ -361,7 +361,7 @@ OpenTypeFeatureList::filter_features(Vector<int> &fids, const Vector<OpenTypeTag
 }
 
 int
-OpenTypeFeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler *errh) const
+FeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler *errh) const
 {
     results.clear();
     if (_str.length() == 0)
@@ -395,7 +395,7 @@ OpenTypeFeatureList::lookups(const Vector<int> &fids, Vector<int> &results, Erro
 }
 
 int
-OpenTypeFeatureList::lookups(int required_fid, const Vector<int> &fids, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
+FeatureList::lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
 {
     Vector<int> fidsx(fids);
     filter_features(fidsx, sorted_ftags);
@@ -405,7 +405,7 @@ OpenTypeFeatureList::lookups(int required_fid, const Vector<int> &fids, const Ve
 }
 
 int
-OpenTypeFeatureList::lookups(const OpenTypeScriptList &script_list, OpenTypeTag script, OpenTypeTag langsys, const Vector<OpenTypeTag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
+FeatureList::lookups(const ScriptList &script_list, Tag script, Tag langsys, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler *errh) const
 {
     int required_fid;
     Vector<int> fids;
@@ -421,24 +421,24 @@ OpenTypeFeatureList::lookups(const OpenTypeScriptList &script_list, OpenTypeTag 
 
 
 /**************************
- * OpenTypeCoverage       *
+ * Coverage               *
  *                        *
  **************************/
 
-OpenTypeCoverage::OpenTypeCoverage()
+Coverage::Coverage() throw ()
 {
 }
 
-OpenTypeCoverage::OpenTypeCoverage(const String &str, ErrorHandler *errh, bool do_check)
+Coverage::Coverage(const String &str, ErrorHandler *errh, bool do_check) throw ()
     : _str(str)
 {
-    _str.align(4);
+    _str.align(2);
     if (do_check && check(errh ? errh : ErrorHandler::silent_handler()) < 0)
 	_str = String();
 }
 
 int
-OpenTypeCoverage::check(ErrorHandler *errh)
+Coverage::check(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // USHORT	coverageFormat
@@ -473,7 +473,7 @@ OpenTypeCoverage::check(ErrorHandler *errh)
 }
 
 int
-OpenTypeCoverage::size() const
+Coverage::size() const throw ()
 {
     if (_str.length() == 0)
 	return -1;
@@ -488,7 +488,7 @@ OpenTypeCoverage::size() const
 }
 
 int
-OpenTypeCoverage::lookup(OpenTypeGlyph g) const
+Coverage::lookup(Glyph g) const throw ()
 {
     if (_str.length() == 0)
 	return -1;
@@ -527,14 +527,47 @@ OpenTypeCoverage::lookup(OpenTypeGlyph g) const
 	return -1;
 }
 
+Coverage
+operator&(const Coverage &a, const Coverage &b)
+{
+    StringAccum sa;
+    sa << '\000' << '\001' << '\000' << '\000';
+    Coverage::iterator ai = a.begin(), bi = b.begin();
+    while (ai && bi) {
+	if (*ai < *bi)
+	    ai.forward_to(*bi);
+	else if (*ai == *bi) {
+	    uint16_t x = *ai;
+	    sa << (char)(x >> 8) << (char)(x & 0xFF);
+	    ai++, bi++;
+	} else
+	    bi.forward_to(*ai);
+    }
+    int n = (sa.length() - 4) / 2;
+    sa[2] = (n >> 8);
+    sa[3] = (n & 0xFF);
+    return Coverage(sa.take_string(), 0, false);
+}
+
+bool
+operator<=(const Coverage &a, const Coverage &b)
+{
+    Coverage::iterator ai = a.begin(), bi = b.begin();
+    while (ai && bi) {
+	if (*ai != *bi && !bi.forward_to(*ai))
+	    return false;
+	ai++, bi++;
+    }
+    return bi || !ai;
+}
 
 
-/********************************
- * OpenTypeCoverage::iterator   *
- *                              *
- ********************************/
+/************************
+ * Coverage::iterator   *
+ *                      *
+ ************************/
 
-OpenTypeCoverage::iterator::iterator(const String &str, int pos)
+Coverage::iterator::iterator(const String &str, int pos)
     : _str(str), _pos(pos), _value(0)
 {
     // XXX assume _str has been checked
@@ -565,7 +598,7 @@ OpenTypeCoverage::iterator::iterator(const String &str, int pos)
 }
 
 int
-OpenTypeCoverage::iterator::coverage_index() const
+Coverage::iterator::coverage_index() const
 {
     const uint8_t *data = _str.udata();
     assert(_pos < _str.length());
@@ -576,7 +609,7 @@ OpenTypeCoverage::iterator::coverage_index() const
 }
 
 void
-OpenTypeCoverage::iterator::operator++(int)
+Coverage::iterator::operator++(int)
 {
     const uint8_t *data = _str.udata();
     int len = _str.length();
@@ -587,75 +620,116 @@ OpenTypeCoverage::iterator::operator++(int)
     _value = (_pos >= len ? 0 : USHORT_AT(data + _pos));
 }
 
-void
-OpenTypeCoverage::iterator::forward_to(OpenTypeGlyph find)
+bool
+Coverage::iterator::forward_to(Glyph find)
 {
-    if (find > _value && _pos < _str.length()) {
-	const uint8_t *data = _str.udata();
-	if (data[1] == T_LIST) {
-	    // check for "common" case: next element
-	    if (find <= USHORT_AT(data + _pos + LIST_RECSIZE)) {
-		_pos += LIST_RECSIZE;
-		_value = USHORT_AT(data + _pos);
-		return;
-	    }
-	    
-	    // otherwise, binary search over remaining area
-	    int l = (_pos - HEADERSIZE) / LIST_RECSIZE;
-	    int r = (_str.length() - HEADERSIZE) / LIST_RECSIZE - 1;
-	    data += HEADERSIZE;
-	    while (l <= r) {
-		int m = (l + r) >> 1;
-		OpenTypeGlyph g = USHORT_AT(data + m * LIST_RECSIZE);
-		if (find < g)
-		    r = m - 1;
-		else if (find == g)
-		    l = m, r = m - 1;
-		else
-		    l = m + 1;
-	    }
-	    _pos = HEADERSIZE + l * LIST_RECSIZE;
-	    _value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
-	} else {		// data[1] == T_RANGES
-	    // check for "common" case: this or next element
-	    if (find <= USHORT_AT(data + _pos + 2)) {
-		assert(find >= USHORT_AT(data + _pos));
-		_value = find;
-		return;
-	    } else if (find <= USHORT_AT(data + _pos + RANGES_RECSIZE + 2)) {
-		_pos += RANGES_RECSIZE;
-		_value = (find >= USHORT_AT(data + _pos) ? find : USHORT_AT(data + _pos));
-		return;
-	    }
+    if (find <= _value)
+	return find == _value;
+    else if (_pos >= _str.length())
+	return false;
 
-	    // otherwise, binary search over remaining area
-	    int l = (_pos - HEADERSIZE) / RANGES_RECSIZE;
-	    int r = (_str.length() - HEADERSIZE) / RANGES_RECSIZE - 1;
-	    data += HEADERSIZE;
-	    while (l <= r) {
-		int m = (l + r) >> 1;
-		if (find < USHORT_AT(data + m * RANGES_RECSIZE))
-		    l = m + 1;
-		else if (find <= USHORT_AT(data + m * RANGES_RECSIZE + 2)) {
-		    _pos = HEADERSIZE + m * RANGES_RECSIZE;
-		    _value = find;
-		    return;
-		} else
-		    r = m - 1;
-	    }
-	    _pos = HEADERSIZE + l * LIST_RECSIZE;
-	    _value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
+    const uint8_t *data = _str.udata();
+    if (data[1] == T_LIST) {
+	// check for "common" case: next element
+	if (find <= USHORT_AT(data + _pos + LIST_RECSIZE)) {
+	    _pos += LIST_RECSIZE;
+	    _value = USHORT_AT(data + _pos);
+	    return find == _value;
 	}
+	
+	// otherwise, binary search over remaining area
+	int l = (_pos - HEADERSIZE) / LIST_RECSIZE;
+	int r = (_str.length() - HEADERSIZE) / LIST_RECSIZE - 1;
+	data += HEADERSIZE;
+	while (l <= r) {
+	    int m = (l + r) >> 1;
+	    Glyph g = USHORT_AT(data + m * LIST_RECSIZE);
+	    if (find < g)
+		r = m - 1;
+	    else if (find == g)
+		l = m, r = m - 1;
+	    else
+		l = m + 1;
+	}
+	_pos = HEADERSIZE + l * LIST_RECSIZE;
+	_value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
+    } else {		// data[1] == T_RANGES
+	// check for "common" case: this or next element
+	if (find <= USHORT_AT(data + _pos + 2)) {
+	    assert(find >= USHORT_AT(data + _pos));
+	    _value = find;
+	    return true;
+	} else if (_pos + RANGES_RECSIZE < _str.length()
+		   && find <= USHORT_AT(data + _pos + RANGES_RECSIZE + 2)) {
+	    _pos += RANGES_RECSIZE;
+	    _value = (find >= USHORT_AT(data + _pos) ? find : USHORT_AT(data + _pos));
+	    return find == _value;
+	}
+
+	// otherwise, binary search over remaining area
+	int l = (_pos - HEADERSIZE) / RANGES_RECSIZE;
+	int r = (_str.length() - HEADERSIZE) / RANGES_RECSIZE - 1;
+	data += HEADERSIZE;
+	while (l <= r) {
+	    int m = (l + r) >> 1;
+	    if (find < USHORT_AT(data + m * RANGES_RECSIZE))
+		l = m + 1;
+	    else if (find <= USHORT_AT(data + m * RANGES_RECSIZE + 2)) {
+		_pos = HEADERSIZE + m * RANGES_RECSIZE;
+		_value = find;
+		return true;
+	    } else
+		r = m - 1;
+	}
+	_pos = HEADERSIZE + l * LIST_RECSIZE;
+	_value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
     }
+
+    return find == _value;
 }
 
 
 /**************************
- * OpenTypeClassDef       *
+ * GlyphSet               *
  *                        *
  **************************/
 
-OpenTypeClassDef::OpenTypeClassDef(const String &str, ErrorHandler *errh)
+GlyphSet::GlyphSet()
+{
+    memset(_v, 0, sizeof(_v));
+}
+
+GlyphSet::~GlyphSet()
+{
+    for (int i = 0; i < VLEN; i++)
+	delete[] _v[i];
+}
+
+int
+GlyphSet::change(Glyph g, bool value)
+{
+    if ((unsigned)g > MAXGLYPH)
+	return -1;
+    uint32_t *&u = _v[g >> SHIFT];
+    if (!u) {
+	u = new uint32_t[VULEN];
+	memset(u, 0, sizeof(uint32_t) * VULEN);
+    }
+    uint32_t mask = (1 << (g & 0x1F));
+    if (value)
+	u[(g & MASK) >> 5] |= mask;
+    else
+	u[(g & MASK) >> 5] &= ~mask;
+    return 0;
+}
+
+
+/**************************
+ * ClassDef               *
+ *                        *
+ **************************/
+
+ClassDef::ClassDef(const String &str, ErrorHandler *errh)
     : _str(str)
 {
     _str.align(4);
@@ -664,7 +738,7 @@ OpenTypeClassDef::OpenTypeClassDef(const String &str, ErrorHandler *errh)
 }
 
 int
-OpenTypeClassDef::check(ErrorHandler *errh)
+ClassDef::check(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // USHORT	coverageFormat
@@ -692,7 +766,7 @@ OpenTypeClassDef::check(ErrorHandler *errh)
 }
 
 int
-OpenTypeClassDef::lookup(OpenTypeGlyph g) const
+ClassDef::lookup(Glyph g) const
 {
     if (_str.length() == 0)
 	return -1;
@@ -701,7 +775,7 @@ OpenTypeClassDef::lookup(OpenTypeGlyph g) const
     int coverageFormat = USHORT_AT(data);
     
     if (coverageFormat == 1) {
-	OpenTypeGlyph start = USHORT_AT(data + 2);
+	Glyph start = USHORT_AT(data + 2);
 	int count = USHORT_AT(data + 4);
 	if (g < start || g >= start + count)
 	    return 0;
@@ -726,7 +800,7 @@ OpenTypeClassDef::lookup(OpenTypeGlyph g) const
 }
 
 
-}
+}}
 
 
 // template instantiations

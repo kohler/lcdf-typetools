@@ -18,10 +18,10 @@
 #define USHORT_ATX(d)		(((uint8_t)*(d) << 8) | (uint8_t)*((d)+1))
 #define ULONG_ATX(d)		((USHORT_ATX((d)) << 16) | USHORT_ATX((d)+2))
 
-namespace Efont {
+namespace Efont { namespace OpenType {
 
 void
-OpenTypeSubstitution::clear(Substitute &s, uint8_t &t)
+Substitution::clear(Substitute &s, uint8_t &t)
 {
     switch (t) {
       case T_GLYPHS:
@@ -35,7 +35,7 @@ OpenTypeSubstitution::clear(Substitute &s, uint8_t &t)
 }
 
 void
-OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, OpenTypeGlyph gid)
+Substitution::assign(Substitute &s, uint8_t &t, Glyph gid)
 {
     clear(s, t);
     s.gid = gid;
@@ -43,7 +43,7 @@ OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, OpenTypeGlyph gid)
 }
 
 void
-OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, int ngids, const OpenTypeGlyph *gids)
+Substitution::assign(Substitute &s, uint8_t &t, int ngids, const Glyph *gids)
 {
     clear(s, t);
     assert(ngids > 0);
@@ -51,23 +51,23 @@ OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, int ngids, const OpenTyp
 	s.gid = gids[0];
 	t = T_GLYPH;
     } else {
-	s.gids = new OpenTypeGlyph[ngids + 1];
+	s.gids = new Glyph[ngids + 1];
 	s.gids[0] = ngids;
-	memcpy(s.gids + 1, gids, ngids * sizeof(OpenTypeGlyph));
+	memcpy(s.gids + 1, gids, ngids * sizeof(Glyph));
 	t = T_GLYPHS;
     }
 }
 
 void
-OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, const OpenTypeCoverage &coverage)
+Substitution::assign(Substitute &s, uint8_t &t, const Coverage &coverage)
 {
     clear(s, t);
-    s.coverage = new OpenTypeCoverage(coverage);
+    s.coverage = new Coverage(coverage);
     t = T_COVERAGE;
 }
 
 void
-OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, const Substitute &os, uint8_t ot)
+Substitution::assign(Substitute &s, uint8_t &t, const Substitute &os, uint8_t ot)
 {
     assert(&s != &os);
     switch (ot) {
@@ -88,7 +88,7 @@ OpenTypeSubstitution::assign(Substitute &s, uint8_t &t, const Substitute &os, ui
     }
 }
 
-OpenTypeSubstitution::OpenTypeSubstitution(const OpenTypeSubstitution &o)
+Substitution::Substitution(const Substitution &o)
     : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_NONE), _right_is(T_NONE)
 {
     assign(_left, _left_is, o._left, o._left_is);
@@ -97,24 +97,32 @@ OpenTypeSubstitution::OpenTypeSubstitution(const OpenTypeSubstitution &o)
     assign(_right, _right_is, o._right, o._right_is);
 }
 
-OpenTypeSubstitution::OpenTypeSubstitution(OpenTypeGlyph in, OpenTypeGlyph out)
+Substitution::Substitution(Glyph in, Glyph out)
     : _left_is(T_NONE), _in_is(T_GLYPH), _out_is(T_GLYPH), _right_is(T_NONE)
 {
     _in.gid = in;
     _out.gid = out;
 }
 
-OpenTypeSubstitution::OpenTypeSubstitution(OpenTypeGlyph in1, OpenTypeGlyph in2, OpenTypeGlyph out)
+Substitution::Substitution(Glyph in, const Vector<Glyph> &out)
+    : _left_is(T_NONE), _in_is(T_GLYPH), _out_is(T_NONE), _right_is(T_NONE)
+{
+    assert(out.size() > 0);
+    _in.gid = in;
+    assign(_out, _out_is, out.size(), &out[0]);
+}
+
+Substitution::Substitution(Glyph in1, Glyph in2, Glyph out)
     : _left_is(T_NONE), _in_is(T_GLYPHS), _out_is(T_GLYPH), _right_is(T_NONE)
 {
-    _in.gids = new OpenTypeGlyph[3];
+    _in.gids = new Glyph[3];
     _in.gids[0] = 2;
     _in.gids[1] = in1;
     _in.gids[2] = in2;
     _out.gid = out;
 }
 
-OpenTypeSubstitution::OpenTypeSubstitution(const Vector<OpenTypeGlyph> &in, OpenTypeGlyph out)
+Substitution::Substitution(const Vector<Glyph> &in, Glyph out)
     : _left_is(T_NONE), _in_is(T_NONE), _out_is(T_GLYPH), _right_is(T_NONE)
 {
     assert(in.size() > 0);
@@ -122,7 +130,7 @@ OpenTypeSubstitution::OpenTypeSubstitution(const Vector<OpenTypeGlyph> &in, Open
     _out.gid = out;
 }
 
-OpenTypeSubstitution::~OpenTypeSubstitution()
+Substitution::~Substitution()
 {
     clear(_left, _left_is);
     clear(_in, _in_is);
@@ -130,8 +138,8 @@ OpenTypeSubstitution::~OpenTypeSubstitution()
     clear(_right, _right_is);
 }
 
-OpenTypeSubstitution &
-OpenTypeSubstitution::operator=(const OpenTypeSubstitution &o)
+Substitution &
+Substitution::operator=(const Substitution &o)
 {
     if (&o != this) {
 	assign(_left, _left_is, o._left, o._left_is);
@@ -142,8 +150,69 @@ OpenTypeSubstitution::operator=(const OpenTypeSubstitution &o)
     return *this;
 }
 
+bool
+Substitution::substitute_in(const Substitute &s, uint8_t t, const Coverage &c)
+{
+    switch (t) {
+      case T_NONE:
+	return true;
+      case T_GLYPH:
+	return c.covers(s.gid);
+      case T_GLYPHS:
+	for (int i = 1; i <= s.gids[0]; i++)
+	    if (!c.covers(s.gids[i]))
+		return false;
+	return true;
+      case T_COVERAGE:
+	return *s.coverage <= c;
+      default:
+	assert(0);
+	return false;
+    }
+}
+
+bool
+Substitution::substitute_in(const Substitute &s, uint8_t t, const GlyphSet &gs)
+{
+    switch (t) {
+      case T_NONE:
+	return true;
+      case T_GLYPH:
+	return gs.covers(s.gid);
+      case T_GLYPHS:
+	for (int i = 1; i <= s.gids[0]; i++)
+	    if (!gs.covers(s.gids[i]))
+		return false;
+	return true;
+      case T_COVERAGE:
+	for (Coverage::iterator i = s.coverage->begin(); i; i++)
+	    if (!gs.covers(*i))
+		return false;
+	return true;
+      default:
+	assert(0);
+	return false;
+    }
+}
+
+bool
+Substitution::context_in(const Coverage &c) const
+{
+    return substitute_in(_left, _left_is, c)
+	&& substitute_in(_in, _in_is, c)
+	&& substitute_in(_right, _right_is, c);
+}
+
+bool
+Substitution::context_in(const GlyphSet &gs) const
+{
+    return substitute_in(_left, _left_is, gs)
+	&& substitute_in(_in, _in_is, gs)
+	&& substitute_in(_right, _right_is, gs);
+}
+
 static void
-unparse_glyphid(StringAccum &sa, OpenTypeGlyph gid, const Vector<PermString> *gns)
+unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
 {
     if (gid && gns && gns->size() > gid && (*gns)[gid])
 	sa << (*gns)[gid];
@@ -152,17 +221,17 @@ unparse_glyphid(StringAccum &sa, OpenTypeGlyph gid, const Vector<PermString> *gn
 }
 
 void
-OpenTypeSubstitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
+Substitution::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 {
-    if (_left_is == T_NONE && _in_is == T_NONE && _out_is == T_NONE && _right_is == T_NONE)
+    if (!*this)
 	sa << "NULL[]";
-    else if (_left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPH && _right_is == T_NONE) {
+    else if (is_single()) {
 	sa << "SINGLE[";
 	unparse_glyphid(sa, _in.gid, gns);
 	sa << " => ";
 	unparse_glyphid(sa, _out.gid, gns);
 	sa << ']';
-    } else if (_left_is == T_NONE && _in_is == T_GLYPHS && _out_is == T_GLYPH && _right_is == T_NONE) {
+    } else if (is_ligature()) {
 	sa << "LIGATURE[";
 	for (int i = 1; i <= _in.gids[0]; i++) {
 	    unparse_glyphid(sa, _in.gids[i], gns);
@@ -171,7 +240,7 @@ OpenTypeSubstitution::unparse(StringAccum &sa, const Vector<PermString> *gns) co
 	sa << "=> ";
 	unparse_glyphid(sa, _out.gid, gns);
 	sa << ']';
-    } else if (_left_is == T_NONE && _in_is == T_GLYPH && _out_is == T_GLYPHS && _right_is == T_NONE) {
+    } else if (is_multiple()) {
 	sa << "MULTIPLE[";
 	unparse_glyphid(sa, _in.gid, gns);
 	sa << " =>";
@@ -185,7 +254,7 @@ OpenTypeSubstitution::unparse(StringAccum &sa, const Vector<PermString> *gns) co
 }
 
 String
-OpenTypeSubstitution::unparse(const Vector<PermString> *gns) const
+Substitution::unparse(const Vector<PermString> *gns) const
 {
     StringAccum sa;
     unparse(sa, gns);
@@ -195,198 +264,244 @@ OpenTypeSubstitution::unparse(const Vector<PermString> *gns) const
 
 
 /**************************
- * OpenType_GSUB          *
+ * Gsub                   *
  *                        *
  **************************/
 
-OpenType_GSUB::OpenType_GSUB(const String &str, ErrorHandler *errh)
-    : _str(str)
+Gsub::Gsub(const Data &d, ErrorHandler *errh) throw (Error)
 {
-    _str.align(4);
-    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
-	_str = String();
-}
-
-int
-OpenType_GSUB::check(ErrorHandler *errh)
-{
-    // HEADER FORMAT:
     // Fixed	Version
     // Offset	ScriptList
     // Offset	FeatureList
     // Offset	LookupList
-    int len = _str.length();
-    const uint8_t *data = _str.udata();
-    if (len < HEADERSIZE)
-	return errh->error("OTF GSUB too small for header"), -EFAULT;
-    if (!(data[0] == '\000' && data[1] == '\001'))
-	return errh->error("OTF GSUB bad version number"), -ERANGE;
+    if (d.u16(0) != 1)
+	throw Format("GSUB");
+    if (_script_list.assign(d.offset_subtable(4), errh) < 0)
+	throw Format("GSUB script list");
+    if (_feature_list.assign(d.offset_subtable(6), errh) < 0)
+	throw Format("GSUB feature list");
+    _lookup_list = d.offset_subtable(8);
+}
 
-    if (_script_list.assign(_str.substring(USHORT_AT(data + 4)), errh) < 0)
-	return -1;
-    if (_feature_list.assign(_str.substring(USHORT_AT(data + 6)), errh) < 0)
-	return -1;
-    return 0;
+GsubLookup
+Gsub::lookup(unsigned i) const
+{
+    if (i >= _lookup_list.u16(0))
+	throw Error("GSUB lookup out of range");
+    else
+	return GsubLookup(_lookup_list.offset_subtable(2 + i*2));
 }
 
 
 /**************************
- * OpenType_GSUBSingle    *
+ * GsubLookup             *
  *                        *
  **************************/
 
-OpenType_GSUBSingle::OpenType_GSUBSingle(const String &str, ErrorHandler *errh)
-    : _str(str)
+GsubLookup::GsubLookup(const Data &d) throw (Error)
+    : _d(d)
 {
-    _str.align(2);
-    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
-	_str = String();
+    if (_d.length() < 6)
+	throw Format("GSUB Lookup table");
 }
 
-int
-OpenType_GSUBSingle::check(ErrorHandler *errh)
+void
+GsubLookup::unparse_automatics(Vector<Substitution> &v) const
 {
-    const uint8_t *data = _str.udata();
-    if (_str.length() < HEADERSIZE
-	|| data[0] != 0
-	|| (data[1] != 1 && data[1] != 2)
-	|| (data[1] == 2 && _str.length() < HEADERSIZE + USHORT_AT(data + 4)*FORMAT2_RECSIZE))
-	return errh->error("GSUB Single Substitution table bad format");
-    OpenTypeCoverage coverage(_str.substring(USHORT_AT(data + 2)), errh);
-    if (!coverage.ok())
-	return -1;
-    if (data[1] == 2 && coverage.size() > USHORT_AT(data + 4))
-	return errh->error("GSUB Single Substitution Format 2 coverage mismatch");
-    return 0;
-}
-
-OpenTypeCoverage
-OpenType_GSUBSingle::coverage() const
-{
-    if (!ok())
-	return OpenTypeCoverage();
-    else {
-	const uint8_t *data = _str.udata();
-	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false);
+    int n = _d.u16(4);
+    switch (_d.u16(0)) {
+      case L_SINGLE:
+	for (int i = 0; i < n; i++)
+	    GsubSingle(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	break;
+      case L_MULTIPLE:
+	for (int i = 0; i < n; i++)
+	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	break;
+      case L_ALTERNATE:
+	/* not an automatic feature */
+	break;
+      case L_LIGATURE:
+	for (int i = 0; i < n; i++)
+	    GsubLigature(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	break;
+      default:
+	/* XXX */
+	break;
     }
 }
 
-bool
-OpenType_GSUBSingle::covers(OpenTypeGlyph g) const
+
+/**************************
+ * GsubSingle             *
+ *                        *
+ **************************/
+
+GsubSingle::GsubSingle(const Data &d) throw (Error)
+    : _d(d)
 {
-    if (!ok())
-	return false;
-    else {
-	const uint8_t *data = _str.udata();
-	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).covers(g);
-    }
+    if (_d[0] != 0
+	|| (_d[1] != 1 && _d[1] != 2))
+	throw Format("GSUB Single Substitution");
+    Coverage coverage(_d.offset_subtable(2));
+    if (!coverage.ok()
+	|| (_d[1] == 2 && coverage.size() > _d.u16(4)))
+	throw Format("GSUB Single Substitution coverage");
 }
 
-OpenTypeGlyph
-OpenType_GSUBSingle::map(OpenTypeGlyph g) const
+Coverage
+GsubSingle::coverage() const throw ()
 {
-    if (!ok())
-	return g;
-    const uint8_t *data = _str.udata();
-    int ci = OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).lookup(g);
+    return Coverage(_d.offset_subtable(2), 0, false);
+}
+
+Glyph
+GsubSingle::map(Glyph g) const
+{
+    int ci = coverage().lookup(g);
     if (ci < 0)
 	return g;
-    else if (data[1] == 1)
-	return g + SHORT_AT(data + 4);
+    else if (_d[1] == 1)
+	return g + _d.s16(4);
     else
-	return USHORT_AT(data + HEADERSIZE + FORMAT2_RECSIZE*ci);
+	return _d.u16(HEADERSIZE + FORMAT2_RECSIZE*ci);
+}
+
+void
+GsubSingle::unparse(Vector<Substitution> &v) const
+{
+    if (_d[1] == 1) {
+	int delta = _d.s16(4);
+	for (Coverage::iterator i = coverage().begin(); i; i++)
+	    v.push_back(Substitution(*i, *i + delta));
+    } else {
+	for (Coverage::iterator i = coverage().begin(); i; i++)
+	    v.push_back(Substitution(*i, _d.u16(HEADERSIZE + i.coverage_index()*FORMAT2_RECSIZE)));
+    }
 }
 
 
 /**************************
- * OpenType_GSUBLigature  *
+ * GsubMultiple           *
  *                        *
  **************************/
 
-OpenType_GSUBLigature::OpenType_GSUBLigature(const String &str, ErrorHandler *errh)
-    : _str(str)
+GsubMultiple::GsubMultiple(const Data &d) throw (Error)
+    : _d(d)
 {
-    _str.align(2);
-    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
-	_str = String();
+    if (_d[0] != 0 || _d[1] != 1)
+	throw Format("GSUB Multiple Substitution");
+    Coverage coverage(_d.offset_subtable(2));
+    if (!coverage.ok()
+	|| coverage.size() > _d.u16(4))
+	throw Format("GSUB Multiple Substitution coverage");
 }
 
-int
-OpenType_GSUBLigature::check(ErrorHandler *errh)
+Coverage
+GsubMultiple::coverage() const throw ()
 {
-    const uint8_t *data = _str.udata();
-    if (_str.length() < HEADERSIZE
-	|| data[0] != 0
-	|| data[1] != 1
-	|| _str.length() < HEADERSIZE + USHORT_AT(data + 4)*RECSIZE)
-	return errh->error("GSUB Ligature Substitution table bad format");
-    OpenTypeCoverage coverage(_str.substring(USHORT_AT(data + 2)), errh);
-    if (!coverage.ok())
-	return -1;
-    if (coverage.size() > USHORT_AT(data + 4))
-	return errh->error("GSUB Ligature Substitution coverage mismatch");
-    return 0;
-}
-
-OpenTypeCoverage
-OpenType_GSUBLigature::coverage() const
-{
-    if (!ok())
-	return OpenTypeCoverage();
-    else {
-	const uint8_t *data = _str.udata();
-	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false);
-    }
+    return Coverage(_d.offset_subtable(2), 0, false);
 }
 
 bool
-OpenType_GSUBLigature::covers(OpenTypeGlyph g) const
+GsubMultiple::map(Glyph g, Vector<Glyph> &v) const
 {
-    if (!ok())
+    v.clear();
+    int ci = coverage().lookup(g);
+    if (ci < 0) {
+	v.push_back(g);
 	return false;
-    else {
-	const uint8_t *data = _str.udata();
-	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).covers(g);
+    } else {
+	Data seq = _d.offset_subtable(HEADERSIZE + ci*RECSIZE);
+	for (int i = 0; i < seq.u16(0); i++)
+	    v.push_back(seq.u16(SEQ_HEADERSIZE + i*SEQ_RECSIZE));
+	return true;
     }
 }
 
+void
+GsubMultiple::unparse(Vector<Substitution> &v) const
+{
+    Vector<Glyph> result;
+    for (Coverage::iterator i = coverage().begin(); i; i++) {
+	Data seq = _d.offset_subtable(HEADERSIZE + i.coverage_index()*RECSIZE);
+	result.clear();
+	for (int j = 0; j < seq.u16(0); j++)
+	    result.push_back(seq.u16(SEQ_HEADERSIZE + j*SEQ_RECSIZE));
+	v.push_back(Substitution(*i, result));
+    }
+}
+
+
+/**************************
+ * GsubLigature           *
+ *                        *
+ **************************/
+
+GsubLigature::GsubLigature(const Data &d) throw (Error)
+    : _d(d)
+{
+    if (_d[0] != 0
+	|| _d[1] != 1)
+	throw Format("GSUB Ligature Substitution");
+    Coverage coverage(_d.offset_subtable(2));
+    if (!coverage.ok()
+	|| coverage.size() > _d.u16(4))
+	throw Format("GSUB Ligature Substitution coverage");
+}
+
+Coverage
+GsubLigature::coverage() const throw ()
+{
+    return Coverage(_d.offset_subtable(2), 0, false);
+}
+
 bool
-OpenType_GSUBLigature::map(const Vector<OpenTypeGlyph> &gs,
-			   OpenTypeGlyph &result, int &consumed) const
+GsubLigature::map(const Vector<Glyph> &gs, Glyph &result, int &consumed) const
 {
     assert(gs.size() > 0);
     result = gs[0];
     consumed = 1;
-    if (!ok())
-	return false;
-    const uint8_t *data = _str.udata();
-    int ci = OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).lookup(gs[0]);
+    int ci = coverage().lookup(gs[0]);
     if (ci < 0)
 	return false;
-    int off = USHORT_AT(data + HEADERSIZE + RECSIZE*ci), last_off;
-    if (off + SET_HEADERSIZE > _str.length()
-	|| ((last_off = off + SET_HEADERSIZE + USHORT_AT(data + off)*SET_RECSIZE),
-	    last_off > _str.length()))
-	// XXX errh->error("GSUB Ligature Substitution table bad for glyph %d", gs[0]);
-	return false;
-    for (int i = off + SET_HEADERSIZE; i < last_off; i += SET_RECSIZE) {
-	int off2 = off + USHORT_AT(i), ninlig;
-	if (off2 + LIG_HEADERSIZE > _str.length()
-	    || ((ninlig = USHORT_AT(data + off2 + 2)),
-		off2 + LIG_HEADERSIZE + ninlig*LIG_RECSIZE > _str.length()))
-	    // XXX errh->error("GSUB Ligature Substitution ligature bad for glyph %d", gs[0]);
-	    return false;
-	if (ninlig > gs.size() - 1)
+    Data ligset = _d.offset_subtable(HEADERSIZE + ci*RECSIZE);
+    int nligset = ligset.u16(0);
+    for (int i = 0; i < nligset; i++) {
+	Data lig = ligset.offset_subtable(SET_HEADERSIZE + i*SET_RECSIZE);
+	int nlig = lig.u16(2);
+	if (nlig > gs.size() - 1)
 	    goto bad;
-	for (int j = 0; j < ninlig; j++)
-	    if (USHORT_AT(data + off2 + LIG_HEADERSIZE + j*LIG_RECSIZE) != gs[j + 1])
+	for (int j = 0; j < nlig; j++)
+	    if (lig.u16(LIG_HEADERSIZE + j*LIG_RECSIZE) != gs[j + 1])
 		goto bad;
-	result = USHORT_AT(data + off2);
-	consumed = ninlig + 1;
+	result = lig.u16(0);
+	consumed = nlig + 1;
 	return true;
       bad: ;
     }
     return false;
 }
 
+void
+GsubLigature::unparse(Vector<Substitution> &v) const
+{
+    for (Coverage::iterator i = coverage().begin(); i; i++) {
+	Data ligset = _d.offset_subtable(HEADERSIZE + i.coverage_index()*RECSIZE);
+	int nligset = ligset.u16(0);
+	Vector<Glyph> components(1, *i);
+	for (int j = 0; j < nligset; j++) {
+	    Data lig = ligset.offset_subtable(SET_HEADERSIZE + j*SET_RECSIZE);
+	    int nlig = lig.u16(2);
+	    components.resize(1);
+	    for (int k = 0; k < nlig; k++)
+		components.push_back(lig.u16(LIG_HEADERSIZE + k*LIG_RECSIZE));
+	    v.push_back(Substitution(components, lig.u16(0)));
+	}
+    }
 }
+
+
+}}
+
+#include <lcdf/vector.cc>
