@@ -9,14 +9,18 @@
 #include "maket1font.hh"
 #include <efont/cff.hh>
 #include <efont/otf.hh>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <cstdarg>
+#include <cctype>
+#include <cerrno>
 #ifdef HAVE_CTIME
-# include <time.h>
+# include <ctime>
+#endif
+#if defined(_MSDOS) || defined(_WIN32)
+# include <fcntl.h>
+# include <io.h>
 #endif
 
 using namespace Efont;
@@ -92,6 +96,9 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
     if (!infn || strcmp(infn, "-") == 0) {
 	f = stdin;
 	infn = "<stdin>";
+#if defined(_MSDOS) || defined(_WIN32)
+	_setmode(_fileno(f), _O_BINARY);
+#endif
     } else if (!(f = fopen(infn, "rb")))
 	errh->fatal("%s: %s", infn, strerror(errno));
   
@@ -119,7 +126,10 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 	font = new Cff::Font(new Cff(data, &cerrh), name, &cerrh);
     } else
 	errh->fatal("%s: not a CFF or OpenType/CFF font", infn);
-  
+
+    if (errh->nerrors() > 0)
+	return;
+    
     Type1Font *font1 = create_type1_font(font);
 
     if (!outfn || strcmp(outfn, "-") == 0) {
@@ -129,6 +139,9 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 	errh->fatal("%s: %s", outfn, strerror(errno));
 
     if (binary) {
+#if defined(_MSDOS) || defined(_WIN32)
+	_setmode(_fileno(f), _O_BINARY);
+#endif
 	Type1PFBWriter t1w(f);
 	font1->write(t1w);
     } else {
