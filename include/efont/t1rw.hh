@@ -6,7 +6,7 @@
 
 class Type1Reader {
   
-  static const int DataSize = 1024;
+  static const int DATA_SIZE = 1024;
   
   unsigned char *_data;
   int _len;
@@ -45,6 +45,7 @@ class Type1Reader {
   Type1Reader();
   virtual ~Type1Reader();
   
+  int get_data(unsigned char *, int);
   virtual int more_data(unsigned char *, int) = 0;
   virtual bool preserve_whitespace() const { return false; }
   
@@ -59,20 +60,19 @@ class Type1Reader {
 };
 
 
-class Type1PfaReader: public Type1Reader {
+class Type1PFAReader : public Type1Reader {
   
   FILE *_f;
   
  public:
   
-  Type1PfaReader(FILE *);
+  Type1PFAReader(FILE *);
   
   int more_data(unsigned char *, int);
   
 };
 
-
-class Type1PfbReader: public Type1Reader {
+class Type1PFBReader : public Type1Reader {
   
   FILE *_f;
   bool _binary;
@@ -80,11 +80,25 @@ class Type1PfbReader: public Type1Reader {
   
  public:
   
-  Type1PfbReader(FILE *);
+  Type1PFBReader(FILE *);
   
   int more_data(unsigned char *, int);
   bool preserve_whitespace() const;
   
+};
+
+class Type1SubsetReader : public Type1Reader {
+
+  Type1Reader *_reader;
+  int _left;
+
+ public:
+
+  Type1SubsetReader(Type1Reader *, int);
+
+  int more_data(unsigned char *, int);
+  bool preserve_whitespace() const;
+
 };
 
 
@@ -103,6 +117,9 @@ class Type1Writer {
   int _eexec_start;
   int _eexec_end;
   int _r;
+
+  PermString _charstring_start;
+  int _lenIV;
   
   void local_flush();
   unsigned char eexec(int);
@@ -130,19 +147,24 @@ class Type1Writer {
   virtual void flush();
   virtual void switch_eexec(bool);
   virtual void print0(const unsigned char *, int) = 0;
+
+  PermString charstring_start() const		{ return _charstring_start; }
+  int lenIV() const				{ return _lenIV; }
+  void set_charstring_start(PermString p)	{ _charstring_start = p; }
+  void set_lenIV(int l)				{ _lenIV = l; }
   
 };
 
 
-class Type1PfaWriter: public Type1Writer {
+class Type1PFAWriter: public Type1Writer {
   
   FILE *_f;
   int _hex_line;
   
  public:
   
-  Type1PfaWriter(FILE *);
-  ~Type1PfaWriter();
+  Type1PFAWriter(FILE *);
+  ~Type1PFAWriter();
   
   void switch_eexec(bool);
   void print0(const unsigned char *, int);
@@ -150,7 +172,7 @@ class Type1PfaWriter: public Type1Writer {
 };
 
 
-class Type1PfbWriter: public Type1Writer {
+class Type1PFBWriter: public Type1Writer {
   
   StringAccum _save;
   FILE *_f;
@@ -158,8 +180,8 @@ class Type1PfbWriter: public Type1Writer {
   
  public:
   
-  Type1PfbWriter(FILE *);
-  ~Type1PfbWriter();
+  Type1PFBWriter(FILE *);
+  ~Type1PFBWriter();
   
   void flush();
   void switch_eexec(bool);
@@ -178,7 +200,7 @@ Type1Writer::print(int c)
 inline Type1Writer &
 Type1Writer::operator<<(const char *cc)
 {
-  print(cc,strlen(cc));
+  print(cc, strlen(cc));
   return *this;
 }
 

@@ -16,16 +16,22 @@ static PermString FontInfo_str = "FontInfo";
 
 Type1Font::Type1Font(Type1Reader &reader)
   : _cached_defs(false), _glyph_map(-1), _encoding(0),
-    _cached_mmspace(0), _mmspace(0)
+    _cached_mmspace(0), _mmspace(0),
+    _synthetic_item(0)
 {
   _dict = new HashMap<PermString, Type1Definition *>[dLast]((Type1Definition *)0);
-  for (int i = 0; i < dLast; i++)
+  for (int i = 0; i < dLast; i++) {
     _index[i] = -1;
+    _dict_deltas[i] = 0;
+  }
   
   Dict cur_dict = dF;
   int eexec_state = 0;
   bool have_subrs = false;
   bool have_charstrings = false;
+  int lenIV = 4;
+  Type1SubrGroupItem *cur_group = 0;
+  int cur_group_count = 0;
   
   StringAccum accum;
   while (reader.next_line(accum)) {
@@ -39,7 +45,7 @@ Type1Font::Type1Font(Type1Reader &reader)
     // check for CHARSTRINGS
     if (reader.was_charstring()) {
       Type1Subr *fcs = Type1Subr::make(x, x_length, reader.charstring_start(),
-				       reader.charstring_length());
+				       reader.charstring_length(), lenIV);
       
       if (fcs->is_subr()) {
 	if (fcs->subrno() >= _subrs.size())
@@ -47,10 +53,11 @@ Type1Font::Type1Font(Type1Reader &reader)
 	_subrs[fcs->subrno()] = fcs;
 	if (!have_subrs && _items.size()) {
 	  if (Type1CopyItem *copy = _items.back()->cast_copy()) {
-	    Type1SubrGroupItem *sg = new Type1SubrGroupItem
+	    cur_group = new Type1SubrGroupItem
 	      (this, true, copy->take_value(), copy->length());
+	    cur_group_count = 0;
+	    _items.back() = cur_group;
 	    delete copy;
-	    _items.back() = sg;
 	  }
 	  have_subrs = true;
 	}
@@ -61,10 +68,11 @@ Type1Font::Type1Font(Type1Reader &reader)
 	_glyph_map.insert(fcs->name(), num);
 	if (!have_charstrings && _items.size()) {
 	  if (Type1CopyItem *copy = _items.back()->cast_copy()) {
-	    Type1SubrGroupItem *sg = new Type1SubrGroupItem
+	    cur_group = new Type1SubrGroupItem
 	      (this, false, copy->take_value(), copy->length());
+	    cur_group_count = 0;
+	    _items.back() = cur_group;
 	    delete copy;
-	    _items.back() = sg;
 	  }
 	  have_charstrings = true;
 	}
@@ -83,21 +91,20 @@ Type1Font::Type1Font(Type1Reader &reader)
     // check for CHARSTRING START
     // 5/29/1999: beware of charstring start-like things that don't have
     // `readstring' in them!
-    if (eexec_state == 1 && !_charstring_definer
+    if (!_charstring_definer
 	&& strstr(x, "string currentfile") != 0
 	&& strstr(x, "readstring") != 0) {
       char *sb = x;
       while (*sb && *sb != '/') sb++;
       char *se = sb + 1;
       while (*sb && *se && *se != ' ' && *se != '{') se++;
-      if (!*sb || !*se) goto charstring_definer_fail;
-      _charstring_definer = permprintf(" %*s ", se - sb - 1, sb + 1);
-      Type1Subr::set_charstring_definer(_charstring_definer);
-      reader.set_charstring_definer(_charstring_definer);
-      _items.push_back(new Type1CopyItem(accum.take(), x_length));
-      continue;
+      if (*sb && *se) {
+	_charstring_definer = permprintf(" %*s ", se - sb - 1, sb + 1);
+	reader.set_charstring_definer(_charstring_definer);
+	_items.push_back(new Type1CopyItem(accum.take(), x_length));
+	continue;
+      }
     }
-   charstring_definer_fail:
     
     // check for ENCODING
     if (!_encoding && strncmp(x, "/Encoding ", 10) == 0) {
@@ -112,11 +119,8 @@ Type1Font::Type1Font(Type1Reader &reader)
       Type1Definition *fdi = Type1Definition::make(accum, &reader);
       if (!fdi) goto definition_fail;
       
-      if (fdi->name() == lenIV_str) {
-	int lenIV;
-	if (fdi->value_int(lenIV))
-	  Type1Subr::set_lenIV(lenIV);
-      }
+      if (fdi->name() == lenIV_str)
+	fdi->value_int(lenIV);
       
       _dict[cur_dict].insert(fdi->name(), fdi);
       if (_index[cur_dict] < 0) _index[cur_dict] = _items.size();
@@ -145,6 +149,30 @@ Type1Font::Type1Font(Type1Reader &reader)
       eexec_state = 3;
       accum.clear();
       continue;
+    }
+
+    // check for MODIFIED FONT
+    if (eexec_state == 1 && strstr(x, "FontDirectory") != 0) {
+      accum.pop();
+      if (read_synthetic_font(reader, x, accum)) {
+	accum.clear();
+	continue;
+      }
+      accum.push(0);
+    }
+
+    // check for END-OF-CHARSTRING-GROUP TEXT
+    if (cur_group) {
+      if (cur_group_count == 0
+	  || ((strstr(x, "end") != 0 || strstr(x, "put") != 0)
+	      && strchr(x, '/') == 0)) {
+	//fprintf(stderr, "++ %s\n", x);
+	cur_group->add_end_text(x);
+	cur_group_count++;
+	accum.clear();
+	continue;
+      }
+      cur_group = 0;
     }
     
     // add COPY ITEM
@@ -176,8 +204,29 @@ Type1Font::Type1Font(Type1Reader &reader)
     } else if (cur_dict == dFontInfo && strstr(x, "end") != 0)
       cur_dict = dFont;
   }
+
+  // set dictionary deltas
+  for (int i = dFI; i < dLast; i++)
+    _dict_deltas[i] = get_dict_size(i) - _dict[i].size();
+  // borrow glyphs and glyph map from _synthetic_item
+  if (!_glyphs.size() && _synthetic_item) {
+    _glyphs = _synthetic_item->included_font()->_glyphs;
+    _glyph_map = _synthetic_item->included_font()->_glyph_map;
+  }
 }
 
+Type1Font::~Type1Font()
+{
+  delete[] _dict;
+  for (int i = 0; i < _items.size(); i++)
+    delete _items[i];
+  delete _mmspace;
+  for (int i = 0; i < _subrs.size(); i++)
+    delete _subrs[i];
+  if (!_synthetic_item)
+    for (int i = 0; i < _glyphs.size(); i++)
+      delete _glyphs[i];
+}
 
 bool
 Type1Font::ok() const
@@ -261,11 +310,151 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
   }
 }
 
-Type1Font::~Type1Font()
+static bool
+read_synthetic_string(Type1Reader &reader, StringAccum &wrong_accum,
+		      const char *format, int *value)
 {
-  delete[] _dict;
-  for (int i = 0; i < _items.size(); i++)
-    delete _items[i];
+  StringAccum accum;
+  if (!reader.next_line(accum))
+    return false;
+  wrong_accum << accum;
+  accum.push(0);		// ensure we don't run off the string
+  int n = 0;
+  if (value)
+    sscanf(accum.data(), format, value, &n);
+  else
+    sscanf(accum.data(), format, &n);
+  return (n != 0);
+}
+
+bool
+Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
+			       StringAccum &wrong_accum)
+{
+  // read font name
+  PermString font_name;
+  {
+    char *x = new char[strlen(first_line) + 1];
+    int n = 0;
+    sscanf(first_line, "FontDirectory /%[^] \t\r\n[{}/] known { %n", x, &n);
+    if (n && first_line[n] == 0)
+      font_name = x;
+    delete[] x;
+    if (!font_name)
+      return false;
+  }
+
+  // check UniqueID
+  int unique_id;
+  {
+    StringAccum accum;
+    if (!reader.next_line(accum))
+      return false;
+    wrong_accum << accum;
+    accum.push(0);		// ensure we don't run off the string
+    const char *y = accum.data();
+    if (*y != '/' || strncmp(y + 1, font_name.cc(), font_name.length()) != 0)
+      return false;
+    int n = 0;
+    sscanf(y + font_name.length() + 1, " findfont %n", &n);
+    y = strstr(y, "/UniqueID get ");
+    if (n == 0 || y == 0)
+      return false;
+    n = 0;
+    sscanf(y + 14, "%d %n", &unique_id, &n);
+    if (n == 0)
+      return false;
+  }
+
+  // check lines that say how much text
+  int multiplier;
+  if (!read_synthetic_string(reader, wrong_accum, "save userdict /fbufstr %d string put %n", &multiplier))
+    return false;
+
+  int multiplicand;
+  if (!read_synthetic_string(reader, wrong_accum, "%d {currentfile fbufstr readstring { pop } { clear currentfile %n", &multiplicand))
+    return false;
+
+  if (!read_synthetic_string(reader, wrong_accum, "closefile /fontdownload /unexpectedEOF /.error cvx exec } ifelse } repeat %n", 0))
+    return false;
+
+  int extra;
+  if (!read_synthetic_string(reader, wrong_accum, "currentfile %d string readstring { pop } { clear currentfile %n", &extra))
+    return false;
+
+  if (!read_synthetic_string(reader, wrong_accum, "closefile /fontdownload /unexpectedEOF /.error cvx exec } ifelse %n", 0))
+    return false;
+
+  if (!read_synthetic_string(reader, wrong_accum, "restore } if } if %n", 0))
+    return false;
+
+  Type1SubsetReader subreader(&reader, multiplier*multiplicand + extra);
+  Type1Font *synthetic = new Type1Font(subreader);
+  if (!synthetic->ok())
+    delete synthetic;
+  else {
+    _synthetic_item = new Type1IncludedFont(synthetic, unique_id);
+    _items.push_back(_synthetic_item);
+  }
+  return true;
+}
+
+
+void
+Type1Font::undo_synthetic()
+{
+  // A synthetic fonts doesn't share arbitrary code with its base font; it
+  // shares just the CharStrings dictionary, according to Adobe Type 1 Font
+  // Format. We take advantage of this.
+  
+  if (!_synthetic_item)
+    return;
+  
+  int mod_ii;
+  for (mod_ii = nitems() - 1; mod_ii >= 0; mod_ii--)
+    if (_items[mod_ii] == _synthetic_item)
+      break;
+  if (mod_ii < 0)
+    return;
+
+  // remove synthetic item and the reference to the included font
+  _items[mod_ii] = new Type1NullItem;
+  if (Type1CopyItem *copy = _items[mod_ii+1]->cast_copy())
+    if (strstr(copy->value(), "findfont") != 0) {
+      delete copy;
+      _items[mod_ii+1] = new Type1NullItem;
+    }
+
+  Type1Font *f = _synthetic_item->included_font();
+  // its glyphs are already stored in our _glyphs array
+
+  // copy SubrGroupItem from `f' into `this'
+  Type1SubrGroupItem *oth_subrs = 0, *oth_glyphs = 0;
+  for (int i = 0; i < f->nitems(); i++)
+    if (Type1SubrGroupItem *sgi = f->_items[i]->cast_subr_group()) {
+      if (sgi->is_subrs())
+	oth_subrs = sgi;
+      else
+	oth_glyphs = sgi;
+    }
+
+  assert(oth_glyphs);
+  
+  for (int i = nitems() - 1; i >= 0; i--)
+    if (Type1SubrGroupItem *sgi = _items[i]->cast_subr_group()) {
+      assert(sgi->is_subrs());
+      if (oth_subrs)
+	sgi->set_end_text(oth_subrs->end_text());
+      shift_indices(i + 1, 1);
+      Type1SubrGroupItem *nsgi = new Type1SubrGroupItem(*oth_glyphs, this);
+      _items[i + 1] = nsgi;
+      break;
+    }
+
+  // delete included font
+  f->_glyphs.clear();		// don't delete glyphs; we've stolen them
+  delete _synthetic_item;
+  _synthetic_item = 0;
 }
 
 
@@ -377,9 +566,61 @@ Type1Font::add_header_comment(const char *comment)
 }
 
 
-void
-Type1Font::change_dict_size(Type1Item *item, int size)
+Type1Item *
+Type1Font::dict_size_item(int d) const
 {
+  switch (d) {
+
+   case dFI: case dP: case dB:
+    if (_index[d] > 0)
+      return _items[_index[d] - 1];
+    break;
+
+   case dBFI:
+    if (Type1Item *t1i = b_dict("FontInfo"))
+      return t1i;
+    else if (_index[dBFI] > 0)
+      return _items[_index[dBFI] - 1];
+    break;
+
+   case dBP:
+    if (Type1Item *t1i = b_dict("Private"))
+      return t1i;
+    else if (_index[dBP] > 0)
+      return _items[_index[dBP] - 1];
+    break;
+
+  }
+  return 0;
+}
+
+int
+Type1Font::get_dict_size(int d) const
+{
+  Type1Item *item = dict_size_item(d);
+  if (!item)
+    /* nada */;
+  else if (Type1Definition *t1d = item->cast_definition()) {
+    int num;
+    if (strstr(t1d->definer().cc(), "dict") && t1d->value_int(num))
+      return num;
+  } else if (Type1CopyItem *copy = item->cast_copy()) {
+    char *value = copy->value();
+    char *d = strstr(value, " dict");
+    if (d && d > value && isdigit(d[-1])) {
+      char *c = d - 1;
+      while (c > value && isdigit(c[-1]))
+	c--;
+      return strtol(c, 0, 10);
+    }
+  }
+  return -1;
+}
+
+void
+Type1Font::set_dict_size(int d, int size)
+{
+  Type1Item *item = dict_size_item(d);
   if (!item)
     return;
   if (Type1Definition *t1d = item->cast_definition()) {
@@ -406,28 +647,16 @@ Type1Font::change_dict_size(Type1Item *item, int size)
 void
 Type1Font::write(Type1Writer &w)
 {
-  Type1Subr::set_charstring_definer(_charstring_definer);
-  
   Type1Definition *lenIV_def = p_dict("lenIV");
   int lenIV = 4;
-  if (lenIV_def && !lenIV_def->value_int(lenIV)) lenIV = 4;
-  Type1Subr::set_lenIV(lenIV);
-
+  if (lenIV_def)
+    lenIV_def->value_int(lenIV);
+  w.set_charstring_start(_charstring_definer);
+  w.set_lenIV(lenIV);
+  
   // change dict sizes
-  if (_index[dFI] > 0)
-    change_dict_size(_items[_index[dFI]-1], _dict[dFI].size());
-  if (_index[dP] > 0)
-    change_dict_size(_items[_index[dP]-1], _dict[dP].size());
-  if (_index[dB] > 0)
-    change_dict_size(_items[_index[dB]-1], _dict[dB].size());
-  if (Type1Item *bfi = b_dict("FontInfo"))
-    change_dict_size(bfi, _dict[dBFI].size());
-  else if (_index[dBFI] > 0)
-    change_dict_size(_items[_index[dBFI]-1], _dict[dBFI].size());
-  if (Type1Item *bp = b_dict("Private"))
-    change_dict_size(bp, _dict[dBP].size());
-  else if (_index[dBP] > 0)
-    change_dict_size(_items[_index[dBP]-1], _dict[dBP].size());
+  for (int i = dFI; i < dLast; i++)
+    set_dict_size(i, _dict[i].size() + _dict_deltas[i]);
   // XXX what if dict had nothing, but now has something?
   
   for (int i = 0; i < _items.size(); i++)

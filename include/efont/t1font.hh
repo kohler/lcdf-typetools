@@ -15,12 +15,13 @@
 class Type1Item;
 class Type1Definition;
 class Type1Encoding;
+class Type1IncludedFont;
 class Type1Subr;
 class Type1Reader;
 class Type1Writer;
 class Type1MMSpace;
+class StringAccum;
 class ErrorHandler;
-
 
 class Type1Font: public Type1Program {
  public:
@@ -45,6 +46,7 @@ class Type1Font: public Type1Program {
   
   HashMap<PermString, Type1Definition *> *_dict;
   int _index[dLast];
+  int _dict_deltas[dLast];
   
   Vector<Type1Subr *> _subrs;
   Vector<Type1Subr *> _glyphs;
@@ -55,15 +57,20 @@ class Type1Font: public Type1Program {
   
   mutable bool _cached_mmspace;
   mutable Type1MMSpace *_mmspace;
+
+  Type1IncludedFont *_synthetic_item;
   
   Type1Font(const Type1Font &);
   Type1Font &operator=(const Type1Font &);
-  
+
   void read_encoding(Type1Reader &, const char *);
+  bool read_synthetic_font(Type1Reader &, const char *, StringAccum &);
   void cache_defs() const;
   void shift_indices(int, int);
-  
-  void change_dict_size(Type1Item *, int);
+
+  Type1Item *dict_size_item(int) const;
+  int get_dict_size(int) const;
+  void set_dict_size(int, int);
   
  public:
   
@@ -73,7 +80,7 @@ class Type1Font: public Type1Program {
   
   PermString font_name() const;
   
-  int item_count() const		{ return _items.size(); }
+  int nitems() const			{ return _items.size(); }
   Type1Item *item(int i) const		{ return _items[i]; }
   void set_item(int i, Type1Item *it)	{ _items[i] = it; }
   
@@ -108,6 +115,8 @@ class Type1Font: public Type1Program {
   
   Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
   Type1MMSpace *mmspace() const;
+
+  void undo_synthetic();
   
   void write(Type1Writer &);
   

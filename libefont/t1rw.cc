@@ -28,7 +28,7 @@ Type1Reader::static_initialize()
 
 
 Type1Reader::Type1Reader()
-  : _data(new unsigned char[DataSize]), _len(0), _pos(0),
+  : _data(new unsigned char[DATA_SIZE]), _len(0), _pos(0),
     _ungot(-1), _eexec(false)
 {
   static_initialize();
@@ -58,7 +58,7 @@ int
 Type1Reader::more_data()
 {
   _pos = 0;
-  _len = more_data(_data, DataSize);
+  _len = more_data(_data, DATA_SIZE);
   if (_len < 0) return -1;
   else return _data[_pos++];
 }
@@ -251,17 +251,42 @@ Type1Reader::next_line(StringAccum &s)
 }
 
 
+int
+Type1Reader::get_data(unsigned char *data, int len)
+{
+  if (_len < 0)
+    return -1;
+  if (len <= 0)
+    return 0;
+
+  int pos = 0;
+  if (_ungot >= 0) {
+    *data++ = _ungot;
+    pos++;
+    _ungot = -1;
+  }
+
+  for (; pos < len; pos++) {
+    int c = get();
+    if (c < 0) break;
+    *data++ = c;
+  }
+
+  return pos;
+}
+
+
 /*****
- * Type1PfaReader
+ * Type1PFAReader
  **/
 
-Type1PfaReader::Type1PfaReader(FILE *f)
+Type1PFAReader::Type1PFAReader(FILE *f)
   : _f(f)
 {
 }
 
 int
-Type1PfaReader::more_data(unsigned char *data, int len)
+Type1PFAReader::more_data(unsigned char *data, int len)
 {
   size_t size = fread(data, 1, len, _f);
   return size ? (int)size : -1;
@@ -269,16 +294,16 @@ Type1PfaReader::more_data(unsigned char *data, int len)
 
 
 /*****
- * Type1PfbReader
+ * Type1PFBReader
  **/
 
-Type1PfbReader::Type1PfbReader(FILE *f)
+Type1PFBReader::Type1PFBReader(FILE *f)
   : _f(f), _binary(false), _left(0)
 {
 }
 
 int
-Type1PfbReader::more_data(unsigned char *data, int len)
+Type1PFBReader::more_data(unsigned char *data, int len)
 {
   while (_left == 0) {
     int c = getc(_f);
@@ -307,9 +332,38 @@ Type1PfbReader::more_data(unsigned char *data, int len)
 }
 
 bool
-Type1PfbReader::preserve_whitespace() const
+Type1PFBReader::preserve_whitespace() const
 {
   return _binary;
+}
+
+
+/*****
+ * Type1SubsetReader
+ **/
+
+Type1SubsetReader::Type1SubsetReader(Type1Reader *r, int left)
+  : _reader(r), _left(left)
+{
+}
+
+int
+Type1SubsetReader::more_data(unsigned char *data, int len)
+{
+  if (_left <= 0)
+    return -1;
+  if (len > _left)
+    len = _left;
+  int how_much = _reader->get_data(data, len);
+  if (how_much > 0)
+    _left -= how_much;
+  return how_much;
+}
+
+bool
+Type1SubsetReader::preserve_whitespace() const
+{
+  return _reader->preserve_whitespace();
 }
 
 
@@ -319,7 +373,7 @@ Type1PfbReader::preserve_whitespace() const
 
 Type1Writer::Type1Writer()
   : _buf(new unsigned char[BufSize]), _pos(0),
-    _eexec(false), _eexec_start(-1), _eexec_end(-1)
+    _eexec(false), _eexec_start(-1), _eexec_end(-1), _lenIV(4)
 {
 }
 
@@ -415,22 +469,22 @@ Type1Writer::switch_eexec(bool on)
 
 
 /*****
- * Type1PfaWriter
+ * Type1PFAWriter
  **/
 
-Type1PfaWriter::Type1PfaWriter(FILE *f)
+Type1PFAWriter::Type1PFAWriter(FILE *f)
   : _f(f), _hex_line(0)
 {
 }
 
-Type1PfaWriter::~Type1PfaWriter()
+Type1PFAWriter::~Type1PFAWriter()
 {
   flush();
 }
 
 
 void
-Type1PfaWriter::switch_eexec(bool on)
+Type1PFAWriter::switch_eexec(bool on)
 {
   flush();
   _hex_line = 0;
@@ -438,7 +492,7 @@ Type1PfaWriter::switch_eexec(bool on)
 }
 
 void
-Type1PfaWriter::print0(const unsigned char *c, int l)
+Type1PFAWriter::print0(const unsigned char *c, int l)
 {
   if (eexecing()) {
     char *hex = "0123456789ABCDEF";
@@ -456,15 +510,15 @@ Type1PfaWriter::print0(const unsigned char *c, int l)
 
 
 /*****
- * Type1PfbWriter
+ * Type1PFBWriter
  **/
 
-Type1PfbWriter::Type1PfbWriter(FILE *f)
+Type1PFBWriter::Type1PFBWriter(FILE *f)
   : _f(f), _binary(false)
 {
 }
 
-Type1PfbWriter::~Type1PfbWriter()
+Type1PFBWriter::~Type1PFBWriter()
 {
   flush();
   fputc(128, _f);
@@ -472,7 +526,7 @@ Type1PfbWriter::~Type1PfbWriter()
 }
 
 void
-Type1PfbWriter::flush()
+Type1PFBWriter::flush()
 {
   Type1Writer::flush();
   if (_save.length()) {
@@ -489,7 +543,7 @@ Type1PfbWriter::flush()
 }
 
 void
-Type1PfbWriter::switch_eexec(bool on)
+Type1PFBWriter::switch_eexec(bool on)
 {
   flush();
   Type1Writer::switch_eexec(on);
@@ -497,7 +551,7 @@ Type1PfbWriter::switch_eexec(bool on)
 }
 
 void
-Type1PfbWriter::print0(const unsigned char *c, int l)
+Type1PFBWriter::print0(const unsigned char *c, int l)
 {
   char *m = _save.extend(l);
   memcpy(m, c, l);

@@ -8,10 +8,21 @@
 #include "strtonum.h"
 #include <ctype.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif
 
+
+/*****
+ * Type1NullItem
+ **/
+
+void
+Type1NullItem::gen(Type1Writer &)
+{
+}
 
 /*****
  * Type1CopyItem
@@ -584,10 +595,6 @@ Type1Encoding::gen(Type1Writer &w)
  * Type1Subr
  **/
 
-PermString Type1Subr::charstring_start;
-int Type1Subr::lenIV = 4;
-
-
 Type1Subr::Type1Subr(PermString n, int num, PermString definer,
 		     int lenIV, unsigned char *cs, int l)
   : _name(n), _subrno(num), _definer(definer), _cs(lenIV, cs, l)
@@ -600,22 +607,8 @@ Type1Subr::Type1Subr(PermString n, int num, PermString definer,
 {
 }
 
-void
-Type1Subr::set_charstring_definer(PermString x)
-{
-  charstring_start = x;
-}
-
-
-void
-Type1Subr::set_lenIV(int x)
-{
-  lenIV = x;
-}
-
-
 Type1Subr *
-Type1Subr::make(char *s_in, int s_len, int cs_pos, int cs_len)
+Type1Subr::make(char *s_in, int s_len, int cs_pos, int cs_len, int lenIV)
 {
   /* USAGE NOTE: You must ensure that s_in contains a valid subroutine string
      before calling Type1Subr::make. Type1Reader::was_charstring() is a good
@@ -665,11 +658,11 @@ Type1Subr::gen(Type1Writer &w)
   unsigned char *data = _cs.data();
   
   if (is_subr())
-    w << "dup " << _subrno << ' ' << len + lenIV << charstring_start;
+    w << "dup " << _subrno << ' ' << len + w.lenIV() << w.charstring_start();
   else
-    w << '/' << _name << ' ' << len + lenIV << charstring_start;
+    w << '/' << _name << ' ' << len + w.lenIV() << w.charstring_start();
   
-  if (lenIV < 0) {
+  if (w.lenIV() < 0) {
     // lenIV < 0 means charstrings are unencrypted
     w.print((char *)data, len);
     
@@ -677,11 +670,11 @@ Type1Subr::gen(Type1Writer &w)
     // PERFORMANCE NOTE: Putting the charstring in a buffer of known length
     // and printing that buffer rather than one char at a time is an OK
     // optimization. (around 10%)
-    unsigned char *buf = new unsigned char[len + lenIV];
+    unsigned char *buf = new unsigned char[len + w.lenIV()];
     unsigned char *t = buf;
     
     int r = t1R_cs;
-    for (int i = 0; i < lenIV; i++) {
+    for (int i = 0; i < w.lenIV(); i++) {
       unsigned char c = (unsigned char)(r >> 8);
       *t++ = c;
       r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
@@ -692,7 +685,7 @@ Type1Subr::gen(Type1Writer &w)
       r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
     }
     
-    w.print((char *)buf, len + lenIV);
+    w.print((char *)buf, len + w.lenIV());
     delete[] buf;
   }
   
@@ -705,13 +698,48 @@ Type1Subr::gen(Type1Writer &w)
 
 Type1SubrGroupItem::Type1SubrGroupItem(Type1Font *font, bool is_subrs,
 				       char *v, int l)
-  : _font(font), _is_subrs(is_subrs), _value(v), _length(l)
+  : _font(font), _is_subrs(is_subrs), _value(v), _length(l),
+    _end_text(0), _end_length(0)
 {
+}
+
+Type1SubrGroupItem::Type1SubrGroupItem(const Type1SubrGroupItem &from,
+				       Type1Font *font)
+  : _font(font), _is_subrs(from._is_subrs),
+    _value(new char[from._length + 1]), _length(from._length),
+    _end_text(new char[from._end_length + 1]), _end_length(from._end_length)
+{
+  // +1 to grab terminating null
+  memcpy(_value, from._value, _length + 1);
+  memcpy(_end_text, from._end_text, _end_length + 1);
 }
 
 Type1SubrGroupItem::~Type1SubrGroupItem()
 {
   delete[] _value;
+  delete[] _end_text;
+}
+
+void
+Type1SubrGroupItem::set_end_text(const char *s)
+{
+  delete[] _end_text;
+  _end_length = strlen(s);
+  _end_text = new char[_end_length + 1];
+  memcpy(_end_text, s, _end_length + 1);
+}
+
+void
+Type1SubrGroupItem::add_end_text(const char *s)
+{
+  StringAccum sa;
+  if (_end_text)
+    sa.push(_end_text, _end_length);
+  sa << s << '\n';
+  delete[] _end_text;
+  _end_length = sa.length();
+  sa.push(0);
+  _end_text = sa.take();
 }
 
 void
@@ -753,4 +781,57 @@ Type1SubrGroupItem::gen(Type1Writer &w)
       if (Type1Subr *g = font->glyph(i))
 	g->gen(w);
   }
+
+  if (_end_text)
+    w.print(_end_text, _end_length);
+}
+
+/*****
+ * Type1IncludedFont
+ **/
+
+Type1IncludedFont::Type1IncludedFont(Type1Font *font, int unique_id)
+  : _included_font(font), _unique_id(unique_id)
+{
+}
+
+Type1IncludedFont::~Type1IncludedFont()
+{
+  delete _included_font;
+}
+
+void
+Type1IncludedFont::gen(Type1Writer &w)
+{
+  FILE *f = tmpfile();
+  if (!f)
+    return;
+
+  // write included font
+  Type1PFAWriter new_w(f);
+  _included_font->write(new_w);
+  fflush(f);
+
+  struct stat s;
+  fstat(fileno(f), &s);
+
+  w << "FontDirectory /" << _included_font->font_name() << " known{\n"
+    << "/" << _included_font->font_name()
+    << " findfont dup /UniqueID known {dup /UniqueID get "
+    << _unique_id
+    << " eq exch /FontType get 1 eq and}{pop false}ifelse {\nsave userdict/fbufstr 512 string put\n"
+    << (int)(s.st_size / 512)
+    << "{currentfile fbufstr readstring{pop}{clear currentfile\nclosefile/fontdownload/unexpectedEOF/.error cvx exec}ifelse}repeat\ncurrentfile "
+    << (int)(s.st_size % 512)
+    << " string readstring{pop}{clear currentfile\nclosefile/fontdownload/unexpectedEOF/.error cvx exec}ifelse\nrestore}if}if\n";
+
+  rewind(f);
+  char str[2048];
+  while (1) {
+    int r = fread(str, 1, 2048, f);
+    if (r <= 0) break;
+    w.print(str, r);
+  }
+
+  fclose(f);
 }

@@ -10,6 +10,7 @@ class Type1Interp;
 class Type1Font;
 class Type1CopyItem;
 class Type1Subr;
+class Type1SubrGroupItem;
 class Type1Definition;
 
 class Type1Item {
@@ -27,7 +28,18 @@ class Type1Item {
   virtual Type1CopyItem *cast_copy()		{ return 0; }
   virtual Type1Subr *cast_subr()		{ return 0; }
   virtual Type1Definition *cast_definition()	{ return 0; }
+  virtual Type1SubrGroupItem *cast_subr_group()	{ return 0; }
   
+};
+
+class Type1NullItem : public Type1Item {
+  
+ public:
+  
+  Type1NullItem()			{ }
+  
+  void gen(Type1Writer &);
+
 };
 
 class Type1CopyItem : public Type1Item {
@@ -149,8 +161,6 @@ class Type1Subr : public Type1Item {
   
   Type1Charstring _cs;
   
-  static PermString charstring_start;
-  static int lenIV;
   static PermString cached_definer;
   
   Type1Subr(PermString, int, PermString, int, unsigned char *, int);
@@ -158,7 +168,7 @@ class Type1Subr : public Type1Item {
   
  public:
   
-  static Type1Subr *make(char *, int, int cs_start, int cs_len);
+  static Type1Subr *make(char *, int, int cs_start, int cs_len, int lenIV);
   static Type1Subr *make_subr(int, PermString, const Type1Charstring &);
   
   bool is_subr() const			{ return !_name; }
@@ -173,9 +183,6 @@ class Type1Subr : public Type1Item {
   
   bool run(Type1Interp &t1i)		{ return _cs.run(t1i); }
   
-  static void set_charstring_definer(PermString);
-  static void set_lenIV(int);
-  
   void gen(Type1Writer &);
   
   virtual Type1Subr *cast_subr()	{ return this; }
@@ -188,14 +195,41 @@ class Type1SubrGroupItem : public Type1Item {
   bool _is_subrs;
   char *_value;
   int _length;
+  char *_end_text;
+  int _end_length;
   
  public:
   
   Type1SubrGroupItem(Type1Font *, bool, char *, int);
+  Type1SubrGroupItem(const Type1SubrGroupItem &, Type1Font *);
   ~Type1SubrGroupItem();
+
+  void set_end_text(const char *);
+  void add_end_text(const char *);
+
+  bool is_subrs() const				{ return _is_subrs; }
+  char *end_text() const			{ return _end_text; }
   
   void gen(Type1Writer &);
   
+  Type1SubrGroupItem *cast_subr_group()		{ return this; }
+  
+};
+
+class Type1IncludedFont : public Type1Item {
+
+  Type1Font *_included_font;
+  int _unique_id;
+
+ public:
+
+  Type1IncludedFont(Type1Font *, int);
+  ~Type1IncludedFont();
+
+  Type1Font *included_font() const	{ return _included_font; }
+  
+  void gen(Type1Writer &);
+
 };
 
 #endif
