@@ -70,8 +70,20 @@ class Type1Interp {
     cRoll	= 32 + 30,
     cSetcurrentpoint = 32 + 33,
     
-    cLastCommand = cSetcurrentpoint
-    
+    cLastCommand = cSetcurrentpoint,
+
+  };
+
+  enum OthersubrCommands {
+    othcFlexend = 0,
+    othcFlexbegin = 1,
+    othcFlexmiddle = 2,
+    othcReplacehints = 3,
+    othcMM1 = 14,
+    othcMM2 = 15,
+    othcMM3 = 16,
+    othcMM4 = 17,
+    othcMM6 = 18,
   };
   
   enum Errors {
@@ -97,7 +109,7 @@ class Type1Interp {
   static const int StackSize = 24;
   static const int ScratchSize = 32;
   
-  int _error;
+  int _errno;
   bool _done;
   
   double _s[StackSize];
@@ -112,7 +124,6 @@ class Type1Interp {
   
   static double double_for_error;
   
-  bool blend_command();
   bool roll_command();
   
  public:
@@ -120,7 +131,7 @@ class Type1Interp {
   Type1Interp(const Type1Program *, Vector<double> *weight = 0);
   virtual ~Type1Interp()			{ }
   
-  int error() const				{ return _error; }
+  int errno() const				{ return _errno; }
   bool done() const				{ return _done; }
   void set_done()				{ _done = true; }
   
@@ -150,8 +161,11 @@ class Type1Interp {
   bool arith_command(int);
   bool vector_command(int);
   bool callsubr_command();
+  bool blend_command();
   bool mm_command(int, int);
   virtual bool command(int);
+
+  virtual bool run(Type1Charstring &);
   
 };
 
@@ -162,7 +176,7 @@ Type1Interp::push(double d)
   if (_sp < StackSize)
     _s[_sp++] = d;
   else
-    _error = errOverflow;
+    _errno = errOverflow;
 }
 
 inline void
@@ -171,14 +185,14 @@ Type1Interp::ps_push(double d)
   if (_ps_sp < StackSize)
     _ps_s[_ps_sp++] = d;
   else
-    _error = errOverflow;
+    _errno = errOverflow;
 }
 
 inline double &
 Type1Interp::vec(Vector<double> *v, int i)
 {
   if (i < 0 || i >= v->size()) {
-    _error = errVector;
+    _errno = errVector;
     return double_for_error;
   } else
     return v->at_u(i);

@@ -21,6 +21,12 @@ Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
   memcpy(_data, d, _len);
 }
 
+Type1Charstring::Type1Charstring(const Type1Charstring &t1cs)
+  : _data(new unsigned char[t1cs._len]), _len(t1cs._len), _key(t1cs._key)
+{
+  memcpy(_data, t1cs._data, _len);
+}
+
 void
 Type1Charstring::decrypt() const
 {
@@ -89,7 +95,7 @@ Type1Charstring::run(Type1Interp &t1interp) const
     }
     
     if (!more)
-      return t1interp.error() == Type1Interp::errOK;
+      return t1interp.errno() == Type1Interp::errOK;
     
     data += ahead;
     left -= ahead;

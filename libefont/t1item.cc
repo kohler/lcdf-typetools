@@ -4,6 +4,7 @@
 #include "t1item.hh"
 #include "t1rw.hh"
 #include "t1interp.hh"
+#include "t1font.hh"
 #include "strtonum.h"
 #include <ctype.h>
 #include <string.h>
@@ -16,6 +17,22 @@
 /*****
  * Type1CopyItem
  **/
+
+char *
+Type1CopyItem::take_value()
+{
+  char *v = _value;
+  _value = 0;
+  return v;
+}
+
+void
+Type1CopyItem::set_value(char *v, int length)
+{
+  delete[] _value;
+  _value = v;
+  _length = length;
+}
 
 void
 Type1CopyItem::gen(Type1Writer &w)
@@ -79,20 +96,59 @@ Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
   return s - accum.value();
 }
 
+int
+Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
+{
+  int paren_level = 0;
+  int brace_level = 0;
+  char *s = accum.value() + pos;
+  
+  do {
+    switch (*s++) {
+     case '{': if (!paren_level) brace_level++; break;
+     case '}': if (!paren_level) brace_level--; break;
+     case '(': paren_level++; break;
+     case ')': paren_level--; break;
+     case '\\': if (paren_level && *s) s++; break;
+     case '%':
+      if (!paren_level)
+	while (*s != '\n' && *s != '\r' && *s)
+	  s++;
+      break;
+     case 0:
+      if (!reader) return -1;
+      pos = s - accum.value();
+      accum.pop();		// remove final 0 byte
+      accum.push('\n');		// replace with \n
+      if (!reader->next_line(accum)) return -1;
+      accum.push(0);		// stick on a 0 byte
+      s = accum.value() + pos;
+      break;
+    }
+  } while (brace_level);
+  
+  return s - accum.value();
+}
+
 Type1Definition *
 Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
 		      bool force_definition = false)
 {
-  if (*accum.value() != '/')
+  char *s = accum.value();
+  while (isspace(*s))
+    s++;
+  if (*s != '/')
     return 0;
-  char *s = accum.value() + 1;
+  s++;
+  int name_start_pos = s - accum.value();
   
   // find NAME LENGTH
-  while (!isspace(*s) && *s != '[' && *s != '{' && *s != '(' && *s)
+  while (!isspace(*s) && *s != '[' && *s != '{' && *s != '('
+	 && *s != ']' && *s != '}' && *s != ')' && *s)
     s++;
   if (!*s)
     return 0;
-  int name_length = s - accum.value() - 1;
+  int name_end_pos = s - accum.value();
   
   while (isspace(*s))
     s++;
@@ -106,19 +162,18 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
   else if (*s == '(')
     val_end_pos = slurp_string(accum, val_pos, reader);
   
-  else if (*s == '[' || *s == '{') {
-    int brace_level = 0;
+  else if (*s == '{')
+    val_end_pos = slurp_proc(accum, val_pos, reader);
+  
+  else if (*s == '[') {
     int brack_level = 0;
     do {
       switch (*s++) {
-       case '{': brace_level++; break;
-       case '}': brace_level--; break;
        case '[': brack_level++; break;
        case ']': brack_level--; break;
-       case '\\': if (*s) s++; break;
        case '(': case ')': case 0: return 0;
       }
-    } while (brace_level || brack_level);
+    } while (brack_level);
     val_end_pos = s - accum.value();
     
   } else {
@@ -128,13 +183,16 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
     if (!force_definition) check_def = true;
   }
   
+  if (val_end_pos < 0)
+    return 0;
   s = accum.value() + val_end_pos;
   while (isspace(*s))
     s++;
   if (check_def && (s[0] != 'd' || s[1] != 'e' || s[2] != 'f'))
-    return 0;
+    if (strncmp(s, "dict def", 8) != 0)
+      return 0;
   
-  PermString name(accum.value() + 1, name_length);
+  PermString name(accum.value()+name_start_pos, name_end_pos - name_start_pos);
   PermString def(s, accum.length() - 1 - (s - accum.value()));
   // -1 to get rid of trailing \0
   
@@ -142,7 +200,7 @@ Type1Definition::make(StringAccum &accum, Type1Reader *reader = 0,
   char *val = new char[val_length + 1];
   memcpy(val, accum.value() + val_pos, val_length);
   val[val_length] = 0;
-  
+
   return new Type1Definition(name, val, def);
 }
 
@@ -537,6 +595,12 @@ Type1Subr::Type1Subr(PermString n, int num, PermString definer,
 {
 }
 
+Type1Subr::Type1Subr(PermString n, int num, PermString definer,
+		     const Type1Charstring &t1cs)
+  : _name(n), _subrno(num), _definer(definer), _cs(t1cs)
+{
+}
+
 void
 Type1Subr::set_charstring_definer(PermString x)
 {
@@ -584,6 +648,12 @@ Type1Subr::make(char *s_in, int s_len, int cs_pos, int cs_len)
 		       lenIV, (unsigned char *)s, cs_len);
 }
 
+Type1Subr *
+Type1Subr::make_subr(int subrno, PermString definer, const Type1Charstring &cs)
+{
+  return new Type1Subr(PermString(), subrno, definer, cs);
+}
+
 
 void
 Type1Subr::gen(Type1Writer &w)
@@ -624,4 +694,60 @@ Type1Subr::gen(Type1Writer &w)
   }
   
   w << _definer << '\n';
+}
+
+/*****
+ * Type1SubrGroupItem
+ **/
+
+Type1SubrGroupItem::Type1SubrGroupItem(Type1Font *font, bool is_subrs,
+				       char *v, int l)
+  : _font(font), _is_subrs(is_subrs), _value(v), _length(l)
+{
+}
+
+Type1SubrGroupItem::~Type1SubrGroupItem()
+{
+  delete[] _value;
+}
+
+void
+Type1SubrGroupItem::gen(Type1Writer &w)
+{
+  Type1Font *font = _font;
+  
+  char *d = strstr(_value, (_is_subrs ? " array" : " dict"));
+  if (d && d > _value && isdigit(d[-1])) {
+    char *c = d - 1;
+    while (c > _value && isdigit(c[-1]))
+      c--;
+    
+    int n;
+    if (_is_subrs) {
+      n = font->subr_count();
+      while (n && !font->subr(n-1)) n--;
+    } else
+      n = font->glyph_count();
+    
+    w.print(_value, c - _value);
+    char buf[128];
+    sprintf(buf, "%d", n);
+    w.print(buf, strlen(buf));
+    w.print(d, (_value + _length) - d);
+  } else
+    w.print(_value, _length);
+  
+  w << '\n';
+  
+  if (_is_subrs) {
+    int count = font->subr_count();
+    for (int i = 0; i < count; i++)
+      if (Type1Subr *g = font->subr_x(i))
+	g->gen(w);
+  } else {
+    int count = font->glyph_count();
+    for (int i = 0; i < count; i++)
+      if (Type1Subr *g = font->glyph(i))
+	g->gen(w);
+  }
 }

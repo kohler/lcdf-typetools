@@ -3,13 +3,14 @@
 #include "t1cs.hh"
 #include "vector.hh"
 #include "permstr.hh"
+class StringAccum;
 class Type1Reader;
 class Type1Writer;
 class Type1Interp;
-class StringAccum;
+class Type1Font;
 class Type1CopyItem;
 class Type1Subr;
-
+class Type1Definition;
 
 class Type1Item {
   
@@ -25,11 +26,11 @@ class Type1Item {
 
   virtual Type1CopyItem *cast_copy()		{ return 0; }
   virtual Type1Subr *cast_subr()		{ return 0; }
+  virtual Type1Definition *cast_definition()	{ return 0; }
   
 };
 
-
-class Type1CopyItem: public Type1Item {
+class Type1CopyItem : public Type1Item {
   
   char *_value;
   int _length;
@@ -42,14 +43,16 @@ class Type1CopyItem: public Type1Item {
   char *value() const			{ return _value; }
   int length() const			{ return _length; }
   
+  char *take_value();
+  void set_value(char *, int);
+  
   void gen(Type1Writer &);
   
   Type1CopyItem *cast_copy()		{ return this; }
   
 };
 
-
-class Type1EexecItem: public Type1Item {
+class Type1EexecItem : public Type1Item {
   
   bool _eexec_on;
   
@@ -61,14 +64,14 @@ class Type1EexecItem: public Type1Item {
   
 };
 
-
-class Type1Definition: public Type1Item {
+class Type1Definition : public Type1Item {
   
   PermString _name;
   char *_val;
   PermString _definer;
   
   static int slurp_string(StringAccum &, int, Type1Reader *);
+  static int slurp_proc(StringAccum &, int, Type1Reader *);
   
   void set_val(char *);
   void set_val(StringAccum &);
@@ -86,6 +89,7 @@ class Type1Definition: public Type1Item {
   
   PermString name() const		{ return _name; }
   const char *value() const		{ return _val; }
+  PermString definer() const		{ return _definer; }
   
   bool value_bool(bool &) const;
   bool value_int(int &) const;
@@ -109,10 +113,11 @@ class Type1Definition: public Type1Item {
   void gen(Type1Writer &);
   void gen(StringAccum &);
   
+  Type1Definition *cast_definition()	{ return this; }
+  
 };
 
-
-class Type1Encoding: public Type1Item {
+class Type1Encoding : public Type1Item {
   
   PermString *_v;
   Type1Encoding *_copy_of;
@@ -136,8 +141,7 @@ class Type1Encoding: public Type1Item {
 
 };
 
-
-class Type1Subr: public Type1Item {
+class Type1Subr : public Type1Item {
   
   PermString _name;
   int _subrno;
@@ -150,10 +154,12 @@ class Type1Subr: public Type1Item {
   static PermString cached_definer;
   
   Type1Subr(PermString, int, PermString, int, unsigned char *, int);
+  Type1Subr(PermString, int, PermString, const Type1Charstring &);
   
  public:
   
   static Type1Subr *make(char *, int, int cs_start, int cs_len);
+  static Type1Subr *make_subr(int, PermString, const Type1Charstring &);
   
   bool is_subr() const			{ return !_name; }
   PermString name() const		{ return _name; }
@@ -173,6 +179,22 @@ class Type1Subr: public Type1Item {
   void gen(Type1Writer &);
   
   virtual Type1Subr *cast_subr()	{ return this; }
+  
+};
+
+class Type1SubrGroupItem : public Type1Item {
+  
+  Type1Font *_font;
+  bool _is_subrs;
+  char *_value;
+  int _length;
+  
+ public:
+  
+  Type1SubrGroupItem(Type1Font *, bool, char *, int);
+  ~Type1SubrGroupItem();
+  
+  void gen(Type1Writer &);
   
 };
 

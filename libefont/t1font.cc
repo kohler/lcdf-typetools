@@ -24,6 +24,8 @@ Type1Font::Type1Font(Type1Reader &reader)
   
   Dict cur_dict = dF;
   int eexec_state = 0;
+  bool have_subrs = false;
+  bool have_charstrings = false;
   
   StringAccum accum;
   while (reader.next_line(accum)) {
@@ -38,16 +40,36 @@ Type1Font::Type1Font(Type1Reader &reader)
     if (reader.was_charstring()) {
       Type1Subr *fcs = Type1Subr::make(x, x_length, reader.charstring_start(),
 				       reader.charstring_length());
+      
       if (fcs->is_subr()) {
 	if (fcs->subrno() >= _subrs.size())
 	  _subrs.resize(fcs->subrno() + 30, (Type1Subr *)0);
 	_subrs[fcs->subrno()] = fcs;
+	if (!have_subrs && _items.size()) {
+	  if (Type1CopyItem *copy = _items.back()->cast_copy()) {
+	    Type1SubrGroupItem *sg = new Type1SubrGroupItem
+	      (this, true, copy->take_value(), copy->length());
+	    delete copy;
+	    _items.back() = sg;
+	  }
+	  have_subrs = true;
+	}
+	
       } else {
 	int num = _glyphs.size();
 	_glyphs.push_back(fcs);
 	_glyph_map.insert(fcs->name(), num);
+	if (!have_charstrings && _items.size()) {
+	  if (Type1CopyItem *copy = _items.back()->cast_copy()) {
+	    Type1SubrGroupItem *sg = new Type1SubrGroupItem
+	      (this, false, copy->take_value(), copy->length());
+	    delete copy;
+	    _items.back() = sg;
+	  }
+	  have_charstrings = true;
+	}
       }
-      _items.push_back(fcs);
+      
       accum.clear();
       continue;
     }
@@ -86,6 +108,7 @@ Type1Font::Type1Font(Type1Reader &reader)
     
     // check for a DEFINITION
     if (x[0] == '/') {
+     definition_succeed:
       Type1Definition *fdi = Type1Definition::make(accum, &reader);
       if (!fdi) goto definition_fail;
       
@@ -100,6 +123,10 @@ Type1Font::Type1Font(Type1Reader &reader)
       _items.push_back(fdi);
       accum.clear();
       continue;
+    } else if (x[0] == ' ') {
+      char *y;
+      for (y = x; y[0] == ' '; y++) ;
+      if (y[0] == '/') goto definition_succeed;
     }
     
    definition_fail:
@@ -198,7 +225,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
       while (scan[0] == ' ') scan++;
       if (char_value < 0 || char_value >= 256 || scan[0] != '/')
 	break;
-
+      
       // look for `CHARNAME put'
       scan++;
       char *name_pos = scan;
@@ -243,6 +270,37 @@ Type1Font::subr(int e) const
   else
     return 0;
 }
+
+
+bool
+Type1Font::set_subr(int e, const Type1Charstring &t1cs)
+{
+  if (e < 0) return false;
+  if (e >= _subrs.size())
+    _subrs.resize(e + 30, (Type1Subr *)0);
+  
+  Type1Subr *pattern_subr = _subrs[e];
+  if (!pattern_subr) {
+    for (int i = 0; i < _subrs.size() && !pattern_subr; i++)
+      pattern_subr = _subrs[e];
+  }
+  if (!pattern_subr)
+    return false;
+  
+  delete _subrs[e];
+  _subrs[e] = Type1Subr::make_subr(e, pattern_subr->definer(), t1cs);
+  return true;
+}
+
+bool
+Type1Font::remove_subr(int e)
+{
+  if (e < 0 || e >= _subrs.size()) return false;
+  delete _subrs[e];
+  _subrs[e] = 0;
+  return true;
+}
+
 
 Type1Charstring *
 Type1Font::glyph(PermString name) const
@@ -313,6 +371,32 @@ Type1Font::add_header_comment(const char *comment)
 
 
 void
+Type1Font::change_dict_size(Type1Item *item, int size)
+{
+  if (!item)
+    return;
+  if (Type1Definition *t1d = item->cast_definition()) {
+    int num;
+    if (strstr(t1d->definer().cc(), "dict") && t1d->value_int(num))
+      t1d->set_int(size);
+  } else if (Type1CopyItem *copy = item->cast_copy()) {
+    char *value = copy->value();
+    char *d = strstr(value, " dict");
+    if (d && d > value && isdigit(d[-1])) {
+      char *c = d - 1;
+      while (c > value && isdigit(c[-1]))
+	c--;
+      StringAccum accum;
+      accum.push(value, c - value);
+      accum << size;
+      accum.push(d, copy->length() - (d - value));
+      int accum_length = accum.length();
+      copy->set_value(accum.take(), accum_length);
+    }
+  }
+}
+
+void
 Type1Font::write(Type1Writer &w)
 {
   Type1Subr::set_charstring_definer(_charstring_definer);
@@ -321,15 +405,23 @@ Type1Font::write(Type1Writer &w)
   int lenIV = 4;
   if (lenIV_def && !lenIV_def->value_int(lenIV)) lenIV = 4;
   Type1Subr::set_lenIV(lenIV);
-  
-  // Set the /Subrs and /CharStrings integers correctly.
-  // Make sure not to count extra nulls from the end of _subrs.
-  Type1Definition *Subrs_def = p_dict("Subrs");
-  int c = _subrs.size();
-  while (c && !_subrs[c-1]) c--;
-  if (Subrs_def) Subrs_def->set_int(c);
-  Type1Definition *CharStrings_def = p_dict("CharStrings");
-  if (CharStrings_def) CharStrings_def->set_int(_glyphs.size());
+
+  // change dict sizes
+  if (_index[dFI] > 0)
+    change_dict_size(_items[_index[dFI]-1], _dict[dFI].size());
+  if (_index[dP] > 0)
+    change_dict_size(_items[_index[dP]-1], _dict[dP].size());
+  if (_index[dB] > 0)
+    change_dict_size(_items[_index[dB]-1], _dict[dB].size());
+  if (Type1Item *bfi = b_dict("FontInfo"))
+    change_dict_size(bfi, _dict[dBFI].size());
+  else if (_index[dBFI] > 0)
+    change_dict_size(_items[_index[dBFI]-1], _dict[dBFI].size());
+  if (Type1Item *bp = b_dict("Private"))
+    change_dict_size(bp, _dict[dBP].size());
+  else if (_index[dBP] > 0)
+    change_dict_size(_items[_index[dBP]-1], _dict[dBP].size());
+  // XXX what if dict had nothing, but now has something?
   
   for (int i = 0; i < _items.size(); i++)
     _items[i]->gen(w);

@@ -6,18 +6,15 @@
 #include <stdlib.h>
 //#include <math.h>
 
-#define CHECK_STACK(numargs)	do { if (size() < numargs) ERROR(errUnderflow); } while (0)
-#define ERROR(what)		return error(what)
-
+#define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow); } while (0)
 
 double Type1Interp::double_for_error;
 
 Type1Interp::Type1Interp(const Type1Program *prog, Vector<double> *weight = 0)
-  : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
+  : _errno(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
     _scratch_vector(ScratchSize, 0), _program(prog)
 {
 }
-
 
 void
 Type1Interp::init()
@@ -25,17 +22,15 @@ Type1Interp::init()
   clear();
   ps_clear();
   _done = false;
-  _error = errOK;
+  _errno = errOK;
 }
-
 
 bool
 Type1Interp::error(int err)
 {
-  _error = err;
+  _errno = err;
   return false;
 }
-
 
 bool
 Type1Interp::number(double v)
@@ -44,14 +39,12 @@ Type1Interp::number(double v)
   return true;
 }
 
-
 inline Vector<double> *
 Type1Interp::weight_vector()
 {
   if (!_weight_vector) _weight_vector = _program->weight_vector();
   return _weight_vector;
 }
-
 
 bool
 Type1Interp::vector_command(int cmd)
@@ -86,8 +79,8 @@ Type1Interp::vector_command(int cmd)
      case 0: vector = weight_vector(); break;
      case 1: vector = _program->norm_design_vector(); break;
     }
-    if (!vector) ERROR(errVector);
-    if (!_program->writable_vectors()) ERROR(errVector);
+    if (!vector) return error(errVector);
+    if (!_program->writable_vectors()) return error(errVector);
     
     for (i = 0; i < num; i++, offset++, vectoroff++)
       vec(vector, vectoroff) = vec(&_scratch_vector, offset);
@@ -105,7 +98,7 @@ Type1Interp::vector_command(int cmd)
      case 1: vector = _program->norm_design_vector(); break;
      case 2: vector = _program->design_vector(); break;
     }
-    if (!vector) ERROR(errVector);
+    if (!vector) return error(errVector);
     
     for (i = 0; i < num; i++, offset++)
       vec(&_scratch_vector, offset) = vec(vector, i);
@@ -113,22 +106,21 @@ Type1Interp::vector_command(int cmd)
     
    default:
     //fprintf(stderr, "%d\n", cmd);
-    ERROR(errUnimplemented);
+    return error(errUnimplemented);
     
   }
   
   return true;
 }
 
-
 bool
 Type1Interp::blend_command()
 {
   CHECK_STACK(1);
   int nargs = (int)pop();
-
+  
   Vector<double> *weight = weight_vector();
-  if (!weight) ERROR(errVector);
+  if (!weight) return error(errVector);
   
   int nmasters = weight->size();
   CHECK_STACK(nargs * nmasters);
@@ -145,14 +137,13 @@ Type1Interp::blend_command()
   return true;
 }
 
-
 bool
 Type1Interp::roll_command()
 {
   CHECK_STACK(2);
   int amount = (int)pop();
   int n = (int)pop();
-  if (n <= 0) ERROR(errValue);
+  if (n <= 0) return error(errValue);
   CHECK_STACK(n);
   
   int base = _sp - n;
@@ -168,7 +159,6 @@ Type1Interp::roll_command()
   
   return true;
 }
-
 
 bool
 Type1Interp::arith_command(int cmd)
@@ -210,7 +200,7 @@ Type1Interp::arith_command(int cmd)
     break;
     
    case cRandom:
-    ERROR(errUnimplemented);
+    return error(errUnimplemented);
     break;
     
    case cMul:
@@ -223,7 +213,7 @@ Type1Interp::arith_command(int cmd)
     CHECK_STACK(1);
     //s(-1) = sqrt(s(-1));
     // FIXME
-    ERROR(errUnimplemented);
+    return error(errUnimplemented);
     break;
     
    case cDrop:
@@ -241,7 +231,7 @@ Type1Interp::arith_command(int cmd)
    case cIndex:
     CHECK_STACK(1);
     i = (int)top();
-    if (i < 0) ERROR(errValue);
+    if (i < 0) return error(errValue);
     CHECK_STACK(i + 2);
     top() = top(i+1);
     break;
@@ -285,7 +275,7 @@ Type1Interp::arith_command(int cmd)
     break;
     
    case cPop:
-    if (ps_size() < 1) ERROR(errUnderflow);
+    if (ps_size() < 1) return error(errUnderflow);
     push(ps_pop());
     break;
     
@@ -296,13 +286,12 @@ Type1Interp::arith_command(int cmd)
     return true;
     
    default:
-    ERROR(errUnimplemented);
+    return error(errUnimplemented);
     
   }
   
   return true;
 }
-
 
 bool
 Type1Interp::callsubr_command()
@@ -311,37 +300,38 @@ Type1Interp::callsubr_command()
   int which = (int)pop();
   
   Type1Charstring *subr_cs = get_subr(which);
-  if (!subr_cs)
-    ERROR(errSubr);
+  if (!subr_cs) {
+    fprintf(stderr, "bad subr %d\n", which);
+    return error(errSubr);
+  }
   
   subr_cs->run(*this);
   
-  if (_error != errOK)
-    ERROR(_error);
+  if (_errno != errOK)
+    return error(_errno);
   return !done();
 }
-
 
 bool
 Type1Interp::mm_command(int command, int on_stack)
 {
   Vector<double> *weight = weight_vector();
-  if (!weight) ERROR(errVector);
+  if (!weight) return error(errVector);
   
   int nargs;
   switch (command) {
-   case 14: nargs = 1; break;
-   case 15: nargs = 2; break;
-   case 16: nargs = 3; break;
-   case 17: nargs = 4; break;
-   case 18: nargs = 6; break;
-   default: ERROR(errInternal);
+   case othcMM1: nargs = 1; break;
+   case othcMM2: nargs = 2; break;
+   case othcMM3: nargs = 3; break;
+   case othcMM4: nargs = 4; break;
+   case othcMM6: nargs = 6; break;
+   default: return error(errInternal);
   }
   
   int nmasters = weight->size();
   if (size() < nargs * nmasters
       || on_stack != nargs * nmasters)
-    ERROR(errMultipleMaster);
+    return error(errMultipleMaster);
   
   int base = size() - on_stack;
   
@@ -359,7 +349,6 @@ Type1Interp::mm_command(int command, int on_stack)
   return true;
 }
 
-
 bool
 Type1Interp::command(int cmd)
 {
@@ -374,7 +363,7 @@ Type1Interp::command(int cmd)
     
    case cCallsubr:
     return callsubr_command();
-   
+    
    case cPut:
    case cGet:
    case cStore:
@@ -402,13 +391,21 @@ Type1Interp::command(int cmd)
    case cIfelse:
    case cPop:
     return arith_command(cmd);
-
+    
    case cError:
    default:
     //fprintf(stderr, "%d\n", cmd);
-    ERROR(errUnimplemented);
+    return error(errUnimplemented);
     
   }
   
   return true;
+}
+
+bool
+Type1Interp::run(Type1Charstring &cs)
+{
+  init();
+  cs.run(*this);
+  return errno() == errOK;
 }

@@ -10,16 +10,16 @@ class Type1Charstring {
   int _len;
   mutable int _key;
   
-  Type1Charstring(const Type1Charstring &);
   Type1Charstring &operator=(const Type1Charstring &);
   
   void decrypt() const;
   
  public:
   
+  Type1Charstring()				: _data(0), _len(0) { }
   Type1Charstring(unsigned char *, int);	// unencrypted, takes data
   Type1Charstring(int, unsigned char *, int);	// encrypted, copies data
-  Type1Charstring()				: _data(0), _len(0) { }
+  Type1Charstring(const Type1Charstring &);
   ~Type1Charstring()				{ delete[] _data; }
   
   unsigned char *data() const;

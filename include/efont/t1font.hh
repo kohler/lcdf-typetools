@@ -24,7 +24,7 @@ class ErrorHandler;
 
 class Type1Font: public Type1Program {
  public:
-
+  
   // note: the order is relevant
   enum Dict {
     dFont = 0,			dF = dFont,
@@ -33,7 +33,7 @@ class Type1Font: public Type1Program {
     dBlend = 3,			dB = dBlend,
     dBlendFontInfo = dB+dFI,	dBFI = dBlendFontInfo,
     dBlendPrivate = dB+dP,	dBP = dBlendPrivate,
-    dLast
+    dLast,
   };
   
  private:
@@ -63,6 +63,8 @@ class Type1Font: public Type1Program {
   void cache_defs() const;
   void shift_indices(int, int);
   
+  void change_dict_size(Type1Item *, int);
+  
  public:
   
   Type1Font(Type1Reader &);
@@ -78,10 +80,14 @@ class Type1Font: public Type1Program {
   bool is_mm() const			{ return !_dict[dBP].empty();}
   
   int subr_count() const		{ return _subrs.size(); }
-  Type1Charstring *subr(int) const;
+  Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
+  bool set_subr(int, const Type1Charstring &);
+  bool remove_subr(int);
   
   int glyph_count() const		{ return _glyphs.size(); }
   Type1Subr *glyph(int i) const		{ return _glyphs[i]; }
+  
+  Type1Charstring *subr(int) const;
   Type1Charstring *glyph(PermString) const;
   
   Type1Encoding *encoding() const	{ return _encoding; }

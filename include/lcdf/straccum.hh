@@ -33,7 +33,8 @@ class StringAccum {
   char *reserve(int);
   void forward(int f)			{ _len += f; assert(_len <= _cap); }
   char *extend(int);
-  
+
+  void push(const char *, int);
   void push(unsigned char);
   void push(int);
   void append(unsigned char);
@@ -71,6 +72,12 @@ StringAccum::push(int c)
 {
   assert(c >= 0 && c < 256);
   push((unsigned char)c);
+}
+
+inline void
+StringAccum::push(const char *s, int length)
+{
+  memcpy(extend(length), s, length);
 }
 
 inline void
@@ -123,7 +130,7 @@ operator<<(StringAccum &sa, const char *s)
 inline StringAccum &
 operator<<(StringAccum &sa, PermString s)
 {
-  memcpy(sa.extend(s.length()), s.cc(), s.length());
+  sa.push(s.cc(), s.length());
   return sa;
 }
 #endif
@@ -132,7 +139,7 @@ operator<<(StringAccum &sa, PermString s)
 inline StringAccum &
 operator<<(StringAccum &sa, const String &s)
 {
-  memcpy(sa.extend(s.length()), s.data(), s.length());
+  sa.push(s.data(), s.length());
   return sa;
 }
 #endif
