@@ -57,12 +57,25 @@ Type1Font::~Type1Font()
 }
 
 void
+Type1Font::set_item(int i, Type1Item *it)
+{
+    delete _items[i];
+    _items[i] = it;
+}
+
+void
 Type1Font::add_definition(int dict, Type1Definition *t1d)
 {
     add_item(t1d);
     set_dict(dict, t1d->name(), t1d);
     if (_index[dict] < 0)
 	_index[dict] = _items.size() - 1;
+}
+
+void
+Type1Font::add_dict_size(int dict, int delta)
+{
+    _dict_deltas[dict] += delta;
 }
 
 void
@@ -289,6 +302,7 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
   
     bool got_any = false;
     StringAccum accum;
+    
     while (reader.next_line(accum)) {
     
 	// check for NULL STRING
@@ -333,17 +347,17 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
 	    got_any = true;
 	    pos = scan + 3;
 	}
-    
-	// add COPY ITEM if necessary for leftovers we didn't parse
-	if (got_any && *pos)
-	    add_item(new Type1CopyItem(String(pos)));
-    
-	// check for end of encoding section
+
       check_done:
+	// check for end of encoding section
+	// if not over, add COPY ITEM for leftovers we didn't parse
 	if ((strstr(pos, "readonly") != 0 || strstr(pos, "def") != 0)
-	    && (got_any || strstr(pos, "for") == 0))
+	    && (got_any || strstr(pos, "for") == 0)) {
+	    _encoding->set_definer(String(pos));
 	    return;
-    
+	} else if (got_any && *pos)
+	    add_item(new Type1CopyItem(String(pos)));
+
 	accum.clear();
     }
 }

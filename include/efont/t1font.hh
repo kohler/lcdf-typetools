@@ -30,9 +30,10 @@ class Type1Font : public EfontProgram { public:
   
     int nitems() const			{ return _items.size(); }
     Type1Item *item(int i) const	{ return _items[i]; }
-    void set_item(int i, Type1Item *it)	{ _items[i] = it; }
     void add_item(Type1Item *it)	{ _items.push_back(it); }
+    void set_item(int, Type1Item *);	// for experts only
     void add_definition(int dict, Type1Definition *);
+    void add_dict_size(int dict, int delta); // for experts only
 
     int nsubrs() const			{ return _subrs.size(); }
     Type1Charstring *subr(int) const;
@@ -73,7 +74,7 @@ class Type1Font : public EfontProgram { public:
   
     bool dict_each(int dict, int &, PermString &, Type1Definition *&) const;
     int first_dict_item(int d) const		{ return _index[d]; }
-  
+
     Type1Definition *ensure(Dict, PermString);
     void add_header_comment(const char *);
   

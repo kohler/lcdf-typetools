@@ -584,14 +584,14 @@ static const char *standard_encoding_defs[] = {
 
 
 Type1Encoding::Type1Encoding()
-    : _v(new PermString[256]), _copy_of(0)
+    : _v(new PermString[256]), _copy_of(0), _definer("readonly def")
 {
     for (int i = 0; i < 256; i++)
 	_v[i] = dot_notdef;
 }
 
 Type1Encoding::Type1Encoding(const Type1Encoding &o)
-    : Type1Item()
+    : Type1Item(), _definer(o._definer)
 {
     if (o._copy_of) {
 	_v = o._v;
@@ -605,7 +605,7 @@ Type1Encoding::Type1Encoding(const Type1Encoding &o)
 }
 
 Type1Encoding::Type1Encoding(Type1Encoding *copy_of)
-    : _v(copy_of->_v), _copy_of(copy_of)
+    : _v(copy_of->_v), _copy_of(copy_of), _definer(copy_of->_definer)
 {
 }
 
@@ -642,6 +642,7 @@ Type1Encoding::gen(Type1Writer &w)
 	for (int i = 0; i < 256; i++)
 	    if (_v[i] != dot_notdef)
 		w << "dup " << i << " /" << _v[i] << " put\n";
+	w << _definer << '\n';
     }
 }
 

@@ -138,17 +138,21 @@ class Type1Encoding : public Type1Item { public:
     PermString operator[](unsigned char e) const { return _v[e]; }
     PermString elt(unsigned char e) const { return operator[](e); }
     void put(int e, PermString p)	{ assert(e>=0&&e<256); _v[e] = p; }
+
+    void set_definer(PermString s)	{ _definer = s; }
     
     static Type1Encoding *standard_encoding();
 
     void gen(Type1Writer &);
 
   private:
-  
+
     PermString *_v;
     Type1Encoding *_copy_of;
+    PermString _definer;
     
     Type1Encoding(Type1Encoding *);
+    Type1Encoding &operator=(const Type1Encoding &);
     
 };
 
