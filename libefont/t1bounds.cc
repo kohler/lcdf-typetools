@@ -18,16 +18,22 @@ CharstringBounds::CharstringBounds(const EfontProgram *p, Vector<double> *weight
     _t.check_null(0.001);
 }
 
-void
+/*void
 CharstringBounds::ignore_font_transform()
 {
     _t = Transform();
-}
+}*/
 
 void
 CharstringBounds::transform(const Transform &t)
 {
     _t = _t.transformed(t);
+}
+
+void
+CharstringBounds::translate(double dx, double dy)
+{
+    _t.translate(dx, dy);
 }
 
 void
@@ -64,7 +70,7 @@ CharstringBounds::mark(const Bezier &b)
 void
 CharstringBounds::act_width(int, const Point &w)
 {
-    _width = w * _t;
+    _width = w;
 }
 
 void
@@ -92,20 +98,39 @@ CharstringBounds::act_curve(int, const Point &p0, const Point &p1, const Point &
 }
 
 bool
-CharstringBounds::run(const Charstring &cs, int bounds[4], int &width)
+CharstringBounds::bounds(int bb[4], int &width, bool use_cur_width) const
+{
+    if (!KNOWN(_lb.x))
+	bb[0] = bb[1] = bb[2] = bb[3] = 0;
+    else {
+	bb[0] = (int) floor(_lb.x);
+	bb[1] = (int) floor(_lb.y);
+	bb[2] = (int) ceil(_rt.x);
+	bb[3] = (int) ceil(_rt.y);
+    }
+    Point p;
+    if (use_cur_width)
+	p = _width * _t;
+    else
+	p = Point(0, 0) * _t;
+    width = (int) ceil(p.x);
+    return error() >= 0;
+}
+
+bool
+CharstringBounds::run(const Charstring &cs, int bb[4], int &width)
 {
     init();
     cs.run(*this);
-    if (!KNOWN(_lb.x))
-	bounds[0] = bounds[1] = bounds[2] = bounds[3] = 0;
-    else {
-	bounds[0] = (int) floor(_lb.x);
-	bounds[1] = (int) floor(_lb.y);
-	bounds[2] = (int) ceil(_rt.x);
-	bounds[3] = (int) ceil(_rt.y);
-    }
-    width = (int) ceil(_width.x);
-    
+    return bounds(bb, width, true);
+}
+
+bool
+CharstringBounds::run_incr(const Charstring &cs)
+{
+    init();
+    cs.run(*this);
+    _t.translate(_width);
     return error() >= 0;
 }
 

@@ -10,10 +10,12 @@ class CharstringBounds : public CharstringInterp { public:
     CharstringBounds(const EfontProgram *, Vector<double> *weight = 0);
     ~CharstringBounds()				{ }
 
+    const Transform &transform() const		{ return _t; }
+    void set_transform(const Transform &t)	{ _t = t; }
     void transform(const Transform &);
+    void translate(double, double);
     void extend(double);
     void shear(double);
-    void ignore_font_transform();
     
     void init();
 
@@ -28,7 +30,9 @@ class CharstringBounds : public CharstringInterp { public:
     void act_line(int, const Point &, const Point &);
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
 
+    bool bounds(int bb[4], int &width, bool use_cur_width = false) const;
     bool run(const Charstring &, int bounds[4], int &width);
+    bool run_incr(const Charstring &);
     
   private:
 
