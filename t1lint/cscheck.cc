@@ -1,6 +1,6 @@
 /* cscheck.{cc,hh} -- checking Type 1 charstrings for validity
  *
- * Copyright (c) 1999-2003 Eddie Kohler
+ * Copyright (c) 1999-2004 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free

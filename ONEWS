@@ -1,4 +1,7 @@
 Mminstance NEWS
+
+This file contains news relevant to the mmafm and mmpfb programs, which
+used to be distributed separately in the mminstance package.
 
 Version 1.50   20.Aug.2003
 
@@ -352,13 +355,13 @@ Version 1.0   17.Sep.1998
 * No changes; just decided it was stable.
 
 
-Version 0.92
+Version 0.92   2.Sep.1998
 
 * Code reorganization in metrics. (Removed LineScanner, which wasn't a general
   design; split into a more general Slurper and a specific AfmParser.)
 
 
-Version 0.91
+Version 0.91   15.May.1998
 
 * mmafm: Nonexistent files caused a coredump instead of an error (fixed).
 
@@ -367,7 +370,7 @@ Version 0.91
   give a font name).
 
 
-Version 0.9	4.Mar.1998
+Version 0.9   4.Mar.1998
 
 * Fixed a bug in parsing fonts with intermediate masters.
 
@@ -409,17 +412,22 @@ Version 0.6
 * Other fixes.
 
 
+Version 0.5
+
+* Fixed bug preventing the programs from working with Kepler.
+
+
 Version 0.4
 
 * Fixed mmpfb to handle older multiple master fonts (Myriad and Minion) and
   to generate non-truncated PFBs.
 
 
-Version 0.5
-
-* Fixed bug preventing the programs from working with Kepler.
-
-
-Version 0.2
+Version 0.2   16.Aug.1997
 
 * Fixed serious bug in normalize_vector that resulted in incorrect output.
+
+
+Version 0.1   21.Jul.1997
+
+* Initial release.

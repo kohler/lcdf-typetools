@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.0   21.Mar.2004
+
+* mmpfb, t1dotlessj, t1lint, t1testpage: On Windows, add _O_BINARY flag
+  when appropriate. Reported by Fabrice Popineau.
+
+
 Version 1.99   24.Feb.2004
 
 * otftotfm: Fix overfull encoding bug that could cause an assertion
@@ -434,3 +440,6 @@ Version 0.2   3.Jun.2003
 Version 0.1   2.Jun.2003
 
 * Initial release.
+
+
+See also the ONEWS file for older news about mmafm and mmpfb.

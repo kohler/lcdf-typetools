@@ -1,3 +1,16 @@
+/* main.cc -- driver for mmafm program
+ *
+ * Copyright (c) 1997-2004 Eddie Kohler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -185,7 +198,8 @@ read_file(const char *fn, MetricsFinder *finder)
   
   if (is_afm) {
     Metrics *afm = AfmReader::read(slurper, errh);
-    if (afm) finder->record(afm);
+    if (afm)
+      finder->record(afm);
   } else
     set_amfm(AmfmReader::read(slurper, finder, errh));
 }
@@ -307,7 +321,7 @@ main(int argc, char *argv[])
       
      case VERSION_OPT:
       printf("mmafm (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1997-2003 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2004 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -409,7 +423,8 @@ particular purpose.\n");
       apply_kern_precision(m, kern_precision);
     
     // write the output file
-    if (!output_file) output_file = stdout;
+    if (!output_file)
+      output_file = stdout;
     AfmWriter::write(m, output_file);
     
     return 0;
