@@ -50,9 +50,11 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   t1d = dict("FontName");
   if (t1d && t1d->value_name(name)) {
     StringAccum sa;
-    sa << name << '_';
+    sa << name;
     for (int a = 0; a < naxes; a++)
-      sa << design[a] << '_';
+      sa << '_' << design[a];
+    // Multiple masters actually require an underscore AFTER the font name too
+    sa << '_';
     sa.push(0);
     t1d->set_name(sa.value());
   }

@@ -188,11 +188,11 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
   // The primary font is useless to us if it doesn't have axis labels.
   if (pf && !pf->labels.count()) pf = 0;
   
-  PermString new_font_name = permprintf("%p_", _font_name.capsule());
+  PermString new_font_name = _font_name;
   PermString new_full_name = _full_name;
   for (int a = 0; a < _naxes; a++) {
     double dv = design_vector[a];
-    new_font_name = permprintf("%p%g_", new_font_name.capsule(), dv);
+    new_font_name = permprintf("%p_%g", new_font_name.capsule(), dv);
     
     PermString label;
     if (pf)
@@ -207,6 +207,8 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
       new_full_name =
 	permprintf("%p %p", new_full_name.capsule(), label.capsule());
   }
+  // Multiple master fonts require an underscore AFTER the font name too
+  new_font_name = permprintf("%p_", new_font_name.capsule());
   
   /* 2.
    * Set up the new AFM with the special constructor. */
