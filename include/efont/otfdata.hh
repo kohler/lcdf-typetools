@@ -3,6 +3,9 @@
 #define EFONT_OTFDATA_HH
 #include <lcdf/string.hh>
 #include <efont/t1cs.hh>		/* for integer types */
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>		/* for ntohl() */
 #elif defined(HAVE_SYS_PARAM_H)
