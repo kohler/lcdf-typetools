@@ -4298,6 +4298,12 @@ zukatakana;30BA
 # TeX extensions
 Delta;2206;0394
 Ifractur;2111
+# FFsmall, FFIsmall, FFLsmall, FIsmall, FLsmall: invalid Unicode
+FFsmall;D804
+FFIsmall;D807
+FFLsmall;D808
+FIsmall;D805
+FLsmall;D806
 # Germandbls: invalid Unicode, used for secondary replacement from EC.enc
 Germandbls;D800
 # Germandblssmall: invalid Unicode

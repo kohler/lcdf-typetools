@@ -29,7 +29,7 @@ class T1Secondary : public Secondary { public:
     String _otf_file_name;
     int _xheight;
     int _spacewidth;
-    bool two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &, Metrics &);
+    bool char_setting(Vector<Setting> &, Metrics &, int uni, ...);
     enum { J_NODOT = -1031892 /* unlikely value */ };
     int dotlessj_font(Metrics &, ErrorHandler *, Glyph &dj_glyph);
 };

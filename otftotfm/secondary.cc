@@ -31,6 +31,11 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_EMPTYSLOT = 0xD801,	// invalid Unicode (not handled by Secondary)
        U_ALTSELECTOR = 0xD802,	// invalid Unicode
        U_SSSMALL = 0xD803,	// invalid Unicode
+       U_FFSMALL = 0xD804,	// invalid Unicode
+       U_FISMALL = 0xD805,	// invalid Unicode
+       U_FLSMALL = 0xD806,	// invalid Unicode
+       U_FFISMALL = 0xD807,	// invalid Unicode
+       U_FFLSMALL = 0xD808,	// invalid Unicode
        U_VS1 = 0xFE00,
        U_VS16 = 0xFE0F,
        U_VS17 = 0xE0100,
@@ -39,6 +44,9 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_ij = 0x0133,
        U_DOTLESSJ = 0x0237,
        U_DOTLESSJ_2 = 0xF6BE,
+       U_FSMALL = 0xF766,
+       U_ISMALL = 0xF769,
+       U_LSMALL = 0xF76C,
        U_SSMALL = 0xF773 };
 
 Secondary::~Secondary()
@@ -90,17 +98,28 @@ Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHand
 }
 
 bool
-T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, Metrics &metrics)
+T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
 {
-    int c1 = metrics.unicode_encoding(uni1);
-    int c2 = metrics.unicode_encoding(uni2);
-    if (c1 >= 0 && c2 >= 0) {
-	v.push_back(Setting(Setting::SHOW, c1, metrics.base_glyph(c1)));
-	v.push_back(Setting(Setting::KERN));
-	v.push_back(Setting(Setting::SHOW, c2, metrics.base_glyph(c2)));
-	return true;
-    } else
-	return false;
+    Vector<int> codes;
+
+    // collect codes
+    va_list val;
+    va_start(val, uni);
+    for (; uni; uni = va_arg(val, int)) {
+	int code = metrics.unicode_encoding(uni);
+	if (code < 0)
+	    return false;
+	codes.push_back(code);
+    }
+    va_end(val);
+
+    // generate setting
+    for (int i = 0; i < codes.size(); i++) {
+	if (i)
+	    v.push_back(Setting(Setting::KERN));
+	v.push_back(Setting(Setting::SHOW, codes[i], metrics.base_glyph(codes[i])));
+    }
+    return true;
 }
 
 bool
@@ -210,24 +229,59 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	return true;
 
       case U_SS:
-	if (two_char_setting('S', 'S', v, metrics))
+	if (char_setting(v, metrics, 'S', 'S', 0))
 	    return true;
 	break;
 
       case U_SSSMALL:
-	if (two_char_setting(U_SSMALL, U_SSMALL, v, metrics))
+	if (char_setting(v, metrics, U_SSMALL, U_SSMALL, 0))
 	    return true;
-	else if (two_char_setting('s', 's', v, metrics))
+	else if (char_setting(v, metrics, 's', 's', 0))
+	    return true;
+	break;
+
+      case U_FFSMALL:
+	if (char_setting(v, metrics, U_FSMALL, U_FSMALL, 0))
+	    return true;
+	else if (char_setting(v, metrics, 'f', 'f', 0))
+	    return true;
+	break;
+
+      case U_FISMALL:
+	if (char_setting(v, metrics, U_FSMALL, U_ISMALL, 0))
+	    return true;
+	else if (char_setting(v, metrics, 'f', 'i', 0))
+	    return true;
+	break;
+
+      case U_FLSMALL:
+	if (char_setting(v, metrics, U_FSMALL, U_LSMALL, 0))
+	    return true;
+	else if (char_setting(v, metrics, 'f', 'l', 0))
+	    return true;
+	break;
+
+      case U_FFISMALL:
+	if (char_setting(v, metrics, U_FSMALL, U_FSMALL, U_ISMALL, 0))
+	    return true;
+	else if (char_setting(v, metrics, 'f', 'f', 'i', 0))
+	    return true;
+	break;
+
+      case U_FFLSMALL:
+	if (char_setting(v, metrics, U_FSMALL, U_FSMALL, U_LSMALL, 0))
+	    return true;
+	else if (char_setting(v, metrics, 'f', 'f', 'l', 0))
 	    return true;
 	break;
 
       case U_IJ:
-	if (two_char_setting('I', 'J', v, metrics))
+	if (char_setting(v, metrics, 'I', 'J', 0))
 	    return true;
 	break;
 
       case U_ij:
-	if (two_char_setting('i', 'j', v, metrics))
+	if (char_setting(v, metrics, 'i', 'j', 0))
 	    return true;
 	break;
 
@@ -239,13 +293,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	      v.push_back(Setting(Setting::FONT, which));
 	      v.push_back(Setting(Setting::SHOW, 'j', dj_glyph));
 	      return true;
-	  } else if (which == J_NODOT) {
-	      int cj = metrics.unicode_encoding('j');
-	      if (cj >= 0) {
-		  v.push_back(Setting(Setting::SHOW, cj, metrics.base_glyph(cj)));
-		  return true;
-	      }
-	  }
+	  } else if (which == J_NODOT && char_setting(v, metrics, 'j', 0))
+	      return true;
 	  break;
       }
 	
