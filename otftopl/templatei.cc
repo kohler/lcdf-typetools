@@ -26,3 +26,4 @@ template class Vector<Efont::OpenType::Substitution>;
 
 template class HashMap<PermString, Efont::Type1Definition *>;
 template class HashMap<PermString, int>;
+template class HashMap<String, int>;

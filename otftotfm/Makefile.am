@@ -5,6 +5,7 @@ bin_PROGRAMS = otftoafm
 man_MANS = 
 
 otftoafm_SOURCES = \
+	dvipsencoding.cc dvipsencoding.hh \
 	gsubencoding.cc gsubencoding.hh \
 	otftoafm.cc \
 	templatei.cc
