@@ -1,5 +1,5 @@
-' -*-nroff-*-
-.ds V 1.5
+.\" -*-nroff-*-
+.ds V 1.6
 .ds E " \-\- 
 .if t .ds E \(em
 .de OP
@@ -99,37 +99,38 @@ Long options may be abbreviated to their unique prefixes.
 '
 .TP 5
 .OY \-\-output file \-o file
-'
 Send output to
 .I file
 instead of standard output.
 '
 .TP
-.OY \-\-weight N \-w N
+.OY \-\-precision N \-p N
+Round output numbers so they have at most
+.I N
+digits after the decimal point. Thus, `\fB\-p \fR0' rounds all numbers to
+integers. Default is 3.
 '
+.TP
+.OY \-\-weight N \-w N
 Set the weight axis to 
 .IR N .
 '
 .TP
 .OY \-\-width N \-W N
-'
 Set the width axis to 
 .IR N .
 '
 .TP
 .OY \-\-optical\-size N \-O N
-'
 Set the optical size axis to 
 .IR N .
 '
 .TP
 .OL \-\-style N
-'
 Set the style axis to 
 .IR N .
 .TP
 \fB\-\-1\fR=\fIN\fR (\fB\-\-2\fR=\fIN\fR, \fB\-\-3\fR=\fIN\fR, \fB\-\-4\fR=\fIN\fR)
-'
 Set the first (second, third, fourth) axis to
 .IR N .
 '

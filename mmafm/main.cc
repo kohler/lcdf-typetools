@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 #ifdef HAVE_CTIME
 # include <time.h>
 #endif
@@ -27,6 +28,7 @@
 #define VERSION_OPT	308
 #define HELP_OPT	309
 #define OUTPUT_OPT	310
+#define PRECISION_OPT	311
 
 Clp_Option options[] = {
   { "1", '1', N1_OPT, Clp_ArgDouble, 0 },
@@ -40,6 +42,7 @@ Clp_Option options[] = {
   { "wt", 0, WEIGHT_OPT, Clp_ArgDouble, 0 },
   { "wd", 0, WIDTH_OPT, Clp_ArgDouble, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+  { "precision", 'p', PRECISION_OPT, Clp_ArgInt, 0 },
   { "version", 0, VERSION_OPT, 0, 0 },
   { "help", 'h', HELP_OPT, 0, 0 },
 };
@@ -76,6 +79,40 @@ set_amfm(AmfmMetrics *a)
     if (amfm) errh->fatal("already read one AMFM file");
     amfm = a;
   }
+}
+
+
+// apply precision
+static inline void
+pround(double &v, double multiplier, double divider)
+{
+  if (KNOWN(v))
+    v = floor(v * multiplier + 0.5) * divider;
+}
+
+static void
+apply_precision(Metrics *m, int precision)
+{
+  if (precision < 0)
+    return;
+  
+  double multiplier = 1, divider = 1;
+  for (int i = 0; i < precision; i++)
+    multiplier *= 10, divider /= 10;
+
+  for (int i = 0; i < m->fd_count(); i++)
+    pround(m->fd(i), multiplier, divider);
+
+  for (int i = 0; i < m->glyph_count(); i++) {
+    pround(m->wd(i), multiplier, divider);
+    pround(m->lf(i), multiplier, divider);
+    pround(m->bt(i), multiplier, divider);
+    pround(m->rt(i), multiplier, divider);
+    pround(m->tp(i), multiplier, divider);
+  }
+
+  for (int i = 0; i < m->kv_count(); i++)
+    pround(m->kv(i), multiplier, divider);
 }
 
 
@@ -174,6 +211,7 @@ Interpolation settings:\n\
   -O, --optical-size=N          Set optical size to N.\n\
       --style=N                 Set style axis to N.\n\
   --1=N, --2=N, --3=N, --4=N    Set first (second, third, fourth) axis to N.\n\
+  -p, --precision=N             Allow N digits of fraction (default 3).\n\
 \n\
 Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 }
@@ -197,6 +235,7 @@ main(int argc, char **argv)
   
   char *output_name = "<stdout>";
   FILE *output_file = 0;
+  int precision = 3;
   while (1) {
     int opt = Clp_Next(clp);
     switch (opt) {
@@ -222,6 +261,10 @@ main(int argc, char **argv)
      case N3_OPT:
      case N4_OPT:
       set_design(opt - N1_OPT, clp->val.d);
+      break;
+
+     case PRECISION_OPT:
+      precision = clp->val.i;
       break;
       
      case OUTPUT_OPT:
@@ -337,6 +380,10 @@ particular purpose.\n");
       delete[] buf;
     }
 
+    // round numbers if necessary
+    if (precision >= 0)
+      apply_precision(m, precision);
+    
     // write the output file
     if (!output_file) output_file = stdout;
     AfmWriter::write(m, output_file);
