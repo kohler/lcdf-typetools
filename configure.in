@@ -60,7 +60,7 @@ then FIXLIBC_O='fixlibc.o'; AC_DEFINE_UNQUOTED(BROKEN_STRTOD)
 fi
 
 AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate)
-AC_CHECK_HEADERS(unistd.h fcntl.h sys/param.h)
+AC_CHECK_HEADERS(unistd.h fcntl.h)
 
 AC_SUBST(FIXLIBC_O)
 
@@ -96,6 +96,15 @@ Neither uint32_t nor u_int32_t defined by <inttypes.h> or <sys/types.h>!
 
 =========================================])
 fi
+
+
+dnl
+dnl ntohs, ntohl (need them in C++ code)
+dnl
+
+AC_LANG_CPLUSPLUS
+AC_CHECK_HEADERS(netinet/in.h sys/param.h)
+AC_LANG_C
 
 
 dnl
