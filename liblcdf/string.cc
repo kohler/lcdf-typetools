@@ -93,7 +93,7 @@ String::String(unsigned long u)
 String::String(double d)
 {
     char buf[128];
-    sprintf(buf, "%g", d);
+    sprintf(buf, "%.12g", d);
     assign(buf, -1);
 }
 
