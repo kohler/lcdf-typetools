@@ -1247,6 +1247,12 @@ EfontCFF::Font::glyph(PermString name) const
     return _charstrings_cs[gid];	
 }
 
+int
+EfontCFF::Font::glyphid(PermString name) const
+{
+    return _charset.sid_to_gid(_cff->sid(name));
+}
+
 Type1Encoding *
 EfontCFF::Font::type1_encoding() const
 {

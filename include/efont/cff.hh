@@ -207,6 +207,7 @@ class EfontCFF::Font : public EfontProgram { public:
     PermString glyph_name(int) const;
     Charstring *glyph(int) const;
     Charstring *glyph(PermString) const;
+    int glyphid(PermString) const;
 
     Type1Encoding *type1_encoding() const;
     Type1Encoding *type1_encoding_copy() const;
