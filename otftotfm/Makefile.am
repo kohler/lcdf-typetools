@@ -9,7 +9,7 @@ otftotfm_SOURCES = \
 	dvipsencoding.cc dvipsencoding.hh \
 	md5.c md5.h \
 	metrics.cc metrics.hh \
-	otftotfm.cc \
+	otftotfm.cc otftotfm.hh \
 	secondary.cc secondary.hh \
 	util.cc util.hh
 EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h

@@ -1,5 +1,16 @@
 LCDF Typetools NEWS
 
+Version 1.95   3.Jan.2004
+
+* otftotfm: Add automatic support for t1dotlessj. If the desired encoding
+  has a 'dotlessj' character, and the input font doesn't, then otftotfm
+  will run 't1dotlessj', create a dotless-J font, and include it using
+  virtual fonts.
+
+* otftotfm: Avoid warnings about bad "(STOP)" commands in pltotf
+  (introduced by the --min-kern facility).
+
+
 Version 1.91   31.Dec.2003
 
 * mmpfb, t1dotlessj: Fix sidebearing problems.
