@@ -88,16 +88,9 @@ kpsei_string(char* x)
 }
 
 static void
-find_writable_texdir(ErrorHandler *errh, const char *)
+look_for_writable_texdir(const char *path_variable)
 {
-    const char* path_type = "VARTEXMF";
-    String actual_path = kpsei_string(kpsei_path_expand("$VARTEXMF"));
-    if (!actual_path) {
-	path_type = "TEXMF";
-	actual_path = kpsei_string(kpsei_path_expand("$TEXMF"));
-    }
-    
-    String path = actual_path;
+    String path = kpsei_string(kpsei_path_expand(path_variable));
     while (path && !writable_texdir) {
 	const char* colon = std::find(path.begin(), path.end(), kpsei_env_sep_char);
 	String texdir = path.substring(path.begin(), colon);
@@ -107,12 +100,19 @@ find_writable_texdir(ErrorHandler *errh, const char *)
     }   
     if (writable_texdir && writable_texdir.back() != '/')
 	writable_texdir += "/";
-    
+}
+
+static void
+find_writable_texdir(ErrorHandler *errh, const char *)
+{
+    look_for_writable_texdir("$VARTEXMF");
+    if (!writable_texdir)
+	look_for_writable_texdir("$TEXMF");
     if (!writable_texdir) {
-	errh->warning("no writable directory found in $%s", path_type);
-	errh->message("(You probably need to set your %s environment variable; see\n\
-the manual for more information. The current %s path is\n\
-'%s'.)", path_type, path_type, actual_path.c_str());
+	errh->warning("no writable directory found in $VARTEXMF or $TEXMF");
+	errh->message("(You probably need to set your TEXMF environment variable; see\n\
+the manual for more information. The current TEXMF path is\n\
+'%s'.)", kpsei_string(kpsei_path_expand("$TEXMF")).c_str());
     }
     writable_texdir_tried = true;
 }
