@@ -1,5 +1,15 @@
 LCDF Typetools NEWS
 
+Version 1.98   22.Feb.2004
+
+* otftotfm: Add support for 'SSsmall' glyph. Einar Smith noted that the
+  OpenType 'smcp' feature doesn't translate the sharp-S character to
+  small-caps "SS" in most fonts. Now, add '--unicoding "germandbls =:
+  SSsmall"' to get that behavior.
+
+* otftotfm: Compilation fix for problem reported by Nelson H.F. Beebe.
+
+
 Version 1.97   6.Feb.2004
 
 * cfftot1: Fix bug in handling fonts with supplemental encodings. Problem
