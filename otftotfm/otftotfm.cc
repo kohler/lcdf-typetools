@@ -92,6 +92,8 @@ using namespace Efont;
 #define CLEAR_SUBS_OPT		334
 #define SUBS_FILTER_OPT		335
 #define ALTERNATES_FILTER_OPT	336
+#define SPACE_FACTOR_OPT	337
+#define MATH_SPACING_OPT	338
 
 #define AUTOMATIC_OPT		341
 #define FONT_NAME_OPT		342
@@ -159,6 +161,8 @@ static Clp_Option options[] = {
     { "exclude-alternates", 0, EXCLUDE_ALTERNATES_OPT, Clp_ArgString, 0 },
     { "clear-alternates", 0, CLEAR_ALTERNATES_OPT, 0, 0 },
     { "alternates-filter", 0, ALTERNATES_FILTER_OPT, Clp_ArgString, 0 },
+    { "space-factor", 0, SPACE_FACTOR_OPT, Clp_ArgDouble, 0 },
+    { "math-spacing", 0, MATH_SPACING_OPT, 0, Clp_Negate },
     
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -229,6 +233,8 @@ static double slant;
 static int letterspace;
 static double design_size;
 static double minimum_kern = 2.0;
+static double space_factor = 1.0;
+static bool math_spacing = false;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -282,7 +288,9 @@ Font feature and transformation options:\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
+      --math-spacing           Use letterspacing appropriate for math.\n\
   -k, --min-kern=N             Omit kerns with absolute value < N [2.0].\n\
+      --space-factor=F         Scale wordspace by a factor of F.\n\
       --design-size=SIZE       Set font design size to SIZE.\n\
 \n");
     printf("\
@@ -513,18 +521,18 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     OpenType::Cmap cmap(family_otf.table("cmap"));
     
     if (char_bounds(bounds, width, family_cff, cmap, ' ', font_xform)) {
-	// advance space width by letterspacing
-	width += letterspace;
-	fprint_real(f, "   (SPACE", width, du);
+	// advance space width by letterspacing, scale by space_factor
+	double space_width = (width + letterspace) * space_factor;
+	fprint_real(f, "   (SPACE", space_width, du);
 	if (family_cff->dict_value(Efont::Cff::oIsFixedPitch, 0, &val) && val) {
 	    // fixed-pitch: no space stretch or shrink
 	    fprint_real(f, "   (STRETCH", 0, du);
 	    fprint_real(f, "   (SHRINK", 0, du);
-	    fprint_real(f, "   (EXTRASPACE", width, du);
+	    fprint_real(f, "   (EXTRASPACE", space_width, du);
 	} else {
-	    fprint_real(f, "   (STRETCH", width / 2., du);
-	    fprint_real(f, "   (SHRINK", width / 3., du);
-	    fprint_real(f, "   (EXTRASPACE", width / 6., du);
+	    fprint_real(f, "   (STRETCH", space_width / 2., du);
+	    fprint_real(f, "   (SHRINK", space_width / 3., du);
+	    fprint_real(f, "   (EXTRASPACE", space_width / 6., du);
 	}
     }
 
@@ -1297,12 +1305,13 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // remove extra characters
     metrics.cut_encoding(257);
     //metrics.unparse();
+    int boundary_char = dvipsenc.boundary_char();
 
     // apply letterspacing, if any
     if (letterspace) {
 	for (int code = 0; code < 256; code++) {
 	    int g = metrics.glyph(code);
-	    if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != dvipsenc.boundary_char()) {
+	    if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
 		metrics.add_single_positioning(code, letterspace / 2, 0, letterspace);
 		metrics.add_kern(code, 256, -letterspace / 2);
 		metrics.add_kern(256, code, -letterspace / 2);
@@ -1310,8 +1319,24 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	}
     }
 
+    // apply math letterspacing, if any
+    if (math_spacing) {
+	Transform font_xform;
+	CharstringBounds boundser(font_xform);
+	int bounds[4], width;
+	for (int code = 0; code < 256; code++) {
+	    int g = metrics.glyph(code);
+	    if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
+		if (char_bounds(bounds, width, font, cmap, code, font_xform)) {
+		    int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
+		    int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
+		    metrics.add_single_positioning(code, left_sb, 0, left_sb + right_sb);
+		}
+	    }
+	}
+    }
+
     // reencode right components of boundary_glyph as boundary_char
-    int boundary_char = dvipsenc.boundary_char();
     if (metrics.reencode_right_ligkern(256, boundary_char) > 0
 	&& boundary_char < 0) {
 	errh->warning("no boundary character, ignoring some ligatures and/or kerns\n");
@@ -1523,6 +1548,16 @@ main(int argc, char *argv[])
 	    letterspace = clp->val.i;
 	    break;
 
+	  case SPACE_FACTOR_OPT:
+	    if (space_factor != 1)
+		usage_error(errh, "space factor specified twice");
+	    space_factor = clp->val.d;
+	    break;
+
+	  case MATH_SPACING_OPT:
+	    math_spacing = !clp->negated;
+	    break;
+	    
 	  case DESIGN_SIZE_OPT:
 	    if (design_size > 0)
 		usage_error(errh, "design size value specified twice");

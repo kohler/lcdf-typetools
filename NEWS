@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.20
+
+* otftotfm: Add '--space-factor' and '--math-spacing' options, based on
+  patches from Achim Blumensath.
+
+
 Version 2.19   4.Feb.2005
 
 * otftotfm: Add '--subs-filter', '--include-subs', '--exclude-subs', and
