@@ -66,7 +66,7 @@ Metrics::check() const
 	}
 	if (ch->flag(Char::CONTEXT_ONLY))
 	    assert(ch->virtual_char && ch->built_in1 >= 0 && ch->built_in2 >= 0);
-	if (ch->flag(Char::LIG_LIVE | Char::CONTEXT_ONLY))
+	if (ch->flag(Char::CONTEXT_ONLY))
 	    assert(ch->flag(Char::LIVE));
     }
 }
@@ -545,8 +545,10 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 		    ok = false;
 
 	    // if not ok, continue
-	    if (!ok)
+	    if (!ok) {
+		//fprintf(stderr, "%s : REFUSED\n", s->unparse().c_str());
 		continue;
+	    }
 
 	    // mark this combination as changed if appropriate
 	    if (in.size() == 2 && nin == 1)
@@ -678,28 +680,38 @@ void
 Metrics::mark_liveness(int size, const Vector<Ligature3> &all_ligs)
 {
     _liveness_marked = true;
+    bool changed;
     
     /* Characters below 'size' are in both virtual and base encodings. */
     for (Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
 	if (ch->visible())
-	    ch->flags |= Char::LIVE | Char::LIG_LIVE | (ch->virtual_char ? 0 : Char::BASE_LIVE);
+	    ch->flags |= Char::LIVE | (ch->virtual_char ? 0 : Char::BASE_LIVE);
 
     /* Characters reachable from live chars by live ligatures are live. */
+  redo_live_reachable:
     for (const Ligature3 *l = all_ligs.begin(); l != all_ligs.end(); l++)
 	if (_encoding[l->in1].flag(Char::LIVE) && _encoding[l->in2].flag(Char::LIVE)) {
 	    Char &ch = _encoding[l->out];
 	    if (!ch.flag(Char::LIVE))
-		ch.flags |= Char::LIVE | Char::LIG_LIVE | Char::CONTEXT_ONLY | (ch.virtual_char ? 0 : Char::BASE_LIVE);
-	    if (!ch.context_setting(l->in1, l->in2))
+		ch.flags |= Char::LIVE | Char::CONTEXT_ONLY | (ch.virtual_char ? 0 : Char::BASE_LIVE);
+	    if (ch.flag(Char::CONTEXT_ONLY) && !ch.context_setting(l->in1, l->in2))
 		ch.flags &= ~Char::CONTEXT_ONLY;
 	}
 
     /* Characters reachable from context-only ligatures are live. */
+    changed = false;
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
 	if (ch->flag(Char::CONTEXT_ONLY)) {
-	    _encoding[ch->built_in1].flags |= Char::LIVE;
-	    _encoding[ch->built_in2].flags |= Char::LIVE;
+	    Char &ch1 = _encoding[ch->built_in1];
+	    Char &ch2 = _encoding[ch->built_in2];
+	    if (!ch1.flag(Char::LIVE) || !ch2.flag(Char::LIVE)) {
+		ch1.flags |= Char::LIVE;
+		ch2.flags |= Char::LIVE;
+		changed = true;
+	    }
 	}
+    if (changed)
+	goto redo_live_reachable;
     
     /* Characters reachable from live settings are base-live. */
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
@@ -800,11 +812,8 @@ Metrics::cut_encoding(int size)
        components. */
     for (Code c = 0; c < size; c++) {
 	Char &ch = _encoding[c];
-	if (!ch.flag(Char::LIG_LIVE))
-	    ch.ligatures.clear();
 	for (Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
 	    if (!good[l->in2]
-		|| !_encoding[l->in2].flag(Char::LIG_LIVE)
 		|| (!good[l->out] && !_encoding[l->out].context_setting(c, l->in2))) {
 		*l = ch.ligatures.back();
 		ch.ligatures.pop_back();
@@ -1221,7 +1230,7 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
 		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1, glyph_names), ch.built_in2, code_str(ch.built_in2, glyph_names));
 	    }
 	    for (const Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
-		fprintf(stderr, "\t[%d/%s => %d/%s]\n", l->in2, code_str(l->in2, glyph_names), l->out, code_str(l->out, glyph_names));
+		fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2, glyph_names), l->out, code_str(l->out, glyph_names), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
 #if 0
 	    for (const Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
 		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2, glyph_names), k->kern);
