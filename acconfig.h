@@ -5,23 +5,8 @@
 /* Pathname separator character ('/' on Unix). */
 #define PATHNAME_SEPARATOR '/'
 
-/* Check for bad strtod. */
-#undef BROKEN_STRTOD
-
-/* Define if you have the strerror function. */
-#undef HAVE_STRERROR 
-
 /* Define to 1 since we have PermStrings. */
 #define HAVE_PERMSTRING 1
-
-/* Define if <new> exists and works. */
-#undef HAVE_NEW_HDR
-
-/* Define if you have u_intXX_t types but not uintXX_t types. */
-#undef HAVE_U_INT_TYPES
-
-/* Data directory. */
-#undef SHAREDIR
 
 @TOP@
 @BOTTOM@

@@ -50,3 +50,34 @@ printable_filename(const String &s)
     else
 	return s;
 }
+
+String
+shell_command_output(String cmdline, const String &input, ErrorHandler *errh)
+{
+    FILE *f = tmpfile();
+    if (!f)
+	errh->fatal("cannot create temporary file: %s", strerror(errno));
+    fwrite(input.data(), 1, input.length(), f);
+    fflush(f);
+    rewind(f);
+  
+    String new_cmdline = cmdline + " 0<&" + String(fileno(f));
+    FILE *p = popen(new_cmdline.c_str(), "r");
+    if (!p)
+	errh->fatal("'%s': %s", cmdline.c_str(), strerror(errno));
+
+    StringAccum sa;
+    while (!feof(p) && !ferror(p) && sa.length() < 200000) {
+	int x = fread(sa.reserve(2048), 1, 2048, p);
+	if (x > 0)
+	    sa.forward(x);
+	else if (x < 0 && errno != EAGAIN)
+	    errh->error("'%s': %s", cmdline.c_str(), strerror(errno));
+    }
+    if (!feof(p) && !ferror(p))
+	errh->warning("'%s' output too long, truncated", cmdline.c_str());
+
+    fclose(f);
+    pclose(p);
+    return sa.take_string();
+}

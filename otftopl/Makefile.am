@@ -1,17 +1,18 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = otftopl
+bin_PROGRAMS = otftotfm
 man_MANS = otftopl.1
 
-otftopl_SOURCES = \
+otftotfm_SOURCES = \
+	automatic.cc automatic.hh \
 	dvipsencoding.cc dvipsencoding.hh \
 	gsubencoding.cc gsubencoding.hh \
 	md5.c md5.h \
 	otftopl.cc \
 	util.cc util.hh
 
-otftopl_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
+otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
 

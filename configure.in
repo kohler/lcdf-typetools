@@ -20,6 +20,43 @@ AC_HEADER_DIRENT
 
 
 dnl
+dnl kpathsea, cfftota
+dnl
+
+AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea programs are under PREFIX [[$PATH]]],
+  [kpathsea=$withval], [kpathsea=])
+
+if test "x$kpathsea" = xno; then
+    :
+else
+    AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
+    if test "x$kpathsea" = x -o "x$kpathsea" = xyes; then
+	AC_CHECK_PROG([KPSEWHICH], [kpsewhich], [yes], [no])
+	AC_DEFINE(KPATHSEA_BINDIR, [""], [The prefix to prepend to kpathsea programs.])
+    else
+	kpathsea=`echo kpathsea | sed 's/\/*$//'`
+	AC_CHECK_PROG([KPSEWHICH], [kpsewhich], [yes], [no], [$kpathsea/bin])
+	AC_DEFINE(KPATHSEA_BINDIR, ["$kpathsea/bin/"])
+    fi
+    if test $KPSEWHICH = no; then
+	AC_MSG_ERROR([
+=========================================
+
+I can't find the 'kpsewhich' program. Tell me where to look with the
+--with-kpathsea=PREFIX option, or disable support with --without-kpathsea.
+
+=========================================])
+    fi
+fi
+
+AC_ARG_ENABLE(cfftot1, [  --disable-cfftot1       disable running cfftot1 from otftotfm], :, enable_cfftot1=yes)
+
+if test "x$enable_cfftot1" = xyes; then
+    AC_DEFINE(HAVE_AUTO_CFFTOT1, 1, [Define to run cfftot1 automatically from otftotfm.])
+fi
+
+
+dnl
 dnl <new> and/or <new.h>
 dnl
 
@@ -31,7 +68,7 @@ AC_TRY_LINK([#include <new>], [
   return 0;
 ], ac_cv_good_new_hdr=yes, ac_cv_good_new_hdr=no))
 if test "$ac_cv_good_new_hdr" = yes; then
-   AC_DEFINE(HAVE_NEW_HDR)
+   AC_DEFINE(HAVE_NEW_HDR, 1, [Define if <new> exists and works.])
 fi
 AC_CHECK_HEADERS(new.h)
 
@@ -55,8 +92,9 @@ int main(int c, char **v) {
   exit(*endp == 0 ? 1 : 0);
 }], ac_cv_working_strtod=yes, ac_cv_working_strtod=no,
 ac_cv_working_strtod=yes)])
-if test $ac_cv_working_strtod = no ;
-then FIXLIBC_O='fixlibc.o'; AC_DEFINE_UNQUOTED(BROKEN_STRTOD)
+if test $ac_cv_working_strtod = no; then 
+    FIXLIBC_O='fixlibc.o'
+    AC_DEFINE(BROKEN_STRTOD, 1, [Check for bad strtod.])
 fi
 
 AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate)
@@ -87,7 +125,7 @@ fi
 if test $have_inttypes_h = yes -o "$ac_cv_uint_t" = yes; then
     :
 elif test "$ac_cv_u_int_t" = yes; then
-    AC_DEFINE(HAVE_U_INT_TYPES)
+    AC_DEFINE(HAVE_U_INT_TYPES, 1, [Define if you have u_intXX_t types but not uintXX_t types.])
 else
     AC_MSG_ERROR([
 =========================================
@@ -123,7 +161,7 @@ test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 
 shell_expand datadir
 
-AC_DEFINE_UNQUOTED(SHAREDIR, "$datadir/lcdf-typetools")
+AC_DEFINE_UNQUOTED(SHAREDIR, "$datadir/lcdf-typetools", [Data directory.])
 
 
 dnl

@@ -6,29 +6,27 @@
 .if n .sp
 .if t .sp 0.4
 ..
-.TH OTFTOPL 1 "LCDF Typetools" "Version \*V"
+.TH OTFTOTFM 1 "LCDF Typetools" "Version \*V"
 .SH NAME
-otftopl \- create TeX PL metrics files from PostScript OpenType fonts
+otftotfm \- create TeX PL metrics files from PostScript OpenType fonts
 .SH SYNOPSIS
-.B otftopl
+.B otftotfm
 \%[\fBoptions\fR]
-\%\fIfont\fR [\fIoutput\fR [\fIencoding-output\fR]]
+\%\fIotffile\fR [\fIfontname\fR]
 .br
-.B otftopl
+.B otftotfm
 \-a
 \%[\fBoptions\fR]
-\%\fIfont\fR [\fIoutput-directory\fR [\fIencoding-directory\fR]]
+\%\fIotffile\fR [\fIfontname\fR]
 .SH DESCRIPTION
-.BR Otftopl
+.BR Otftotfm
 creates TeX font metrics and a 
 .M dvips 1 -like
 encoding file that correspond, as far as possible, to a PostScript-flavored
-OpenType font. If the file
-.I output
-is not specified the generated PL metrics go to the standard output.
-If the file
-.I font
-is not specified input comes from the standard input.
+OpenType font. The generated files are written into the current directory,
+or, with the
+.B \-a 
+option, into a collection of directories taken from environment variables.
 .LP
 .\"OpenType supports extensive substitutions and complex positionings that TeX
 .\"can't handle. 
@@ -42,27 +40,30 @@ Pair kerns, such as moving 'AV' closer together.
 .IP * 3
 Ligatures, such as replacing 'f' and 'i' with an integrated 'fi'
 glyph.
+.IP * 3
+Simple glyph positionings, such as adding extra space on either side of 'W'.
 .LP
-Otftopl reads an OpenType font, turns on any font features you choose,
+Otftotfm reads an OpenType font, turns on any font features you choose,
 selects the instructions that TeX supports, and generates font metrics and
 a dvips encoding file that, together, implement those instructions. By
-default otftopl generates human-readable PL font metrics. Either feed the
-PL font metrics to
+default otftotfm uses the
 .M pltotf 1
-to get TeX-readable TFM font metrics, or supply the
-.B \-\-tfm
-option and otftopl will run pltotf for you.
+and
+.M vptovf 1
+programs to create TFM and VF files, but supply the
+.B \-\-pl
+option to make it generates human-readable PL and VPL files.
 .PP
-Otftopl runs in automatic mode or manual mode. In manual mode, you specify
-the names of the output metrics and encoding files. Automatic mode is
-easier; you specify
-.I directories
-for output metrics and encoding files, and otftopl chooses the filenames
-automatically. Provide the
+Otftotfm runs in automatic mode or manual mode. In manual mode, all output
+files are written into the current directory; in automatic mode, they are
+written to directories specified by various environment variables. In
+either case, you can override a directory choice with one of the
+.B \-\-whatever\-directory
+options. Provide the
 .BR \-a / \-\-automatic
 option to select automatic mode.
 .PP
-Otftopl also generates a prototype
+Otftotfm also generates a prototype
 .I psfonts.map
 line for the font, suitable for
 .M dvips 1
@@ -81,8 +82,8 @@ Scripts and language systems are two-to-four-letter names assigned by
 Microsoft and Adobe. Examples include "latn" (Latin script), "grek" (Greek
 script), and "yi.YIC" (Yi script with classic characters). If
 .I lang
-is not specified, otftopl will use the default language system for that
-script. You can give this option multiple times. Run "otftopl
+is not specified, otftotfm will use the default language system for that
+script. You can give this option multiple times. Run "otftotfm
 \-\-query\-scripts \fIfont\fR" to see the list of scripts and languages a
 font supports. Defaults to "latn".
 '
@@ -96,7 +97,7 @@ meant to correspond to font behaviors, such as kerning or small-capitals.
 Examples include "liga" (default ligatures), "dlig" (discretionary
 ligatures), "kern" (kerning), and "c2sc" (replacing capitals with small
 capitals). Give this option multiple times to apply multiple features. Run
-"otftopl \-\-query\-features [--script options] \fIfont\fR" to see the list
+"otftotfm \-\-query\-features [--script options] \fIfont\fR" to see the list
 of features a font supports for the specified collection of scripts.
 Defaults to any features required by the selected scripts.
 '
@@ -114,7 +115,7 @@ information. Defaults to the font's encoding.
 Selects the
 .M dvips 1
 encoding used for the font. No glyph substitutions will be permitted, so
-the output encoding will equal the input encoding (and otftopl will not
+the output encoding will equal the input encoding (and otftotfm will not
 generate an output encoding).
 '
 .Sp
@@ -247,9 +248,9 @@ Print the version number and some short non-warranty information and exit.
 '
 .SH ENCODINGS
 .PP
-Otftopl uses its input encodings by translating glyph names into Unicode
+Otftotfm uses its input encodings by translating glyph names into Unicode
 code points. For example, if an input encoding has "/dotlessi" at position
-10, then otftopl detects that the user wants to encode Unicode character
+10, then otftotfm detects that the user wants to encode Unicode character
 U+0131 LATIN SMALL LETTER DOTLESS I at position 10. The output encoding
 will use whatever glyph the font suggests for that code point, given the
 collection of features you chose.
@@ -261,7 +262,7 @@ encoding file. UNICODING comments have the following format:
 .fi
 \fIGlyph\fR and the
 .IR choice s
-are PostScript glyph names. This comment tells otftopl that the glyph named
+are PostScript glyph names. This comment tells otftotfm that the glyph named
 .I glyph 
 translates into the first Unicode code point in the
 .I choice
@@ -269,7 +270,7 @@ list that the font supports. For example, this UNICODING:
 .nf
   % UNICODING Delta =: Deltagreek Delta ;
 .fi
-tells otftopl that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
+tells otftotfm that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
 U+2206 INCREMENT as an encoding for "/Delta". You can also map a glyph to
 nothing to remove that glyph from the input encoding; for instance:
 .nf
@@ -284,7 +285,7 @@ using their original locations when possible.
 Ligatures can be added and kerns inhibited by LIGKERN comments in the
 encoding, as in
 .M afm2tfm 1 .
-Otftopl also supports extended syntax for inhibiting ligatures.
+Otftotfm also supports extended syntax for inhibiting ligatures.
 This command:
 .nf
   % LIGKERN \fIglyph1\fR {L} \fIglyph2\fR ;
@@ -294,18 +295,18 @@ inhibits any ligature between
 and
 .IR glyph2 .
 "{K}", like "{}", inhibits kerns only, and "{LK}" and "{KL}" inhibit both
-ligatures and kerns. Otftopl parses "% LIGKERNX" comments as well as "%
+ligatures and kerns. Otftotfm parses "% LIGKERNX" comments as well as "%
 LIGKERN" comments; it's probably better to put the extended commands in
 LIGKERNX blocks, since that avoids confusing
 .M afm2tfm 1 .
 '
 .SH "BUGS"
 .LP
-Otftopl should warn when TeX cannot implement a requested feature (complex
+Otftotfm should warn when TeX cannot implement a requested feature (complex
 context-sensitive positionings, for example).
 .LP
 Presumably some context-sensitive positionings and ligatures could be
-implemented with TeX's boundary character, but otftopl doesn't do that yet.
+implemented with TeX's boundary character, but otftotfm doesn't do that yet.
 .LP
 More positionings and ligatures could be supported with the help of virtual
 fonts.
