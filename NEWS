@@ -1,5 +1,14 @@
 LCDF Typetools NEWS
 
+Version 0.15   4.Jul.2003
+
+* otftotfm: Bug fix: Don't multiply apply substitutions and kerns from the
+  same lookup.
+
+* otftotfm: Supports simple left-contextual substitutions, necessary for
+  ExPontoPro's 'calt' (Contextual Alternates) feature.
+
+
 Version 0.14   2.Jul.2003
 
 * otftotfm: Add '-L/--letterspacing' option at Bruce D'Arcus's request.
