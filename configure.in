@@ -122,6 +122,7 @@ dnl
 dnl kpathsea, auto-cfftot1
 dnl
 
+AC_ARG_ENABLE(tetex-build, [  --enable-tetex-build    build as part of a teTeX installation], :, enable_tetex_build=no)
 AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
   [kpathsea=$withval], [kpathsea=])
 
@@ -129,18 +130,18 @@ if test "x$kpathsea" = xno; then
     KPSEINTERFACE_O=
     LIBKPATHSEA=
 else
-    if test "x$kpathsea" = xtexk-local; then
-	if test ! -d ../../texk/kpathsea; then
+    if test "x$enable_tetex_build" = xyes; then
+	if test ! -d $srcdir/../../texk/kpathsea; then
 	    AC_MSG_ERROR([
 =========================================
 
-You specified --with-kpathsea=texk-local, but I can't find the kpathsea
-directory.  I expected it to be in ../../texk/kpathsea.
+You specified --enable-tetex-build, but I can't find the kpathsea
+directory.  I expected it to be in $srcdir/../../texk/kpathsea.
 
 =========================================])
 	fi
-	CPPFLAGS="$CPPFLAGS -I\$(top_srcdir)/../../texk"
-	LDFLAGS="$LDFLAGS -L\$(top_srcdir)/../../texk/kpathsea/.libs"
+	CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/../../texk -I\$(top_srcdir)/../../texk"
+	LDFLAGS="$LDFLAGS -L\$(top_builddir)/../../texk/kpathsea/.libs"
     elif test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
 	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
 	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
@@ -159,7 +160,11 @@ directory.  I expected it to be in ../../texk/kpathsea.
     fi
 
     dnl check for -lkpathsea
-    AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
+    if test "x$enable_tetex_build" = xyes; then
+	kpse_library=yes
+    else
+	AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
+    fi
 
     dnl bail out if not found
     if test "x$kpse_header" != xyes -o "x$kpse_library" != xyes; then
@@ -177,8 +182,8 @@ using --without-kpathsea.
     dnl OK, found
     AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
     KPSEINTERFACE_O='kpseinterface.$(OBJEXT)'
-    if test "x$kpathsea" = xtexk-local; then
-	LIBKPATHSEA='$(top_srcdir)/../../texk/kpathsea/.libs/libkpathsea.a'
+    if test "x$enable_tetex_build" = xyes; then
+	LIBKPATHSEA='$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a'
     else
 	LIBKPATHSEA='-lkpathsea'
     fi
@@ -188,7 +193,7 @@ AC_SUBST([LIBKPATHSEA])
 
 AC_ARG_ENABLE(selfauto-set, [  --disable-selfauto-set  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_set=yes)
 
-if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno -a "x$kpathsea" != xtexk-local; then
+if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno -a "x$enable_tetex_build" != xyes; then
     kpsewhich='kpsewhich'
     test "x$kpathsea" != xyes -a -x "$kpathsea/bin/kpsewhich" && kpsewhich="$kpathsea/bin/kpsewhich"
     SELFAUTOLOC=`$kpsewhich --expand-var='$SELFAUTOLOC' 2>/dev/null`
