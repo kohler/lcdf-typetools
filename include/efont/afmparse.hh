@@ -10,6 +10,8 @@
 class AfmParser {
   
   Slurper &_slurper;
+  bool _save_line;
+  
   unsigned char *_line;
   unsigned char *_pos;
   int _length;
@@ -27,6 +29,7 @@ class AfmParser {
   
   bool ok() const			{ return _slurper.ok(); }
   operator Landmark() const		{ return _slurper.landmark(); }
+  Landmark landmark() const		{ return _slurper.landmark(); }
   unsigned lineno() const		{ return _slurper.lineno(); }
   const Filename &filename() const	{ return _slurper.filename(); }
   
@@ -42,8 +45,9 @@ class AfmParser {
   bool isall(const char *, ...);
   
   bool next_line();
+  void save_line()			{ _slurper.save_line(); }
   void skip_until(unsigned char);
-
+  
   unsigned char first() const		{ return _pos[0]; }
   unsigned char operator[](int i) const	{ return _pos[i]; }
   bool left() const			{ return *_pos != 0; }

@@ -108,8 +108,10 @@ AfmReader::read()
       _afm_xt->opening_comments.append(comment);
     else if (l.isall("StartFontMetrics %g", (double *)0))
       ;
-    else
+    else {
+      l.save_line();
       break;
+    }
   }
   
   _afm->set_scale(1000);
@@ -119,7 +121,7 @@ AfmReader::read()
   int metrics_sets;
   int direction;
   
-  do {
+  while (l.next_line())
     switch (l.first()) {
       
      case 'A':
@@ -272,7 +274,6 @@ AfmReader::read()
       no_match_warning();
       
     }
-  } while (l.next_line());
   
  done:
   if (invalid_lines >= l.lineno() - 10) {

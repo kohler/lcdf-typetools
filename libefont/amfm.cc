@@ -17,7 +17,7 @@ AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
   : _finder(finder),
     _fdv(fdLast, Unkdouble),
     _nmasters(-1), _naxes(-1), _masters(0), _mmspace(0),
-    _primary_fonts(0), _sanity_afm(0)
+    _primary_fonts(0), _sanity_afm(0), _uses(0)
 {
 }
 
@@ -320,13 +320,15 @@ AmfmReader::read()
       _amfm->_opening_comments.append(comment);
     else if (l.isall("StartMasterFontMetrics %g", (double *)0))
       ;
-    else
+    else {
+      l.save_line();
       break;
+    }
   }
   
   int master = 0, axis = 0;
   
-  do {
+  while (l.next_line())
     switch (l[0]) {
       
      case 'A':
@@ -462,11 +464,10 @@ AmfmReader::read()
       no_match_warning();
       
     }
-  } while (l.next_line());
   
  done:
   if (!_mmspace) {
-    _errh->error(_l, "not an AMFM file");
+    _errh->error("`%s' is not an AMFM file", _l.landmark().file().cc());
     delete _amfm;
     _amfm = 0;
     return;
@@ -483,7 +484,8 @@ AmfmReader::read()
   
   PinnedErrorHandler pin_errh(_l, _errh);
   if (!_amfm->sanity(&pin_errh)) {
-    _errh->error(_l, "bad AMFM file (missing or inconsistent information)");
+    _errh->error(_l.landmark().whole_file(),
+		 "bad AMFM file (missing or inconsistent information)");
     delete _amfm;
     _amfm = 0;
   }
