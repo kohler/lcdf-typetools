@@ -15,6 +15,7 @@ libefont_a_SOURCES = \
 	otf.hh otf.cc \
 	pairop.hh pairop.cc \
 	psres.hh psres.cc \
+	t1bounds.hh t1bounds.cc \
 	t1cs.hh t1cs.cc \
 	t1csgen.hh t1csgen.cc \
 	t1interp.hh t1interp.cc \
