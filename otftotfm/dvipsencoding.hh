@@ -23,6 +23,8 @@ class DvipsEncoding { public:
     bool encoded(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
+    void unicodes(Vector<uint32_t> &) const;
+    
     int parse(String filename, ErrorHandler *);
     int parse_ligkern(const String &ligkern_text, ErrorHandler *);
 

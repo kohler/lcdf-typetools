@@ -950,8 +950,11 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    for (int j = 0; j < lookups[i].features.size(); j++)
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
+
+    // simplify more-than-two-character ligatures
     encoding.simplify_ligatures(false);
 
+    // reencode characters to fit within 8 bytes (+ 1 for the boundary)
     if (dvipsenc_literal)
 	encoding.cut_encoding(257);
     else

@@ -500,6 +500,20 @@ DvipsEncoding::make_literal_gsub_encoding(GsubEncoding &gsub_encoding, Efont::Cf
 }
 
 void
+DvipsEncoding::unicodes(Vector<uint32_t> &unicodes) const
+{
+    unicodes.assign(_e.size(), 0xFFFFFFFFU);
+    for (int i = 0; i < _e.size(); i++)
+	if (_e[i] != dot_notdef) {
+	    int m = _unicoding_map[_e[i]];
+	    if (m >= 0)
+		unicodes[i] = m;
+	    else if ((m = glyphname_unicode(_e[i])) >= 0)
+		unicodes[i] = m;
+	}
+}
+
+void
 DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh) const
 {
     assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);

@@ -23,7 +23,7 @@ class GsubEncoding { public:
     Glyph boundary_glyph() const		{ return _boundary_glyph; }
 
     inline Glyph glyph(int) const;
-    inline const char *debug_glyph_name(int) const;
+    inline const char *debug_code_name(int) const;
     bool setting(int, Vector<Setting> &) const;
     inline int encoding(Glyph) const;
     int force_encoding(Glyph);
@@ -37,7 +37,7 @@ class GsubEncoding { public:
     void simplify_positionings();
 
     void cut_encoding(int size);
-    void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names, ErrorHandler *);
+    void shrink_encoding(int size, const DvipsEncoding &, const Vector<PermString> &glyph_names, ErrorHandler *);
 
     void add_twoligature(int code1, int code2, int outcode);
     void add_kern(int left, int right, int amount);
@@ -51,7 +51,7 @@ class GsubEncoding { public:
     int kerns(int code1, Vector<int> &code2, Vector<int> &amount) const;
     int kern(int code1, int code2) const;
     
-    bool need_virtual() const		{ return _vfpos.size() > 0 || _fake_ligatures.size() > 0; }
+    bool need_virtual() const		{ return _vfpos.size() > 0 || _fake_ligatures; }
     
     void unparse(const Vector<PermString> * = 0) const;
     
@@ -60,7 +60,6 @@ class GsubEncoding { public:
   private:
 
     Vector<Glyph> _encoding;
-    Vector<Glyph> _substitutions;
     mutable Vector<int> _emap;
     Glyph _boundary_glyph;
 
@@ -69,9 +68,14 @@ class GsubEncoding { public:
 	int out;
 	int skip;
 	int context;
+	int next;
+	bool live() const		{ return in[0] >= 0; }
+	void kill()			{ in[0] = -1; }
+	String unparse(const GsubEncoding *) const;
+	int score(const Vector<uint32_t> &unicodes) const;
     };
     Vector<Ligature> _ligatures;
-    Vector<Ligature> _fake_ligatures;
+    bool _fake_ligatures;
 
     struct Kern {
 	int left;
@@ -93,7 +97,8 @@ class GsubEncoding { public:
     void add_single_context_substitution(int, int, int, bool is_right);
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(const Vector<int> &);
-    int find_skippable_twoligature(int, int, bool add_fake);
+    int find_in_place_twoligature(int, int, Vector<int> &);
+    const Ligature *find_ligature_for(int code) const;
 
     friend bool operator<(const Kern &, const Kern &);
     friend bool operator<(const Vfpos &, const Vfpos &);
@@ -107,15 +112,6 @@ GsubEncoding::glyph(int code) const
 	return 0;
     else
 	return _encoding[code];
-}
-
-inline const char *
-GsubEncoding::debug_glyph_name(int code) const
-{
-    if (code < 0 || code >= _encoding.size())
-	return "<bad code>";
-    else
-	return Efont::OpenType::debug_glyph_names[_encoding[code]].c_str();
 }
 
 inline int
