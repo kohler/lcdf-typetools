@@ -26,90 +26,92 @@ using namespace Efont;
 
 
 CharstringChecker::CharstringChecker()
-  : CharstringInterp(), _errh(0)
+    : CharstringInterp(), _errh(0)
 {
+    set_careful(true);
 }
 
 CharstringChecker::CharstringChecker(const Vector<double> &weight)
-  : CharstringInterp(weight), _errh(0)
+    : CharstringInterp(weight), _errh(0)
 {
+    set_careful(true);
 }
 
 
 void
 CharstringChecker::stem(double y, double dy, const char *cmd_name)
 {
-  bool is_v = (cmd_name[0] == 'v');
-  Vector<double> &hints = (is_v ? _h_vstem : _h_hstem);
-  const char *dimen_name = (is_v ? "x" : "y");
-  if (dy < 0) {
-    y += dy;
-    dy = -dy;
-  }
-  if (dy < 0.5)
-    _errh->warning("small delta-%s in `%s' (%g)", dimen_name, cmd_name, dy);
-  for (int i = 0; i < hints.size(); i += 2)
-    if ((hints[i] >= y && hints[i+1] <= y)
-	|| (hints[i] >= y+dy && hints[i+1] <= y+dy))
-      _errh->warning("overlapping `%s' hints", cmd_name);
-  hints.push_back(y);
-  hints.push_back(y+dy);
+    bool is_v = (cmd_name[0] == 'v');
+    Vector<double> &hints = (is_v ? _h_vstem : _h_hstem);
+    const char *dimen_name = (is_v ? "x" : "y");
+    if (dy < 0) {
+	y += dy;
+	dy = -dy;
+    }
+    if (dy < 0.5)
+	_errh->warning("small delta-%s in `%s' (%g)", dimen_name, cmd_name, dy);
+    for (int i = 0; i < hints.size(); i += 2)
+	if ((hints[i] >= y && hints[i+1] <= y)
+	    || (hints[i] >= y+dy && hints[i+1] <= y+dy))
+	    _errh->warning("overlapping `%s' hints", cmd_name);
+    hints.push_back(y);
+    hints.push_back(y+dy);
 }
 
 void
 CharstringChecker::check_stem3(const char *cmd_name)
 {
-  bool is_v = (cmd_name[0] == 'v');
-  Vector<double> &hints = (is_v ? _h_vstem : _h_hstem);
-  Vector<double> &old_hints = (is_v ? _h_vstem3 : _h_hstem3);
-  assert(hints.size() == 6);
+    bool is_v = (cmd_name[0] == 'v');
+    Vector<double> &hints = (is_v ? _h_vstem : _h_hstem);
+    Vector<double> &old_hints = (is_v ? _h_vstem3 : _h_hstem3);
+    assert(hints.size() == 6);
   
-  // sort hints
-  int i0, i1, i2;
-  if (hints[0] > hints[2])
-    i0 = 2, i1 = 0;
-  else
-    i0 = 0, i1 = 2;
-  if (hints[4] < hints[i0])
-    i2 = i1, i1 = i0, i0 = 4;
-  else if (hints[4] < hints[i1])
-    i2 = i1, i1 = 4;
-  else
-    i2 = 4;
+    // sort hints
+    int i0, i1, i2;
+    if (hints[0] > hints[2])
+	i0 = 2, i1 = 0;
+    else
+	i0 = 0, i1 = 2;
+    if (hints[4] < hints[i0])
+	i2 = i1, i1 = i0, i0 = 4;
+    else if (hints[4] < hints[i1])
+	i2 = i1, i1 = 4;
+    else
+	i2 = 4;
   
-  // check constraints. count "almost equal" as equal
-  double stemw1 = hints[i0+1] - hints[i0];
-  double stemw2 = hints[i2+1] - hints[i2];
-  if ((int)(1024*(stemw1 - stemw2) + .5) != 0)
-    _errh->error("bad `%s': extreme stem widths unequal (%g, %g)", cmd_name, stemw1, stemw2);
+    // check constraints. count "almost equal" as equal
+    double stemw1 = hints[i0+1] - hints[i0];
+    double stemw2 = hints[i2+1] - hints[i2];
+    if ((int)(1024*(stemw1 - stemw2) + .5) != 0)
+	_errh->error("bad `%s': extreme stem widths unequal (%g, %g)", cmd_name, stemw1, stemw2);
+    
+    double c0 = (hints[i0] + hints[i0+1])/2;
+    double c1 = (hints[i1] + hints[i1+1])/2;
+    double c2 = (hints[i2] + hints[i2+1])/2;
+    if ((int)(1024*((c1 - c0) - (c2 - c1)) + .5) != 0)
+	_errh->error("bad `%s': stem gaps unequal (%g, %g)", cmd_name, c1-c0, c2-c1);
   
-  double c0 = (hints[i0] + hints[i0+1])/2;
-  double c1 = (hints[i1] + hints[i1+1])/2;
-  double c2 = (hints[i2] + hints[i2+1])/2;
-  if ((int)(1024*((c1 - c0) - (c2 - c1)) + .5) != 0)
-    _errh->error("bad `%s': stem gaps unequal (%g, %g)", cmd_name, c1-c0, c2-c1);
-  
-  // compare to old hints
-  if (old_hints.size()) {
-    for (int i = 0; i < old_hints.size(); i++)
-      if (hints[i] != old_hints[i]) {
-	_errh->warning("`%s' conflicts with old `%s'", cmd_name, cmd_name);
-	break;
-      }
-  }
-  old_hints = hints;
+    // compare to old hints
+    if (old_hints.size()) {
+	for (int i = 0; i < old_hints.size(); i++)
+	    if (hints[i] != old_hints[i]) {
+		_errh->warning("`%s' conflicts with old `%s'", cmd_name, cmd_name);
+		break;
+	    }
+    }
+    old_hints = hints;
 }
 
 void
 CharstringChecker::moveto(double, double, bool cp_exists)
 {
-  _cp_exists = cp_exists;
+    _cp_exists = cp_exists;
 }
 
 void
 CharstringChecker::rmoveto(double, double)
 {
-  _cp_exists = true;
+    _cp_exists = true;
 }
 
 void
@@ -438,18 +440,18 @@ CharstringChecker::type1_command(int cmd)
 bool
 CharstringChecker::check(const CharstringContext &g, ErrorHandler *errh)
 {
-  _errh = errh;
-  int old_errors = errh->nerrors();
+    _errh = errh;
+    int old_errors = errh->nerrors();
 
-  _started = false;
-  _flex = false;
-  _hstem = _hstem3 = _vstem = _vstem3 = false;
-  _h_hstem.clear();
-  _h_vstem.clear();
-  _h_hstem3.clear();
-  _h_vstem3.clear();
+    _started = false;
+    _flex = false;
+    _hstem = _hstem3 = _vstem = _vstem3 = false;
+    _h_hstem.clear();
+    _h_vstem.clear();
+    _h_hstem3.clear();
+    _h_vstem3.clear();
 
-  CharstringInterp::interpret(g);
+    CharstringInterp::interpret(g);
   
-  return errh->nerrors() == old_errors;
+    return errh->nerrors() == old_errors;
 }
