@@ -14,7 +14,9 @@
 #elif HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #elif defined(WIN32)
-# pragma warning (disable: 4290)
+# ifdef __MSC_VER
+#  pragma warning (disable: 4290)
+# endif
 # include <winsock2.h>
 #else
 # error "configury disaster! Report this error to kohler@icir.org"
