@@ -122,10 +122,13 @@ class Type1Charstring : public Charstring { public:
   
     const unsigned char *data() const;
     int length() const				{ return _s.length(); }
+    
     const String &data_string() const;
-  
+    String substring(int pos, int len) const;
+    
     void assign(const String &);
     void prepend(const Type1Charstring &);
+    void assign_substring(int pos, int len, const String &);
     
     bool run(CharstringInterp &) const;
 
@@ -171,8 +174,11 @@ class EfontProgram { public:
     
     virtual int nsubrs() const				{ return 0; }
     virtual Charstring *subr(int) const			{ return 0; }
+    virtual int subr_bias() const			{ return 0; }
+    
     virtual int ngsubrs() const				{ return 0; }
     virtual Charstring *gsubr(int) const		{ return 0; }
+    virtual int gsubr_bias() const			{ return 0; }
     
     virtual int nglyphs() const				{ return 0; }
     virtual PermString glyph_name(int) const		{ return PermString();}
@@ -230,6 +236,14 @@ Type1Charstring::data_string() const
     if (_key >= 0)
 	decrypt();
     return _s;
+}
+
+inline String
+Type1Charstring::substring(int pos, int len) const
+{
+    if (_key >= 0)
+	decrypt();
+    return _s.substring(pos, len);
 }
 
 inline bool

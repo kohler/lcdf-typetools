@@ -157,6 +157,22 @@ Type1Charstring::run(CharstringInterp &interp) const
     return false;
 }
 
+void
+Type1Charstring::assign_substring(int pos, int len, const String &cs)
+{
+    if (_key >= 0)
+	decrypt();
+    if (pos < 0 || len < 0 || pos + len >= _s.length())
+	/* do nothing */;
+    else if (cs.length() <= len) {
+	char *d = _s.mutable_data();
+	memcpy(d + pos, cs.data(), cs.length());
+	memmove(d + pos + cs.length(), d + pos + len, _s.length() - pos - len);
+	_s = _s.substring(0, cs.length() - len);
+    } else
+	_s = _s.substring(0, pos) + cs + _s.substring(pos + len);
+}
+
 
 Type2Charstring::Type2Charstring(const Type2Charstring &t2cs)
     : Charstring(), _s(t2cs._s)
