@@ -3,22 +3,25 @@
 #ifdef __GNUG__
 #pragma interface
 #endif
+#include <math.h>
+
 
 struct point {
   
   double x;
   double y;
+
+  point()				: x(0), y(0) { }
+  point(double xx, double yy)		: x(xx), y(yy) { }
   
-  point(double x = 0, double y = 0);
-  void set(double, double);
+  double squared_length() const		{ return x * x + y * y; }
+  double length() const			{ return sqrt(squared_length()); }
   
   static point midpoint(const point &, const point &);
   static point fraction_point(const point &, const point &, double);
   
   static double squared_length(const point &);
-  double squared_length() const;
   static double length(const point &);
-  double length() const;
   static double distance(const point &, const point &);
   static point along(const point &, const point &, double);
   
@@ -37,22 +40,6 @@ struct point {
   
 };
 
-
-
-// These are point's inline functions.
-
-inline void
-point::set(double x, double y)
-{
-  point::x = x;
-  point::y = y;
-}
-
-inline
-point::point(double x, double y)
-{
-  set(x, y);
-}
 
 inline point
 point::midpoint(const point &a, const point &b)
@@ -82,20 +69,6 @@ inline point &
 point::operator-=(const point &b)
 {
   return (*this = *this - b);
-}
-
-inline double
-point::squared_length() const
-{
-  return (x * x + y * y);
-}
-
-extern "C" double sqrt(double);
-
-inline double
-point::length() const
-{
-  return sqrt(squared_length());
 }
 
 inline double

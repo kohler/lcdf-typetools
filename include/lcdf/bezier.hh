@@ -7,6 +7,7 @@
 #include <X11/Xlib.h>
 class Charpanel;
 class Bezier;
+class Lens;
 
 
 class Stroke {
@@ -25,8 +26,8 @@ class Stroke {
   Stroke *next() const			{ return _next; }
   Bezier *bezier() const		{ return _first; }
   
-  void draw(Charpanel *, int);
-  void segment(Charpanel *);
+  void draw(Lens *, Charpanel *, int);
+  void segment(Lens *);
   
 };
 
@@ -65,6 +66,7 @@ class Bezier {
   Bezier()				: _flags(0) { }
   Bezier(int, const point &, const point &, const point &, const point &);
   Bezier(const point &, const point &, const point &, const point &);
+  Bezier(Lens *, const Bezier &);
   
   void halve(Bezier &, Bezier &) const;
   
@@ -89,15 +91,12 @@ class Bezier {
   void prepare_bb();
   void ensure_bb();
   
-  void draw_curve(Charpanel *);
-  void draw(Charpanel *, int);
+  void draw_curve(Lens *, Charpanel *);
+  void draw(Lens *, Charpanel *, int);
   
-  void segment_curve(Charpanel *);
-  void fill_curve(Charpanel *);
+  void segment_curve(Lens *);
   
-  static void initializeclass(Charpanel *);
-  
-  void transform(Charpanel *, Bezier *);
+  static void initialize_class(Charpanel *);
   
 };
 

@@ -3,6 +3,7 @@
 #endif
 #include "bezier.hh"
 #include "charpanel.hh"
+#include "segment.hh"
 #include <float.h>
 #include <assert.h>
 
@@ -30,8 +31,20 @@ Stroke::kill()
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
+void
+Stroke::segment(Lens *lens)
+{
+  Bezier *b = _first;
+  do {
+    b->segment_curve(lens);
+    b = b->_right;
+  } while (b && b != _first);
+}
 
+
+/*****
+ * Bezier
+ **/
 
 Bezier::Bezier(const point &p1, const point &p2, const point &p3,
 	       const point &p4)
@@ -52,6 +65,16 @@ Bezier::Bezier(int bf, const point &p1, const point &p2, const point &p3,
   _p[1] = p2;
   _p[2] = p3;
   _p[3] = p4;
+}
+
+
+Bezier::Bezier(Lens *lens, const Bezier &b)
+  : _flags(0)
+{
+  _p[0] = lens->transform(b._p[0]);
+  _p[1] = lens->transform(b._p[1]);
+  _p[2] = lens->transform(b._p[2]);
+  _p[3] = lens->transform(b._p[3]);
 }
 
 
@@ -169,11 +192,34 @@ Bezier::eval(double t) const
 }
 
 
+/*****
+ * drawing
+ **/
+
 void
-Bezier::transform(Charpanel *cp, Bezier *b2)
+Bezier::segment_recurse()
 {
-  b2->_p[0] = cp->transform(_p[0]);
-  b2->_p[1] = cp->transform(_p[1]);
-  b2->_p[2] = cp->transform(_p[2]);
-  b2->_p[3] = cp->transform(_p[3]);
+  if (is_flat(0.5)) {
+    Segment::make(_p[0].x, _p[0].y, _p[3].x, _p[3].y);
+  } else {
+    Bezier left, right;
+    halve(left, right);
+    left.segment_recurse();
+    right.segment_recurse();
+  }
+}
+
+
+void
+Bezier::segment_curve(Lens *lens)
+{
+  Bezier winb(lens, *this);
+  winb.ensure_bb();
+  if (winb.bb_right() < 0 ||
+      winb.bb_bottom() < 0 ||
+      winb.bb_left() > lens->screen_width() ||
+      winb.bb_top() > lens->screen_height())
+    Segment::make(winb._p[0].x, winb._p[0].y, winb._p[3].x, winb._p[3].y);
+  else
+    winb.segment_recurse();
 }
