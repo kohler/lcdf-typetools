@@ -352,6 +352,27 @@ lig_context_str(int ctx)
 }
 
 static void
+fprint_real(FILE *f, const char *prefix, double value, double du, const char *suffix = ")\n")
+{
+    if (du == 1.)
+	fprintf(f, "%s R %g%s", prefix, value, suffix);
+    else
+	fprintf(f, "%s R %.3f%s", prefix, value * du, suffix);
+}
+
+static String
+real_string(double value, double du)
+{
+    if (du == 1.)
+	return String(value);
+    else {
+	char buf[128];
+	sprintf(buf, "%.3f", value * du);
+	return String(buf);
+    }
+}
+
+static void
 output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	  const GsubEncoding &gse, int boundary_char,
 	  const Vector<PermString> &glyph_names,
@@ -370,15 +391,15 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     double design_units = 1000;
     if (gse.coding_scheme()) {
 	fprintf(f, "(CODINGSCHEME %.39s)\n", String(gse.coding_scheme()).c_str());
-	design_units = 1;
+	design_units = 10;
     } else if (out_encoding_name)
 	fprintf(f, "(CODINGSCHEME %.39s)\n", out_encoding_name.c_str());
 
     fprintf(f, "(DESIGNSIZE R 10.0)\n"
-	    "(DESIGNUNITS R %g)\n"
+	    "(DESIGNUNITS R %.1f)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
-	    "(COMMENT OTHER DIMENSIONS ARE MULTIPLES OF DESIGNSIZE/1000)\n"
-	    "(FONTDIMEN\n", design_units);
+	    "(COMMENT OTHER DIMENSIONS ARE MULTIPLES OF DESIGNSIZE/%g)\n"
+	    "(FONTDIMEN\n", design_units, design_units);
 
     // figure out font dimensions
     CharstringBounds boundser(cff);
@@ -398,12 +419,17 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	boundser.run(*cs, bounds, width);
 	// advance space width by letterspacing
 	width += letterspace;
-	fprintf(f, "   (SPACE R %g)\n", width * du);
-	if (cff->dict_value(Efont::Cff::oIsFixedPitch, 0, &val) && val)
+	fprint_real(f, "   (SPACE", width, du);
+	if (cff->dict_value(Efont::Cff::oIsFixedPitch, 0, &val) && val) {
 	    // fixed-pitch: no space stretch or shrink
-	    fprintf(f, "   (STRETCH D 0)\n   (SHRINK D 0)\n   (EXTRASPACE R %g)\n", width * du);
-	else
-	    fprintf(f, "   (STRETCH R %g)\n   (SHRINK R %g)\n   (EXTRASPACE R %g)\n", width * du / 2, width * du / 3, width * du / 6);
+	    fprint_real(f, "   (STRETCH", 0, du);
+	    fprint_real(f, "   (SHRINK", 0, du);
+	    fprint_real(f, "   (EXTRASPACE", width, du);
+	} else {
+	    fprint_real(f, "   (STRETCH", width / 2., du);
+	    fprint_real(f, "   (SHRINK", width / 3., du);
+	    fprint_real(f, "   (EXTRASPACE", width / 6., du);
+	}
     }
 
     int xheight = 1000;
@@ -416,9 +442,10 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		xheight = bounds[3];
 	}
     if (xheight < 1000)
-	fprintf(f, "   (XHEIGHT R %g)\n", xheight * du);
+	fprint_real(f, "   (XHEIGHT", xheight, du);
     
-    fprintf(f, "   (QUAD R %g)\n   )\n", 1000 * du);
+    fprint_real(f, "   (QUAD", 1000, du);
+    fprintf(f, "   )\n");
 
     if (boundary_char >= 0)
 	fprintf(f, "(BOUNDARYCHAR D %d)\n", boundary_char);
@@ -466,11 +493,11 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 			    glyph_ids[lig_outcode[j]].c_str(),
 			    glyph_comments[lig_code2[j]].c_str(),
 			    glyph_comments[lig_outcode[j]].c_str());
-		for (int j = 0; j < kern_code2.size(); j++)
-		    fprintf(f, "   (KRN %s R %g)%s\n",
-			    glyph_ids[kern_code2[j]].c_str(),
-			    kern_amt[j] * du,
-			    glyph_comments[kern_code2[j]].c_str());
+		for (int j = 0; j < kern_code2.size(); j++) {
+		    fprintf(f, "   (KRN %s", glyph_ids[kern_code2[j]].c_str());
+		    fprint_real(f, "", kern_amt[j], du, "");
+		    fprintf(f, ")%s\n", glyph_comments[kern_code2[j]].c_str());
+		}
 		fprintf(f, "   (STOP)\n");
 	    }
 	}
@@ -494,22 +521,22 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 		    sa << "      (SETCHAR " << glyph_ids[i] << ')' << glyph_comments[i] << "\n";
 		} else if (s.op == Setting::HMOVETO && vpl) {
 		    boundser.translate(s.x, 0);
-		    sa << "      (MOVERIGHT R " << (s.x * du) << ")\n";
+		    sa << "      (MOVERIGHT R " << real_string(s.x, du) << ")\n";
 		} else if (s.op == Setting::VMOVETO && vpl) {
 		    boundser.translate(0, s.x);
-		    sa << "      (MOVEUP R " << (s.x * du) << ")\n";
+		    sa << "      (MOVEUP R " << real_string(s.x, du) << ")\n";
 		}
 	    }
 
 	    // output information
 	    boundser.bounds(bounds, width);
-	    fprintf(f, "   (CHARWD R %g)\n", width * du);
+	    fprint_real(f, "   (CHARWD", width, du);
 	    if (bounds[3] > 0)
-		fprintf(f, "   (CHARHT R %g)\n", bounds[3] * du);
+		fprint_real(f, "   (CHARHT", bounds[3], du);
 	    if (bounds[1] < 0)
-		fprintf(f, "   (CHARDP R %g)\n", -bounds[1] * du);
+		fprint_real(f, "   (CHARDP", -bounds[1], du);
 	    if (bounds[2] > width)
-		fprintf(f, "   (CHARIC R %g)\n", (bounds[2] - width) * du);
+		fprint_real(f, "   (CHARIC", bounds[2] - width, du);
 	    if (vpl && (settings.size() > 1 || settings[0].op != Setting::SHOW))
 		fprintf(f, "   (MAP\n%s      )\n", sa.c_str());
 	    fprintf(f, "   )\n");
