@@ -1,4 +1,4 @@
-// -*- c-basic-offset: 2; related-file-name: "../include/click/error.hh" -*-
+// -*- c-basic-offset: 2; related-file-name: "../include/lcdf/error.hh" -*-
 /*
  * error.{cc,hh} -- flexible classes for error reporting
  * Eddie Kohler
@@ -436,7 +436,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
      case '{': {
        const char *rbrace = strchr(s, '}');
        if (!rbrace || rbrace == s)
-	 assert(0 && "Bad %{ in error");
+	 assert(0 /* Bad %{ in error */);
        String name(s, rbrace - s);
        s = rbrace + 1;
        for (Conversion *item = error_items; item; item = item->next)
@@ -446,12 +446,12 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 	   s2 = s1 + placeholder.length();
 	   goto got_result;
 	 }
-       assert(0 && "Bad %{ in error");
+       assert(0 /* Bad %{ in error */);
        break;
      }
      
      default:
-      assert(0 && "Bad % in error");
+      assert(0 /* Bad % in error */);
       break;
       
     }
