@@ -508,6 +508,17 @@ more conventional
 .I smcp
 feature, which replaces lower-case letters with small capitals. Supported.
 .TP 5
+.IR calt ", Contextual Alternates"
+Lets the user choose between context-appropriate swash forms for each
+character. For example, given the word "DREW" in a cursive typeface, the "R
+E W" might be translated to calmer forms than the initial "D". There may be
+more than one choice for a given letter, in which case the user should be
+able to select among them. TeX can't support complex contextual alternates,
+or alternate selection, but otftotfm supports some fonts quite well. The
+input encoding should have lots of empty space for variants, and it should
+specify a boundary character. See also
+.IR cswh .
+.TP 5
 .IR case ", Case-Sensitive Forms"
 Shifts punctuation marks up to a position that works well with
 all-capital-letter sequences. For example, the hyphen character, which
@@ -531,7 +542,8 @@ than one choice for a given letter, in which case the user should be able
 to select among them. TeX can't support complex contextual swashes, or
 alternate selection, but otftotfm supports some fonts quite well. The input
 encoding should have lots of empty space for swash variants, and it should
-specify a boundary character.
+specify a boundary character. See also
+.IR calt .
 .TP 5
 .IR dlig ", Discretionary Ligatures"
 Activates uncommon ligatures, such as "c_t", "s_p", and "s_t". Supported.
@@ -616,7 +628,9 @@ Lets the user choose between stylistic alternate forms for a character.
 Partially supported: A TeX user can't interactively choose a given
 alternate form, so otftotfm takes the first option whenever there's more
 than one choice. See also
-.IR aalt ;
+.IR aalt
+and
+.IR ss01 ;
 .IR salt
 is generally more useful than
 .IR aalt
@@ -634,6 +648,15 @@ since it should not change the font's appearance in any way.
 .IR smcp ", Small Capitals"
 Replaces lower-case letters with small capitals. Supported. Compare
 .IR c2sc .
+.TP 5
+.IR ss01-ss20 ", Stylistic Sets 1-20"
+Replaces characters with a uniform set of stylistic alternates. Differs
+from features like
+.I salt
+in that the Stylistic Sets are unified: an
+.I ssXX
+feature should never involve selection from a set of possible alternate
+characters. Supported.
 .TP 5
 .IR sups ", Superscript"
 Replaces digits, some punctuation marks, and some lower-case letters with
