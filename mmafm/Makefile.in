@@ -34,7 +34,8 @@ CXXFLAGS	= @CFLAGS@
 CFLAGS		= @CFLAGS@
 CPPFLAGS	= @DEFS@ -I$(topdir)/edlib -I$(topdir)/t1lib -I$(topdir)/metricslib
 PROFILING	= 
-LDFLAGS		= @LDFLAGS@ @LIBS@
+LDFLAGS		= @LDFLAGS@
+LIBS		= @LIBS@
 
 PROGRAMS	= mmafm
 MY_OBJS		= vectori.o hashmapi.o main.o
@@ -48,7 +49,7 @@ OBJS		= ../edlib/permstr.o ../edlib/landmark.o ../edlib/slurper.o \
 all: $(PROGRAMS)
 
 mmafm: $(OBJS)
-	$(CXXLINKER) $(CFLAGS) -o mmafm $(OBJS) $(LDFLAGS)
+	$(CXXLINKER) $(CFLAGS) -o mmafm $(OBJS) $(LDFLAGS) $(LIBS)
 
 main.o: main.cc
 	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c $<

@@ -34,7 +34,8 @@ CXXFLAGS	= @CFLAGS@
 CFLAGS		= @CFLAGS@
 CPPFLAGS	= @DEFS@ -I$(topdir)/edlib -I$(topdir)/t1lib
 PROFILING	= 
-LDFLAGS		= @LDFLAGS@ @LIBS@
+LDFLAGS		= @LDFLAGS@
+LIBS		= @LIBS@
 
 PROGRAMS	= mmpfb
 MY_OBJS		= vectori.o hashmapi.o t1rewrit.o myfont.o main.o
@@ -46,7 +47,7 @@ OBJS		= ../edlib/permstr.o ../edlib/straccum.o \
 all: $(PROGRAMS)
 
 mmpfb: $(OBJS)
-	$(CXXLINKER) $(CFLAGS) -o mmpfb $(OBJS) $(LDFLAGS)
+	$(CXXLINKER) $(CFLAGS) -o mmpfb $(OBJS) $(LDFLAGS) $(LIBS)
 
 t1rewrit.o: t1rewrit.cc t1rewrit.hh ../t1lib/t1interp.hh
 
