@@ -1607,6 +1607,11 @@ particular purpose.\n");
   done:
     if (!input_file)
 	usage_error(errh, "no font filename provided");
+    if (!encoding_file) {
+	errh->warning("no encoding provided");
+	errh->message("(Use '-e ENCODING' to choose an encoding. '-e texnansx' often works,\nor say '-e -' to turn off this warning.)");
+    } else if (encoding_file == "-")
+	encoding_file = "";
     
     // read font
     String font_data = read_file(input_file, errh);

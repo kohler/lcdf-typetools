@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.1   5.Apr.2004
+
+* otftotfm: Warn if no encoding specified.  Requested by Zsolt Kiraly.
+
+* otftotfm: Improve documentation, particularly by adding example run with
+  ".fd" file.
+
+
 Version 2.0   21.Mar.2004
 
 * mmpfb, t1dotlessj, t1lint, t1testpage: On Windows, add _O_BINARY flag
