@@ -1,5 +1,5 @@
 ' -*-nroff-*-
-.ds V 1.3b1
+.ds V 1.3b2
 .ds E " \-\- 
 .if t .ds E \(em
 .de OP
@@ -24,24 +24,24 @@ mmpfb \- creates single-master fonts from multiple master fonts
 '
 .SH SYNOPSIS
 .B mmpfb
-\%[options]
-\%[font file]
+\%[options...]
+font
 '
 .SH DESCRIPTION
-.B mmpfb
+.B Mmpfb
 creates a normal, single-master PostScript font from a multiple master font
 by interpolation. You pass it a PFB or PFA font and options specifying the
-design point you want; it writes the resulting PFB or PFA font to standard
-output.
+design point you want; it writes the resulting PFB or PFA font to the
+standard output.
 .PP
-Font files
+The fonts
 .B mmpfb
 creates are interpolated at a low level to remove multiple master
 instructions from individual characters. Therefore, they can be used by
 programs that don't normally understand multiple master fonts, like
 .BR ps2pk (1).
 .PP
-.B mmpfb
+.B Mmpfb
 supports fonts with intermediate masters, like Adobe Jenson and Kepler. It
 can also create AMCP (Adobe Multiple Master Conversion Program) files for
 use by
@@ -49,13 +49,22 @@ use by
 see
 .B \-\-amcp\-info
 below.
+.PP
+The
+.I font
+argument is either the name of a PFA or PFB font file, or a PostScript font
+name. In the second case,
+.B mmpfb
+will find the actual outline file using the PSRESOURCEPATH environment
+variable. This path is searched for `PSres.upr' files, an Adobe method for
+indexing PostScript resources.
 '
 '
 .SH EXAMPLE
 '
-.nh
+.nf
 % mmpfb --weight=400 --width=600 MyriadMM.pfb > MyriadMM_400_600_.pfb
-.hy
+.fi
 '
 .SH OPTIONS
 Long options may be abbreviated to their unique prefixes.
@@ -82,8 +91,8 @@ Output a PFA font.
 '
 Do not create a font; instead, output an AMCP file for use by
 .BR mmafm (1).
-A message is printed if the font doesn't have intermediate masters; in this
-case, no AMCP file is necessary.
+A message is printed if the font doesn't have intermediate masters, in
+which case no AMCP file is necessary.
 '
 .TP
 .OY \-\-weight N \-w N

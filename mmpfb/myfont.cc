@@ -42,12 +42,24 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
   
   if (!mmspace->design_to_weight(design, _weight_vector, errh))
     return false;
+  
+  // Need to check for case when all design coordinates are unspecified. The
+  // font file contains a default WeightVector, but possibly NOT a default
+  // DesignVector; we don't want to generate a FontName like
+  // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
+  // components are unknown.
+  if (!KNOWN(design[0])) {
+    errh->error("must specify %s's %s coordinate", font_name().cc(),
+		mmspace->axis_type(0).cc());
+    return false;
+  }
+  
   t1d = dict("WeightVector");
   if (t1d) t1d->set_numvec(_weight_vector);
   
   int naxes = design.count();
   _nmasters = _weight_vector.count();
-
+  
   PermString name;
   t1d = dict("FontName");
   if (t1d && t1d->value_name(name)) {
@@ -59,6 +71,27 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
     sa << '_';
     sa.push(0);
     t1d->set_name(sa.value());
+  }
+
+  t1d = dict("XUID");
+  NumVector xuid;
+  if (!t1d || !t1d->value_numvec(xuid)) {
+    int uniqueid;
+    if ((t1d = dict("UniqueID")) && t1d->value_int(uniqueid)) {
+      t1d = ensure(dFont, "XUID");
+      xuid.clear();
+      xuid.append(1);
+      xuid.append(uniqueid);
+    } else if (t1d) {
+      t1d->kill();
+      t1d = 0;
+    }
+  }
+  if (t1d) {
+    // Append design vector values to the XUID to prevent cache pollution.
+    for (int a = 0; a < naxes; a++)
+      xuid.append((int)(design[a] * 100));
+    t1d->set_numvec(xuid);
   }
   
   return true;
