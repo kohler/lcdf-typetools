@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign check-news
 
 SUBDIRS = liblcdf libefont cfftot1 otftotfm t1lint t1testpage
 
-pkgdata_DATA = glyphlist.txt
+pkgdata_DATA = glyphlist.txt 7t.enc
 
 EXTRA_DIST = \
 	include/lcdf/bezier.hh \

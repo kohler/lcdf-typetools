@@ -266,7 +266,10 @@ static struct { const char *s; int v; } ligkern_ops[] = {
     { "{L}", DvipsEncoding::J_NOLIG }, { "{LK}", DvipsEncoding::J_NOLIGKERN },
     { "{KL}", DvipsEncoding::J_NOLIGKERN }, { "{k}", DvipsEncoding::J_NOKERN },
     { "{l}", DvipsEncoding::J_NOLIG }, { "{lk}", DvipsEncoding::J_NOLIGKERN },
-    { "{kl}", DvipsEncoding::J_NOLIGKERN }, { 0, 0 }
+    { "{kl}", DvipsEncoding::J_NOLIGKERN },
+    // some encodings have @{@} instead of {}
+    { "@{@}", DvipsEncoding::J_NOKERN },
+    { 0, 0 }
 };
 
 static const char * const nokern_names[] = {

@@ -113,8 +113,10 @@ find your new fonts. Now, after running "otftotfm
 .IR fontname \&",
 you will immediately be able to refer to the font in TeX using the
 .I fontname
-you supplied to otftotfm. (Of course, you will have to do more work to make
-the font conveniently accessible from LaTeX or ConTeXt.)
+you supplied to otftotfm. Of course, you will have to write .fd files
+and/or typescripts to make the font conveniently accessible from LaTeX or
+ConTeXt. See the DIAGNOSTICS section if you have problems with these
+instructions.
 '
 .PP
 In automatic mode, otftotfm first searches your $TEXMF path for a writable
@@ -632,6 +634,50 @@ and
 Replaces the zero character with a slashed zero. Supported.
 .PD
 '
+.SH "DIAGNOSTICS AND TROUBLESHOOTING"
+'
+.TP 5
+no writable directory found in $TEXMF
+'
+Otftotfm could not find a writable directory in your $TEXMF path. Did you
+create a 
+.I $HOME/texmf
+directory? If so, run the command "kpsewhich --expand-path='$TEXMF'" to
+verify that directory is not being found. You may need to set your TEXMF
+environment variable, to a value such as '{!!'"$HOME"'/texmf,!!$TEXMFMAIN}'
+(note the different kinds of quotes; on my machine, this expands to a value
+like '{!!/u/kohler/texmf,!!$TEXMFMAIN}').
+'
+.TP 5
+\&'\fIchar\fR' has no encoding, ignoring kern removal
+.PD 0
+.TP 5
+(or ligature removal, lig/kern removal, or ligature)
+.PD
+'
+These messages indicate a slight problem with your encoding file: one of
+the LIGKERN commands referred to a character not present in the encoding.
+This might be due to a misspelling in the LIGKERN command or the encoding
+file, or it might be an oversight. Either fix the encoding file or ignore
+the warning.
+'
+.TP 5
+can't map '\fIchar\fR' to Unicode
+'
+One of the glyph names in a UNICODING block could not be converted to
+Unicode. This is problematic since the UNICODING block exists wholly to
+translate glyph names into Unicode. Fix the encoding file or ignore the
+warning.
+'
+.TP 5
+ignoring unencodable glyph(s) ...
+'
+There wasn't space in the encoding for all the glyphs referred to by the
+features you selected. For example, maybe the font had more ligatures than
+there were empty slots in the encoding. Fix this warning by selecting fewer
+features, or by using an encoding with more empty slots, such as the 7t.enc
+encoding distributed with otftotfm.
+'
 .SH "BUGS"
 .LP
 Presumably some context-sensitive positionings and ligatures could be
@@ -647,7 +693,8 @@ fonts.
 .M vptovf 1 ,
 .M afm2tfm 1 ,
 .M dvips 1 ,
-.M cfftot1 1
+.M cfftot1 1 ,
+.M kpsewhich 1
 .LP
 .I "Adobe Type 1 Font Format"
 .LP

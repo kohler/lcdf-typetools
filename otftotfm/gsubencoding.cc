@@ -446,9 +446,9 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 	    std::sort(unencoded.begin(), unencoded.end());
 	    StringAccum sa;
 	    sa.append_fill_lines(unencoded, 68, "", "  ");
-	    errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable ligature:" : "ignoring unencodable ligatures:"));
+	    errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable glyphs:" : "ignoring unencodable glyphs:"));
 	    errh->lmessage(" ", "%s(\
-This encoding doesn't have enough room for all the ligatures used by\n\
+This encoding doesn't have enough room for all the glyphs used by\n\
 the font, so I've ignored those listed above.)", sa.c_str());
 	}
     }
