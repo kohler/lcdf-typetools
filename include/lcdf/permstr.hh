@@ -23,6 +23,8 @@ class PermString { struct Doodad; public:
     
     inline int length() const;
     char operator[](int) const;
+    const char *begin() const		{ return _rep; }
+    inline const char *end() const;
 
     friend inline bool operator==(PermString, PermString);
     friend inline bool operator!=(PermString, PermString);
@@ -75,6 +77,12 @@ inline int
 PermString::length() const
 {
     return doodad()->length;
+}
+
+inline const char *
+PermString::end() const
+{
+    return _rep + doodad()->length;
 }
 
 inline bool
