@@ -62,7 +62,7 @@ HashMap<K, V>::operator=(const HashMap<K, V> &o)
 
 template <class K, class V>
 inline int
-HashMap<K, V>::index(K key) const
+HashMap<K, V>::bucket(K key) const
 {
   int i =  (key.hashcode() >> 2) & (_size - 1);
   int j = ((key.hashcode() >> 6) & (_size - 1)) | 1;
@@ -89,7 +89,7 @@ HashMap<K, V>::increase()
   Element *otrav = oe;
   for (int i = 0; i < osize; i++, otrav++)
     if (otrav->k) {
-      int j = index(otrav->k);
+      int j = bucket(otrav->k);
       _e[j] = *otrav;
     }
   
@@ -110,7 +110,7 @@ bool
 HashMap<K, V>::insert(K key, const V &val)
 {
   checksize();
-  int i = index(key);
+  int i = bucket(key);
   bool isitnew = !(bool)_e[i].k;
   _e[i].k = key;
   _e[i].v = val;
@@ -124,7 +124,7 @@ V &
 HashMap<K, V>::find_force(K key)
 {
   checksize();
-  int i = index(key);
+  int i = bucket(key);
   if (!(bool)_e[i].k) {
     _e[i].k = key;
     _e[i].v = _default_v;

@@ -3,12 +3,16 @@
 #endif
 #include "strtonum.h"
 #include <stdlib.h>
+#ifdef BROKEN_STRTOARITH
+# define strtol good_strtol
+# define strtod good_strtod
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* A faster strtod() which only calls the real strtod() if the string has
-   decimals. */
+/* A faster strtod which only calls the real strtod if the string has a
+   fractional part. */
 
 double
 strtonumber(const char *f, char **endf)
@@ -23,11 +27,12 @@ strtonumber(const char *f, char **endf)
   v = strtol((char *)f, endf, 10);
 
   // handle any possible decimal part
-  if (**endf == '.' && v < 0)
-    return v - strtod(*endf, endf);
-  else if (**endf == '.')
-    return v + strtod(*endf, endf);
-  else if (**endf == 'E' || **endf == 'e')
+  if (**endf == '.') {
+    if (v < 0)
+      return v - strtod(*endf, endf);
+    else
+      return v + strtod(*endf, endf);
+  } else if (**endf == 'E' || **endf == 'e')
     return strtod((char *)f, endf);
   else
     return v;

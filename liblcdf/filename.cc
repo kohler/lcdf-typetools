@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "filename.hh"
+# pragma implementation "filename.hh"
 #endif
 #include "filename.hh"
 #include "landmark.hh"
@@ -8,13 +11,16 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef PATHNAME_SEPARATOR
+# define PATHNAME_SEPARATOR '/'
+#endif
 
 
 Filename::Filename(PermString fn)
   : _path(fn), _actual(0)
 {
   if (!fn) return;
-  const char *slash = strrchr(fn, '/');
+  const char *slash = strrchr(fn, PATHNAME_SEPARATOR);
   if (slash) {
     _dir = PermString(fn, slash - fn.cc());
     _name = PermString(slash + 1);
@@ -29,11 +35,12 @@ Filename::Filename(PermString dir, PermString name)
 {
   if (dir) _dir = dir;
   else _dir = ".";
-  const char *slash = strrchr(_dir, '/');
+  const char *slash = strrchr(_dir, PATHNAME_SEPARATOR);
   if (slash && slash[1] == 0)
     _path = permprintf("%p%p", _dir.capsule(), _name.capsule());
   else
-    _path = permprintf("%p/%p", _dir.capsule(), _name.capsule());
+    _path = permprintf("%p%c%p", _dir.capsule(), PATHNAME_SEPARATOR,
+		       _name.capsule());
 }
 
 Filename::Filename(FILE *actual, PermString name)

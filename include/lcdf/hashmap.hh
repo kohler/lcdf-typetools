@@ -18,7 +18,7 @@ class HashMap {
   
   void increase();
   void checksize();
-  int index(K) const;
+  int bucket(K) const;
   
  public:
   
@@ -49,7 +49,7 @@ template <class K, class V>
 inline const V &
 HashMap<K, V>::find(K key) const
 {
-  int i = index(key);
+  int i = bucket(key);
   return _e[i].k ? _e[i].v : _default_v;
 }
 
@@ -57,7 +57,7 @@ template <class K, class V>
 inline V *
 HashMap<K, V>::findp(K key) const
 {
-  int i = index(key);
+  int i = bucket(key);
   return _e[i].k ? &_e[i].v : 0;
 }
 

@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "slurper.hh"
+# pragma implementation "slurper.hh"
 #endif
 #include "slurper.hh"
 #include <string.h>

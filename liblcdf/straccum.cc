@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "straccum.hh"
+# pragma implementation "straccum.hh"
 #endif
 #include "straccum.hh"
 #include <stdio.h>
@@ -25,13 +28,8 @@ StringAccum::grow(int want)
 StringAccum &
 operator<<(StringAccum &sa, int i)
 {
-#ifdef BAD_SPRINTF
-  char *s = sa.reserve(256);
-  sprintf(s, "%d", i);
-  int len = strlen(s);
-#else
-  int len = sprintf(sa.reserve(256), "%d", i);
-#endif
+  int len;
+  sprintf(sa.reserve(256), "%d%n", i, &len);
   sa.forward(len);
   return sa;
 }
@@ -39,13 +37,8 @@ operator<<(StringAccum &sa, int i)
 StringAccum &
 operator<<(StringAccum &sa, double d)
 {
-#ifdef BAD_SPRINTF
-  char *s = sa.reserve(256);
-  sprintf(s, "%g", d);
-  int len = strlen(s);
-#else
-  int len = sprintf(sa.reserve(256), "%g", d);
-#endif
+  int len;
+  sprintf(sa.reserve(256), "%g%n", d, &len);
   sa.forward(len);
   return sa;
 }

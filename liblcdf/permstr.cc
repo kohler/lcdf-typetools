@@ -243,90 +243,84 @@ vpermprintf(const char *s, va_list val)
 	}
 	break;
 	
-       case '*':
-	 {
-	   if (iflag != -1) assert(0 && "iflag given");
-	   iflag = va_arg(val, int);
-	   break;
-	 }
+       case '*': {
+	 if (iflag != -1) assert(0 && "iflag given");
+	 iflag = va_arg(val, int);
+	 break;
+       }
        
-       case 's':
-	 {
-	   const char *x = va_arg(val, const char *);
-	   if (x) {
-	     if (iflag < 0)
-	       append(x, strlen(x));
-	     else
-	       append(x, iflag);
+       case 's': {
+	 const char *x = va_arg(val, const char *);
+	 if (x) {
+	   if (iflag < 0)
+	     append(x, strlen(x));
+	   else
+	     append(x, iflag);
+	 }
+	 goto pctdone;
+       }
+       
+       case 'c': {
+	 char c = va_arg(val, char);
+	 append(&c, 1);
+	 goto pctdone;
+       }
+       
+       case 'p': {
+	 Capsule x = va_arg(val, Capsule);
+	 PermString px;
+	 if (x)
+	   px = PermString::decapsule(x);
+	 if (px) {
+	   if (iflag < 0)
+	     append(px, px.length());
+	   else {
+	     assert(iflag <= px.length());
+	     append(px, iflag);
 	   }
-	   goto pctdone;
 	 }
+	 goto pctdone;
+       }
        
-       case 'c':
-	 {
-	   char c = va_arg(val, char);
-	   append(&c, 1);
-	   goto pctdone;
+       case 'd': {
+	 // FIXME FIXME rewrite for sense
+	 int x = va_arg(val, int);
+	 if (pspos == pscap) extend(1);
+	 
+	 // FIXME -2^31
+	 unsigned int ux = x;
+	 if (x < 0) {
+	   psc[pspos++] = '-';
+	   ux = -x;
 	 }
+	 
+	 int numdigits = 0;
+	 for (unsigned digcountx = ux; digcountx > 9; digcountx /= 10)
+	   numdigits++;
+	 
+	 extend(numdigits + 1);
+	 int digit = numdigits;
+	 do {
+	   psc[pspos + digit] = (ux % 10) + '0';
+	   ux /= 10;
+	   digit--;
+	 } while (ux);
+	 pspos += numdigits + 1;
+	 
+	 goto pctdone;
+       }
        
-       case 'p':
-	 {
-	   Capsule x = va_arg(val, Capsule);
-	   PermString px;
-	   if (x)
-	     px = PermString::decapsule(x);
-	   if (px) {
-	     if (iflag < 0)
-	       append(px, px.length());
-	     else {
-	       assert(iflag <= px.length());
-	       append(px, iflag);
-	     }
-	   }
-	   goto pctdone;
-	 }
-       
-       case 'd':
-	 {
-	   // FIXME FIXME rewrite for sense
-	   int x = va_arg(val, int);
-	   if (pspos == pscap) extend(1);
-	   
-	   // FIXME -2^31
-	   unsigned int ux = x;
-	   if (x < 0) {
-	     psc[pspos++] = '-';
-	     ux = -x;
-	   }
-	   
-	   int numdigits = 0;
-	   for (unsigned digcountx = ux; digcountx > 9; digcountx /= 10)
-	     numdigits++;
-	   
-	   extend(numdigits + 1);
-	   int digit = numdigits;
-	   do {
-	     psc[pspos + digit] = (ux % 10) + '0';
-	     ux /= 10;
-	     digit--;
-	   } while (ux);
-	   pspos += numdigits + 1;
-	   
-	   goto pctdone;
-	 }
-       
-       case 'g':
-	 {
-	   // FIXME FIXME rewrite for sense
-	   double x = va_arg(val, double);
-	   char buffer[1000];
-	   sprintf(buffer, "%g", x);
-	   int len = strlen(buffer);
-	   extend(len);
-	   strcpy(psc + pspos, buffer);
-	   pspos += len;
-	   goto pctdone;
-	 }
+       case 'g': {
+	 // FIXME FIXME rewrite for sense
+	 double x = va_arg(val, double);
+	 char buffer[1000];
+	 int len;
+	 sprintf(buffer, "%g%n", x, &len);
+	 extend(len);
+	 strcpy(psc + pspos, buffer);
+	 pspos += len;
+	 goto pctdone;
+       }
        
        default:
 	assert(0 && "Bad % in permprintf");
