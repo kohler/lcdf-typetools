@@ -441,7 +441,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
        s = rbrace + 1;
        for (Conversion *item = error_items; item; item = item->next)
 	 if (item->name == name) {
-	   placeholder = item->hook(flags, &val);
+	   placeholder = item->hook(flags, VA_LIST_REF(val));
 	   s1 = placeholder.data();
 	   s2 = s1 + placeholder.length();
 	   goto got_result;
