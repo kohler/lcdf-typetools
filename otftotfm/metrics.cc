@@ -58,6 +58,7 @@ Metrics::check() const
 	}
 	assert(ch->built_in1 < 0 || valid_code(ch->built_in1));
 	assert(ch->built_in2 < 0 || valid_code(ch->built_in2));
+	assert((ch->built_in1 >= 0) == (ch->built_in2 >= 0));
 	assert(ch->base_code < 0 || valid_code(ch->base_code));
 	if (valid_code(ch->base_code)) {
 	    const Char *ch2 = &_encoding[ch->base_code];
@@ -368,7 +369,7 @@ Metrics::reencode_right_ligkern(Code old_in2, Code new_in2)
 		nchanges++;
 	    }
 	// XXX?
-	if (ch->context_setting(-1, old_in2))
+	if (ch->context_setting(-1, old_in2) && new_in2 >= 0)
 	    ch->built_in2 = new_in2;
     }
     return nchanges;
