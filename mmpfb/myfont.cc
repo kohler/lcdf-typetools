@@ -218,6 +218,9 @@ MyFont::interpolate_dicts(ErrorHandler *errh)
   interpolate_dict_num("UnderlinePosition", dFontInfo);
   interpolate_dict_num("UnderlineThickness", dFontInfo);
   interpolate_dict_num("ItalicAngle", dFontInfo);
+
+  if (Type1Definition *def = bp_dict("BuildCharArray"))
+    kill_def(def, dBlendPrivate);
   
   int i = 0;
   PermString name;

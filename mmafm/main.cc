@@ -285,7 +285,7 @@ main(int argc, char **argv)
       
      case VERSION_OPT:
       printf("mmafm (LCDF mminstance) %s\n", VERSION);
-      printf("Copyright (C) 1997-9 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2000 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
