@@ -1,11 +1,14 @@
 '\"t
-.ds V 2.18
+.ds V 2.19
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
 .de Sp
 .if n .sp
 .if t .sp 0.4
+..
+.de BUP
+.IP \(bu 3n
 ..
 .TH OTFTOTFM 1 "LCDF Typetools" "Version \*V"
 .SH NAME
@@ -105,8 +108,6 @@ file to
 .I $HOME/texmf/web2c
 and run
 .M mktexlsr 1 .)
-'
-.PP
 You can then run "\fBotftotfm\fR
 .B \-a
 .IR file .otf
@@ -332,12 +333,29 @@ characters with the "Letter" Unicode property.
 '
 .Sp
 .TP 5
-.BI \-\-include\-subs " property"
+.BI \-\-include\-subs " pattern"
 .TP 5
-.BI \-\-exclude\-subs " property"
+.BI \-\-exclude\-subs " pattern"
 .TP 5
 .BI \-\-clear\-subs
-Substitutions in the following features
+Limit the characters that
+.B otftotfm
+will substitute.  Substitution is allowed on an input character if it
+matches at least one of the
+.B \-\-include
+patterns, and none of the
+.B \-\-exclude
+patterns.  Each pattern applies to all following features, except that the
+.B \-\-clear
+option clears any accumulated patterns.  For pattern syntax, see CHARACTER
+PATTERNS, below.
+.Sp
+In the command line below, the '<Number>' pattern will force the "onum"
+feature to substitute only numbers (and not, for example, punctuation).
+The "salt" feature can still substitute any character.
+.nf
+    \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-subs\fR='<Number>' \fB\-f\fRonum \.\.\.
+.fi
 '
 .Sp
 .TP 5
@@ -398,7 +416,7 @@ such feature.
 .PD 0
 .TP 5
 .BI \-e " encoding\fR, " \-\-encoding= encoding
-Selects the
+Select the
 .M dvips 1
 encoding used as a starting point. 
 .B Otftotfm
@@ -416,7 +434,7 @@ to start with the font's default encoding.
 .Sp
 .TP 5
 .BI \-\-literal\-encoding= encoding
-Selects the
+Select the
 .M dvips 1
 encoding used for the font.  No glyph substitutions will be permitted, so
 the output encoding will equal the input encoding (and 
@@ -426,7 +444,7 @@ will not generate an output encoding).
 .Sp
 .TP 5
 .BI \-\-ligkern= command
-Executes the specified LIGKERN
+Execute the specified LIGKERN
 .IR command
 in addition to any in the encoding.  See ENCODINGS, below, for more
 information on LIGKERN syntax.  For example, "\fB\-\-ligkern\fR 'T {L} h'"
@@ -437,7 +455,7 @@ options.
 .Sp
 .TP 5
 .BI \-\-unicoding= command
-Executes the specified UNICODING
+Execute the specified UNICODING
 .IR command
 in addition to any in the encoding.  See ENCODINGS, below, for more
 information on UNICODINGs.  For example, "\fB\-\-unicoding\fR 'pi1 =:
@@ -463,7 +481,7 @@ ENCODINGS, below.
 .Sp
 .TP 5
 .BI \-\-coding\-scheme= scheme
-Sets the font's TFM coding scheme to
+Set the font's TFM coding scheme to
 .IR scheme ,
 which must be a string less than 40 characters long containing no
 parentheses.  The default is the encoding's PostScript name.  Most tools
@@ -473,7 +491,7 @@ command unless you are using fontinst.
 .Sp
 .TP 5
 .BI \-\-boundary\-char= char
-Sets the font's boundary character to
+Set the font's boundary character to
 .IR char ,
 which should either be a single non-digit character, or a number between \-1
 and 255. The default is taken from the encoding.
@@ -481,7 +499,7 @@ and 255. The default is taken from the encoding.
 .Sp
 .TP 5
 .BI \-\-altselector\-char= char
-Sets the font's alternate-selector character to
+Set the font's alternate-selector character to
 .IR char ,
 which should either be a single non-digit character, or a number between \-1
 and 255.  Use an alternate selector if you want to choose between different
@@ -503,13 +521,13 @@ mechanism uses the features specified by
 options.  You don't need to turn on those features if you use
 .BR \-\-altselector .
 .Sp
-See Sivan Toledo's article, cited in the See Also section, for more
+See Sivan Toledo's article cited in the SEE ALSO section for more
 information.
 '
 .Sp
 .TP 5
 .BI \-\-altselector\-feature= feature
-Activates the feature named
+Activate the feature named
 .I feature
 for the
 .B \-\-altselector\-char
@@ -527,11 +545,20 @@ features.
 .Sp
 .TP 5
 .BI \-\-include\-alternates= pattern
-Only include alternate characters whose names match
-.IR pattern ,
-which uses the glob matching rules common from filename matches (where
-"*" matches any number of characters, "?" matches any single character, and
-"[...]" matches any character in a set).
+.TP 5
+.BI \-\-exclude\-alternates= pattern
+.TP 5
+.BI \-\-clear\-alternates
+Limit the alternate characters that
+.B otftotfm
+will select.  An alternate is used if it matches at least one of the
+.B \-\-include
+patterns, and none of the
+.B \-\-exclude
+patterns.  Each pattern applies to all following features, except that the
+.B \-\-clear
+option clears any accumulated patterns.  For pattern syntax, see CHARACTER
+PATTERNS, below.
 .Sp
 OpenType fonts can have many alternates per character, most of which aren't
 interesting.  For example, the character "a" in WarnockPro-Regular has five
@@ -540,51 +567,15 @@ alternates, "ordfeminine", "Asmall", "asuperior", "a.end", and
 .B \-\-altselector\-char
 option lets you cycle through these alternates, but it's better to leave
 out the ones you don't want, to avoid overfull encodings.  Thus, if you were
-only interested in ".end" variants, you might run 
-.B otftotfm
-with an
+only interested in ".end" variants, you might supply an
 .BR \-\-include\-alternates= "'*.end'"
 option.
 .Sp
-The
-.B \-\-include\-alternates
-option only applies to feature options that follow it in the argument list.
-For instance, in the command line below, the '*.end' pattern will apply to
-"aalt" alternates, but not to "salt" alternates.
+In the command line below, the '*.end' pattern will apply to "aalt"
+alternates, but not to "salt" alternates.
 .nf
     \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-alternates\fR='*.end' \fB\-f\fRaalt \.\.\.
 .fi
-'
-.Sp
-.TP 5
-.BI \-\-exclude\-alternates= pattern
-Do not include alternate characters whose names match
-.IR pattern ,
-which uses the glob matching rules common from filename matches.  Like
-.BR \-\-include\-alternates ,
-this option only applies to feature options that follow it in the argument
-list.
-'
-.Sp
-You can give any number of
-.B \-\-include\-
-and
-.B \-\-exclude\-alternates
-options. 
-.B Otftotfm
-will use an alternate if it matches at least one of the include patterns,
-and none of the exclude patterns.  The patterns are applied to any feature
-introducing alternate characters, including "aalt" and "salt".
-'
-.Sp
-.TP 5
-.BI \-\-clear\-alternates
-Clears any include and exclude patterns introduced by
-.B \-\-include\-
-and
-.BR \-\-exclude\-alternates ,
-so that any following feature options or include/exclude patterns start
-from a blank slate.
 '
 .PD
 '
@@ -694,11 +685,6 @@ Do not generate a font map line for the font.
 .PD 0
 .TP 5
 .BI \-\-tfm\-directory= dir
-The directory used for output TFM font metrics.  Defaults to the TFMDESTDIR
-environment variable.  If that's not set, it defaults to "." in manual mode,
-or a TDS directory in automatic mode (see above).
-'
-.Sp
 .TP 5
 .BI \-\-pl\-directory= dir
 .TP 5
@@ -709,10 +695,10 @@ or a TDS directory in automatic mode (see above).
 .BI \-\-encoding\-directory= dir
 .TP 5
 .BI \-\-type1\-directory= dir
-These options act like
-.BR \-\-tfm\-directory
-for other file types.  The default environment variables are described
-above.  All default to ".".
+Set the directory used for various output types.  Each directory may be set
+by an environment variable, and defaults to a TDS directory in automatic
+mode, or to "." otherwise.  Environment variable names and default TDS
+locations are described in the Automatic Mode section above.
 '
 .Sp
 .TP 5
@@ -755,7 +741,7 @@ Do not generate any error messages.
 .Sp
 .TP 5
 .BI \-\-kpathsea\-debug= flags
-Sets path searching debugging flags.  See the
+Set path searching debugging flags.  See the
 .I Kpathsea
 manual for details.
 '
@@ -944,6 +930,46 @@ glyph is not available in the input font. Specifically, it will synthesize
 (similarly, a small-capital "sharp-s"), "cwm" (the TeX T1 encoding's
 compound word mark), and "visualspace" (the TeX T1 encoding's visible
 space).
+'
+'
+.SH "GLYPH PATTERNS"
+.LP
+The
+.BR \-\-include\-subs 
+and
+.BR \-\-include\-alternates
+options, and their
+.B \-\-exclude
+variants, accept the following types of pattern.
+.BUP
+Glyph names.  Example: "Aacute".  Use
+.M otfinfo 1 's
+.B \-g
+option to see a font's glyph names, and "\fBcfftot1\fR \fIfont\fR.otf |
+\fBt1testpage\fR" to generate a PostScript file showing each glyph.
+.BUP
+Glyph name patterns using the shell-style glob-matching rules: "*" matches
+any number of characters, "?" matches any single character, and "[...]"
+matches any character in a set.  Example: "*.end".
+.BUP
+Unicode category properties in angle brackets.  Examples: "<Letter>",
+"<UppercaseLetter>", "<Lu>".  The complete list of both short and long
+names: Letter/L, UppercaseLetter/Lu, LowercaseLetter/Ll,
+TitlecaseLetter/Lt, ModifierLetter/Lm, OtherLetter/Lo; Number/N,
+DecimalNumber/Nd, LetterNumber/Nl, OtherNumber/No; Punctuation/P,
+ConnectorPunctuation/Pc, DashPunctuation/Pd, OpenPunctuation/Ps,
+ClosePunctuation/Pe, InitialPunctuation/Pi, FinalPunctuation/Pf,
+OtherPunctuation/Po; Symbol/S, MathSymbol/Sm, CurrencySymbol/Sc,
+ModifierSymbol/Sk, OtherSymbol/So; Mark/M, SpacingMark/Mc,
+EnclosingMark/Me, NonspacingMark/Mn; Separator/Z, SpaceSeparator/Zs,
+LineSeparator/Zl, ParagraphSeparator/Zp; Other/C, Surrogate/Cs, Format/Cf,
+Control/Cc, PrivateUse/Co, Unassigned/Cn.  Category values current as of
+Unicode 4.0.
+.BUP
+Unicode ranges.  Example: "U+007f-U+008C".
+.PP
+The "!" prefix negates a pattern, and you can separate multiple patterns by
+spaces.
 '
 .SH "FEATURE DIRECTORY"
 .LP
@@ -1218,6 +1244,15 @@ This should happen automatically, but some overzealous encoding files add
 f-ligatures even when the font doesn't request them.  Try the
 "\fB\-\-default\-ligkern\fR" option if this is a problem for you.
 '
+.TP 5
+\fBOtftotfm\fR seems to take a long time.
+'
+Use the
+.B \-V
+option to see what it's doing.  Often the culprit is the
+.M updmap 1
+program.
+'
 .SH "BUGS"
 .LP
 Presumably some context-sensitive positionings and ligatures could be
@@ -1242,7 +1277,9 @@ output through
 .M cfftot1 1 ,
 .M otfinfo 1 ,
 .M t1dotlessj 1 ,
-.M kpsewhich 1
+.M t1testpage 1 ,
+.M kpsewhich 1 ,
+.M updmap 1
 .LP
 .I "Adobe Type 1 Font Format"
 .LP

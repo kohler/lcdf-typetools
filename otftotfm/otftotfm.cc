@@ -1486,6 +1486,9 @@ main(int argc, char *argv[])
 		      current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
 		  interesting_features.push_back(t);
 		  feature_filters.insert(t, current_filter_ptr);
+		  StringAccum sa;
+		  current_filter_ptr->unparse(sa);
+		  errh->message("%s", sa.c_str());
 	      }
 	      break;
 	  }
@@ -1507,22 +1510,10 @@ main(int argc, char *argv[])
 	  }
 
 	  case EXCLUDE_SUBS_OPT:
-	  case INCLUDE_SUBS_OPT: {
-	      const char *s = clp->arg;
-	      while (*s) {
-		  const char *start = s;
-		  while (*s && !isspace(*s))
-		      s++;
-		  if (s > start) {
-		      String str(start, s - start);
-		      current_substitution_filter.add_substitution_filter(str, opt == EXCLUDE_SUBS_OPT, errh);
-		  }
-		  while (isspace(*s))
-		      s++;
-	      }
-	      current_filter_ptr = 0;
-	      break;
-	  }
+	  case INCLUDE_SUBS_OPT:
+	    current_substitution_filter.add_substitution_filter(clp->arg, opt == EXCLUDE_SUBS_OPT, errh);
+	    current_filter_ptr = 0;
+	    break;
 
 	  case CLEAR_SUBS_OPT:
 	    current_substitution_filter = null_filter;
@@ -1604,22 +1595,10 @@ main(int argc, char *argv[])
 	  }
 
 	  case EXCLUDE_ALTERNATES_OPT:
-	  case INCLUDE_ALTERNATES_OPT: {
-	      const char *s = clp->arg;
-	      while (*s) {
-		  const char *start = s;
-		  while (*s && !isspace(*s))
-		      s++;
-		  if (s > start) {
-		      String str(start, s - start);
-		      current_alternate_filter.add_alternate_filter(str, opt == EXCLUDE_ALTERNATES_OPT, errh);
-		  }
-		  while (isspace(*s))
-		      s++;
-	      }
-	      current_filter_ptr = 0;
-	      break;
-	  }
+	  case INCLUDE_ALTERNATES_OPT:
+	    current_alternate_filter.add_alternate_filter(clp->arg, opt == EXCLUDE_ALTERNATES_OPT, errh);
+	    current_filter_ptr = 0;
+	    break;
 
 	  case CLEAR_ALTERNATES_OPT:
 	    current_alternate_filter = null_filter;
