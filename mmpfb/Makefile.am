@@ -18,6 +18,7 @@ EXTRA_DIST = mmpfb.1
 
 AUTODEPENDENCIES =
 @AUTODEPENDENCIES@
+CLEANFILES = *.d
 
 t1rewrit.o: t1rewrit.cc t1rewrit.hh $(top_srcdir)/t1lib/t1interp.hh
 myfont.o: myfont.cc myfont.hh $(top_srcdir)/t1lib/t1font.hh
