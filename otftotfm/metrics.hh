@@ -5,13 +5,13 @@
 class DvipsEncoding;
 
 struct Setting {
-    enum { NONE, SHOW, KERN, MOVE, RULE, DEAD };
+    enum { NONE, FONT, SHOW, KERN, MOVE, RULE, DEAD };
     int op;
     int x;
     int y;
     Setting(int op_in, int x_in = 0, int y_in = 0)
 	: op(op_in), x(x_in), y(y_in) { }
-    bool valid_op() const		{ return op >= SHOW && op <= RULE; }
+    bool valid_op() const		{ return op >= FONT && op <= RULE; }
 };
 
 class Metrics { public:

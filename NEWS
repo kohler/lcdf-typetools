@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 1.91   31.Dec.2003
+
+* mmpfb, t1dotlessj: Fix sidebearing problems.
+
+
 Version 1.90   29.Dec.2003
 
 * mmpfb: Fix behavior with Adobe Jenson and other fonts with intermediate

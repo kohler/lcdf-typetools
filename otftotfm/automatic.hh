@@ -16,6 +16,7 @@ bool set_map_file(const String &);
 const char *odirname(int o);
 void update_odir(int o, String file, ErrorHandler *);
 String installed_type1(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *);
+String installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *);
 int update_autofont_map(const String &fontname, String mapline, ErrorHandler *);
 String locate_encoding(String encfile, ErrorHandler *, bool literal = false);
 

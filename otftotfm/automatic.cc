@@ -295,27 +295,27 @@ set_map_file(const String &s)
 String
 installed_type1(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
-#if HAVE_AUTO_CFFTOT1
     // no font available if not in automatic mode
     if (!automatic || !ps_fontname)
 	return String();
 
-    String pfb_filename = ps_fontname + ".pfb";
-# if HAVE_KPATHSEA
+#if HAVE_KPATHSEA
     // look for .pfb and .pfa
-    if (String found = kpsei_string(kpsei_find_file(pfb_filename.c_str(), KPSEI_FMT_TYPE1)))
+    String attempt = ps_fontname + ".pfb";
+    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
 	return found;
 
-    String pfa_filename = ps_fontname + ".pfa";
-    if (String found = kpsei_string(kpsei_find_file(pfa_filename.c_str(), KPSEI_FMT_TYPE1)))
+    attempt = ps_fontname + ".pfa";
+    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
 	return found;
-# endif
+#endif
 
+#if HAVE_AUTO_CFFTOT1
     // if not found, and can generate on the fly, run cfftot1
     if (allow_generate && otf_filename && otf_filename != "-"
 	&& getodir(O_TYPE1, errh)) {
-	pfb_filename = odir[O_TYPE1] + "/" + pfb_filename;
-	if (pfb_filename.find_left('\'') >= 0 || otf_filename.find_left('\'') >+ 0)
+	String pfb_filename = odir[O_TYPE1] + "/" + ps_fontname + ".pfb";
+	if (pfb_filename.find_left('\'') >= 0 || otf_filename.find_left('\'') >= 0)
 	    return String();
 	String command = "cfftot1 '" + otf_filename + "' -n '" + ps_fontname + "' '" + pfb_filename + "'";
 	int retval = mysystem(command.c_str(), errh);
@@ -331,6 +331,53 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	}
     }
 #endif
+    
+    return String();
+}
+
+String
+installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
+{
+    // no font available if not in automatic mode
+    if (!automatic || !ps_fontname)
+	return String();
+    
+    String j_ps_fontname = ps_fontname + "LCDFJ";
+    
+#if HAVE_KPATHSEA
+    // look for existing .pfb or .pfa
+    String attempt = j_ps_fontname + ".pfb";
+    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
+	return found;
+
+    attempt = j_ps_fontname + ".pfa";
+    if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
+	return found;
+#endif
+
+#if HAVE_AUTO_T1DOTLESSJ
+    // if not found, and can generate on the fly, try running t1dotlessj
+    if (allow_generate && getodir(O_TYPE1, errh)) {
+	if (String base_filename = installed_type1(otf_filename, ps_fontname, allow_generate, errh)) {
+	    String pfb_filename = odir[O_TYPE1] + "/" + j_ps_fontname + ".pfb";
+	    if (pfb_filename.find_left('\'') >= 0 || base_filename.find_left('\'') >= 0)
+		return String();
+	    String command = "t1dotlessj '" + base_filename + "' -n '" + j_ps_fontname + "' '" + pfb_filename + "'";
+	    int retval = mysystem(command.c_str(), errh);
+	    if (retval == 127)
+		errh->error("could not run '%s'", command.c_str());
+	    else if (retval < 0)
+		errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+	    else if (retval != 0)
+		errh->error("'%s' failed", command.c_str());
+	    if (retval == 0) {
+		update_odir(O_TYPE1, pfb_filename, errh);
+		return pfb_filename;
+	    }
+	}
+    }
+#endif
+
     return String();
 }
 

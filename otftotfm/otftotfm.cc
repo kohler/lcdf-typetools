@@ -662,10 +662,11 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 	    // unparse settings into DVI commands
 	    sa.clear();
 	    CharstringBounds boundser(font_xform);
+	    CharstringProgram *program = cff;
 	    for (int j = 0; j < settings.size(); j++) {
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
-		    boundser.char_bounds(cff->glyph_context(metrics.base_glyph(s.x)));
+		    boundser.char_bounds(program->glyph_context(metrics.base_glyph(s.x)));
 		    sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
 		} else if (s.op == Setting::MOVE && vpl) {
 		    boundser.translate(s.x, s.y);

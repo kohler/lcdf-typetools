@@ -1231,6 +1231,7 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 	    switch (s->op) {
 	      case Setting::MOVE:
 	      case Setting::RULE:
+	      case Setting::FONT:
 		v.push_back(*s);
 		break;
 	      case Setting::SHOW:
@@ -1332,6 +1333,9 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
 		fprintf(stderr, "\t*");
 		for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
 		    switch (s->op) {
+		      case Setting::FONT:
+			fprintf(stderr, " {F%d}", s->x);
+			break;
 		      case Setting::SHOW:
 			fprintf(stderr, " %d/%s", s->x, code_str(s->x, glyph_names));
 			break;

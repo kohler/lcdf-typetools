@@ -28,7 +28,9 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_VS17 = 0xE0100,
        U_VS256 = 0xE01FF,
        U_IJ = 0x0132,
-       U_ij = 0x0133 };
+       U_ij = 0x0133,
+       U_DOTLESSJ = 0x0237,
+       U_DOTLESSJ_2 = 0xF6BE };
 
 Secondary::~Secondary()
 {
@@ -131,6 +133,12 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvip
 	    return true;
 	break;
 
+      case U_DOTLESSJ:
+      case U_DOTLESSJ_2:
+	v.push_back(Setting(Setting::FONT, 1));
+	v.push_back(Setting(Setting::SHOW, 'j'));
+	break;
+	
     }
 
     // variant selectors get the same setting as VSCHOICE
