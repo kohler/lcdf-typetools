@@ -375,7 +375,9 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name)
     output->skeleton_fontinfo_end();
     
     // Encoding, other font dictionary entries
-    output->add_item(new Type1Encoding(*font->type1_encoding()));
+    Type1Encoding *encoding = new Type1Encoding(*font->type1_encoding());
+    output->add_item(encoding);
+    output->set_type1_encoding(encoding);
     add_number_def(output, dF, "PaintType", font);
     add_number_def(output, dF, "FontType", font);
     add_copy_def(output, dF, "FontMatrix", font, "readonly def");
