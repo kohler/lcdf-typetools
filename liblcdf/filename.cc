@@ -18,9 +18,9 @@
 #endif
 #include <lcdf/filename.hh>
 #include <lcdf/landmark.hh>
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifndef PATHNAME_SEPARATOR
@@ -107,7 +107,7 @@ Filename::open_read(bool binary) const
     if (_actual || !_path)
 	return _actual;
     else
-	return fopen(_path.cc(), binary ? "rb" : "r");
+	return fopen(_path.c_str(), binary ? "rb" : "r");
 }
 
 bool
@@ -116,7 +116,7 @@ Filename::readable() const
     struct stat s;
     if (!_path)
 	return false;
-    return _actual || (_path && (stat(_path.cc(), &s) >= 0));
+    return _actual || (_path && (stat(_path.c_str(), &s) >= 0));
 }
 
 
@@ -126,5 +126,5 @@ Filename::open_write(bool binary) const
     if (_actual || !_path)
 	return _actual;
     else
-	return fopen(_path.cc(), binary ? "wb" : "w");
+	return fopen(_path.c_str(), binary ? "wb" : "w");
 }

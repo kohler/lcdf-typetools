@@ -21,8 +21,8 @@
 #endif
 #include <lcdf/straccum.hh>
 #include <lcdf/vector.hh>
-#include <cstdarg>
-#include <cstdio>
+#include <stdarg.h>
+#include <stdio.h>
 
 StringAccum::StringAccum(const char *s)
     : _s(0), _len(0), _cap(0)

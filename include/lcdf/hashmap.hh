@@ -1,5 +1,6 @@
 #ifndef LCDF_HASHMAP_HH
 #define LCDF_HASHMAP_HH
+#include <assert.h>
 
 // K AND V REQUIREMENTS:
 //
@@ -117,6 +118,7 @@ template <class K, class V>
 inline int
 HashMap<K, V>::bucket(const K &key) const
 {
+    assert(key);
     unsigned hc = hashcode(key);
     int i =   hc       & (_capacity - 1);
     int j = ((hc >> 6) & (_capacity - 1)) | 1;

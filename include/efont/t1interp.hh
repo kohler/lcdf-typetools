@@ -3,7 +3,7 @@
 #define EFONT_T1INTERP_HH
 #include <efont/t1cs.hh>
 #include <lcdf/point.hh>
-#include <cstdio>
+#include <stdio.h>
 namespace Efont {
 
 // Allow unknown doubles to have some `fuzz' -- so if an unknown double

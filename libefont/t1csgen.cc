@@ -17,7 +17,7 @@
 # include <config.h>
 #endif
 #include <efont/t1csgen.hh>
-#include <cmath>
+#include <math.h>
 namespace Efont {
 
 static const char * const command_desc[] = {

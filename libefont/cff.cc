@@ -359,6 +359,9 @@ Cff::parse_header(ErrorHandler *errh)
 int
 Cff::sid(PermString s)
 {
+    if (!s)			// XXX?
+	return -1;
+    
     // check standard strings
     if (standard_permstrings_map["a"] < 0)
 	for (int i = 0; i < NSTANDARD_STRINGS; i++) {
@@ -376,7 +379,7 @@ Cff::sid(PermString s)
 	return sid;
 
     for (int i = 0; i < _strings.size(); i++)
-	if (!_strings[i] && s.length() == _strings_index[i+1] - _strings_index[i] && memcmp(s.cc(), _strings_index[i], s.length()) == 0) {
+	if (!_strings[i] && s.length() == _strings_index[i+1] - _strings_index[i] && memcmp(s.c_str(), _strings_index[i], s.length()) == 0) {
 	    _strings[i] = s;
 	    _strings_map.insert(s, i + NSTANDARD_STRINGS);
 	    return i + NSTANDARD_STRINGS;
@@ -509,7 +512,7 @@ Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 	_gids.assign(cff->max_sid() + 1, -1);
 	for (int g = 0; g < _sids.size(); g++) {
 	    if (_gids[_sids[g]] >= 0) {
-		errh->error("glyph '%s' in charset twice", cff->sid_permstring(_sids[g]).cc());
+		errh->error("glyph '%s' in charset twice", cff->sid_permstring(_sids[g]).c_str());
 		_error = -EEXIST;
 	    }
 	    _gids[_sids[g]] = g;
@@ -978,7 +981,7 @@ Cff::Dict::unparse(ErrorHandler *errh, const char *dict_name) const
 	    sa.pop_back();
 	    sa << "]";
 	}
-	errh->message("%s: %s %s", dict_name, operator_names[_operators[i]], sa.cc());
+	errh->message("%s: %s %s", dict_name, operator_names[_operators[i]], sa.c_str());
     }
 }
 
@@ -1008,7 +1011,7 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
     // find top DICT
     int td_offset, td_length;
     if (cff->font_offset(_font_name, td_offset, td_length) < 0) {
-	errh->error("no font '%s'", _font_name.cc());
+	errh->error("no font '%s'", _font_name.c_str());
 	return;
     }
 

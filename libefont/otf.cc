@@ -80,7 +80,7 @@ Font::parse_header(ErrorHandler *errh)
 	if (tag <= last_tag)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (uint32_t) len)
-	    return errh->error("OTF data for '%s' out of range", Tag(tag).text().cc()), -EFAULT;
+	    return errh->error("OTF data for '%s' out of range", Tag(tag).text().c_str()), -EFAULT;
 	last_tag = tag;
     }
     

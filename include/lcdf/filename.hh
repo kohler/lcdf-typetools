@@ -2,7 +2,7 @@
 #ifndef LCDF_FILENAME_HH
 #define LCDF_FILENAME_HH
 #include <lcdf/string.hh>
-#include <cstdio>
+#include <stdio.h>
 
 class Filename { public:
   
@@ -31,7 +31,7 @@ class Filename { public:
     
   private:
   
-    mutable String _dir;	// mutable for cc()
+    mutable String _dir;	// mutable for c_str()
     mutable String _name;
     mutable String _path;
     FILE *_actual;

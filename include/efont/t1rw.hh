@@ -1,7 +1,7 @@
 // -*- related-file-name: "../../libefont/t1rw.cc" -*-
 #ifndef EFONT_T1RW_HH
 #define EFONT_T1RW_HH
-#include <cstdio>
+#include <stdio.h>
 #include <lcdf/string.hh>
 #include <lcdf/straccum.hh>
 namespace Efont {
@@ -193,7 +193,8 @@ class Type1PFBWriter: public Type1Writer {
 inline void
 Type1Writer::print(int c)
 {
-    if (_pos >= BufSize) local_flush();
+    if (_pos >= BufSize)
+	local_flush();
     _buf[_pos++] = c;
 }
 
@@ -207,7 +208,7 @@ operator<<(Type1Writer &w, const char *cc)
 inline Type1Writer &
 operator<<(Type1Writer &w, PermString p)
 {
-    w.print(p, p.length());
+    w.print(p.c_str(), p.length());
     return w;
 }
 

@@ -41,7 +41,7 @@ AfmWriter::write()
     fprintf(_f, "StartFontMetrics 4.1\n");
     if (_afm_xt)
 	for (int i = 0; i < _afm_xt->opening_comments.size(); i++)
-	    fprintf(_f, "Comment %s\n", _afm_xt->opening_comments[i].cc());
+	    fprintf(_f, "Comment %s\n", _afm_xt->opening_comments[i].c_str());
   
     write_prologue();
   
@@ -67,16 +67,16 @@ void
 AfmWriter::write_prologue() const
 {
     if (_m->font_name())
-	fprintf(_f, "FontName %s\n", _m->font_name().cc());
+	fprintf(_f, "FontName %s\n", _m->font_name().c_str());
     else
 	fprintf(_f, "FontName No-Font-Name-Given\n");
   
     if (_m->full_name())
-	fprintf(_f, "FullName %s\n", _m->full_name().cc());
+	fprintf(_f, "FullName %s\n", _m->full_name().c_str());
     if (_m->family())
-	fprintf(_f, "FamilyName %s\n", _m->family().cc());
+	fprintf(_f, "FamilyName %s\n", _m->family().c_str());
     if (_m->weight())
-	fprintf(_f, "Weight %s\n", _m->weight().cc());
+	fprintf(_f, "Weight %s\n", _m->weight().c_str());
   
     if (KNOWN(fd( fdItalicAngle )))
 	fprintf(_f, "ItalicAngle %.8g\n", fd( fdItalicAngle ));
@@ -91,12 +91,12 @@ AfmWriter::write_prologue() const
 	fprintf(_f, "UnderlineThickness %.8g\n", fd( fdUnderlineThickness ));
   
     if (_m->version())
-	fprintf(_f, "Version %s\n", _m->version().cc());
+	fprintf(_f, "Version %s\n", _m->version().c_str());
     if (_afm_xt && _afm_xt->notice)
-	fprintf(_f, "Notice %s\n", _afm_xt->notice.cc());
+	fprintf(_f, "Notice %s\n", _afm_xt->notice.c_str());
   
     if (_afm_xt && _afm_xt->encoding_scheme)
-	fprintf(_f, "EncodingScheme %s\n", _afm_xt->encoding_scheme.cc());
+	fprintf(_f, "EncodingScheme %s\n", _afm_xt->encoding_scheme.c_str());
   
     if (KNOWN(fd( fdCapHeight )))
 	fprintf(_f, "CapHeight %.8g\n", fd( fdCapHeight ));
@@ -127,7 +127,7 @@ AfmWriter::write_char_metric_data(GlyphIndex gi, int e) const
     else
 	w = 0;
   
-    fprintf(_f, " N %s ;", _m->name(gi).cc());
+    fprintf(_f, " N %s ;", _m->name(gi).c_str());
   
     if (KNOWN(_m->lf(gi)))
 	fprintf(_f, " B %.8g %.8g %.8g %.8g ;",
@@ -141,8 +141,8 @@ AfmWriter::write_char_metric_data(GlyphIndex gi, int e) const
 	if (op.is_lig()) {
 	    if (op.lig_kind() == opLigSimple)
 		fprintf(_f, " L %s %s ;",
-			_m->name( op.right() ).cc(),
-			_m->name( op.result() ).cc());
+			_m->name( op.right() ).c_str(),
+			_m->name( op.result() ).c_str());
 	    //else
 	    //warning("strange ligature combination not supported by AFM");
 	}
@@ -176,8 +176,8 @@ AfmWriter::write_kerns() const
 	    const PairOp &op = pairp.op(opi);
 	    if (op.is_kern() && _m->kv( op.value() ))
 		fprintf(_f, "KPX %s %s %.8g\n",
-			_m->name( gi ).cc(),
-			_m->name( op.right() ).cc(),
+			_m->name( gi ).c_str(),
+			_m->name( op.right() ).c_str(),
 			_m->kv( op.value() ));
 	    opi = op.next_left();
 	}

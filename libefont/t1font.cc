@@ -21,9 +21,9 @@
 #include <efont/t1rw.hh>
 #include <efont/t1mm.hh>
 #include <lcdf/error.hh>
-#include <cstring>
-#include <cstdlib>
-#include <cctype>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 namespace Efont {
 
 static PermString::Initializer initializer;
@@ -117,7 +117,7 @@ Type1Font::read(Type1Reader &reader)
 	int x_length = accum.length();
 	if (!x_length)
 	    continue;
-	const char *x = accum.cc(); // ensure we don't run off the string
+	const char *x = accum.c_str(); // ensure we don't run off the string
     
 	// check for CHARSTRINGS
 	if (reader.was_charstring()) {
@@ -417,9 +417,9 @@ Type1Font::read_synthetic_font(Type1Reader &reader, const char *first_line,
 	if (!reader.next_line(accum))
 	    return false;
 	wrong_accum << accum;
-	accum.cc();		// ensure we don't run off the string
+	accum.c_str();		// ensure we don't run off the string
 	const char *y = accum.data();
-	if (*y != '/' || strncmp(y + 1, font_name.cc(), font_name.length()) != 0)
+	if (*y != '/' || strncmp(y + 1, font_name.c_str(), font_name.length()) != 0)
 	    return false;
 	int n = 0;
 	sscanf(y + font_name.length() + 1, " findfont%n", &n);
@@ -714,7 +714,7 @@ Type1Font::get_dict_size(int d) const
 	/* nada */;
     else if (Type1Definition *t1d = item->cast_definition()) {
 	int num;
-	if (strstr(t1d->definer().cc(), "dict") && t1d->value_int(num))
+	if (strstr(t1d->definer().c_str(), "dict") && t1d->value_int(num))
 	    return num;
     } else if (Type1CopyItem *copy = item->cast_copy()) {
 	String value = copy->value();
@@ -736,7 +736,7 @@ Type1Font::set_dict_size(int d, int size)
 	return;
     if (Type1Definition *t1d = item->cast_definition()) {
 	int num;
-	if (strstr(t1d->definer().cc(), "dict") && t1d->value_int(num))
+	if (strstr(t1d->definer().c_str(), "dict") && t1d->value_int(num))
 	    t1d->set_int(size);
     } else if (Type1CopyItem *copy = item->cast_copy()) {
 	String value = copy->value();

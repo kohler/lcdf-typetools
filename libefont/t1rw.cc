@@ -19,9 +19,9 @@
 #include <efont/t1rw.hh>
 #include <efont/t1cs.hh>
 #include <lcdf/straccum.hh>
-#include <cstdlib>
-#include <cctype>
-#include <cstring>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 namespace Efont {
 
 unsigned char Type1Reader::xvalue_store[257];
@@ -207,7 +207,7 @@ Type1Reader::test_charstring(StringAccum &str)
     s++;
     while (*s != ' ' && *s)
 	s++;
-    if (strncmp(s, _charstring_definer.cc(), _charstring_definer.length()) != 0)
+    if (strncmp(s, _charstring_definer.c_str(), _charstring_definer.length()) != 0)
 	goto not_charstring;
   
     _charstring_len = strtol(start, 0, 10);

@@ -18,9 +18,13 @@
 #endif
 #include <efont/t1interp.hh>
 #include <efont/t1item.hh>
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#ifdef WIN32
+# define random() rand()
+#endif
 
 #define CHECK_STACK(numargs)	do { if (size() < numargs) return error(errUnderflow, cmd); } while (0)
 #define CHECK_STATE()		do { if (_state < S_IPATH) return error(errOrdering, cmd); _state = S_PATH; } while (0)
@@ -873,7 +877,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
     int bottom = 0;
 
 #ifdef DEBUG_TYPE2
-    fprintf(stderr, "%s [%d/%d]\n", Charstring::command_name(cmd).cc(), _t2nhints, size());
+    fprintf(stderr, "%s [%d/%d]\n", Charstring::command_name(cmd).c_str(), _t2nhints, size());
 #endif
     
     switch (cmd) {

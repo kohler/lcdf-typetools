@@ -18,7 +18,7 @@
 #endif
 #include <efont/t1cs.hh>
 #include <efont/t1interp.hh>
-#include <cstring>
+#include <string.h>
 namespace Efont {
 
 const char * const Charstring::command_names[] = {

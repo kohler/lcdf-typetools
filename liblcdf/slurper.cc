@@ -17,7 +17,7 @@
 # include <config.h>
 #endif
 #include <lcdf/slurper.hh>
-#include <cstring>
+#include <string.h>
 
 static const int DefChunkCap	= 2048;
 static const int WorthMoving	= 256;

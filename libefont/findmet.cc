@@ -21,8 +21,8 @@
 #include <efont/afm.hh>
 #include <efont/amfm.hh>
 #include <efont/psres.hh>
-#include <cstring>
-#include <cstdlib>
+#include <string.h>
+#include <stdlib.h>
 namespace Efont {
 
 MetricsFinder::~MetricsFinder()
@@ -202,9 +202,9 @@ Metrics *
 InstanceMetricsFinder::find_metrics_instance(PermString name,
 					     MetricsFinder *finder, ErrorHandler *errh)
 {
-    char *underscore = strchr(name, '_');
+    char *underscore = strchr(name.c_str(), '_');
     PermString amfm_name =
-	PermString(name.cc(), underscore - name.cc());
+	PermString(name.c_str(), underscore - name.c_str());
   
     AmfmMetrics *amfm = finder->find_amfm(amfm_name, errh);
     if (!amfm) return 0;
@@ -212,7 +212,7 @@ InstanceMetricsFinder::find_metrics_instance(PermString name,
     MultipleMasterSpace *mmspace = amfm->mmspace();
     if (!mmspace->check_intermediate() && _call_mmpfb) {
 	char *buf = new char[amfm->font_name().length() + 30];
-	sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().cc());
+	sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().c_str());
     
 	FILE *f = popen(buf, "r");
 	if (f) {
@@ -252,7 +252,7 @@ Metrics *
 InstanceMetricsFinder::find_metrics_x(PermString name, MetricsFinder *finder,
 				      ErrorHandler *errh)
 {
-    if (strchr(name, '_'))
+    if (strchr(name.c_str(), '_'))
 	return find_metrics_instance(name, finder, errh);
     else
 	return 0;

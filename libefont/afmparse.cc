@@ -20,10 +20,10 @@
 #include <efont/t1cs.hh>
 #include <efont/metrics.hh>
 #include <lcdf/strtonum.h>
-#include <cstring>
-#include <cstdarg>
-#include <cctype>
-#include <cstdlib>
+#include <string.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <stdlib.h>
 #ifdef BROKEN_STRTOD
 # define strtod good_strtod
 #endif

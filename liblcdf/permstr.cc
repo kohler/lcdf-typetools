@@ -17,10 +17,18 @@
 # include <config.h>
 #endif
 #include <lcdf/permstr.hh>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
+
+static PermString::Initializer initializer;
+
+PermString::Doodad PermString::zero_char_doodad = {
+    0, 0, { 0, 0 }
+};
+PermString::Doodad PermString::one_char_doodad[256];
+PermString::Doodad *PermString::buckets[NHASH];
 
 PermString::Initializer::Initializer()
 {
@@ -31,12 +39,17 @@ PermString::Initializer::Initializer()
     }
 }
 
-static PermString::Initializer initializer;
+void
+PermString::static_initialize()
+{
+    for (int i = 0; i < 256; i++) {
+	one_char_doodad[i].next = 0;
+	one_char_doodad[i].length = 1;
+	one_char_doodad[i].data[0] = i;
+	one_char_doodad[i].data[1] = 0;
+    }
+}
 
-
-PermString::Doodad PermString::zero_char_doodad;
-PermString::Doodad PermString::one_char_doodad[256];
-PermString::Doodad *PermString::buckets[NHASH];
 
 // This scatter array, and the ideas behind it, are stolen from lcc.
 static int scatter[] = {        /* map characters to random values */
@@ -101,10 +114,7 @@ PermString::PermString(const char *s)
     register const unsigned char *mm;
     int len;
 
-    if (m == 0) {
-	_rep = 0;
-	return;
-    } else if (m[0] == 0) {
+    if (m == 0 || m[0] == 0) {
 	_rep = zero_char_doodad.data;
 	return;
     } else if (m[1] == 0) {
@@ -140,6 +150,9 @@ PermString::PermString(const char *s, int length)
     register unsigned char *m = (unsigned char *)s;
     register unsigned char *mm;
 
+    if (length < 0)
+	length = (s ? strlen(s) : 0);
+    
     if (length == 0) {
 	_rep = zero_char_doodad.data;
 	return;
@@ -172,27 +185,12 @@ PermString::PermString(const char *s, int length)
     _rep = buck->data;
 }
 
-
 PermString::PermString(char c)
 {
     unsigned char u = (unsigned char)c;
     _rep = one_char_doodad[u].data;
 }
 
-
-void
-PermString::static_initialize()
-{
-    zero_char_doodad.next = 0;
-    zero_char_doodad.length = 0;
-    zero_char_doodad.data[0] = 0;
-    for (int i = 0; i < 256; i++) {
-	one_char_doodad[i].next = 0;
-	one_char_doodad[i].length = 1;
-	one_char_doodad[i].data[0] = i;
-	one_char_doodad[i].data[1] = 0;
-    }
-}
 
 
 bool
@@ -201,13 +199,14 @@ operator==(PermString a, const char *b)
     if (!a || !b)
 	return !a && !b;
     int l = strlen(b);
-    return a.length() == l && memcmp(a.cc(), b, l) == 0;
+    return a.length() == l && memcmp(a.c_str(), b, l) == 0;
 }
 
 
 char
 PermString::operator[](int e) const
 {
+    assert(e >= 0 && e <= length());
     if (e >= 0 && e < length())
 	return c_str()[e];
     else
@@ -248,7 +247,8 @@ vpermprintf(const char *s, va_list val)
 
 	const char *pct = strchr(s, '%');
 	if (!pct) {
-	    if (*s) append(s, strlen(s));
+	    if (*s)
+		append(s, strlen(s));
 	    break;
 	}
 	if (pct != s) {
@@ -292,7 +292,7 @@ vpermprintf(const char *s, va_list val)
 		  }
 		  goto pctdone;
 	      }
-       
+
 	      case 'c': {
 		  char c = (char)(va_arg(val, int) & 0xFF);
 		  append(&c, 1);
@@ -304,21 +304,18 @@ vpermprintf(const char *s, va_list val)
 		  PermString px;
 		  if (x)
 		      px = PermString::decapsule(x);
-		  if (px) {
-		      if (iflag < 0)
-			  append(px, px.length());
-		      else {
-			  assert(iflag <= px.length());
-			  append(px, iflag);
-		      }
-		  }
+		  if (iflag < 0 || iflag > px.length())
+		      append(px.c_str(), px.length());
+		  else
+		      append(px.c_str(), iflag);
 		  goto pctdone;
 	      }
        
 	      case 'd': {
 		  // FIXME FIXME rewrite for sense
 		  int x = va_arg(val, int);
-		  if (pspos == pscap) extend(1);
+		  if (pspos == pscap)
+		      extend(1);
 		  
 		  // FIXME -2^31
 		  unsigned int ux = x;
@@ -386,8 +383,8 @@ permcat(PermString p1, PermString p2)
     unsigned l1 = p1.length();
     unsigned l2 = p2.length();
     char *s = new char[l1 + l2];
-    memcpy(s, p1.cc(), l1);
-    memcpy(s + l1, p2.cc(), l2);
+    memcpy(s, p1.c_str(), l1);
+    memcpy(s + l1, p2.c_str(), l2);
     PermString p(s, l1 + l2);
     delete[] s;
     return p;
@@ -400,9 +397,9 @@ permcat(PermString p1, PermString p2, PermString p3)
     unsigned l2 = p2.length();
     unsigned l3 = p3.length();
     char *s = new char[l1 + l2 + l3];
-    memcpy(s, p1.cc(), l1);
-    memcpy(s + l1, p2.cc(), l2);
-    memcpy(s + l1 + l2, p3.cc(), l3);
+    memcpy(s, p1.c_str(), l1);
+    memcpy(s + l1, p2.c_str(), l2);
+    memcpy(s + l1 + l2, p3.c_str(), l3);
     PermString p(s, l1 + l2 + l3);
     delete[] s;
     return p;

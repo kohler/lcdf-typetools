@@ -19,9 +19,9 @@
 #include <efont/t1mm.hh>
 #include <efont/t1interp.hh>
 #include <lcdf/error.hh>
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 namespace Efont {
 
 MultipleMasterSpace::MultipleMasterSpace(PermString fn, int na, int nm)
@@ -96,7 +96,7 @@ MultipleMasterSpace::error(ErrorHandler *errh, const char *s, ...) const
 	va_start(val, s);
 	assert(strlen(s) < 800);
 	sprintf(buf, (s[0] == ' ' ? "%.200s%s" : "%.200s: %s"),
-		_font_name.cc(), s);
+		_font_name.c_str(), s);
 	errh->verror(ErrorHandler::ERR_ERROR, String(), buf, val);
 	va_end(val);
     }
@@ -162,7 +162,7 @@ MultipleMasterSpace::check_intermediate(ErrorHandler *errh)
 	    if (_master_positions[m][a] != 0 && _master_positions[m][a] != 1) {
 		if (errh)
 		    errh->warning("%s requires intermediate master conversion programs",
-				  _font_name.cc());
+				  _font_name.c_str());
 		return false;
 	    }
 
@@ -208,14 +208,14 @@ MultipleMasterSpace::set_design(NumVector &design_vector, int ax, double value,
     if (value < axis_low(ax)) {
 	value = axis_low(ax);
 	if (errh)
-	    errh->warning("raising %s's %s to %g", _font_name.cc(),
-			  _axis_types[ax].cc(), value);
+	    errh->warning("raising %s's %s to %g", _font_name.c_str(),
+			  _axis_types[ax].c_str(), value);
     }
     if (value > axis_high(ax)) {
 	value = axis_high(ax);
 	if (errh)
-	    errh->warning("lowering %s's %s to %g", _font_name.cc(),
-			  _axis_types[ax].cc(), value);
+	    errh->warning("lowering %s's %s to %g", _font_name.c_str(),
+			  _axis_types[ax].c_str(), value);
     }
   
     design_vector[ax] = value;
@@ -228,7 +228,7 @@ MultipleMasterSpace::set_design(NumVector &design_vector, PermString ax_name,
 {
     int ax = axis(ax_name);
     if (ax < 0)
-	return error(errh, " has no `%s' axis", ax_name.cc());
+	return error(errh, " has no `%s' axis", ax_name.c_str());
     else
 	return set_design(design_vector, ax, val, errh);
 }
@@ -243,8 +243,7 @@ MultipleMasterSpace::normalize_vector(ErrorHandler *errh) const
     for (int a = 0; a < _naxes; a++)
 	if (!KNOWN(design[a])) {
 	    if (errh)
-		errh->error("must specify %s's %s coordinate", _font_name.cc(),
-			    _axis_types[a].cc());
+		errh->error("must specify %s's %s coordinate", _font_name.c_str(), _axis_types[a].c_str());
 	    return false;
 	}
   

@@ -1,9 +1,9 @@
 // -*- related-file-name: "../../liblcdf/permstr.cc" -*-
 #ifndef LCDF_PERMSTR_HH
 #define LCDF_PERMSTR_HH
-#include <cassert>
-#include <cstddef>
-#include <cstdarg>
+#include <assert.h>
+#include <stddef.h>
+#include <stdarg.h>
 #include <lcdf/inttypes.h>
 
 class PermString { struct Doodad; public:
@@ -13,25 +13,24 @@ class PermString { struct Doodad; public:
     // static global PermStrings.
     struct Initializer { Initializer(); };
   
-    PermString()			: _rep(0) { }
+    PermString()			: _rep(zero_char_doodad.data) { }
     explicit PermString(char c);
     PermString(const char *);
     PermString(const char *, int);
-  
-    operator bool() const		{ return _rep != 0; }
-    bool operator!() const		{ return _rep == 0; }
-    int length() const			{ return doodad()->length; }
+
+    inline operator bool() const;
+    inline bool operator!() const;
+    
+    inline int length() const;
     char operator[](int) const;
+
+    friend inline bool operator==(PermString, PermString);
+    friend inline bool operator!=(PermString, PermString);
   
-    friend bool operator==(PermString, PermString);
-    friend bool operator!=(PermString, PermString);
-  
-    const char *cc() const		{ return _rep; }
     const char *c_str() const		{ return _rep; }
-    operator const char *() const	{ return _rep; }
   
-    Capsule capsule() const		{ return doodad(); }
-    static PermString decapsule(Capsule c) { return PermString(c); }
+    inline Capsule capsule() const;
+    inline static PermString decapsule(Capsule c);
   
     friend PermString permprintf(const char *, ...);
     friend PermString vpermprintf(const char *, va_list);
@@ -46,7 +45,7 @@ class PermString { struct Doodad; public:
 	char data[2];
     };
   
-    char *_rep;
+    const char *_rep;
   
     PermString(Doodad *d)		: _rep(d->data) { }
     Doodad *doodad() const { return (Doodad*)(_rep - offsetof(Doodad, data)); }
@@ -59,6 +58,24 @@ class PermString { struct Doodad; public:
   
 };
 
+
+inline
+PermString::operator bool() const
+{
+    return _rep != zero_char_doodad.data;
+}
+
+inline bool
+PermString::operator!() const
+{
+    return _rep == zero_char_doodad.data;
+}
+
+inline int
+PermString::length() const
+{
+    return doodad()->length;
+}
 
 inline bool
 operator==(PermString a, PermString b)
@@ -92,10 +109,22 @@ operator!=(const char *a, PermString b)
     return !(b == a);
 }
 
+inline PermString::Capsule
+PermString::capsule() const
+{
+    return doodad();
+}
+
+inline PermString
+PermString::decapsule(Capsule c)
+{
+    return PermString(c);
+}
+
 inline unsigned
 hashcode(PermString s)
 {
-    return (uintptr_t)(s.cc());
+    return (uintptr_t)(s.c_str());
 }
 
 #endif

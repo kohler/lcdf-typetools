@@ -4,7 +4,7 @@
 #ifdef HAVE_PERMSTRING
 # include <lcdf/permstr.hh>
 #endif
-#include <cassert>
+#include <assert.h>
 
 class String { public:
   
@@ -55,7 +55,6 @@ class String { public:
 #endif
   
     const char *c_str();		// pointer returned is semi-transient
-    const char *cc()			{ return c_str(); }
   
     char operator[](int e) const	{ return _data[e]; }
     char back() const			{ return _data[_length-1]; }
@@ -365,13 +364,13 @@ String::String(PermString p)
 inline bool
 operator==(PermString p1, const String &s2)
 {
-    return p1 && s2.equals(p1.c_str(), p1.length());
+    return s2.equals(p1.c_str(), p1.length());
 }
 
 inline bool
 operator==(const String &s1, PermString p2)
 {
-    return p2 && s1.equals(p2.c_str(), p2.length());
+    return s1.equals(p2.c_str(), p2.length());
 }
 
 inline bool

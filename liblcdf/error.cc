@@ -22,10 +22,10 @@
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
 #include <lcdf/hashmap.hh>
-#include <cerrno>
-#include <cctype>
+#include <errno.h>
+#include <ctype.h>
 #ifndef __KERNEL__
-# include <cstdlib>
+# include <stdlib.h>
 #endif
 
 struct ErrorHandler::Conversion {
@@ -35,7 +35,7 @@ struct ErrorHandler::Conversion {
 };
 static ErrorHandler::Conversion *error_items;
 
-const int ErrorHandler::OK_RESULT;
+const int ErrorHandler::OK_RESULT = 0;
 const int ErrorHandler::ERROR_RESULT = -EINVAL;
 
 int
@@ -221,7 +221,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
   if (seriousness >= ERR_MIN_WARNING && seriousness < ERR_MIN_ERROR) {
     // prepend `warning: ' to every line
     s_placeholder = prepend_lines("warning: ", s);
-    s = s_placeholder.cc();
+    s = s_placeholder.c_str();
   }
   
   // declare and initialize these here to make gcc shut up about possible 
@@ -304,7 +304,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 	 s1 = "(null)";
        if (flags & ALTERNATE_FORM) {
 	 placeholder = String(s1).printable();
-	 s1 = placeholder.cc();
+	 s1 = placeholder.c_str();
        }
        for (s2 = s1; *s2 && precision != 0; s2++)
 	 if (precision > 0)

@@ -1,7 +1,7 @@
 #ifndef EFONT_AFMW_HH
 #define EFONT_AFMW_HH
 #include <efont/afm.hh>
-#include <cstdio>
+#include <stdio.h>
 namespace Efont {
 
 class AfmWriter { public:

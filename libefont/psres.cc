@@ -35,7 +35,7 @@
 #  include <ndir.h>
 # endif
 #endif
-#include <cstring>
+#include <string.h>
 namespace Efont {
 
 static String::Initializer initializer;
@@ -244,10 +244,13 @@ PsresDatabase::add_psres_file(Filename &filename, bool override)
   return add_one_psres_file(slurpy, override);
 }
 
+
+#ifndef WIN32
+
 void
 PsresDatabase::add_psres_directory(PermString directory)
 {
-  DIR *dir = opendir(directory.cc());
+  DIR *dir = opendir(directory.c_str());
   if (!dir) return;
   
   while (struct dirent *dirent = readdir(dir)) {
@@ -262,6 +265,37 @@ PsresDatabase::add_psres_directory(PermString directory)
   
   closedir(dir);
 }
+
+#else /* WIN32 */
+
+void
+PsresDatabase::add_psres_directory(PermString directory)
+{
+  WIN32_FIND_DATA find_file_data;
+  HANDLE hnd;
+  int proceed = TRUE;
+
+  PermString search_str = permcat(directory, "/*.*");
+  hnd = FindFirstFile(search_str.c_str(), &find_file_data);
+
+  if (hnd == INVALID_HANDLE_VALUE) {
+    return;
+  }
+  while (proceed) {
+    int len = strlen(find_file_data.cFileName);
+    if (len > 4 && find_file_data.cFileName[0] != '.'
+	&& _strnicmp(find_file_data.cFileName + len - 4, ".upr", 4) == 0
+	&& (len != 9 || _strnicmp(find_file_data.cFileName, "PSres.upr", 9) != 0)) {
+      Filename fn(directory, PermString(find_file_data.cFileName, len));
+      add_psres_file(fn, false);
+    }
+    proceed = FindNextFile (hnd, &find_file_data);
+  }
+  FindClose(hnd);
+}
+
+#endif /* WIN32 */
+
 
 void
 PsresDatabase::add_psres_path(const char *path, const char *default_path,

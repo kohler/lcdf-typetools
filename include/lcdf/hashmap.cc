@@ -20,7 +20,6 @@
  */
 
 /* #include <lcdf/hashmap.hh> */
-#include <cassert>
 
 template <class K, class V>
 HashMap<K, V>::HashMap()
@@ -111,7 +110,6 @@ template <class K, class V>
 bool
 HashMap<K, V>::insert(const K &key, const V &val)
 {
-    assert(key);
     check_capacity();
     int i = bucket(key);
     bool is_new = !(bool)_e[i].key;

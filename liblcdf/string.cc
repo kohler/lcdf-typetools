@@ -21,9 +21,9 @@
 #endif
 #include <lcdf/string.hh>
 #include <lcdf/straccum.hh>
-#include <cstdio>
-#include <cstring>
-#include <cctype>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <lcdf/inttypes.h>
 
 static String::Initializer initializer;

@@ -17,7 +17,7 @@
 # include <config.h>
 #endif
 #include <efont/pairop.hh>
-#include <cstdio>
+#include <stdio.h>
 namespace Efont {
 
 PairProgram::PairProgram(const PairProgram &o)
@@ -129,7 +129,7 @@ PairProgram::print() const
 #if 0
   for (GlyphIndex gi = 0; gi < glyphblock.size(); gi++)
     if (glyphblock[gi] != -1)
-      printf("%s->B%d ", glyph(gi).name().cc(), glyphblock[gi]);
+      printf("%s->B%d ", glyph(gi).name().c_str(), glyphblock[gi]);
   printf("\n");
   
   for (int i = 0; i < blocks.size(); i++) {

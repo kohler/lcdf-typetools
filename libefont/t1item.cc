@@ -21,8 +21,8 @@
 #include <efont/t1interp.hh>
 #include <efont/t1font.hh>
 #include <lcdf/strtonum.h>
-#include <cctype>
-#include <cstring>
+#include <ctype.h>
+#include <string.h>
 #include <sys/stat.h>
 #ifndef WIN32
 # include <unistd.h>
@@ -73,7 +73,7 @@ typedef Vector<double> NumVector;
 Type1Definition::Type1Definition(PermString n, const String &v, PermString d)
     : _name(n), _val(v), _definer(d)
 {
-    _val.cc();			// ensure it ends with '\0'
+    _val.c_str();		// ensure it ends with '\0'
 }
 
 Type1Definition *
@@ -100,7 +100,7 @@ Type1Definition::slurp_string(StringAccum &accum, int pos, Type1Reader *reader)
 	    pos = s - accum.data();
 	    accum.append('\n');	// add \n
 	    if (!reader->next_line(accum)) return -1;
-	    accum.cc();		// ensure null termination
+	    accum.c_str();	// ensure null termination
 	    s = accum.data() + pos;
 	    break;
 	}
@@ -133,7 +133,7 @@ Type1Definition::slurp_proc(StringAccum &accum, int pos, Type1Reader *reader)
 	    pos = s - accum.data();
 	    accum.append('\n');	// add \n
 	    if (!reader->next_line(accum)) return -1;
-	    accum.cc();		// ensure null termination
+	    accum.c_str();	// ensure null termination
 	    s = accum.data() + pos;
 	    break;
 	}

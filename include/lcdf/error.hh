@@ -3,9 +3,9 @@
 #define LCDF_ERROR_HH
 #include <lcdf/string.hh>
 #ifndef __KERNEL__
-# include <cstdio>
+# include <stdio.h>
 #endif
-#include <cstdarg>
+#include <stdarg.h>
 #if HAVE_ADDRESSABLE_VA_LIST
 # define VA_LIST_REF_T		va_list *
 # define VA_LIST_DEREF(val)	(*(val))
@@ -58,7 +58,7 @@ class ErrorHandler { public:
 
   // seriousness < ERR_MIN_WARNING returns OK_RESULT, which is 0
   // seriousness >= ERR_MIN_WARNING returns ERROR_RESULT, which is -EINVAL
-  static const int OK_RESULT = 0;
+  static const int OK_RESULT;
   static const int ERROR_RESULT;
 
   void debug(const char *format, ...);

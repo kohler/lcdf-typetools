@@ -1,7 +1,7 @@
 #ifndef LCDF_VECTOR_HH
 #define LCDF_VECTOR_HH
-#include <cassert>
-#include <cstdlib>
+#include <assert.h>
+#include <stdlib.h>
 #ifdef HAVE_NEW_HDR
 # include <new>
 #elif defined(HAVE_NEW_H)

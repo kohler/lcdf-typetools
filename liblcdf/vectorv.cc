@@ -16,7 +16,7 @@
  */
 
 #include <lcdf/vector.hh>
-#include <cstring>
+#include <string.h>
 
 Vector<void *>::Vector(const Vector<void *> &o)
     : _l(0), _n(0), _cap(0)

@@ -1,8 +1,8 @@
 // -*- related-file-name: "../../liblcdf/straccum.cc" -*-
 #ifndef LCDF_STRACCUM_HH
 #define LCDF_STRACCUM_HH
-#include <cstring>
-#include <cassert>
+#include <string.h>
+#include <assert.h>
 #include <lcdf/string.hh>
 #ifdef HAVE_PERMSTRING
 # include <lcdf/permstr.hh>
@@ -29,7 +29,6 @@ class StringAccum { public:
     bool out_of_memory() const		{ return _cap < 0; }
   
     const char *c_str();
-    const char *cc()			{ return c_str(); }
   
     char operator[](int i) const{ assert(i>=0&&i<_len); return (char)_s[i]; }
     char &operator[](int i)	{ assert(i>=0&&i<_len); return (char &)_s[i]; }
@@ -243,7 +242,7 @@ operator<<(StringAccum &sa, const String &s)
 inline StringAccum &
 operator<<(StringAccum &sa, PermString s)
 {
-    sa.safe_append(s.cc(), s.length());
+    sa.safe_append(s.c_str(), s.length());
     return sa;
 }
 #endif
@@ -258,13 +257,13 @@ operator<<(StringAccum &sa, const StringAccum &sb)
 inline bool
 operator==(StringAccum &sa, const char *s)
 {
-    return strcmp(sa.cc(), s) == 0;
+    return strcmp(sa.c_str(), s) == 0;
 }
 
 inline bool
 operator!=(StringAccum &sa, const char *s)
 {
-    return strcmp(sa.cc(), s) != 0;
+    return strcmp(sa.c_str(), s) != 0;
 }
 
 #endif

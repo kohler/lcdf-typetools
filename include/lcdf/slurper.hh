@@ -3,7 +3,7 @@
 #define LCDF_SLURPER_HH
 #include <lcdf/landmark.hh>
 #include <lcdf/filename.hh>
-#include <cstdio>
+#include <stdio.h>
 
 class Slurper { public:
 

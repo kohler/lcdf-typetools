@@ -3,7 +3,7 @@
 #define EFONT_AFMPARSE_HH
 #include <lcdf/slurper.hh>
 #include <lcdf/permstr.hh>
-#include <cstdarg>
+#include <stdarg.h>
 namespace Efont {
 
 class AfmParser { public:

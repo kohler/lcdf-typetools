@@ -19,8 +19,8 @@
 #include <efont/afm.hh>
 #include <efont/afmparse.hh>
 #include <lcdf/error.hh>
-#include <cctype>
-#include <cassert>
+#include <ctype.h>
+#include <assert.h>
 namespace Efont {
 
 AfmReader::AfmReader(AfmParser &parser, Metrics *afm, AfmMetricsXt *afm_xt,
@@ -81,7 +81,7 @@ AfmReader::find_err(PermString name, const char *) const
 {
     GlyphIndex gi = _afm->find(name);
     if (gi < 0)
-	lerror("character `%s' doesn't exist", name.cc());
+	lerror("character `%s' doesn't exist", name.c_str());
     return gi;
 }
 
@@ -121,11 +121,11 @@ AfmReader::no_match_warning(const char *context) const
     if (!keyword) return;
     if (_l.key_matched()) {
 	lwarning(context ? "bad `%s' command in %s:"
-		 : "bad `%s' command:", keyword.cc(), context);
-	lwarning("field %d %s", _l.fail_field(), _l.message().cc());
+		 : "bad `%s' command:", keyword.c_str(), context);
+	lwarning("field %d %s", _l.fail_field(), _l.message().c_str());
     } else
 	lwarning(context ? "unknown command `%s' in %s"
-		 : "unknown command `%s'", keyword.cc(), context);
+		 : "unknown command `%s'", keyword.c_str(), context);
     _l.clear_message();
 }
 
@@ -411,7 +411,7 @@ AfmReader::read_char_metric_data() const
 	lwarning("character without a name ignored");
     else {
 	if (_afm->find(n) != -1)
-	    lwarning("character %s defined twice", n.cc());
+	    lwarning("character %s defined twice", n.c_str());
     
 	GlyphIndex gi = _afm->add_glyph(n);
     

@@ -23,11 +23,11 @@
 #include <efont/findmet.hh>
 #include <efont/t1cs.hh>
 #include <lcdf/straccum.hh>
-#include <cstdarg>
-#include <cstdlib>
-#include <cctype>
-#include <cassert>
-#include <cstring>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <assert.h>
+#include <string.h>
 namespace Efont {
 
 AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
@@ -109,7 +109,7 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
 	if (!afm) {
 	    if (errh)
 		errh->error("%s: can't find AFM file for master `%s'",
-			    _font_name.cc(), master.font_name.cc());
+			    _font_name.c_str(), master.font_name.c_str());
       
 	} else if (!strcompat(afm->font_name(), master.font_name)
 		   || !strcompat(afm->family(), master.family)
@@ -117,7 +117,7 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
 		   || !strcompat(afm->version(), master.version)) {
 	    if (errh)
 		errh->error("%s: AFM for master `%s' doesn't match AMFM",
-			    _font_name.cc(), master.font_name.cc());
+			    _font_name.c_str(), master.font_name.c_str());
     
 	} else if (!_sanity_afm) {
 	    master.afm = afm;
@@ -143,7 +143,7 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
 		master.afm = afm;
 		afm->use();
 	    } else if (errh)
-		errh->error("%s: AFM for master `%s' failed sanity checks (%s)", _font_name.cc(), master.font_name.cc(), buf);
+		errh->error("%s: AFM for master `%s' failed sanity checks (%s)", _font_name.c_str(), master.font_name.c_str(), buf);
 	}
     }
   
@@ -219,7 +219,7 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
     // Find the first master with a non-zero component.
     for (m = 0; m < _nmasters && weight_vector[m] == 0; m++)
 	;
-    Metrics *afm = new Metrics(font_name_sa.cc(), full_name_sa.cc(), *_masters[m].afm);
+    Metrics *afm = new Metrics(font_name_sa.c_str(), full_name_sa.c_str(), *_masters[m].afm);
     if (MetricsXt *xt = _masters[m].afm->find_xt("AFM")) {
 	AfmMetricsXt *new_xt = new AfmMetricsXt((AfmMetricsXt &)*xt);
 	afm->add_xt(new_xt);
@@ -307,11 +307,11 @@ AmfmReader::no_match_warning(const char *context) const
     if (!keyword) return;
     if (_l.key_matched()) {
 	lwarning(context ? "bad `%s' command in %s:"
-		 : "bad `%s' command:", keyword.cc(), context);
-	lwarning("field %d %s", _l.fail_field(), _l.message().cc());
+		 : "bad `%s' command:", keyword.c_str(), context);
+	lwarning("field %d %s", _l.fail_field(), _l.message().c_str());
     } else
 	lwarning(context ? "unknown command `%s' in %s"
-		 : "unknown command `%s'", keyword.cc(), context);
+		 : "unknown command `%s'", keyword.c_str(), context);
     _l.clear_message();
 }
 
@@ -491,7 +491,7 @@ AmfmReader::read()
   
   done:
     if (!_mmspace) {
-	_errh->error("`%s' is not an AMFM file", String(_l.landmark().file()).cc());
+	_errh->error("`%s' is not an AMFM file", String(_l.landmark().file()).c_str());
 	return false;
     }
   

@@ -1,7 +1,7 @@
 // -*- related-file-name: "../../liblcdf/point.cc" -*-
 #ifndef LCDF_POINT_HH
 #define LCDF_POINT_HH
-#include <cmath>
+#include <math.h>
 
 struct Point {
   
