@@ -42,7 +42,7 @@ class Metrics { public:
 
     inline Glyph glyph(Code) const;
     inline Code encoding(Glyph) const;
-    Code force_encoding(Glyph);
+    Code force_encoding(Glyph, int lookup_source = -1);
     void encode(Code, Glyph);
     void encode_virtual(Code, PermString, const Vector<Setting> &);
 
@@ -51,7 +51,7 @@ class Metrics { public:
     void base_glyphs(Vector<Glyph> &) const;
 
     void add_ligature(Code in1, Code in2, Code out);
-    Code pair_code(Code, Code);
+    Code pair_code(Code, Code, int lookup_source = -1);
     void add_kern(Code in1, Code in2, int kern);
     void add_single_positioning(Code, int pdx, int pdy, int adx);
     
@@ -60,7 +60,7 @@ class Metrics { public:
     void remove_kerns(Code in1, Code in2);
     void reencode_right_ligkern(Code old_in2, Code new_in2);
     
-    int apply(const Vector<Substitution> &, bool allow_single);
+    int apply(const Vector<Substitution> &, bool allow_single, int lookup);
     int apply(const Vector<Positioning> &);
 
     void cut_encoding(int size);
@@ -106,9 +106,11 @@ class Metrics { public:
 	int adx;
 	Code built_in1;
 	Code built_in2;
+	int lookup_source;
+	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8, BASE_LIVE = 16, LIG_LIVE = 32 };
 	int flags;
-	enum { BUILT = 1, CONTEXT_ONLY = 2, LIVE = 4, BASE_LIVE = 8, LIG_LIVE = 16 };
-	Char()			: glyph(0), base_code(-1), ligatures(0), virtual_char(0), pdx(0), pdy(0), adx(0), built_in1(-1), built_in2(-1), flags(0) { }
+	
+	Char()			: glyph(0), base_code(-1), ligatures(0), virtual_char(0), pdx(0), pdy(0), adx(0), built_in1(-1), built_in2(-1), lookup_source(-1), flags(0) { }
 	void clear();
 	void swap(Char &);
 	bool visible() const		{ return glyph != 0; }

@@ -1006,7 +1006,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
 	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%5d\t%s\n", i, subs[subno].unparse().c_str());
 	    
-	    int nunderstood = encoding.apply(subs, !dvipsenc_literal);
+	    int nunderstood = encoding.apply(subs, !dvipsenc_literal, i);
 
 	    // mark as used
 	    int d = (understood && nunderstood == subs.size() ? F_GSUB_ALL : (nunderstood ? F_GSUB_PART : 0)) + F_GSUB_TRY;

@@ -1,5 +1,28 @@
 LCDF Typetools NEWS
 
+Version 0.50   2.Aug.2003
+
+* otftotfm: Handle more complex substitutions, such as those required to
+  support '-fordn' and '-ffrac'.
+
+* otftotfm: Rewrite GsubEncoding to Metrics, changing its fundamental
+  abstraction (to two-ligatures). Much simpler code.
+
+* otftotfm: The output virtual and base fonts can have different
+  "encodings" with overlapping encoding slots. This makes fonts more
+  compact.
+
+* otftotfm prefers new characters introduced by early lookups to new
+  characters introduced by later lookups. This follows the spirit of the
+  OpenType specification, since early lookups in some ways "override" later
+  ones. The preivous scoring mechanism remains in force within each
+  individual lookup.
+
+* otftotfm TODO: Ligatures that apply to middle or right context (for
+  example, the two substitutions "a b c d => a b c y" and "b c => x" should
+  combine to "a b c d => a x y", but they won't yet).
+
+
 Version 0.19   30.Jul.2003
 
 * otftotfm: Add support for 'emptyslot' UNICODINGs. Requested by Marco

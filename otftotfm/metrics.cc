@@ -115,7 +115,7 @@ Metrics::hard_encoding(Glyph g) const
 }
 
 Metrics::Code
-Metrics::force_encoding(Glyph g)
+Metrics::force_encoding(Glyph g, int lookup_source)
 {
     assert(g >= 0);
     int e = encoding(g);
@@ -125,6 +125,7 @@ Metrics::force_encoding(Glyph g)
 	Char ch;
 	ch.glyph = g;
 	ch.base_code = _encoding.size();
+	ch.lookup_source = lookup_source;
 	_encoding.push_back(ch);
 	assign_emap(g, ch.base_code);
 	return ch.base_code;
@@ -185,16 +186,17 @@ Metrics::Char::clear()
 void
 Metrics::Char::swap(Char &c)
 {
-    Glyph g = glyph; glyph = c.glyph; c.glyph = g;
+    std::swap(glyph, c.glyph);
     ligatures.swap(c.ligatures);
     kerns.swap(c.kerns);
-    VirtualChar *vc = virtual_char; virtual_char = c.virtual_char; c.virtual_char = vc;
-    int i = pdx; pdx = c.pdx; c.pdx = i;
-    i = pdy; pdy = c.pdy; c.pdy = i;
-    i = adx; adx = c.adx; c.adx = i;
-    i = flags; flags = c.flags; c.flags = i;
-    i = built_in1; built_in1 = c.built_in1; c.built_in1 = i;
-    i = built_in2; built_in2 = c.built_in2; c.built_in2 = i;
+    std::swap(virtual_char, c.virtual_char);
+    std::swap(pdx, c.pdx);
+    std::swap(pdy, c.pdy);
+    std::swap(adx, c.adx);
+    std::swap(flags, c.flags);
+    std::swap(built_in1, c.built_in1);
+    std::swap(built_in2, c.built_in2);
+    std::swap(lookup_source, c.lookup_source);
     // NB: only a partial switch of base_code!!
     if (base_code < 0)
 	base_code = c.base_code;
@@ -245,14 +247,16 @@ Metrics::add_ligature(Code in1, Code in2, Code out)
 }
 
 Metrics::Code
-Metrics::pair_code(Code in1, Code in2)
+Metrics::pair_code(Code in1, Code in2, int lookup_source)
 {
-    if (const Ligature *l = ligature_obj(in1, in2))
+    if (const Ligature *l = ligature_obj(in1, in2)) {
+	if (lookup_source < 0)
+	    _encoding[l->out].flags &= ~Char::INTERMEDIATE;
 	return l->out;
-    else {
+    } else {
 	Char ch;
 	ch.glyph = VIRTUAL_GLYPH;
-	ch.flags = Char::BUILT;
+	ch.flags = Char::BUILT | (lookup_source >= 0 ? Char::INTERMEDIATE : 0);
 	VirtualChar *vc = ch.virtual_char = new VirtualChar;
 	vc->name = permprintf("%s__%s", code_str(in1), code_str(in2));
 	setting(in1, vc->setting, SET_INTERMEDIATE);
@@ -260,6 +264,7 @@ Metrics::pair_code(Code in1, Code in2)
 	setting(in2, vc->setting, SET_INTERMEDIATE);
 	ch.built_in1 = in1;
 	ch.built_in2 = in2;
+	ch.lookup_source = lookup_source;
 	_encoding.push_back(ch);
 	new_ligature(in1, in2, _encoding.size() - 1);
 	return _encoding.size() - 1;
@@ -423,7 +428,7 @@ in_changed_context(Vector<int> &changed, Vector<int *> &changed_context, int e1,
 /* applying GSUB substitutions						     */
 
 int
-Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
+Metrics::apply(const Vector<Substitution> &sv, bool allow_single, int lookup)
 {
     // keep track of what substitutions we have performed
     Vector<int> changed(_encoding.size(), CH_NO);
@@ -449,11 +454,14 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
 	    } else if (changed[e] == CH_SOME) {
 		// some contextual substitutions have changed this glyph, add
 		// contextual substitutions for the remaining possibilities
-		Code out = force_encoding(s->out_glyph_0());
+		Code out = force_encoding(s->out_glyph_0(), lookup);
 		const int *v = changed_context[e];
 		for (Code j = 0; j < changed.size(); j++)
-		    if (_encoding[j].glyph > 0 && !(v[j >> 5] & (1 << (j & 0x1F))))
-			add_ligature(e, j, pair_code(out, j));
+		    if (_encoding[j].glyph > 0 && !(v[j >> 5] & (1 << (j & 0x1F)))) {
+			Code pair = pair_code(out, j, lookup);
+			_encoding[out].flags &= ~Char::INTERMEDIATE;
+			add_ligature(e, j, pair);
+		    }
 		changed[e] = CH_ALL;
 	    }
 
@@ -489,7 +497,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
 	    // build up the character pair
 	    int cin1 = in[0];
 	    for (Glyph *inp = in.begin() + 1; inp < in.end() - 1; inp++)
-		cin1 = pair_code(cin1, *inp);
+		cin1 = pair_code(cin1, *inp, lookup);
 	    int cin2 = in.back();
 
 	    // build up the output character
@@ -497,9 +505,10 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
 	    s->all_out_glyphs(out);
 	    int cout = -1;
 	    for (Glyph *outp = out.begin(); outp < out.end(); outp++) {
-		*outp = force_encoding(*outp);
-		cout = (cout < 0 ? *outp : pair_code(cout, *outp));
+		*outp = force_encoding(*outp, lookup);
+		cout = (cout < 0 ? *outp : pair_code(cout, *outp, lookup));
 	    }
+	    _encoding[cout].flags &= ~Char::INTERMEDIATE;
 
 	    // check for replacing a fake ligature
 	    int old_out = -1;
@@ -754,7 +763,7 @@ Metrics::cut_encoding(int size)
     /* Finally, change "emptyslot"s to ".notdef"s. */
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
 	if (ch->glyph == emptyslot_glyph())
-	    ch->glyph = 0;
+	    ch->glyph = 0, ch->base_code = -1;
     
     /* We are done! */
 }
@@ -786,7 +795,7 @@ struct Slot {
     Metrics::Code new_code;
     Metrics::Glyph glyph;
     int score;
-    int flags;
+    int lookup_source;
 };
 
 inline bool
@@ -794,8 +803,10 @@ operator<(const Slot &a, const Slot &b)
 {
     // note: will give real glyphs priority over virtual ones at a given
     // priority
-    return a.score < b.score
-	|| (a.score == b.score && a.glyph < b.glyph);
+    return (a.lookup_source < b.lookup_source
+	    || (a.lookup_source == b.lookup_source
+		&& (a.score < b.score
+		    || (a.score == b.score && a.glyph < b.glyph))));
 }
 }
 
@@ -859,16 +870,26 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	    }
     }
 
+    /* Rescore intermediates to not be better off than their endpoints. */
+    /* XXX multiple layers of intermediate? */
+    for (Code c = 0; c < _encoding.size(); c++) {
+	Char &ch = _encoding[c];
+	if (ch.flag(Char::INTERMEDIATE))
+	    for (Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
+		if (scores[c] < scores[l->out] && !_encoding[l->out].context_setting(c, l->in2))
+		    scores[c] = scores[l->out];
+    }
+
     /* Collect characters that want to be reassigned. */
     Vector<Slot> slots;
     for (Code c = size; c < _encoding.size(); c++)
 	if (scores[c] < NOCHAR_SCORE
 	    && !(_encoding[c].flags & Char::CONTEXT_ONLY)
 	    && (_encoding[c].flags & (Char::LIVE | Char::BASE_LIVE))) {
-	    Slot slot = { c, -1, _encoding[c].glyph, scores[c], _encoding[c].flags };
+	    Slot slot = { c, -1, _encoding[c].glyph, scores[c], _encoding[c].lookup_source };
 	    slots.push_back(slot);
 	}
-    // Sort them by score, then by value.
+    // Sort them by score, then by glyph.
     std::sort(slots.begin(), slots.end());
 
     /* Prefer their old slots, if available. */
@@ -968,6 +989,7 @@ font, so I've ignored those listed above.)", sa.c_str());
 void
 Metrics::make_base(int size)
 {
+    assert(_encoding.size() > size);
     bool reencoded = false;
     Vector<Code> reencoding;
     for (Code c = 0; c < _encoding.size(); c++)
@@ -978,6 +1000,10 @@ Metrics::make_base(int size)
 	    reencoding[ch.base_code] = c;
 	    reencoding[c] = ch.base_code;
 	    _encoding[c].swap(_encoding[ch.base_code]);
+	    reencoded = true;
+	}
+	if (ch.virtual_char) {	// force it to be removed by cut_encoding
+	    ch.virtual_char->setting[0] = Setting(Setting::SHOW, size + 1);
 	    reencoded = true;
 	}
     }

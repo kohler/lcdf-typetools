@@ -1,5 +1,5 @@
 '\"t
-.ds V 0.19
+.ds V 0.50
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -665,8 +665,7 @@ Activates uncommon ligatures, such as "c_t", "s_p", and "s_t". Supported.
 .TP 5
 .IR dnom ", Denominators"
 Replaces digits and some punctuation marks with smaller forms sitting on
-the baseline, intended for fraction denominators. Supported, but not
-usually useful.
+the baseline, intended for fraction denominators. Supported.
 .TP 5
 .IR fina ", Terminal Forms"
 Substitutes appropriate forms for letters occurring at the ends of words.
@@ -678,8 +677,9 @@ implementation would probably include punctuation too. See
 for selecting swash variants active at the ends of words.
 .TP 5
 .IR frac ", Fractions"
-Replaces sequences like "1/2" with nice-looking fractions. The contextual
-lookup is too hard for TeX; not supported.
+Replaces simple sequences like "1/2" with nice-looking fractions.
+Supported, but beware: many fonts will translate "11/32" into "1" + "1/3" +
+"2".
 .TP 5
 .IR hist ", Historical Forms"
 Replaces characters with historical variants. Usually, this means at least
@@ -721,8 +721,7 @@ and
 .IR ordn ", Ordinals"
 Designed for Spanish and French. Replaces ordinal numbers, such as "2.o",
 with forms where the "o" is raised, and replaces the sequence "No" with an
-integrated glyph. This contextual intelligence is too hard for TeX; not
-supported.
+integrated glyph. Supported.
 .TP 5
 .IR ornm ", Ornaments"
 Replaces some alphabetic characters in the font with ornaments, and links
