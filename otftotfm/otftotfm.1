@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.2
+.ds V 2.3
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -27,14 +27,11 @@ generates and installs the corresponding TeX-related metric files
 (".tfm" TeX font metrics, ".vf" virtual fonts, and ".enc"
 encoding files).  It only works on PostScript-flavored OpenType fonts.
 .LP
-The
-.B \-a
-option tells 
+The easiest way to use
 .B otftotfm
-to put its output files into a writable "texmf" directory tree (also called
-a TeX Directory Structure).  This is generally easiest in the long run, so
-it's worth setting up a "~/texmf" directory tree if you don't have one
-already.  See Automatic Mode below.  Without
+is with the
+.B \-a
+option; see Automatic Mode below.  Without
 .BR \-a ,
 .B otftotfm
 writes all its output files to the current directory.
@@ -50,18 +47,9 @@ you can use the OpenType font in plain TeX with a command like this:
 .fi
 .Sp
 LaTeX users will generally make a ".fd" input file so that commands like
-"\erenewcommand{\ermdefault}{TeXName}" work correctly.  An example ".fd"
-file:
-.Sp
-.nf
-    \eDeclareFontFamily{OT1}{TeXName}{}
-    \eDeclareFontShape{OT1}{TeXName}{m}{n}{ <-> \fItexname\fR }{}
-.fi
-.Sp
-See
-.I The LaTeX Companion
-for further details on the ".fd" format, and check the EXAMPLE section
-below for a worked-out example run.
+"\erenewcommand{\ermdefault}{TeXName}" work correctly.  See the EXAMPLE
+section for more; check the DIAGNOSTICS and FREQUENTLY ASKED QUESTIONS
+sections if you have trouble.
 '
 .SS "OpenType Features"
 .LP
@@ -70,34 +58,20 @@ OpenType fonts support optional
 that change their appearance.  Use the
 .B \-f
 option to turn on selected features.  For example, "\fB\-f\fRsmcp" replaces
-lower-case letters with the corresponding small capitals in fonts that
+lower-case letters with the corresponding small capitals, in fonts that
 support this.
 '
 .PP
 You'll generally provide at least the "\fB\-f\fRkern" and "\fB\-f\fRliga"
-options, which activate pair kerns and f-ligatures.  (Even default kerns
-and ligatures are optional in OpenType.)
-Other features you may be interested in include
-"\fB\-f\fRcpsp",
-for capital spacing;
-"\fB\-f\fRdlig",
-for optional ligatures;
-"\fB\-f\fRlnum",
-"\fB\-f\fRonum",
-"\fB\-f\fRpnum", and
-"\fB\-f\fRtnum",
-to control digit glyphs;
-"\fB\-f\fRsmcp",
-for small capitals;
-"\fB\-f\fRswsh",
-for swash variants; and
-"\fB\-f\fRcswh",
-for contextual swash.  See the FEATURE DIRECTORY section below for more.
-.LP
-The
+options, which activate pair kerns and f-ligatures.  Other interesting
+features include "\fB\-f\fRcpsp", for capital spacing; "\fB\-f\fRdlig", for
+optional ligatures; "\fB\-f\fRlnum", "\fB\-f\fRonum", "\fB\-f\fRpnum", and
+"\fB\-f\fRtnum", to control digit glyphs; "\fB\-f\fRsmcp", for small
+capitals; "\fB\-f\fRswsh", for swash variants; and "\fB\-f\fRcswh", for
+contextual swash.  See the FEATURE DIRECTORY section below for more.  The
 .M otfinfo 1
-program can be used to find out which features a font supports.  Run
-"\fBotfinfo\fR \fB\-f\fR \fIfontfile\fR.otf".
+program will report which features a font supports; run "\fBotfinfo\fR
+\fB\-f\fR \fIfontfile\fR.otf".
 '
 .SS Automatic Mode
 .PP
@@ -110,8 +84,8 @@ This requires a TeX installation that follows the TeX Directory Structure
 standard (http://www.tug.org/tds/), such as most Unix TeX installations.
 '
 .PP
-The following steps will set up your account for smoothest use of automatic
-mode.  (They are designed for web2c-based TeX installations.)
+Here's how to set up your account to use automatic mode smoothly.  (These
+instructions were designed for web2c-based TeX installations.)
 '
 .IP 1. 3
 Create a
@@ -141,11 +115,11 @@ or create a script
 .I $HOME/texmf/dvips/updmap
 that does the right thing. 
 .PP
-Once this is done, you can run "\fBotftotfm\fR
+Now, you can run "\fBotftotfm\fR
 .B \-a
 .IR file .otf
 .IR texname \&"
-and immediately be able to refer to the font in TeX using the
+and immediately refer to the font in TeX using the
 .I texname
 you supplied.  Again, you will have to write ".fd" files and/or typescripts
 to make the font conveniently accessible from LaTeX or ConTeXt.  See the
@@ -265,8 +239,10 @@ invocation -- and, to reduce confusion, append "--fonum" to the font metric
 names.
 .PP
 At this point, all our font metric files are installed, and it's finally
-time to create the ".fd" file.  Let's call the LaTeX font family
-"MinionPro".  Then the ".fd" file is "LY1MinionPro.fd", and it contains:
+time to create the ".fd" file.  (The ".fd" format is documented in
+.IR "The LaTeX Companion" .)
+Let's call the LaTeX font family "MinionPro".  Then the ".fd" file is
+"LY1MinionPro.fd", and it contains:
 .Sp
 .nf
     \eDeclareFontFamily{LY1}{MinionPro}{}
@@ -275,23 +251,23 @@ time to create the ".fd" file.  Let's call the LaTeX font family
     \eDeclareFontShape{LY1}{MinionPro}{m}{it}{ <-> LY1--MinionPro-It }{}
     \eDeclareFontShape{LY1}{MinionPro}{m}{sc}%
             { <-> LY1--MinionPro-Regular--fsmcp }{}
-    \eDeclareFontShape{LY1}{MinionPro}{s}{n}%
+    \eDeclareFontShape{LY1}{MinionPro}{sb}{n}%
             { <-> LY1--MinionPro-Semibold }{}
-    \eDeclareFontShape{LY1}{MinionPro}{s}{it}%
+    \eDeclareFontShape{LY1}{MinionPro}{sb}{it}%
             { <-> LY1--MinionPro-SemiboldIt }{}
-    \eDeclareFontShape{LY1}{MinionPro}{s}{sc}%
+    \eDeclareFontShape{LY1}{MinionPro}{sb}{sc}%
             { <-> LY1--MinionPro-Semibold--fsmcp }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{n}{ <-> LY1--MinionPro-Bold }{}
-    \eDeclareFontShape{LY1}{MinionPro}{bx}{n}%
-            { <-> LY1--MinionPro-Bold }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{it}%
-            { <-> LY1--MinionPro-BoldIt }{}
-    \eDeclareFontShape{LY1}{MinionPro}{bx}{it}%
             { <-> LY1--MinionPro-BoldIt }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{sc}%
             { <-> LY1--MinionPro-Bold--fsmcp }{}
+    \eDeclareFontShape{LY1}{MinionPro}{bx}{n}%
+            { <-> ssub * MinionPro/b/n }{}
+    \eDeclareFontShape{LY1}{MinionPro}{bx}{it}%
+            { <-> ssub * MinionPro/b/it }{}
     \eDeclareFontShape{LY1}{MinionPro}{bx}{sc}%
-            { <-> LY1--MinionPro-Bold--fsmcp }{}
+            { <-> ssub * MinionPro/b/sc }{}
 .fi
 .PP
 We're now ready to use MinionPro in LaTeX, with two lines like this in the
@@ -300,6 +276,7 @@ document preamble:
 .nf
     \eusepackage[LY1]{fontenc}
     \erenewcommand{\ermdefault}{MinionPro}
+    \erenewcommand{\ebfdefault}{b}
 .fi
 .PP
 Of course, we're free at any time to add more MinionPro variants with
@@ -339,7 +316,7 @@ meant to correspond to font behaviors, such as kerning or small-capitals.
 Examples include "liga" (default ligatures), "dlig" (discretionary
 ligatures), "kern" (kerning), and "c2sc" (replacing capitals with small
 capitals).  Give this option multiple times to apply multiple features.  Run
-"\fBotfinfo\fR \-f [--script option] \fIfont\fR" to see the list
+"\fBotfinfo\fR \-f [\-\-script option] \fIfont\fR" to see the list
 of features a font supports for a specified script.
 Defaults to any features required by the selected scripts.
 '
@@ -453,6 +430,19 @@ options.
 '
 .Sp
 .TP 5
+.BI \-\-no\-encoding\-commands
+Ignore any LIGKERN and/or UNICODING commands in the encoding file.
+'
+.Sp
+.TP 5
+.BI \-\-default\-ligkern
+Use
+.BR otftotfm 's
+default LIGKERN commands, ignoring any from the encoding file.  See
+ENCODINGS, below.
+'
+.Sp
+.TP 5
 .BI \-\-coding\-scheme= scheme
 Sets the font's TFM coding scheme to
 .IR scheme ,
@@ -481,7 +471,7 @@ font provides three versions of "A".  If you want to access them all, pick a
 character to be your alternate selector -- say "*".  Then give 
 .B otftotfm
 the
-.BR --altselector-char= '*'
+.BR \-\-altselector-char= '*'
 option.  In TeX, "A" will produce the normal version, "A*" will produce the
 first alternate, and "A**" will produce the second alternate.  Furthermore,
 "s*t" will activate any discretionary "s_t" ligature in the font.  The
@@ -728,16 +718,13 @@ Print the version number and some short non-warranty information and exit.
 .PD
 '
 .SH ENCODINGS
-.SS Commands
-.PP
 .B Otftotfm
-uses its input encodings by translating glyph names into Unicode code
-points.  For example, if an input encoding has "/dotlessi" at position 10,
-then 
+interprets encoding files as Unicode.  For example, if an input encoding
+has "/dotlessi" at position 10, then
 .B otftotfm
 detects that the user wants to encode Unicode character U+0131 LATIN SMALL
 LETTER DOTLESS I at position 10.  The output encoding will use whatever
-glyph the font suggests for that code point, given the collection of
+glyph the font suggests for that Unicode character, given the collection of
 features you chose.
 .PP
 You can control this process with "UNICODING" comments in the input
@@ -771,10 +758,10 @@ glyph names:
 .B Otftotfm
 uses Adobe's
 .I glyphlist.txt
-file to translate regular glyph names to Unicode; see
+file to translate glyph names to Unicode; see
 .IR http://partners.adobe.com/asn/developer/type/unicodegn.html .
 .LP
-You can also map a glyph to nothing to remove that glyph from the input
+You can map a glyph to nothing to remove that glyph from the input
 encoding.  This is useful to remove optional characters; for instance:
 .nf
     % UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
@@ -844,9 +831,9 @@ and
 ligatures and kerns.
 .PP
 You can set the 
-.B --boundary-char
+.B \-\-boundary-char
 and
-.B --altselector-char
+.B \-\-altselector-char
 from an encoding file with commands like this:
 .nf
     % LIGKERN || = \fIboundarychar\fR ;
@@ -855,25 +842,22 @@ from an encoding file with commands like this:
 As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
 commands, separated by spaced semicolons.
 .PP
-The
-.B --unicoding
-and
-.B --ligkern
-command line arguments let you add virtual UNICODING and LIGKERN comments
-to an encoding.
-.PP
 Finally, the CODINGSCHEME command specifies a default
-.B --coding-scheme
+.B \-\-coding-scheme
 for the encoding; for example:
 .nf
     % CODINGSCHEME EXTENDED TEX FONT ENCODING
 .fi
 .PP
-If the encoding file had no commands, and you gave no
-.B --ligkern
-options, 
-.B otftotfm
-adds eight default ligatures:
+The
+.B \-\-unicoding
+and
+.B \-\-ligkern
+command line arguments let you add virtual UNICODING and LIGKERN comments
+to an encoding.
+.PP
+.B Otftotfm
+has a default set of eight ligatures, namely:
 .nf
     space l =: lslash ; space L =: Lslash ;
     question quoteleft =: questiondown ; exclam quoteleft =: exclamdown ;
@@ -881,6 +865,22 @@ adds eight default ligatures:
     quoteleft quoteleft =: quotedblleft ; 
     quoteright quoteright =: quotedblright
 .fi
+LIGKERN commands in the encoding file and/or
+.B \-\-ligkern
+options normally inhibit the defaults.
+.PP
+Some common encoding files have commands that are generally inappropriate
+for OpenType fonts.  For example, "t1.enc" hard-codes its "f" ligatures,
+which can cause problems with small-cap fonts.  Supply the
+.B \-\-no\-encoding\-commands
+option to ignore all commands from the encoding file, or the
+.B \-\-default\-ligkern
+option to ignore LIGKERN commands (but apply the default ligatures).
+Explicit
+.B \-\-ligkern
+and
+.B \-\-unicoding
+options are processed in any case.
 '
 .SS New Glyphs
 .PP
@@ -1158,6 +1158,19 @@ features, or by using an encoding with more empty slots, such as the 7t.enc
 encoding distributed with 
 .BR otftotfm .
 '
+.SH "FREQUENTLY ASKED QUESTIONS"
+.TP 5
+How can I get a small-caps "SS" in place of the German sharp-S?
+'
+Supply the option "\fB\-\-unicoding\fR 'germandbls =: SSsmall'".
+'
+.TP 5
+How can I prevent f-ligatures from forming in a small-caps font?  
+'
+This should happen automatically, but some overzealous encoding files add
+f-ligatures even when the font doesn't request them.  Try the
+"\fB\-\-default\-ligkern\fR" option if this is a problem for you.
+'
 .SH "BUGS"
 .LP
 Presumably some context-sensitive positionings and ligatures could be
@@ -1204,6 +1217,10 @@ Sivan Toledo,
 .IR "Exploiting Rich Fonts" ,
 TUGboat 21(2), 2000,
 http://www.tug.org/TUGboat/Articles/tb21-2/tb67tole.pdf
+.LP
+Michel Goossens, Frank Mittelbach, and Alexander Samarin,
+.IR "The LaTeX Companion"
+(for information on the .fd file format).
 '
 .SH AUTHOR
 Eddie Kohler (kohler@icir.org)

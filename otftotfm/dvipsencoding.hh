@@ -29,11 +29,11 @@ class DvipsEncoding { public:
     const Vector<uint32_t> &unicodes() const;
     int encoding_of_unicode(uint32_t) const;
     
-    int parse(String filename, ErrorHandler *);
+    int parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *);
     int parse_ligkern(const String &ligkern_text, ErrorHandler *);
     int parse_unicoding(const String &unicoding_text, ErrorHandler *);
 
-    bool file_had_comments() const		{ return _file_had_comments; }
+    bool file_had_ligkern() const		{ return _file_had_ligkern; }
     
     // also modifies 'this':
     void make_literal_metrics(Metrics &, Efont::Cff::Font *);
@@ -69,7 +69,7 @@ class DvipsEncoding { public:
     String _coding_scheme;
     String _initial_comment;
     String _final_text;
-    bool _file_had_comments;
+    bool _file_had_ligkern;
 
     int parse_ligkern_words(Vector<String> &, ErrorHandler *);
     int parse_unicoding_words(Vector<String> &, ErrorHandler *);

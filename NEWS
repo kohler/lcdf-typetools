@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.3   15.Jun.2004
+
+* otftotfm: Add '--default-ligkern' and '--no-encoding-commands' options,
+  to address problem with "t1.enc" reported by Ulrich Dirr.
+
+* otftotfm documentation updates.
+
+
 Version 2.2   8.May.2004
 
 * otftotfm: 't1dotlessj' errors don't prevent 'psfonts.map' from being

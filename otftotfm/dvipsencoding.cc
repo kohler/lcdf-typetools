@@ -307,6 +307,7 @@ find_ligkern_op(const String &s)
 int
 DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 {
+    _file_had_ligkern = true;
     int op;
     if (v.size() == 3) {
 	if (v[0] == "||" && v[1] == "=") {
@@ -393,7 +394,6 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, ErrorHandler *errh)
 int
 DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(Vector<String> &, ErrorHandler *), ErrorHandler *errh)
 {
-    _file_had_comments = true;
     Vector<String> words;
     const char *data = s.data();
     const char *end = s.end();
@@ -424,14 +424,14 @@ landmark(const String &filename, int line)
 }
 
 int
-DvipsEncoding::parse(String filename, ErrorHandler *errh)
+DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *errh)
 {
     int before = errh->nerrors();
     String s = read_file(filename, errh);
     if (errh->nerrors() != before)
 	return -1;
     _filename = filename;
-    _file_had_comments = false;
+    _file_had_ligkern = false;
     filename = printable_filename(filename);
     int pos = 0, line = 1;
 
@@ -457,32 +457,35 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
     while ((token = comment_tokenize(s, pos, line)))
 	if (token.length() >= 8
 	    && memcmp(token.data(), "LIGKERN", 7) == 0
-	    && isspace(token[7])) {
+	    && isspace(token[7])
+	    && !ignore_ligkern) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(8), &DvipsEncoding::parse_ligkern_words, &lerrh);
 	    
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
-		   && isspace(token[8])) {
+		   && isspace(token[8])
+		   && !ignore_ligkern) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(9), &DvipsEncoding::parse_ligkern_words, &lerrh);
 	    
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
-		   && isspace(token[9])) {
+		   && isspace(token[9])
+		   && !ignore_other) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(10), &DvipsEncoding::parse_unicoding_words, &lerrh);
 	    
 	} else if (token.length() >= 13
 		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
-		   && isspace(token[12])) {
+		   && isspace(token[12])
+		   && !ignore_other) {
 	    int p = 13;
 	    while (p < token.length() && isspace(token[p]))
 		p++;
 	    int pp = token.length() - 1;
 	    while (pp > p && isspace(token[pp]))
 		pp--;
-	    _file_had_comments = true;
 	    _coding_scheme = token.substring(p, pp - p);
 	    if (_coding_scheme.length() > 39)
 		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");

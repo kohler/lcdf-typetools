@@ -79,6 +79,8 @@ using namespace Efont;
 #define INCLUDE_ALTERNATES_OPT	325
 #define EXCLUDE_ALTERNATES_OPT	326
 #define ALTSELECTOR_FEATURE_OPT	327
+#define DEFAULT_LIGKERN_OPT	328
+#define NO_ECOMMAND_OPT		329
 
 #define AUTOMATIC_OPT		331
 #define FONT_NAME_OPT		332
@@ -124,6 +126,8 @@ static Clp_Option options[] = {
     { "minimum-kern", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "kern-precision", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
+    { "no-encoding-commands", 0, NO_ECOMMAND_OPT, 0, Clp_OnlyNegated },
+    { "default-ligkern", 0, DEFAULT_LIGKERN_OPT, 0, 0 },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
     { "coding-scheme", 0, CODINGSCHEME_OPT, Clp_ArgString, 0 },
     { "boundary-char", 0, BOUNDARY_CHAR_OPT, CHAR_OPTTYPE, 0 },
@@ -257,6 +261,8 @@ Encoding options:\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
       --ligkern=COMMAND        Add a LIGKERN command.\n\
       --unicoding=COMMAND      Add a UNICODING command.\n\
+      --no-encoding-commands   Ignore encoding file's LIGKERN/UNICODINGs.\n\
+      --default-ligkern        Ignore encoding file's LIGKERNs, use defaults.\n\
       --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
       --altselector-char=CHAR  Set the alternate selector character to CHAR.\n\
@@ -1347,6 +1353,7 @@ main(int argc, char *argv[])
     bool literal_encoding = false;
     Vector<String> ligkern;
     Vector<String> unicoding;
+    bool no_ecommand = false, default_ligkern = false;
     String codingscheme;
   
     while (1) {
@@ -1422,6 +1429,14 @@ main(int argc, char *argv[])
 
 	  case LIGKERN_OPT:
 	    ligkern.push_back(clp->arg);
+	    break;
+
+	  case NO_ECOMMAND_OPT:
+	    no_ecommand = true;
+	    break;
+
+	  case DEFAULT_LIGKERN_OPT:
+	    default_ligkern = true;
 	    break;
 
 	  case BOUNDARY_CHAR_OPT:
@@ -1648,7 +1663,7 @@ particular purpose.\n");
     DvipsEncoding dvipsenc;
     if (encoding_file) {
 	if (String path = locate_encoding(encoding_file, errh))
-	    dvipsenc.parse(path, errh);
+	    dvipsenc.parse(path, no_ecommand || default_ligkern, no_ecommand, errh);
 	else
 	    errh->fatal("encoding '%s' not found", encoding_file.c_str());
     } else {
@@ -1665,7 +1680,7 @@ particular purpose.\n");
     }
 
     // apply default ligkern commands
-    if (!dvipsenc.file_had_comments() && !ligkern.size())
+    if (default_ligkern || (!dvipsenc.file_had_ligkern() && !ligkern.size() && !no_ecommand))
 	for (const char * const *lk = default_ligkerns; *lk; lk++)
 	    dvipsenc.parse_ligkern(*lk, ErrorHandler::silent_handler());
     
