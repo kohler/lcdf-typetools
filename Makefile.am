@@ -44,7 +44,8 @@ EXTRA_DIST = \
 	include/efont/t1mm.hh \
 	include/efont/t1rw.hh \
 	include/efont/t1unparser.hh \
-	glyphlist.txt
+	glyphlist.txt \
+	7t.enc
 
 srclinks:
 	test $(srcdir) = .

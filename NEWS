@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 0.12   27.Jun.2003
+
+* otftotfm: Better error messages when directories cannot be found.
+  Reported by Bruce D'Arcus.
+
+
 Version 0.11   26.Jun.2003
 
 * otftotfm: Handles the contextual substitutions necessary for 'cswh'
