@@ -32,7 +32,7 @@ Metrics::Metrics(PermString font_name, PermString full_name, const Metrics &m)
 Metrics::~Metrics()
 {
   assert(_uses == 0);
-  for (int i = 0; i < _xt.count(); i++)
+  for (int i = 1; i < _xt.count(); i++)
     delete _xt[i];
 }
 
@@ -56,7 +56,7 @@ Metrics::reserve_glyphs(int amt)
   _btv.resize(amt, Unkdouble);
   _encoding.reserve_glyphs(amt);
   _pairp.reserve_glyphs(amt);
-  for (int i = 0; i < _xt.count(); i++)
+  for (int i = 1; i < _xt.count(); i++)
     _xt[i]->reserve_glyphs(amt);
 }
 
