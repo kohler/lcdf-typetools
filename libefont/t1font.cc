@@ -154,41 +154,51 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
   while (reader.next_line(accum)) {
     
     // check for NULL STRING
-    int x_length = accum.length();
-    if (!x_length) continue;
+    if (!accum.length()) continue;
     accum.push(0);		// ensure we don't run off the string
-    char *x = accum.value();
+    char *pos = accum.value();
     
-    if (!got_any && strstr(x, "for") != 0) {
+    // check for `0 1 255 {1 index exch /.notdef put} for'
+    if (!got_any && strstr(pos, " for") != 0) {
       accum.clear();
       continue;
     }
     
-    // check for `dup INDEX /CHARNAME put\s*'*
-    while (x[0] == 'd' && x[1] == 'u' && x[2] == 'p' && x[3] == ' ') {
-      int char_value = strtol(x + 4, &x, 10);
-      while (x[0] == ' ') x++;
-      if (char_value >= 0 && char_value < 256 && x[0] == '/') {
-	x++;
-	char *name_start = x;
-	while (x[0] != ' ' && x[0]) x++;
-	if (x[0] == ' ' && x[1] == 'p' && x[2] == 'u' && x[3] == 't') {
-	  _encoding->put(char_value, PermString(name_start, x - name_start));
-	  accum.clear();
-	  got_any = true;
-	  x += 4;
-	  while (isspace(x[0])) x++;
-	}
-      }
+    // parse as many `dup INDEX */CHARNAME put' as there are in the line
+    while (pos[0] == 'd' && pos[1] == 'u' && pos[2] == 'p' && pos[3] == ' ') {
+      // look for `INDEX */'
+      char *scan;
+      int char_value = strtol(pos + 4, &scan, 10);
+      while (scan[0] == ' ') scan++;
+      if (char_value < 0 || char_value >= 256 || scan[0] != '/')
+	break;
+
+      // look for `CHARNAME put'
+      scan++;
+      char *name_pos = scan;
+      while (scan[0] != ' ' && scan[0]) scan++;
+      if (scan[0] != ' ' || scan[1] != 'p' || scan[2] != 'u' || scan[3] != 't')
+	break;
+      
+      _encoding->put(char_value, PermString(name_pos, scan - name_pos));
+      got_any = true;
+      pos = scan + 4;
+      while (isspace(pos[0])) pos++;
     }
     
-    // add COPY ITEM, check for end of encoding section
-    if (got_any) {
-      x = accum.take();
-      _items.append(new Type1CopyItem(x, x_length));
+    // add COPY ITEM if necessary for leftovers we didn't parse
+    if (got_any && *pos) {
+      int len = strlen(pos);
+      char *copy = new char[len + 1];
+      strcpy(copy, pos);
+      _items.append(new Type1CopyItem(copy, len));
     }
-    if (strstr(x, "readonly") != 0 || strstr(x, "def") != 0)
+    
+    // check for end of encoding section
+    if (strstr(pos, "readonly") != 0 || strstr(pos, "def") != 0)
       return;
+    
+    accum.clear();
   }
 }
 
