@@ -106,7 +106,7 @@ template <class K, class V>
 class _HashMap_iterator : public _HashMap_const_iterator<K, V> { public:
     typedef _HashMap_iterator iterator;
     
-    V &value() const			{ return _hm->_e[_pos].value; }
+    V &value() const		{ return this->_hm->_e[this->_pos].value; }
 
   private:
     _HashMap_iterator(const HashMap<K, V> *hm, int pos) : _HashMap_const_iterator<K, V>(hm, pos) { }
