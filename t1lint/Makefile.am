@@ -1,15 +1,17 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-bin_PROGRAMS = mmafm
-man_MANS = mmafm.1
+bin_PROGRAMS = t1lint
+man_MANS = 
 
-mmafm_SOURCES = vectori.cc \
+t1lint_SOURCES = cscheck.hh cscheck.cc \
 	hashmapi.cc \
-	main.cc
+	main.cc \
+	point.hh point.cc \
+	vectori.cc
 
-mmafm_LDADD = ../metricslib/libmetrics.a ../t1lib/libt1lib.a ../edlib/libedlib.a
+t1lint_LDADD = ../t1lib/libt1lib.a ../edlib/libedlib.a
 
-INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib -I$(top_srcdir)/metricslib
+INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib
 
-EXTRA_DIST = mmafm.1
+EXTRA_DIST = t1lint.1

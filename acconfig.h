@@ -16,6 +16,10 @@
    intermediate master conversion program. */
 #define MMAFM_RUN_MMPFB 1
 
+/* Define to 1 since we have PermStrings and Strings. */
+#define HAVE_PERMSTRING 1
+#define HAVE_STRING 1
+
 @TOP@
 @BOTTOM@
 
