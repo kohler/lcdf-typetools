@@ -42,7 +42,7 @@ dnl
 
 AC_LANG_C
 FIXLIBC_O=''
-AC_CHECK_FUNC(strerror, AC_DEFINE(HAVE_STRERROR), FIXLIBC_O='fixlibc.o')
+AC_CHECK_FUNCS(strerror, :, FIXLIBC_O='fixlibc.o')
 
 AC_CACHE_CHECK(whether strtod works, ac_cv_working_strtod,
 [AC_TRY_RUN([#include <stdio.h>
