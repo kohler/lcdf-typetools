@@ -87,9 +87,19 @@ ErrorHandler::verror(Seriousness seriousness, const String &where,
 		     const char *s, va_list val)
 {
   StringAccum msg;
-
-  if (where) msg << where;
-  if (seriousness == Warning) msg << "warning: ";
+  
+  if (where) {
+    msg << where;
+    char c = where.data()[ where.length() - 1 ];
+    if (c != ' ' && c != '\t') msg << ": ";
+  }
+  
+  if (seriousness == Warning) {
+    // skip spaces before adding "warning: "
+    while (*s == ' ' || *s == '\t')
+      msg << *s++;
+    msg << "warning: ";
+  }
   
   while (1) {
     
@@ -216,13 +226,7 @@ int
 PinnedErrorHandler::verror(Seriousness seriousness, const String &where,
 			   const char *format, va_list val)
 {
-  bool where_dead = true;
-  const char *c = where.data();
-  for (int i = 0; i < where.length() && where_dead; i++, c++)
-    if (*c != ' ' && *c != '\t')
-      where_dead = false;
-  
-  if (where_dead)
+  if (!where)
     return _errh->verror(seriousness, _null_context + where, format, val);
   else
     return _errh->verror(seriousness, where, format, val);
@@ -254,7 +258,8 @@ ContextErrorHandler::verror(Seriousness seriousness, const String &where,
     _errh->message("%s", _context.cc());
     _context = String();
   }
-  return _errh->verror(seriousness, _indent + where, format, val);
+  String new_format = _indent + format;
+  return _errh->verror(seriousness, where, new_format.cc(), val);
 }
 
 void
