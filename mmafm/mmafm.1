@@ -104,13 +104,6 @@ Send output to
 instead of standard output.
 '
 .TP
-.OY \-\-precision N \-p N
-Round output numbers so they have at most
-.I N
-digits after the decimal point. Thus, `\fB\-p \fR0' rounds all numbers to
-integers. Default is 3.
-'
-.TP
 .OY \-\-weight N \-w N
 Set the weight axis to 
 .IR N .
@@ -133,6 +126,13 @@ Set the style axis to
 \fB\-\-1\fR=\fIN\fR (\fB\-\-2\fR=\fIN\fR, \fB\-\-3\fR=\fIN\fR, \fB\-\-4\fR=\fIN\fR)
 Set the first (second, third, fourth) axis to
 .IR N .
+'
+.TP
+.OY \-\-precision N \-p N
+Round output numbers so they have at most
+.I N
+digits after the decimal point. Thus, `\fB\-p \fR0' rounds all numbers to
+integers. The default precision is 3.
 '
 .SH SEE ALSO
 .BR mmpfb (1)

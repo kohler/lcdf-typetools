@@ -64,16 +64,16 @@ AfmWriter::write_prologue() const
     fprintf(_f, "Weight %s\n", _m->weight().cc());
   
   if (KNOWN(fd( fdItalicAngle )))
-    fprintf(_f, "ItalicAngle %g\n", fd( fdItalicAngle ));
+    fprintf(_f, "ItalicAngle %.8g\n", fd( fdItalicAngle ));
   
-  fprintf(_f, "FontBBox %g %g %g %g\n",
+  fprintf(_f, "FontBBox %.8g %.8g %.8g %.8g\n",
 	  fd( fdFontBBllx ), fd( fdFontBBlly ),
 	  fd( fdFontBBurx ), fd( fdFontBBury ));
   
   if (KNOWN(fd( fdUnderlinePosition )))
-    fprintf(_f, "UnderlinePosition %g\n", fd( fdUnderlinePosition ));
+    fprintf(_f, "UnderlinePosition %.8g\n", fd( fdUnderlinePosition ));
   if (KNOWN(fd( fdUnderlineThickness )))
-    fprintf(_f, "UnderlineThickness %g\n", fd( fdUnderlineThickness ));
+    fprintf(_f, "UnderlineThickness %.8g\n", fd( fdUnderlineThickness ));
   
   if (_m->version())
     fprintf(_f, "Version %s\n", _m->version().cc());
@@ -84,17 +84,17 @@ AfmWriter::write_prologue() const
     fprintf(_f, "EncodingScheme %s\n", _afm_xt->encoding_scheme.cc());
   
   if (KNOWN(fd( fdCapHeight )))
-    fprintf(_f, "CapHeight %g\n", fd( fdCapHeight ));
+    fprintf(_f, "CapHeight %.8g\n", fd( fdCapHeight ));
   if (KNOWN(fd( fdXHeight )))
-    fprintf(_f, "XHeight %g\n", fd( fdXHeight ));
+    fprintf(_f, "XHeight %.8g\n", fd( fdXHeight ));
   if (KNOWN(fd( fdAscender )))
-    fprintf(_f, "Ascender %g\n", fd( fdAscender ));
+    fprintf(_f, "Ascender %.8g\n", fd( fdAscender ));
   if (KNOWN(fd( fdDescender )))
-    fprintf(_f, "Descender %g\n", fd( fdDescender ));
+    fprintf(_f, "Descender %.8g\n", fd( fdDescender ));
   if (KNOWN(fd( fdStdHW )))
-    fprintf(_f, "StdHW %g\n", fd( fdStdHW ));
+    fprintf(_f, "StdHW %.8g\n", fd( fdStdHW ));
   if (KNOWN(fd( fdStdVW )))
-    fprintf(_f, "StdVW %g\n", fd( fdStdVW ));
+    fprintf(_f, "StdVW %.8g\n", fd( fdStdVW ));
 }
 
 
@@ -108,14 +108,14 @@ AfmWriter::write_char_metric_data(GlyphIndex gi, int e) const
   
   double w = _m->wd(gi);
   if (KNOWN(w))
-    fprintf(_f, " WX %g ;", w);
+    fprintf(_f, " WX %.8g ;", w);
   else
     w = 0;
   
   fprintf(_f, " N %s ;", _m->name(gi).cc());
   
   if (KNOWN(_m->lf(gi)))
-    fprintf(_f, " B %g %g %g %g ;",
+    fprintf(_f, " B %.8g %.8g %.8g %.8g ;",
 	    _m->lf(gi), _m->bt(gi), _m->rt(gi), _m->tp(gi));
   
   // Run through the ligature/kern program to find ligatures.
@@ -158,7 +158,7 @@ AfmWriter::write_kerns() const
     while (opi >= 0) {
       const PairOp &op = pairp.op(opi);
       if (op.is_kern())
-	fprintf(_f, "KPX %s %s %g\n",
+	fprintf(_f, "KPX %s %s %.8g\n",
 		_m->name( gi ).cc(),
 		_m->name( op.right() ).cc(),
 		_m->kv( op.value() ));
