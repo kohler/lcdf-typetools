@@ -195,6 +195,7 @@ static const char *othersubrs_code = "% Copyright (c) 1987-1990 Adobe Systems In
 "} executeonly\n"
 "] noaccess def";
 
+
 typedef unsigned CsRef;
 enum { CSR_GLYPH = 0x00000000, CSR_SUBR = 0x80000000,
        CSR_GSUBR = 0xC0000000,
@@ -1062,7 +1063,12 @@ create_type1_font(Cff::Font *font)
     add_number_def(output, Type1Font::dFI, "ItalicAngle", font, Cff::oItalicAngle);
     add_number_def(output, Type1Font::dFI, "UnderlinePosition", font, Cff::oUnderlinePosition);
     add_number_def(output, Type1Font::dFI, "UnderlineThickness", font, Cff::oUnderlineThickness);
-    output->add_item(new Type1CopyItem("end readonly def"));
+    if (output->first_dict_item(Type1Font::dFI) >= 0)
+	output->add_item(new Type1CopyItem("end readonly def"));
+    else {
+	int i = output->nitems() - 1;
+	output->set_item(i, new Type1CopyItem("% no FontInfo dict"));
+    }
     
     // Encoding
     output->add_item(font->type1_encoding_copy());
@@ -1164,6 +1170,9 @@ mark currentfile closefile"));
 0000000000000000000000000000000000000000000000000000000000000000\n\
 0000000000000000000000000000000000000000000000000000000000000000\n\
 cleartomark"));
+
+    // account for extra Private dict items: OtherSubrs, Subrs, CharStrings
+    output->add_dict_size(Type1Font::dPrivate, 3);
 
     // add glyphs
     MakeType1CharstringInterp maker(font, 5);
