@@ -167,13 +167,10 @@ getodir(int o, ErrorHandler *errh)
 	    // check type of TDS
 	    if (tds_1_1 < 0) {
 		// using a procedure suggested by Olaf Weber
-		char* encfonts = kpsei_path_expand("$TEXMFMAIN/fonts/enc");
-		if (!encfonts || strcmp(encfonts, "") == 0) {
-		    free((void*) encfonts);
-		    encfonts = kpsei_path_expand("$TEXMFDIST/fonts/enc");
-		}
-		tds_1_1 = (encfonts != 0 && strcmp(encfonts, "") != 0);
-		free((void*) encfonts);
+		String encfonts = kpsei_string(kpsei_path_expand("$TEXMFMAIN/fonts/enc"));
+		if (!encfonts)
+		    encfonts = kpsei_string(kpsei_var_expand("$TEXMFDIST/fonts/enc"));
+		tds_1_1 = (encfonts != String());
 	    }
 	    if (tds_1_1 == 0)
 		suffix = suffix.substring(std::find(suffix.begin() + 1, suffix.end(), '#') + 1, suffix.end());
