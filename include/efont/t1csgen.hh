@@ -4,6 +4,7 @@
 #include <efont/t1interp.hh>
 #include <lcdf/straccum.hh>
 namespace Efont {
+class Type1Font;
 
 class Type1CharstringGen { public:
 
@@ -38,6 +39,63 @@ class Type1CharstringGen { public:
 
     enum State { S_INITIAL, S_GEN };
     State _state;
+    
+};
+
+class Type1CharstringGenInterp : public CharstringInterp { public:
+
+    Type1CharstringGenInterp(int precision);
+    void set_hint_replacement_storage(Type1Font *);
+    
+    int nhints() const			{ return _stem_info.size() >> 1; }
+    double max_flex_height() const	{ return _max_flex_height; }
+    bool bad_flex() const		{ return _bad_flex; }
+
+    const Type1CharstringGen &csgen() const	{ return _csgen; }
+    
+    void act_sidebearing(int, const Point &);
+    void act_width(int, const Point &);
+    void act_seac(int, double, double, double, int, int);
+
+    void act_hstem(int, double, double);
+    void act_vstem(int, double, double);
+    void act_hintmask(int, const unsigned char *, int);
+
+    void act_line(int, const Point &, const Point &);
+    void act_curve(int, const Point &, const Point &, const Point &, const Point &);
+    void act_closepath(int);
+    void act_flex(int, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, double);
+
+    void run(const CharstringContext &g, Type1Charstring &out);
+    
+  private:
+
+    // output
+    Type1CharstringGen _csgen;
+
+    // current glyph
+    Point _sidebearing;
+    Point _width;
+    enum State { S_INITIAL, S_OPEN, S_CLOSED, S_SEAC };
+    State _state;
+
+    // hints and hint replacement
+    Vector<double> _stem_info;
+    int _nhstem;
+
+    bool _in_hr;
+    int _hr_firstsubr;
+    Type1Font *_hr_storage;
+    Type1CharstringGen _hr_csgen;
+
+    // Flex
+    double _max_flex_height;
+    bool _bad_flex;
+
+    inline void gen_number(double, int = 0);
+    inline void gen_command(int);
+    void gen_sbw(bool hints_follow);
+    void gen_hintmask(Type1CharstringGen &, const unsigned char *, int) const;
     
 };
 
