@@ -116,39 +116,12 @@ CharstringChecker::rrcurveto(double, double, double, double, double, double)
 }
 
 
-static char *error_strings[] = {
-  "no error",
-  "charstring internal error in `%s'",
-  "charstring commands past end",
-  "charstring command `%s' unimplemented",
-  "charstring stack overflow",
-  "charstring stack underflow in `%s'",
-  "charstring bad vector operation in `%s'",
-  "charstring bad value in `%s'",
-  "charstring bad subroutine number %d",
-  "charstring bad glyph `\\%03o'",
-  "charstring no current point in `%s'",
-  "charstring flex error",
-  "charstring multiple master error in `%s'",
-  "charstring open stroke",
-  "charstring late sidebearing command `%s'",
-  "charstring bad other subroutine %d",
-  "charstring ordering error at `%s'",
-  "charstring hintmask error"
-};
-
 bool
 CharstringChecker::error(int which, int data)
 {
-  int nerror_messages = sizeof(error_strings) / sizeof(*error_strings);
-  if (which > 0 && which < nerror_messages) {
-    const char *error = error_strings[which];
-    if (strstr(error, "%s") != 0)
-      _errh->error(error, CS::command_name(data).cc());
-    else
-      _errh->error(error, data);
-  }
-  return false;
+    CharstringInterp::error(which, data);
+    _errh->error("%s", error_string().cc());
+    return false;
 }
 
 bool
