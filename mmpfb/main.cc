@@ -110,6 +110,22 @@ Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
 }
 
 
+static void
+set_design(PermString a, double v)
+{
+  ax_names.push_back(a);
+  ax_nums.push_back(-1);
+  values.push_back(v);
+}
+
+static void
+set_design(int a, double v)
+{
+  ax_names.push_back(0);
+  ax_nums.push_back(a);
+  values.push_back(v);
+}
+
 void
 do_file(const char *filename, PsresDatabase *psres)
 {
@@ -121,7 +137,19 @@ do_file(const char *filename, PsresDatabase *psres)
     f = fopen(filename, "rb");
   
   if (!f) {
+    // check for PostScript or instance name
     Filename fn = psres->filename_value("FontOutline", filename);
+    char *underscore = strchr(filename, '_');
+    if (!fn && underscore) {
+      fn = psres->filename_value
+	("FontOutline", PermString(filename, underscore - filename));
+      int i = 0;
+      while (underscore[0] == '_' && underscore[1]) {
+	double x = strtod(underscore + 1, &underscore);
+	set_design(i, x);
+	i++;
+      }
+    }
     f = fn.open_read();
   }
   
@@ -144,22 +172,6 @@ do_file(const char *filename, PsresDatabase *psres)
   mmspace = font->create_mmspace(errh);
   if (!mmspace)
     errh->fatal("%s: not a multiple master font", filename);
-}
-
-static void
-set_design(PermString a, double v)
-{
-  ax_names.push_back(a);
-  ax_nums.push_back(-1);
-  values.push_back(v);
-}
-
-static void
-set_design(int a, double v)
-{
-  ax_names.push_back(0);
-  ax_nums.push_back(a);
-  values.push_back(v);
 }
 
 
@@ -253,7 +265,7 @@ main(int argc, char **argv)
      case PFB_OPT:
       write_pfb = true;
       break;
-
+      
      case QUIET_OPT:
       if (clp->negated)
 	errh = new ErrorHandler;

@@ -68,6 +68,15 @@ set_design(int a, double v)
   values.push_back(v);
 }
 
+static void
+set_amfm(AmfmMetrics *a)
+{
+  if (a) {
+    if (amfm) errh.fatal("already read one AMFM file");
+    amfm = a;
+  }
+}
+
 
 static void
 read_file(char *fn, MetricsFinder *finder)
@@ -85,14 +94,29 @@ read_file(char *fn, MetricsFinder *finder)
   int save_errno = errno;
   
   if (!file) {
+    // look for a font by name
     AmfmMetrics *new_amfm = finder->find_amfm(fn, &errh);
     if (new_amfm) {
-      if (amfm) errh.fatal("already read one AMFM file");
-      amfm = new_amfm;
-    } else if (finder->find_metrics(fn, &errh))
-      /* nada */;
-    else
+      set_amfm(new_amfm);
+      return;
+    }
+    if (finder->find_metrics(fn, &errh))
+      return;
+    
+    // check for instance name. don't use InstanceMetricsFinder.
+    char *underscore = strchr(fn, '_');
+    if (underscore)
+      new_amfm = finder->find_amfm(PermString(fn, underscore - fn), &errh);
+    if (!new_amfm)
       errh.fatal("%s: %s", fn, strerror(save_errno));
+    set_amfm(new_amfm);
+    
+    int i = 0;
+    while (underscore[0] == '_' && underscore[1]) {
+      double x = strtod(underscore + 1, &underscore);
+      set_design(i, x);
+      i++;
+    }
     return;
   }
   
@@ -107,10 +131,8 @@ read_file(char *fn, MetricsFinder *finder)
   if (is_afm) {
     Metrics *afm = AfmReader::read(slurper, &errh);
     if (afm) finder->record(afm);
-  } else {
-    if (amfm) errh.fatal("already read one AMFM file");
-    amfm = AmfmReader::read(slurper, finder, &errh);
-  }
+  } else
+    set_amfm(AmfmReader::read(slurper, finder, &errh));
 }
 
 
@@ -230,7 +252,6 @@ particular purpose.\n");
       break;
       
      case Clp_Done:
-      if (!amfm) usage_error("missing font argument");
       goto done;
       
      case Clp_BadOption:
@@ -241,7 +262,7 @@ particular purpose.\n");
   }
   
  done:
-  if (!amfm) exit(1);
+  if (!amfm) usage_error("missing font argument");
   
   Type1MMSpace *mmspace = amfm->mmspace();
 #if MMAFM_RUN_MMPFB
