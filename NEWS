@@ -4,6 +4,8 @@ Version 1.50b3
 
 * cfftot1: Emit UniqueID as an integer. Reported by Tom Kacvinsky.
 
+* otftotfm: '--without-kpathsea' fix. Patch provided by Adam Lindsay.
+
 
 Version 1.50b2   24.Aug.2003
 
