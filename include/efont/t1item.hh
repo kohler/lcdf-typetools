@@ -90,15 +90,17 @@ class Type1Definition : public Type1Item { public:
     bool value_bool(bool &) const;
     bool value_int(int &) const;
     bool value_num(double &) const;
+    bool value_string(String &) const;
     bool value_name(PermString &) const;
     bool value_numvec(NumVector &) const;
     bool value_numvec_vec(Vector<NumVector> &) const;
     bool value_normalize(Vector<NumVector> &in, Vector<NumVector> &out) const;
     bool value_namevec(Vector<PermString> &) const;
-  
+    
     void set_bool(bool);
     void set_int(int);
     void set_num(double);
+    void set_string(const String &);
     void set_name(PermString, bool name = true);
     void set_code(const char *s)	{ set_val(s); }
     void set_numvec(const NumVector &, bool executable = false);
@@ -128,6 +130,7 @@ class Type1Definition : public Type1Item { public:
 class Type1Encoding : public Type1Item { public:
 
     Type1Encoding();
+    Type1Encoding(const Type1Encoding &);
     ~Type1Encoding();
   
     PermString operator[](int e) const	{ assert(e>=0&&e<256); return _v[e]; }
@@ -159,7 +162,7 @@ class Type1Subr : public Type1Item { public:
     PermString name() const		{ return _name; }
     int subrno() const			{ return _subrno; }
     PermString definer() const		{ return _definer; }
-  
+
     Type1Charstring &t1cs()		{ return _cs; }
     const Type1Charstring &t1cs() const	{ return _cs; }
     operator Type1Charstring &()	{ return _cs; }

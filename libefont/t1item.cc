@@ -63,22 +63,9 @@ Type1Definition::Type1Definition(PermString n, const String &v, PermString d)
 Type1Definition *
 Type1Definition::make_string(PermString n, const String &v, PermString d)
 {
-    const char *s = v.data();
-    int len = v.length();
-    int left = 0;
-    StringAccum sa;
-    sa << '(';
-    for (int pos = 0; pos < len; pos++)
-	if ((s[pos] < ' ' && !isspace(s[pos])) || ((unsigned char)s[pos]) > 0176 || s[pos] == '(' || s[pos] == ')' || s[pos] == '\\') {
-	    sa << v.substring(left, pos - left) << '\\';
-	    if (s[pos] == '(' || s[pos] == ')' || s[pos] == '\\')
-		sa << s[pos];
-	    else
-		sprintf(sa.reserve(8), "%03o", (unsigned char) (s[pos]));
-	    left = pos + 1;
-	}
-    sa << v.substring(left) << ')';
-    return new Type1Definition(n, sa.take_string(), d);
+    Type1Definition *t1d = new Type1Definition(n, "", d);
+    t1d->set_string(v);
+    return t1d;
 }
 
 int
@@ -250,6 +237,66 @@ Type1Definition::value_num(double &d) const
 }
 
 bool
+Type1Definition::value_string(String &str) const
+{
+    if (_val.length() == 0 || _val[0] != '(' || _val.back() != ')')
+	return false;
+    StringAccum sa;
+    int pos, first_pos = 1, len = _val.length() - 1;
+    for (pos = 1; pos < len; pos++)
+	if (_val[pos] == '\\') {
+	    sa.append(_val.data() + first_pos, pos - first_pos);
+	    pos++;
+	    switch (pos < len ? _val[pos] : -1) {
+	      case '\r':
+		pos++;
+		if (pos < len && _val[pos] == '\n')
+		    pos++;
+		break;
+	      case '\n':
+		pos++;
+		break;
+	      case '0': case '1': case '2': case '3':
+	      case '4': case '5': case '6': case '7': {
+		  int c = _val[pos++] - '0';
+		  for (int i = 1; pos < len && i < 3 && _val[pos] >= '0' && _val[pos] <= '7'; i++, pos++)
+		      c = (c << 3) | (_val[pos] - '0');
+		  sa.append((char) c);
+		  break;
+	      }
+	      case 'n':
+		sa << '\n';
+		pos++;
+		break;
+	      case 'r':
+		sa << '\r';
+		pos++;
+		break;
+	      case 't':
+		sa << '\t';
+		pos++;
+		break;
+	      case 'b':
+		sa << '\b';
+		pos++;
+		break;
+	      case 'f':
+		sa << '\f';
+		pos++;
+		break;
+	      default:
+		sa << _val[pos];
+		pos++;
+		break;
+	    }
+	    first_pos = pos;
+	}
+    sa.append(_val.data() + first_pos, len - first_pos);
+    str = sa.take_string();
+    return true;
+}
+
+bool
 Type1Definition::value_name(PermString &str) const
 {
     if (_val.length() == 0 || _val[0] != '/')
@@ -365,7 +412,7 @@ Type1Definition::value_namevec(Vector<PermString> &v) const
 	    s++;
 	if (isalnum(*s)) {
 	    const char *start = s;
-	    while (!isspace(*s) && *s != ']' && *s != '/')
+	    while (*s && !isspace(*s) && *s != ']' && *s != '/')
 		s++;
 	    v.push_back(PermString(start, s - start));
 	} else
@@ -390,6 +437,27 @@ void
 Type1Definition::set_num(double n)
 {
     set_val(String(n));
+}
+
+void
+Type1Definition::set_string(const String &v)
+{
+    const char *s = v.data();
+    int len = v.length();
+    int left = 0;
+    StringAccum sa;
+    sa << '(';
+    for (int pos = 0; pos < len; pos++)
+	if ((s[pos] < ' ' && !isspace(s[pos])) || ((unsigned char)s[pos]) > 0176 || s[pos] == '(' || s[pos] == ')' || s[pos] == '\\') {
+	    sa << v.substring(left, pos - left) << '\\';
+	    if (s[pos] == '(' || s[pos] == ')' || s[pos] == '\\')
+		sa << s[pos];
+	    else
+		sprintf(sa.reserve(8), "%03o", (unsigned char) (s[pos]));
+	    left = pos + 1;
+	}
+    sa << v.substring(left) << ')';
+    _val = sa.take_string();
 }
 
 void
@@ -520,6 +588,20 @@ Type1Encoding::Type1Encoding()
 {
     for (int i = 0; i < 256; i++)
 	_v[i] = dot_notdef;
+}
+
+Type1Encoding::Type1Encoding(const Type1Encoding &o)
+    : Type1Item()
+{
+    if (o._copy_of) {
+	_v = o._v;
+	_copy_of = o._copy_of;
+    } else {
+	_v = new PermString[256];
+	_copy_of = 0;
+	for (int i = 0; i < 256; i++)
+	    _v[i] = o._v[i];
+    }
 }
 
 Type1Encoding::Type1Encoding(Type1Encoding *copy_of)
