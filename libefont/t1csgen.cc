@@ -153,3 +153,12 @@ Type1CharstringGen::output(Type1Charstring &cs)
 {
     cs.assign(_ncs.take_string());
 }
+
+void
+Type1CharstringGen::assign_substring_callsubr(Type1Charstring &cs, int pos, int len, int subr)
+{
+    Type1CharstringGen csg;
+    csg.gen_number(subr);
+    csg.gen_command(Charstring::cCallsubr);
+    cs.assign_substring(pos, len, csg._ncs.take_string());
+}
