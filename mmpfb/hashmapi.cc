@@ -1,5 +1,6 @@
 #ifdef __GNUG__
 #pragma implementation "hashmap.hh"
+#pragma implementation "hashmap.cc"
 #endif
 #include "hashmap.cc"
 // Instantiations.
