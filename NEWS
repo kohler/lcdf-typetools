@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 1.75   3.Dec.2003
+
+* cfftot1: Handle the case when 'hintmask' is the first operator in a Type 2
+  charstring. Reported by Tom Kacvinsky.
+
+
 Version 1.70   1.Dec.2003
 
 * otftotfm: Add --min-kern option requested by Ulrich Dirr.
