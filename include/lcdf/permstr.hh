@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdarg>
+#include <lcdf/inttypes.h>
 
 class PermString { struct Doodad; public:
   
