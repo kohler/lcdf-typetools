@@ -51,7 +51,7 @@ static const char * const error_formats[] = {
     "charstring flex error",			// errFlex
     "charstring multiple master error in '%C'",	// errMultipleMaster
     "charstring open stroke",			// errOpenStroke
-    "charstring late sidebearing command `%C'",	// errLateSidebearing
+    "charstring late sidebearing command '%C'",	// errLateSidebearing
     "charstring bad othersubr number %d",	// errOthersubr
     "charstring ordering constraints violated at '%C'",	// errOrdering
     "charstring inappropriate hintmask",	// errHintmask
