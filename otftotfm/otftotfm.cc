@@ -513,7 +513,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     double du = (design_units == 1000 ? 1. : design_units / 1000.);
     
     double val;
-    (void) family_cff->dict_value(Efont::Cff::oItalicAngle, 0, &val);
+    (void) family_cff->dict_value(Efont::Cff::oItalicAngle, &val);
     double actual_slant = -tan(val * M_PI / 180.0) + slant;
     if (actual_slant)
 	fprintf(f, "   (SLANT R %g)\n", actual_slant);
@@ -524,7 +524,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	// advance space width by letterspacing, scale by space_factor
 	double space_width = (width + letterspace) * space_factor;
 	fprint_real(f, "   (SPACE", space_width, du);
-	if (family_cff->dict_value(Efont::Cff::oIsFixedPitch, 0, &val) && val) {
+	if (family_cff->dict_value(Efont::Cff::oIsFixedPitch, &val) && val) {
 	    // fixed-pitch: no space stretch or shrink
 	    fprint_real(f, "   (STRETCH", 0, du);
 	    fprint_real(f, "   (SHRINK", 0, du);

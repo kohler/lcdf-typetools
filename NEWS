@@ -1,9 +1,13 @@
 LCDF Typetools NEWS
 
-Version 2.21
+Version 2.21   16.Feb.2005
 
 * otftotfm: Base fonts include no kerns or ligatures.  Requested by Michael
   Zedler.
+
+* cfftot1: Correctly handle default values for CFF fonts, so that, for
+  example, isFixedPitch is defined to false even when the font doesn't
+  mention it.  Requested by Huver.
 
 
 Version 2.20   9.Feb.2005

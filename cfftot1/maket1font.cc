@@ -436,7 +436,7 @@ static void
 add_number_def(Type1Font *output, int dict, PermString name, const Cff::Font *font, Cff::DictOperator op)
 {
     double v;
-    if (font->dict_value(op, 0, &v))
+    if (font->dict_value(op, &v))
 	output->add_definition(dict, Type1Definition::make(name, v, "def"));
 }
 
@@ -477,7 +477,7 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     if (String s = font->dict_string(Cff::oWeight))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_string("Weight", s, "readonly def"));
     double v;
-    if (font->dict_value(Cff::oIsFixedPitch, 0, &v))
+    if (font->dict_value(Cff::oIsFixedPitch, &v))
 	output->add_definition(Type1Font::dFI, Type1Definition::make_literal("isFixedPitch", (v ? "true" : "false"), "def"));
     add_number_def(output, Type1Font::dFI, "ItalicAngle", font, Cff::oItalicAngle);
     add_number_def(output, Type1Font::dFI, "UnderlinePosition", font, Cff::oUnderlinePosition);
@@ -486,7 +486,7 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     
     // Encoding, other font dictionary entries
     output->add_item(font->type1_encoding_copy());
-    font->dict_value(Cff::oPaintType, 0, &v);
+    font->dict_value(Cff::oPaintType, &v);
     output->add_definition(Type1Font::dF, Type1Definition::make("PaintType", v, "def"));
     output->add_definition(Type1Font::dF, Type1Definition::make("FontType", 1.0, "def"));
     Vector<double> vec;
@@ -518,13 +518,13 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     add_number_def(output, Type1Font::dP, "BlueScale", font, Cff::oBlueScale);
     add_number_def(output, Type1Font::dP, "BlueShift", font, Cff::oBlueShift);
     add_number_def(output, Type1Font::dP, "BlueFuzz", font, Cff::oBlueFuzz);
-    if (font->dict_value(Cff::oStdHW, 0, &v))
+    if (font->dict_value(Cff::oStdHW, &v))
 	output->add_definition(Type1Font::dP, Type1Definition::make_literal("StdHW", String("[") + String(v) + "]", "|-"));
-    if (font->dict_value(Cff::oStdVW, 0, &v))
+    if (font->dict_value(Cff::oStdVW, &v))
 	output->add_definition(Type1Font::dP, Type1Definition::make_literal("StdVW", String("[") + String(v) + "]", "|-"));
     add_delta_def(output, Type1Font::dP, "StemSnapH", font, Cff::oStemSnapH);
     add_delta_def(output, Type1Font::dP, "StemSnapV", font, Cff::oStemSnapV);
-    if (font->dict_value(Cff::oForceBold, 0, &v))
+    if (font->dict_value(Cff::oForceBold, &v))
 	output->add_definition(Type1Font::dP, Type1Definition::make_literal("ForceBold", (v ? "true" : "false"), "def"));
     add_number_def(output, Type1Font::dP, "LanguageGroup", font, Cff::oLanguageGroup);
     add_number_def(output, Type1Font::dP, "ExpansionFactor", font, Cff::oExpansionFactor);
