@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign check-news
 
-SUBDIRS = liblcdf libefont cfftot1 otftoafm t1lint t1testpage
+SUBDIRS = liblcdf libefont cfftot1 otftopl t1lint t1testpage
 
 pkgdata_DATA = glyphlist.txt
 

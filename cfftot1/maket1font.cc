@@ -212,20 +212,18 @@ class MakeType1CharstringInterp : public CharstringInterp { public:
 
     bool type2_command(int, const uint8_t *, int *);
     
-    void char_sidebearing(int, double, double);
-    void char_width(int, double, double);
-    void char_seac(int, double, double, double, int, int);
+    void act_sidebearing(int, const Point &);
+    void act_width(int, const Point &);
+    void act_seac(int, double, double, double, int, int);
 
-    void char_hstem(int, double, double);
-    void char_vstem(int, double, double);
-    void char_hintmask(int, const unsigned char *, int);
+    void act_hstem(int, double, double);
+    void act_vstem(int, double, double);
+    void act_hintmask(int, const unsigned char *, int);
 
-    void char_rmoveto(int, double, double);
-    void char_setcurrentpoint(int, double, double);
-    void char_rlineto(int, double, double);
-    void char_rrcurveto(int, double, double, double, double, double, double);
-    void char_flex(int, double, double, double, double, double, double, double, double, double, double, double, double, double);
-    void char_closepath(int);
+    void act_line(int, const Point &, const Point &);
+    void act_curve(int, const Point &, const Point &, const Point &, const Point &);
+    void act_closepath(int);
+    virtual void act_flex(int, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, const Point &, double);
 
     int nhints() const			{ return _stem_pos.size(); }
     double max_flex_height() const	{ return _max_flex_height; }
@@ -385,7 +383,7 @@ MakeType1CharstringInterp::gen_sbw(bool hints_follow)
 {
     if (!hints_follow && nhints()) {
 	String s = String::fill_string('\377', ((nhints() - 1) >> 3) + 1);
-	char_hintmask(CS::cHintmask, reinterpret_cast<const unsigned char *>(s.data()), nhints());
+	act_hintmask(CS::cHintmask, reinterpret_cast<const unsigned char *>(s.data()), nhints());
     } else if (_sidebearing.y == 0 && _width.y == 0) {
 	gen_number(_sidebearing.x);
 	gen_number(_width.x);
@@ -401,25 +399,25 @@ MakeType1CharstringInterp::gen_sbw(bool hints_follow)
 }
 
 void
-MakeType1CharstringInterp::char_sidebearing(int, double x, double y)
+MakeType1CharstringInterp::act_sidebearing(int, const Point &p)
 {
-    _sidebearing = Point(x, y);
+    _sidebearing = p;
 }
 
 void
-MakeType1CharstringInterp::char_width(int, double x, double y)
+MakeType1CharstringInterp::act_width(int, const Point &p)
 {
-    _width = Point(x, y);
+    _width = p;
 }
 
 void
-MakeType1CharstringInterp::char_seac(int, double, double, double, int, int)
+MakeType1CharstringInterp::act_seac(int, double, double, double, int, int)
 {
     assert(0);
 }
 
 void
-MakeType1CharstringInterp::char_hstem(int, double pos, double width)
+MakeType1CharstringInterp::act_hstem(int, double pos, double width)
 {
     if (_nhstem == _stem_pos.size()) {
 	_stem_pos.push_back(pos);
@@ -429,7 +427,7 @@ MakeType1CharstringInterp::char_hstem(int, double pos, double width)
 }
 
 void
-MakeType1CharstringInterp::char_vstem(int, double pos, double width)
+MakeType1CharstringInterp::act_vstem(int, double pos, double width)
 {
     _stem_pos.push_back(pos);
     _stem_width.push_back(width);
@@ -451,7 +449,7 @@ MakeType1CharstringInterp::gen_hintmask(Type1CharstringGen &csgen, const unsigne
 }
 
 void
-MakeType1CharstringInterp::char_hintmask(int cmd, const unsigned char *data, int nhints)
+MakeType1CharstringInterp::act_hintmask(int cmd, const unsigned char *data, int nhints)
 {
     if (cmd == CS::cCntrmask || nhints > MakeType1CharstringInterp::nhints())
 	return;
@@ -486,83 +484,146 @@ MakeType1CharstringInterp::char_hintmask(int cmd, const unsigned char *data, int
 }
 
 void
-MakeType1CharstringInterp::char_rmoveto(int cmd, double dx, double dy)
+MakeType1CharstringInterp::act_line(int, const Point &a, const Point &b)
 {
     if (_state == S_INITIAL)
 	gen_sbw(false);
-    else if (_state == S_OPEN)
-	char_closepath(cmd);
-    if (dx == 0) {
-	gen_number(dy, 'y');
-	gen_command(CS::cVmoveto);
-    } else if (dy == 0) {
-	gen_number(dx, 'x');
-	gen_command(CS::cHmoveto);
-    } else {
-	gen_number(dx, 'x');
-	gen_number(dy, 'y');
-	gen_command(CS::cRmoveto);
-    }
-}
-
-void
-MakeType1CharstringInterp::char_setcurrentpoint(int, double x, double y)
-{
-    if (_state == S_INITIAL)
-	gen_sbw(false);
-    gen_number(x, 'X');
-    gen_number(y, 'Y');
-    gen_command(CS::cSetcurrentpoint);
-}
-
-void
-MakeType1CharstringInterp::char_rlineto(int, double dx, double dy)
-{
-    if (_state == S_INITIAL)
-	gen_sbw(false);
+    _csgen.gen_moveto(a, _state == S_OPEN);
     _state = S_OPEN;
-    if (dx == 0) {
-	gen_number(dy, 'y');
+    if (a.x == b.x) {
+	gen_number(b.y - a.y, 'y');
 	gen_command(CS::cVlineto);
-    } else if (dy == 0) {
-	gen_number(dx, 'x');
+    } else if (a.y == b.y) {
+	gen_number(b.x - a.x, 'x');
 	gen_command(CS::cHlineto);
     } else {
-	gen_number(dx, 'x');
-	gen_number(dy, 'y');
+	gen_number(b.x - a.x, 'x');
+	gen_number(b.y - a.y, 'y');
 	gen_command(CS::cRlineto);
     }
 }
 
 void
-MakeType1CharstringInterp::char_rrcurveto(int, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3)
+MakeType1CharstringInterp::act_curve(int, const Point &a, const Point &b, const Point &c, const Point &d)
 {
     if (_state == S_INITIAL)
 	gen_sbw(false);
+    _csgen.gen_moveto(a, _state == S_OPEN);
     _state = S_OPEN;
-    if (dy1 == 0 && dx3 == 0) {
-	gen_number(dx1, 'x');
-	gen_number(dx2, 'x');
-	gen_number(dy2, 'y');
-	gen_number(dy3, 'y');
+    if (b.y == a.y && d.x == c.x) {
+	gen_number(b.x - a.x, 'x');
+	gen_number(c.x - b.x, 'x');
+	gen_number(c.y - b.y, 'y');
+	gen_number(d.y - c.y, 'y');
 	gen_command(CS::cHvcurveto);
-    } else if (dx1 == 0 && dy3 == 0) {
-	gen_number(dy1, 'y');
-	gen_number(dx2, 'x');
-	gen_number(dy2, 'y');
-	gen_number(dx3, 'x');
+    } else if (b.x == a.x && d.y == c.y) {
+	gen_number(b.y - a.y, 'y');
+	gen_number(c.x - a.x, 'x');
+	gen_number(c.y - b.y, 'y');
+	gen_number(d.x - c.x, 'x');
 	gen_command(CS::cVhcurveto);
     } else {
-	gen_number(dx1, 'x');
-	gen_number(dy1, 'y');
-	gen_number(dx2, 'x');
-	gen_number(dy2, 'y');
-	gen_number(dx3, 'x');
-	gen_number(dy3, 'y');
+	gen_number(b.x - a.x, 'x');
+	gen_number(b.y - a.y, 'y');
+	gen_number(c.x - b.x, 'x');
+	gen_number(c.y - b.y, 'y');
+	gen_number(d.x - c.x, 'x');
+	gen_number(d.y - c.y, 'y');
 	gen_command(CS::cRrcurveto);
     }
 }
 
+void
+MakeType1CharstringInterp::act_flex(int cmd, const Point &p0, const Point &p1, const Point &p2, const Point &p3_4, const Point &p5, const Point &p6, const Point &p7, double flex_depth)
+{
+    if (_state == S_INITIAL)
+	gen_sbw(false);
+    _csgen.gen_moveto(p0, _state == S_OPEN);
+    _state = S_OPEN;
+
+    // 1. Outer endpoints must have same x (or y) coordinate
+    bool v_ok = (p0.x == p7.x);
+    bool h_ok = (p0.y == p7.y);
+    
+    // 2. Join point and its neighboring controls must be at an extreme
+    if (v_ok && p2.x == p3_4.x && p3_4.x == p5.x) {
+	double distance = fabs(p3_4.x - p0.x);
+	int sign = (p3_4.x < p0.x ? -1 : 1);
+	if (sign * (p1.x - p0.x) < 0 || sign * (p1.x - p0.x) > distance
+	    || sign * (p6.x - p0.x) < 0 || sign * (p6.x - p0.x) > distance)
+	    v_ok = false;
+    } else
+	v_ok = false;
+
+    if (h_ok && p2.y == p3_4.y && p3_4.y == p5.y) {
+	double distance = fabs(p3_4.y - p0.y);
+	int sign = (p3_4.y < p0.y ? -1 : 1);
+	if (sign * (p1.y - p0.y) < 0 || sign * (p1.y - p0.y) > distance
+	    || sign * (p6.y - p0.y) < 0 || sign * (p6.y - p0.y) > distance)
+	    h_ok = false;
+    } else
+	h_ok = false;
+
+    // 3. Flex height <= 20
+    if (v_ok && fabs(p3_4.x - p0.x) > 20)
+	v_ok = false;
+    if (h_ok && fabs(p3_4.y - p0.y) > 20)
+	h_ok = false;
+
+    // generate flex commands
+    if (v_ok || h_ok) {
+	Point p_reference = (h_ok ? Point(p3_4.x, p0.y) : Point(p0.x, p3_4.y));
+
+	_csgen.gen_number(1);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p_reference, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p1, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p2, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p3_4, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p5, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p6, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_moveto(p7, false);
+	_csgen.gen_number(2);
+	_csgen.gen_command(CS::cCallsubr);
+
+	_csgen.gen_number(flex_depth);
+	_csgen.gen_number(p7.x, 'X');
+	_csgen.gen_number(p7.y, 'Y');
+	_csgen.gen_number(0);
+	_csgen.gen_command(CS::cCallsubr);
+
+	double flex_height = fabs(h_ok ? p3_4.y - p0.y : p3_4.x - p0.x);
+	if (flex_height > _max_flex_height)
+	    _max_flex_height = flex_height;
+	
+	fprintf(stderr, "good flex\n");
+    } else {
+	fprintf(stderr, "bad flex\n");
+	act_curve(cmd, p0, p1, p2, p3_4);
+	act_curve(cmd, p3_4, p5, p6, p7);
+    }
+}
+
+#if 0
 void
 MakeType1CharstringInterp::char_flex(int cmd, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3, double dx4, double dy4, double dx5, double dy5, double dx6, double dy6, double flex_depth)
 {
@@ -656,9 +717,10 @@ MakeType1CharstringInterp::char_flex(int cmd, double dx1, double dy1, double dx2
 	char_rrcurveto(cmd, dx4, dy4, dx5, dy5, dx6, dy6);
     }
 }
+#endif
 
 void
-MakeType1CharstringInterp::char_closepath(int)
+MakeType1CharstringInterp::act_closepath(int)
 {
     gen_command(CS::cClosepath);
     _state = S_CLOSED;
@@ -909,6 +971,13 @@ MakeType1CharstringInterp::run(Type1Font *output, PermString glyph_definer)
     for (int i = 0; i < nglyphs; i++) {
 	_cur_subr = _glyphs[i] = new Subr(CSR_GLYPH | i);
 	run(*p->glyph(i), receptacle);
+#if 0
+	PermString n = p->glyph_name(i);
+	if (n == "Qsmall") {
+	    fprintf(stderr, "%s was %s\n", n.c_str(), CharstringUnparser::unparse(*p->glyph(i)).c_str());
+	    fprintf(stderr, "%s == %s\n", n.c_str(), CharstringUnparser::unparse(receptacle).c_str());
+	}
+#endif
 	output->add_glyph(Type1Subr::make_glyph(p->glyph_name(i), receptacle, glyph_definer));
     }
 
