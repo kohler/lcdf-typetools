@@ -1241,8 +1241,10 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // reencode right components of boundary_glyph as boundary_char
     int boundary_char = dvipsenc.boundary_char();
     if (metrics.reencode_right_ligkern(256, boundary_char) > 0
-	&& boundary_char < 0)
-	errh->warning("no boundary character, removed some ligatures and/or kerns\n(You may want to try the --boundary-char option.)");
+	&& boundary_char < 0) {
+	errh->warning("no boundary character, ignoring some ligatures and/or kerns\n");
+	errh->message("(You may want to try the --boundary-char option.)");
+    }
 
     // report unused and underused features if any
     report_underused_features(feature_usage, errh);

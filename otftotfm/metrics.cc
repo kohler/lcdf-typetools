@@ -208,6 +208,7 @@ Metrics::Char::clear()
     delete virtual_char;
     virtual_char = 0;
     pdx = pdy = adx = 0;
+    flags = 0;
 }
 
 void
@@ -919,7 +920,7 @@ Metrics::cut_encoding(int size)
     
     /* Characters above 'size' are not 'good'. */
     Vector<int> good(_encoding.size(), 0);
-    
+
     /* Characters encoded via base_code are 'good', though. */
     for (Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
 	if (ch->base_code >= size)
@@ -928,7 +929,7 @@ Metrics::cut_encoding(int size)
     /* Some fake characters might point beyond 'size'; remove them too. No
        need for a multipass algorithm since virtual chars never point to
        virtual chars. */
-    for (Code c = 0; c < size; c++) {
+    for (Code c = 0; c < _encoding.size(); c++) {
 	if (VirtualChar *vc = _encoding[c].virtual_char) {
 	    int font_number = 0;
 	    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
@@ -938,7 +939,8 @@ Metrics::cut_encoding(int size)
 		} else if (s->op == Setting::FONT)
 		    font_number = s->x;
 	}
-	good[c] = 1;
+	if (c < size)
+	    good[c] = 1;
       bad_virtual_char: ;
     }
     
