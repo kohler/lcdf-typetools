@@ -62,7 +62,7 @@ class Type1Font : public EfontProgram { public:
 	dBlend = 3,		dB = dBlend,
 	dBlendFontInfo = dB+dFI, dBFI = dBlendFontInfo,
 	dBlendPrivate = dB+dP,	dBP = dBlendPrivate,
-	dLast,
+	dLast
     };
   
     Type1Definition *dict(int d, PermString s) const { return _dict[d][s]; }

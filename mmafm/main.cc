@@ -157,7 +157,7 @@ read_file(const char *fn, MetricsFinder *finder)
       return;
     
     // check for instance name. don't use InstanceMetricsFinder.
-    char *underscore = strchr(fn, '_');
+    const char *underscore = strchr(fn, '_');
     if (underscore)
       new_amfm = finder->find_amfm(PermString(fn, underscore - fn), errh);
     if (!new_amfm)
@@ -166,7 +166,7 @@ read_file(const char *fn, MetricsFinder *finder)
     
     int i = 0;
     while (underscore[0] == '_' && underscore[1]) {
-      double x = strtod(underscore + 1, &underscore);
+      double x = strtod(underscore + 1, const_cast<char **>(&underscore));
       set_design(i, x);
       i++;
     }
@@ -190,7 +190,7 @@ read_file(const char *fn, MetricsFinder *finder)
 
 
 static void
-usage_error(char *error_message, ...)
+usage_error(const char *error_message, ...)
 {
   va_list val;
   va_start(val, error_message);

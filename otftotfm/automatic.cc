@@ -108,7 +108,7 @@ manual for more information. The current TEXMF path is\n\
 static String
 get_vendor()
 {
-    return (vendor ? vendor : DEFAULT_VENDOR);
+    return (vendor ? vendor : String(DEFAULT_VENDOR));
 }
 
 bool
@@ -122,7 +122,7 @@ set_vendor(const String &s)
 static String
 get_typeface()
 {
-    return (typeface ? typeface : DEFAULT_TYPEFACE);
+    return (typeface ? typeface : String(DEFAULT_TYPEFACE));
 }
 
 bool
@@ -234,7 +234,7 @@ update_odir(int o, String file, ErrorHandler *errh)
     while (file && file[0] == '/')
 	file = file.substring(1);
     int last_slash = file.find_right('/');
-    String directory = (last_slash >= 0 ? file.substring(0, last_slash) : "");
+    String directory = (last_slash >= 0 ? file.substring(0, last_slash) : String());
     file = file.substring(last_slash >= 0 ? last_slash + 1 : 0);
     if (!file)			// no filename to update
 	return;

@@ -76,8 +76,6 @@ class Metrics { public:
 
     void unparse(const Vector<PermString> *glyph_names = 0) const;
 
-  private:
-
     struct Ligature {
 	Code in2;
 	Code out;
@@ -95,6 +93,15 @@ class Metrics { public:
 	Vector<Setting> setting;
     };
     
+    struct Ligature3 {
+	Code in1;
+	Code in2;
+	Code out;
+	Ligature3(Code in1_, Code in2_, Code out_) : in1(in1_), in2(in2_), out(out_) { }
+    };
+    
+  private:
+
     struct Char {
 	Glyph glyph;
 	Code base_code;
@@ -140,12 +147,6 @@ class Metrics { public:
     inline void new_ligature(Code, Code, Code);
     inline void repoint_ligature(Code, Ligature *, Code);
 
-    struct Ligature3 {
-	Code in1;
-	Code in2;
-	Code out;
-	Ligature3(Code in1_, Code in2_, Code out_) : in1(in1_), in2(in2_), out(out_) { }
-    };
     friend bool operator<(const Ligature3 &, const Ligature3 &);
     void all_ligatures(Vector<Ligature3> &) const;
     void mark_liveness(int size, const Vector<Ligature3> &);

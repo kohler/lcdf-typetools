@@ -74,7 +74,7 @@ static Vector<double> values;
 
 
 void
-usage_error(char *error_message, ...)
+usage_error(const char *error_message, ...)
 {
   va_list val;
   va_start(val, error_message);
@@ -152,13 +152,13 @@ do_file(const char *filename, PsresDatabase *psres)
   if (!f) {
     // check for PostScript or instance name
     Filename fn = psres->filename_value("FontOutline", filename);
-    char *underscore = strchr(filename, '_');
+    const char *underscore = strchr(filename, '_');
     if (!fn && underscore) {
       fn = psres->filename_value
 	("FontOutline", PermString(filename, underscore - filename));
       int i = 0;
       while (underscore[0] == '_' && underscore[1]) {
-	double x = strtod(underscore + 1, &underscore);
+	double x = strtod(underscore + 1, const_cast<char **>(&underscore));
 	set_design(i, x);
 	i++;
       }

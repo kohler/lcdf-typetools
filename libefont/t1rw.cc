@@ -511,7 +511,7 @@ void
 Type1PFAWriter::print0(const unsigned char *c, int l)
 {
     if (eexecing()) {
-	char *hex = "0123456789ABCDEF";
+	const char *hex = "0123456789ABCDEF";
 	for (; l; c++, l--) {
 	    putc(hex[*c / 16], _f);
 	    putc(hex[*c % 16], _f);

@@ -64,7 +64,7 @@ static bool binary = true;
 
 
 void
-usage_error(ErrorHandler *errh, char *error_message, ...)
+usage_error(ErrorHandler *errh, const char *error_message, ...)
 {
     va_list val;
     va_start(val, error_message);
