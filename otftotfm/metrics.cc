@@ -1173,10 +1173,11 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	std::sort(unencoded.begin(), unencoded.end());
 	StringAccum sa;
 	sa.append_fill_lines(unencoded, 68, "", "  ");
-	errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable glyphs:" : "ignoring unencodable glyphs:"));
-	errh->lmessage(" ", "%s(\
+	sa.pop_back();
+	errh->lwarning(" ", (unencoded.size() == 1 ? "not enough room in encoding, ignoring %d character" : "not enough room in encoding, ignoring %d characters"), unencoded.size());
+	errh->lmessage(" ", "(\
 This encoding doesn't have room for all the glyphs used by the\n\
-font, so I've ignored those listed above.)", sa.c_str());
+font, so I've ignored these:\n%s.)", sa.c_str());
     }
 
     /* Reencode changed slots. */
