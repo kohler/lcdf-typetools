@@ -314,7 +314,7 @@ PsresDatabase::add_database(PsresDatabase *db, bool override)
 void
 PsresDatabaseSection::add_section(PsresDatabaseSection *s, bool override)
 {
-    for (HashMap<PermString, int>::iterator i = s->_map.begin(); i; i++) {
+    for (HashMap<PermString, int>::const_iterator i = s->_map.begin(); i; i++) {
 	int value = i.value();
 	if (_map[i.key()] <= 0) {
 	    int my_index = _directories.size();

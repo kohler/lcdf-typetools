@@ -504,7 +504,7 @@ Type1Font::undo_synthetic()
 		oth_glyphs = subr_grp;
 	}
 
-    assert(oth_glyphs);
+    assert(oth_glyphs != 0);
   
     for (int i = nitems() - 1; i >= 0; i--)
 	if (Type1SubrGroupItem *subr_grp = _items[i]->cast_subr_group()) {

@@ -330,7 +330,7 @@ AmfmReader::check_mmspace()
 bool
 AmfmReader::read()
 {
-    assert(_amfm);
+    assert(_amfm != 0);
     _mmspace = _amfm->_mmspace;
   
     AfmParser &l = _l;
