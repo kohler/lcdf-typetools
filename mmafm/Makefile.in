@@ -1,0 +1,63 @@
+PACKAGE		= mminstance
+VERSION		= @VERSION@
+
+.SUFFIXES:
+.SUFFIXES: .cc .c .o
+
+.cc.o:
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+
+SHELL		= /bin/sh
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+VPATH		= @srcdir@/mmafm
+srcdir		= @srcdir@/mmafm
+
+CC		= @CC@ $(PROFILING)
+CCLINKER	= @CC@ $(PROFILING)
+CXX		= @CXX@ $(PROFILING)
+CXXLINKER	= @CC@ $(PROFILING)
+CXXFLAGS	= @CFLAGS@
+CFLAGS		= @CFLAGS@
+CPPFLAGS	= @DEFS@ -I../edlib -I../t1lib -I../metricslib
+PROFILING	= 
+LDFLAGS		= @LDFLAGS@
+
+PROGRAMS	= mmafm
+MY_OBJS		= vectori.o hashmapi.o t1mm.o main.o
+OBJS		= ../edlib/permstr.o ../edlib/landmark.o \
+	../edlib/error.o ../edlib/filename.o ../metricslib/encoding.o \
+	../metricslib/pairop.o ../metricslib/metrics.o ../metricslib/afm.o \
+	../metricslib/afmw.o ../metricslib/amfm.o ../metricslib/fontfind.o \
+	../metricslib/linescan.o ../edlib/clp.o ../t1lib/t1cs.o \
+	../t1lib/t1interp.o $(MY_OBJS)
+
+all: $(PROGRAMS)
+
+mmafm: $(OBJS)
+	$(CXXLINKER) $(CFLAGS) -o mmafm $(OBJS) $(LDFLAGS)
+
+t1mm.o: ../t1lib/t1mm.cc ../t1lib/t1mm.hh
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+
+main.o: main.cc
+	$(CXX) -DVERSION=\"$(VERSION)\" $(CPPFLAGS) $(CXXFLAGS) -c main.cc
+
+#####
+# Cleaning and distribution
+
+clean:
+	rm -f $(PROGRAMS) $(MY_OBJS) core
+mostlyclean: clean
+distclean: mostlyclean
+	rm -f Makefile
+realclean: distclean
+
+dist:
+	mkdir ../$(PACKAGE)-$(VERSION)/mmafm
+	chmod 0777 ../$(PACKAGE)-$(VERSION)/mmafm
+	cp Makefile.in hashmapi.cc vectori.cc main.cc \
+	../$(PACKAGE)-$(VERSION)/mmafm
