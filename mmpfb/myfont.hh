@@ -1,7 +1,7 @@
 #ifndef MYFONT_HH
 #define MYFONT_HH
 #include <efont/t1font.hh>
-class Efont::MultipleMasterSpace;
+namespace Efont { class MultipleMasterSpace; }
 class ErrorHandler;
 
 class MyFont : public Efont::Type1Font { public:
