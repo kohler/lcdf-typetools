@@ -152,8 +152,8 @@ class Type1Encoding : public Type1Item { public:
 class Type1Subr : public Type1Item { public:
 
     static Type1Subr *make(const char *, int, int cs_start, int cs_len, int lenIV);
-    static Type1Subr *make_subr(int, PermString, const Type1Charstring &);
-    static Type1Subr *make_glyph(PermString, PermString, const Type1Charstring &);
+    static Type1Subr *make_subr(int, const Type1Charstring &, PermString);
+    static Type1Subr *make_glyph(PermString, const Type1Charstring &, PermString);
   
     bool is_subr() const		{ return !_name; }
     PermString name() const		{ return _name; }

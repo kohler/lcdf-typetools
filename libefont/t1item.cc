@@ -619,13 +619,13 @@ Type1Subr::make(const char *s_in, int s_len, int cs_pos, int cs_len, int lenIV)
 }
 
 Type1Subr *
-Type1Subr::make_subr(int subrno, PermString definer, const Type1Charstring &cs)
+Type1Subr::make_subr(int subrno, const Type1Charstring &cs, PermString definer)
 {
     return new Type1Subr(PermString(), subrno, definer, cs);
 }
 
 Type1Subr *
-Type1Subr::make_glyph(PermString glyph, PermString definer, const Type1Charstring &cs)
+Type1Subr::make_glyph(PermString glyph, const Type1Charstring &cs, PermString definer)
 {
     return new Type1Subr(glyph, -1, definer, cs);
 }
