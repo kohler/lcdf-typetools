@@ -23,13 +23,17 @@ instance of a multiple-master font.  It reads the multiple master font
 program in PFA or PFB format.  See MMINSTANCE NOTES, below, and the manual
 page 'mmpfb/mmpfb.1' for more information.
 
+   Otfinfo reports information about OpenType fonts, such as the features
+they support and the contents of the 'size' optical size feature.  See the
+manual page 'otfinfo/otfinfo.1' for more information.
+
    Otftotfm creates TeX font metrics and encodings that correspond to a
-PostScript-flavored OpenType font. It will interpret glyph positionings,
-substitutions, and ligatures as far as it is able. You can say which
-OpenType features should be activated. See the manual page
+PostScript-flavored OpenType font.  It will interpret glyph positionings,
+substitutions, and ligatures as far as it is able.  You can say which
+OpenType features should be activated.  See the manual page
 'otftotfm/otftotfm.1' for more information.
 
-   The other program is preliminary and has little or no documentation:
+   The final program is preliminary and has little or no documentation:
 t1testpage creates a PostScript test page for a given font file.
 
    Please write me with problems, patches, and suggestions at the address

@@ -1,8 +1,24 @@
 LCDF Typetools NEWS
 
+Version 1.50b2   24.Aug.2003
+
+* otfinfo: New program, requested by Adam Lindsay.
+
+* otftotfm: The '--query-scripts' and '--query-features' options are no
+  longer supported. Use 'otfinfo -s' and 'otfinfo -f' instead.
+
+* otftotfm: Fix crash reported by Adam Lindsay.
+
+* otftotfm: In automatic mode, after modifying a 'psfonts.map' file, run
+  the script 'TEXMF/dvips/updmap' if present.
+
+* Compilation fixes for Solaris provided by Tom Kacvinsky and Nelson
+  H.F. Beebe.
+
+
 Version 1.50b1   20.Aug.2003
 
-* Integrate mminstance (the mmafm and mmpfb programs), and bump the versoin
+* Integrate mminstance (the mmafm and mmpfb programs), and bump the version
   number to reflect this.
 
 
