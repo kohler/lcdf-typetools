@@ -85,8 +85,8 @@ class Type1Definition : public Type1Item {
   static int slurp_string(StringAccum &, int, Type1Reader *);
   static int slurp_proc(StringAccum &, int, Type1Reader *);
   
-  void set_val(char *);
-  void set_val(StringAccum &);
+  inline void set_val(char *);
+  inline void set_val(StringAccum &);
   void set_val_copy(const char *);
   
  public:

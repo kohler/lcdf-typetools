@@ -62,7 +62,7 @@ class PairProgram {
   Vector<PairOpIndex> _left_map;
   Vector<PairOp> _op;
   
-  const char *print_name(GlyphIndex) const;
+  inline const char *print_name(GlyphIndex) const;
   
   PairProgram &operator=(const PairProgram &)	{ assert(0); return *this; }
   

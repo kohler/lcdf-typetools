@@ -27,10 +27,10 @@ class Type1Reader {
   
   int more_data();
   
-  int eexec(int);
+  inline int eexec(int);
   int ascii_eexec_get();
-  int get_base();
-  int get();
+  inline int get_base();
+  inline int get();
   
   void start_eexec();
   
@@ -122,7 +122,7 @@ class Type1Writer {
   int _lenIV;
   
   void local_flush();
-  unsigned char eexec(int);
+  inline unsigned char eexec(int);
   
   Type1Writer(const Type1Writer &);
   Type1Writer &operator=(const Type1Writer &);

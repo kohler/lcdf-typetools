@@ -40,14 +40,6 @@ Type1Interp::number(double v)
   return true;
 }
 
-inline Vector<double> *
-Type1Interp::weight_vector()
-{
-  if (!_weight_vector && _program)
-    _weight_vector = _program->weight_vector();
-  return _weight_vector;
-}
-
 bool
 Type1Interp::vector_command(int cmd)
 {

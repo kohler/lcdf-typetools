@@ -236,7 +236,7 @@ class Type1OneMMRemover: public Type1Interp {
   bool _in_prefix;
   bool _must_expand;
   
-  void run_subr(Type1Charstring *);
+  inline void run_subr(Type1Charstring *);
   bool itc_command(int command, int on_stack);
 
   bool run(const Type1Charstring &, bool, bool, bool);
@@ -248,9 +248,9 @@ class Type1OneMMRemover: public Type1Interp {
   void init();
   bool command(int);
   
-  bool run_fresh_subr(const Type1Charstring &, bool);
-  bool run_fresh_glyph(const Type1Charstring &);
-  bool rerun_subr(const Type1Charstring &);
+  inline bool run_fresh_subr(const Type1Charstring &, bool);
+  inline bool run_fresh_glyph(const Type1Charstring &);
+  inline bool rerun_subr(const Type1Charstring &);
   
   Type1Charstring *output_prefix();
   void output_main(Type1Charstring &);

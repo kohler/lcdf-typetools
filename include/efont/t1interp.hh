@@ -226,4 +226,12 @@ Type1Interp::get_glyph(PermString n) const
   return _program ? _program->glyph(n) : 0;
 }
 
+inline Vector<double> *
+Type1Interp::weight_vector()
+{
+  if (!_weight_vector && _program)
+    _weight_vector = _program->weight_vector();
+  return _weight_vector;
+}
+
 #endif

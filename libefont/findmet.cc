@@ -10,12 +10,6 @@
 #include <stdlib.h>
 
 
-inline
-MetricsFinder::MetricsFinder()
-  : _next(0), _prev(0)
-{
-}
-
 MetricsFinder::~MetricsFinder()
 {
   if (_next) _next->_prev = _prev;
