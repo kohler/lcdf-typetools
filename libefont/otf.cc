@@ -57,7 +57,7 @@ Font::parse_header(ErrorHandler *errh)
     // ULONG	checksum
     // ULONG	offset
     // ULONG	length
-    uint32_t last_tag = Tag::FIRST_VALID_TAG;
+    uint32_t last_tag = 0U;
     for (int i = 0; i < ntables; i++) {
 	int loc = HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
 	uint32_t tag = ULONG_AT(data + loc);
@@ -149,6 +149,15 @@ Tag::text() const
 		sa << c;
 	}
     return sa.take_string();
+}
+
+String
+Tag::langsys_text(Tag script, Tag langsys)
+{
+    if (!langsys.null())
+	return script.text() + "." + langsys.text();
+    else
+	return script.text();
 }
 
 const uint8_t *
@@ -393,9 +402,10 @@ FeatureList::filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags)
 }
 
 int
-FeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler *errh) const
+FeatureList::lookups(int fid, Vector<int> &results, ErrorHandler *errh, bool clear_results) const
 {
-    results.clear();
+    if (clear_results)
+	results.clear();
     if (_str.length() == 0)
 	return -1;
     if (errh == 0)
@@ -404,20 +414,31 @@ FeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler
     const uint8_t *data = _str.udata();
     int len = _str.length();
     int nfeatures = USHORT_AT(data);
-    for (int i = 0; i < fids.size(); i++) {
-	int fid = fids[i];
-	if (fid < 0 || fid >= nfeatures)
-	    return errh->error("OTF feature ID '%d' out of range", fid);
-	int foff = USHORT_AT(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
-	int lookupCount;
-	if (len < foff + FEATURE_HEADERSIZE
-	    || (lookupCount = USHORT_AT(data + foff + 2),
-		len < foff + FEATURE_HEADERSIZE + lookupCount*LOOKUPLIST_RECSIZE))
-	    return errh->error("OTF LookupList for feature ID '%d' too short", fid);
-	const uint8_t *ldata = data + foff + FEATURE_HEADERSIZE;
-	for (int j = 0; j < lookupCount; j++, ldata += LOOKUPLIST_RECSIZE)
-	    results.push_back(USHORT_AT(ldata));
-    }
+    if (fid < 0 || fid >= nfeatures)
+	return errh->error("OTF feature ID '%d' out of range", fid);
+    int foff = USHORT_AT(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
+    int lookupCount;
+    if (len < foff + FEATURE_HEADERSIZE
+	|| (lookupCount = USHORT_AT(data + foff + 2),
+	    len < foff + FEATURE_HEADERSIZE + lookupCount*LOOKUPLIST_RECSIZE))
+	return errh->error("OTF LookupList for feature ID '%d' too short", fid);
+    const uint8_t *ldata = data + foff + FEATURE_HEADERSIZE;
+    for (int j = 0; j < lookupCount; j++, ldata += LOOKUPLIST_RECSIZE)
+	results.push_back(USHORT_AT(ldata));
+
+    return 0;
+}
+
+int
+FeatureList::lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler *errh) const
+{
+    results.clear();
+    if (_str.length() == 0)
+	return -1;
+
+    for (int i = 0; i < fids.size(); i++)
+	if (lookups(fids[i], results, errh, false) < 0)
+	    return -1;
 
     // sort results and remove duplicates
     std::sort(results.begin(), results.end());

@@ -9,8 +9,6 @@ typedef int Glyph;			// 16-bit integer
 
 class Tag { public:
     
-    enum { FIRST_VALID_TAG = 0x20202020U, LAST_VALID_TAG = 0x7E7E7E7EU };
-
     Tag()				: _tag(0U) { }
     Tag(uint32_t tag)			: _tag(tag) { }
     Tag(const char *);
@@ -20,7 +18,9 @@ class Tag { public:
     bool null() const			{ return _tag == 0; }
     bool valid() const;
     uint32_t value() const		{ return _tag; }
+    
     String text() const;
+    static String langsys_text(Tag script, Tag langsys = Tag());
 
     const uint8_t *table_entry(const uint8_t *table, int n, int entry_size) const;
 
@@ -97,6 +97,7 @@ class FeatureList { public:
 
     Tag feature_tag(int) const;
     void filter_features(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const;
+    int lookups(int fid, Vector<int> &results, ErrorHandler * = 0, bool clear_results = true) const;
     int lookups(const Vector<int> &fids, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(const Vector<int> &required_fids, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
     int lookups(int required_fid, const Vector<int> &fids, const Vector<Tag> &sorted_ftags, Vector<int> &results, ErrorHandler * = 0) const;
@@ -331,6 +332,12 @@ inline bool
 operator<(Tag t1, Tag t2)
 {
     return t1.value() < t2.value();
+}
+
+inline unsigned
+hashcode(Tag t)
+{
+    return t.value();
 }
 
 inline
