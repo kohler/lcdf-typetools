@@ -28,7 +28,7 @@ PermString::Doodad PermString::zero_char_doodad = {
     0, 0, { 0, 0 }
 };
 PermString::Doodad PermString::one_char_doodad[256];
-PermString::Doodad *PermString::buckets[NHASH];
+PermString::Doodad* PermString::buckets[NHASH];
 
 PermString::Initializer::Initializer()
 {
@@ -108,47 +108,11 @@ static int scatter[] = {        /* map characters to random values */
 };
 
 
-PermString::PermString(const char *s)
+void
+PermString::initialize(const char* s, int length)
 {
-    register const unsigned char *m = (const unsigned char *)s;
-    register const unsigned char *mm;
-    int len;
-
-    if (m == 0 || m[0] == 0) {
-	_rep = zero_char_doodad.data;
-	return;
-    } else if (m[1] == 0) {
-	_rep = one_char_doodad[m[0]].data;
-	return;
-    }
-
-    unsigned int hash;
-    for (hash = 0, len = 0, mm = m; *mm; mm++, len++)
-	hash = (hash << 1) + scatter[*mm];
-    hash &= (NHASH - 1);
-
-    Doodad *buck;
-    for (buck = buckets[hash]; buck; buck = buck->next)
-	if (len == buck->length && memcmp(s, buck->data, len) == 0) {
-	    _rep = buck->data;
-	    return;
-	}
-
-    // CANNOT USE new because the structure has variable size.
-    buck = (Doodad *)malloc(sizeof(Doodad) + len - 1);
-    buck->next = buckets[hash];
-    buckets[hash] = buck;
-    buck->length = len;
-    strcpy(buck->data, s);
-
-    _rep = buck->data;
-}
-
-
-PermString::PermString(const char *s, int length)
-{
-    register unsigned char *m = (unsigned char *)s;
-    register unsigned char *mm;
+    register unsigned char* m = (unsigned char*) s;
+    register unsigned char* mm;
 
     if (length < 0)
 	length = (s ? strlen(s) : 0);
@@ -187,7 +151,7 @@ PermString::PermString(const char *s, int length)
 
 PermString::PermString(char c)
 {
-    unsigned char u = (unsigned char)c;
+    unsigned char u = (unsigned char) c;
     _rep = one_char_doodad[u].data;
 }
 
