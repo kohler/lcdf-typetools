@@ -107,8 +107,7 @@ General options:\n\
   -o, --output=FILE            Write output to FILE.\n\
   -p, --precision=N            Set precision to N (larger means more precise).\n\
       --subrs=N                Limit output font to at most N subroutines.\n\
-  -m, --minimize               Replace unusual PostScript in font definition\n\
-                               with well-known code.\n\
+      --no-minimize            Do not replace original font's PostScript code.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
   -v, --version                Print version number and exit.\n\
@@ -245,7 +244,7 @@ main(int argc, char **argv)
   
   bool write_pfb = true;
   bool amcp_info = false;
-  bool minimize = false;
+  bool minimize = true;
   int precision = 5;
   int subr_count = -1;
   FILE *outfile = 0;
@@ -393,7 +392,7 @@ particular purpose.\n");
   if (!font->set_design_vector(mmspace, design, errh))
     exit(1);
 
-  font->interpolate_dicts(errh);
+  font->interpolate_dicts(minimize, errh);
   font->interpolate_charstrings(precision, errh);
 
   if (subr_count >= 0) {
