@@ -18,6 +18,7 @@ String read_file(String filename, ErrorHandler *, bool warn = false);
 String printable_filename(const String &);
 String pathname_filename(const String &);
 String shell_quote(const String &);
+int temporary_file(String &, ErrorHandler *);
 int mysystem(const char *command, ErrorHandler *);
 bool parse_unicode_number(const char*, const char*, int require_prefix, uint32_t& result);
 

@@ -241,6 +241,8 @@ bool no_create = false;
 bool quiet = false;
 bool force = false;
 
+static String otf_data;
+
 
 void
 usage_error(ErrorHandler *errh, const char *error_message, ...)
@@ -918,43 +920,6 @@ output_encoding(const Metrics &metrics,
 	fwrite(contents.data(), 1, contents.length(), stdout);
     else if (write_encoding_file(out_encoding_file, out_encoding_name, contents, errh) == 1)
 	update_odir(O_ENCODING, out_encoding_file, errh);
-}
-
-static int
-temporary_file(String &filename, ErrorHandler *errh)
-{
-    if (no_create)
-	return 0;		// random number suffices
-    
-#ifdef HAVE_MKSTEMP
-    const char *tmpdir = getenv("TMPDIR");
-    if (tmpdir)
-	filename = String(tmpdir) + "/otftotfm.XXXXXX";
-    else {
-# ifdef P_tmpdir
-	filename = P_tmpdir "/otftotfm.XXXXXX";
-# else
-	filename = "/tmp/otftotfm.XXXXXX";
-# endif
-    }
-    int fd = mkstemp(filename.mutable_c_str());
-    if (fd < 0)
-	errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
-    return fd;
-#else  // !HAVE_MKSTEMP
-    for (int tries = 0; tries < 5; tries++) {
-	if (!(filename = tmpnam(0)))
-	    return errh->error("cannot create temporary file");
-# ifdef O_EXCL
-	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_EXCL | O_TRUNC, 0600);
-# else
-	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
-# endif
-	if (fd >= 0)
-	    return fd;
-    }
-    return errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
-#endif
 }
 
 static void
@@ -1789,14 +1754,14 @@ particular purpose.\n");
 	    encoding_file = "";
     
 	// read font
-	String font_data = read_file(input_file, errh);
+	otf_data = read_file(input_file, errh);
 	if (errh->nerrors())
 	    exit(1);
 
 	LandmarkErrorHandler cerrh(errh, printable_filename(input_file));
 	BailErrorHandler bail_errh(&cerrh);
 
-	OpenType::Font otf(font_data, &bail_errh);
+	OpenType::Font otf(otf_data, &bail_errh);
 	assert(otf.ok());
 
 	// figure out scripts we care about

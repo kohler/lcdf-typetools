@@ -22,9 +22,14 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
-#if defined(_MSDOS) || defined(_WIN32)
+#ifdef HAVE_FCNTL_H
 # include <fcntl.h>
+#endif
+#if defined(_MSDOS) || defined(_WIN32)
 # include <io.h>
+#endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
 #endif
 
 String
@@ -118,6 +123,43 @@ mysystem(const char *command, ErrorHandler *errh)
 	    errh->message("running %s", command);
 	return system(command);
     }
+}
+
+int
+temporary_file(String &filename, ErrorHandler *errh)
+{
+    if (no_create)
+	return 0;		// random number suffices
+    
+#ifdef HAVE_MKSTEMP
+    const char *tmpdir = getenv("TMPDIR");
+    if (tmpdir)
+	filename = String(tmpdir) + "/otftotfm.XXXXXX";
+    else {
+# ifdef P_tmpdir
+	filename = P_tmpdir "/otftotfm.XXXXXX";
+# else
+	filename = "/tmp/otftotfm.XXXXXX";
+# endif
+    }
+    int fd = mkstemp(filename.mutable_c_str());
+    if (fd < 0)
+	errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
+    return fd;
+#else  // !HAVE_MKSTEMP
+    for (int tries = 0; tries < 5; tries++) {
+	if (!(filename = tmpnam(0)))
+	    return errh->error("cannot create temporary file");
+# ifdef O_EXCL
+	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_EXCL | O_TRUNC, 0600);
+# else
+	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
+# endif
+	if (fd >= 0)
+	    return fd;
+    }
+    return errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
+#endif
 }
 
 bool

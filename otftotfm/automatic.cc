@@ -339,13 +339,13 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
     if (!(force && allow_generate && otf_filename && otf_filename != "-" && getodir(O_TYPE1, errh))) {
 # endif
 	// look for .pfb and .pfa
-	String attempt = ps_fontname + ".pfb";
-	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	    return found;
-
-	attempt = ps_fontname + ".pfa";
-	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	    return found;
+	String file, path;
+	if ((file = ps_fontname + ".pfb", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))
+	    || (file = ps_fontname + ".pfa", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))) {
+	    if (verbose)
+		errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
+	    return path;
+	}
 # if HAVE_AUTO_CFFTOT1
     }
 # endif
@@ -353,8 +353,7 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 
 #if HAVE_AUTO_CFFTOT1
     // if not found, and can generate on the fly, run cfftot1
-    if (allow_generate && otf_filename && otf_filename != "-"
-	&& getodir(O_TYPE1, errh)) {
+    if (allow_generate && otf_filename && otf_filename != "-" && getodir(O_TYPE1, errh)) {
 	String pfb_filename = odir[O_TYPE1] + "/" + ps_fontname + ".pfb";
 	if (pfb_filename.find_left('\'') >= 0 || otf_filename.find_left('\'') >= 0)
 	    return String();
@@ -391,13 +390,13 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
     if (!(force && allow_generate && getodir(O_TYPE1, errh))) {
 # endif
 	// look for existing .pfb or .pfa
-	String attempt = j_ps_fontname + ".pfb";
-	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	    return found;
-
-	attempt = j_ps_fontname + ".pfa";
-	if (String found = kpsei_string(kpsei_find_file(attempt.c_str(), KPSEI_FMT_TYPE1)))
-	    return found;
+	String file, path;
+	if ((file = j_ps_fontname + ".pfb", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))
+	    || (file = j_ps_fontname + ".pfa", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))) {
+	    if (verbose)
+		errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
+	    return path;
+	}
 # if HAVE_AUTO_T1DOTLESSJ
     }
 # endif
