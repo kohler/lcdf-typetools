@@ -575,12 +575,21 @@ for the encoding; for example:
 .nf
   % CODINGSCHEME EXTENDED TEX FONT ENCODING
 .fi
+'
 .SS New glyphs
 .PP
 New glyphs, such as ligatures and contextual substitutions, are added to
 the encoding in any empty spaces, using their original locations when
 possible. If the encoding doesn't have enough space for all new glyphs,
 shorter ligatures composed of unaccented letters get precedence.
+'
+.SS Synthetic glyphs
+.PP
+Otftotfm can synthesize some glyphs using virtual font manipulations, if a
+required glyph is not available in the input font. Specifically, it will
+synthesize "IJ", "ij", "Germandbls" (a capital "sharp-s", namely "SS"),
+"cwm" (the TeX T1 encoding's compound word mark), and "visualspace" (the
+TeX T1 encoding's visible space).
 '
 .SH "OPENTYPE FEATURES"
 .LP

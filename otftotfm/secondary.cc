@@ -56,6 +56,12 @@ T1Secondary::two_char_setting(uint32_t uni1, uint32_t uni2, Vector<Setting> &v, 
 	return false;
 }
 
+enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
+       U_VISIBLESPACE = 0x2423,	// U+2423 OPEN BOX
+       U_SS = 0xD800,		// invalid Unicode
+       U_IJ = 0x0132,
+       U_ij = 0x0133 };
+
 bool
 T1Secondary::setting(uint32_t uni, Vector<Setting> &v, const DvipsEncoding &dvipsenc)
 {

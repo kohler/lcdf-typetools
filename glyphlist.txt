@@ -4300,7 +4300,7 @@ zukatakana;30BA
 Delta;0394;2206
 Ifractur;2111
 # Germandbls: invalid Unicode, used for secondary replacement from EC.enc
-Germandbls;D802
+Germandbls;D800
 Ng;014A
 # XXX Omega?
 Omega;03A9;2126
@@ -4325,11 +4325,11 @@ circledivide;2298
 circledot;2299
 circleminus;2296
 coproduct;2A3F
-# cwm: invalid Unicode, used for secondary replacement from EC.enc
-cwm;D800
+# cwm: Unicode for ZWNJ, used for secondary replacement from EC.enc
+cwm;200C
 diamond;2662;2666
 diamondmath;22C4
-# 0237 is the proposed allocation for dotless j
+# 0237 is the proposed allocation for dotless j as of Unicode 4.0
 dotlessj;0237;F6BE
 emptyset;2205;F638
 epsilon1;03F5
@@ -4372,7 +4372,7 @@ turnstileright;22A3
 unionmulti;228E
 unionsq;2294
 vector;20D7
-# visualspace: invalid Unicode, used for secondary replacement from EC.enc
-visualspace;D801
+# visualspace: Unicode for OPEN BOX, used for secondary replacement from EC.enc
+visualspace;2423
 wreathproduct;2240
 # -- end TeX extensions

@@ -12,8 +12,6 @@ class Secondary { public:
 
 class T1Secondary : public Secondary { public:
     T1Secondary(const Efont::Cff::Font *, const Efont::OpenType::Cmap &);
-    enum { U_CWM = 0xD800, U_VISIBLESPACE = 0xD801,
-	   U_SS = 0xD802, U_IJ = 0x0132, U_ij = 0x0133 };
     bool setting(uint32_t uni, Vector<Setting> &, const DvipsEncoding &);
   private:
     int _xheight;
