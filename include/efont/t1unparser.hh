@@ -2,8 +2,7 @@
 #ifndef EFONT_T1UNPARSER_HH
 #define EFONT_T1UNPARSER_HH
 #include <efont/t1interp.hh>
-#include "straccum.hh"
-#include "string.hh"
+#include <lcdf/straccum.hh>
 namespace Efont {
 
 class CharstringUnparser : public CharstringInterp { public:

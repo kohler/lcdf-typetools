@@ -1,10 +1,10 @@
 // -*- related-file-name: "../../libefont/psres.cc" -*-
 #ifndef EFONT_PSRES_HH
 #define EFONT_PSRES_HH
-#include "vector.hh"
-#include "hashmap.hh"
-#include "string.hh"
-#include "filename.hh"
+#include <lcdf/vector.hh>
+#include <lcdf/hashmap.hh>
+#include <lcdf/string.hh>
+#include <lcdf/filename.hh>
 class Slurper;
 namespace Efont {
 class PsresDatabaseSection;

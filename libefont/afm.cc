@@ -4,7 +4,7 @@
 #endif
 #include <efont/afm.hh>
 #include <efont/afmparse.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <cctype>
 #include <cassert>
 namespace Efont {

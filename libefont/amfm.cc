@@ -5,7 +5,7 @@
 #include <efont/amfm.hh>
 #include <efont/afm.hh>
 #include <efont/afmparse.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <efont/findmet.hh>
 #include <efont/t1cs.hh>
 #include <cstdarg>

@@ -3,9 +3,9 @@
 # include <config.h>
 #endif
 #include <efont/cff.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <efont/t1item.hh>
-#include "straccum.hh"
+#include <lcdf/straccum.hh>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>

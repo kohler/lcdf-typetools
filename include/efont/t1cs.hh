@@ -1,9 +1,9 @@
 // -*- related-file-name: "../../libefont/t1cs.cc" -*-
 #ifndef EFONT_T1CS_HH
 #define EFONT_T1CS_HH
-#include "permstr.hh"
-#include "string.hh"
-#include "vector.hh"
+#include <lcdf/permstr.hh>
+#include <lcdf/string.hh>
+#include <lcdf/vector.hh>
 
 // Define known-width integer types
 #ifdef HAVE_INTTYPES_H

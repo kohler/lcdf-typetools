@@ -2,9 +2,7 @@
 #ifndef EFONT_T1ITEM_HH
 #define EFONT_T1ITEM_HH
 #include <efont/t1cs.hh>
-#include "vector.hh"
-#include "permstr.hh"
-#include "straccum.hh"
+#include <lcdf/straccum.hh>
 namespace Efont {
 class Type1Reader;
 class Type1Writer;

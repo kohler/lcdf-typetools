@@ -3,18 +3,18 @@
 # include <config.h>
 #endif
 #include <efont/otf.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <netinet/in.h>		// for htonl()
+#include <netinet/in.h>		// for ntohl()
 
 #ifndef static_assert
 #define static_assert(c) switch (c) case 0: case (c):
 #endif
 
-#define USHORT_AT(d)		(htons(*(const uint16_t *)d))
-#define ULONG_AT(d)		(htonl(*(const uint32_t *)d))
+#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
+#define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
 
 namespace Efont {
 
@@ -40,12 +40,12 @@ EfontOTF::parse_header(ErrorHandler *errh)
 	return errh->error("OTF too small for header"), -EFAULT;
     if (!(data[0] == 'O' && data[1] == 'T' && data[2] == 'T' && data[3] == 'O')
 	&& !(data[0] == '\000' && data[1] == '\001'))
-	return errh->error("bad file version number"), -ERANGE;
+	return errh->error("bad OTF version number"), -ERANGE;
     int ntables = USHORT_AT(data + 4);
     if (ntables == 0)
 	return errh->error("OTF contains no tables"), -EINVAL;
     if (HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * ntables > len)
-	return errh->error("table directory out of range"), -EFAULT;
+	return errh->error("OTF table directory out of range (%d, %u vs. %u)", ntables, HEADER_SIZE + TABLE_DIR_ENTRY_SIZE*ntables, len), -EFAULT;
 
     // TABLE DIRECTORY ENTRY FORMAT:
     // ULONG	tag
@@ -61,7 +61,7 @@ EfontOTF::parse_header(ErrorHandler *errh)
 	if (tag <= last_tag)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (uint32_t) len)
-	    return errh->error("tag data for '%c%c%c%c' out of range", (tag>>24)&255, (tag>>16)&255, (tag>>8)&255, tag&255), -EFAULT;
+	    return errh->error("OTF data for '%c%c%c%c' out of range", (tag>>24)&255, (tag>>16)&255, (tag>>8)&255, tag&255), -EFAULT;
 	last_tag = tag;
     }
     

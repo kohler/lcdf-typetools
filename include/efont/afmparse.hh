@@ -1,7 +1,8 @@
-#ifndef AFMPARSE_HH
-#define AFMPARSE_HH
-#include "slurper.hh"
-#include "permstr.hh"
+// -*- related-file-name: "../../libefont/afmparse.cc" -*-
+#ifndef EFONT_AFMPARSE_HH
+#define EFONT_AFMPARSE_HH
+#include <lcdf/slurper.hh>
+#include <lcdf/permstr.hh>
 #include <cstdarg>
 namespace Efont {
 

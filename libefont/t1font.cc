@@ -6,7 +6,7 @@
 #include <efont/t1item.hh>
 #include <efont/t1rw.hh>
 #include <efont/t1mm.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <cstring>
 #include <cstdlib>
 #include <cctype>

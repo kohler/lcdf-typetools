@@ -1,7 +1,7 @@
 // -*- related-file-name: "../../libefont/cff.cc" -*-
 #ifndef EFONT_CFF_HH
 #define EFONT_CFF_HH
-#include "hashmap.hh"
+#include <lcdf/hashmap.hh>
 #include <efont/t1cs.hh>
 class ErrorHandler;
 namespace Efont {

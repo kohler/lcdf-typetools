@@ -1,9 +1,9 @@
 // -*- related-file-name: "../../libefont/metrics.cc" -*-
 #ifndef EFONT_METRICS_HH
 #define EFONT_METRICS_HH
-#include "permstr.hh"
-#include "vector.hh"
-#include "hashmap.hh"
+#include <lcdf/permstr.hh>
+#include <lcdf/vector.hh>
+#include <lcdf/hashmap.hh>
 #include <efont/encoding.hh>
 #include <efont/pairop.hh>
 namespace Efont {
@@ -45,11 +45,9 @@ class Metrics { public:
     PermString name(GlyphIndex gi) const { return _names[gi]; }
     GlyphIndex find(PermString n) const	{ return _name_map[n]; }
 
-#if 0
     int code(GlyphIndex gi) const	{ return _encoding.code(gi); }
     GlyphIndex find_code(int c) const	{ return _encoding.find_code(c); }
     void set_code(GlyphIndex gi, int c)	{ _encoding.set_code(gi, c); }
-#endif
   
     GlyphIndex add_glyph(PermString);
     void reserve_glyphs(int);

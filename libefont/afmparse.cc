@@ -4,7 +4,7 @@
 #endif
 #include <efont/afmparse.hh>
 #include <efont/metrics.hh>
-#include "strtonum.h"
+#include <lcdf/strtonum.h>
 #include <cstring>
 #include <cstdarg>
 #include <cctype>
@@ -318,7 +318,7 @@ AfmParser::keyword() const
     const char *f = (const char *)_pos;
     while (isspace(*f))
 	f++;
-    char *l = f;
+    const char *l = f;
     while (isalnum(*l) || *l == '_')
 	l++;
     return PermString(f, l - f);

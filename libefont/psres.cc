@@ -3,7 +3,7 @@
 # include <config.h>
 #endif
 #include <efont/psres.hh>
-#include "slurper.hh"
+#include <lcdf/slurper.hh>
 /* Get the correct functions for directory searching */ 
 #if HAVE_DIRENT_H
 # include <dirent.h>

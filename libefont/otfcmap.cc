@@ -3,15 +3,15 @@
 # include <config.h>
 #endif
 #include <efont/otfcmap.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <netinet/in.h>		// for htonl()
+#include <netinet/in.h>		// for ntohl()
 
-#define USHORT_AT(d)		(htons((const uint16_t *)d))
-#define SHORT_AT(d)		((int16_t) htons((const uint16_t *)d))
-#define ULONG_AT(d)		(htonl((const uint32_t *)d))
+#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
+#define SHORT_AT(d)		((int16_t) ntohs(*(const uint16_t *)(d)))
+#define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
 
 namespace Efont {
 

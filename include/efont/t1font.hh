@@ -2,9 +2,7 @@
 #ifndef EFONT_T1FONT_HH
 #define EFONT_T1FONT_HH
 #include <efont/t1cs.hh>
-#include "hashmap.hh"
-#include "vector.hh"
-#include "permstr.hh"
+#include <lcdf/hashmap.hh>
 class StringAccum;
 class ErrorHandler;
 namespace Efont {

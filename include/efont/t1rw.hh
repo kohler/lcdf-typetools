@@ -2,8 +2,8 @@
 #ifndef EFONT_T1RW_HH
 #define EFONT_T1RW_HH
 #include <cstdio>
-#include "string.hh"
-#include "straccum.hh"
+#include <lcdf/string.hh>
+#include <lcdf/straccum.hh>
 namespace Efont {
 
 class Type1Reader { public:

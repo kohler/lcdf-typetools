@@ -6,7 +6,7 @@
 #include <efont/t1rw.hh>
 #include <efont/t1interp.hh>
 #include <efont/t1font.hh>
-#include "strtonum.h"
+#include <lcdf/strtonum.h>
 #include <cctype>
 #include <cstring>
 #include <sys/stat.h>

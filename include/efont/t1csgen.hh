@@ -2,7 +2,7 @@
 #ifndef EFONT_T1CSGEN_HH
 #define EFONT_T1CSGEN_HH
 #include <efont/t1interp.hh>
-#include "straccum.hh"
+#include <lcdf/straccum.hh>
 namespace Efont {
 
 class Type1CharstringGen { public:

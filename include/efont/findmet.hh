@@ -1,9 +1,9 @@
 // -*- related-file-name: "../../libefont/findmet.cc" -*-
 #ifndef EFONT_FINDMET_HH
 #define EFONT_FINDMET_HH
-#include "hashmap.hh"
-#include "vector.hh"
-#include "permstr.hh"
+#include <lcdf/hashmap.hh>
+#include <lcdf/vector.hh>
+#include <lcdf/permstr.hh>
 class Filename;
 class ErrorHandler;
 namespace Efont {

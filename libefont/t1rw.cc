@@ -4,7 +4,7 @@
 #endif
 #include <efont/t1rw.hh>
 #include <efont/t1cs.hh>
-#include "straccum.hh"
+#include <lcdf/straccum.hh>
 #include <cstdlib>
 #include <cctype>
 #include <cstring>

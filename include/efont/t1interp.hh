@@ -1,7 +1,6 @@
 // -*- related-file-name: "../../libefont/t1interp.cc" -*-
 #ifndef EFONT_T1INTERP_HH
 #define EFONT_T1INTERP_HH
-#include "vector.hh"
 #include <efont/t1cs.hh>
 #include <cstdio>
 namespace Efont {

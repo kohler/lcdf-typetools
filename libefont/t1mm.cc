@@ -4,7 +4,7 @@
 #endif
 #include <efont/t1mm.hh>
 #include <efont/t1interp.hh>
-#include "error.hh"
+#include <lcdf/error.hh>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>

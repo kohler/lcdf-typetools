@@ -3,7 +3,7 @@
 # include <config.h>
 #endif
 #include <efont/metrics.hh>
-
+namespace Efont {
 
 Metrics::Metrics()
   : _name_map(-1),
@@ -110,4 +110,6 @@ Metrics::add_xt(MetricsXt *mxt)
   _xt_map.insert(mxt->kind(), n);
   if (_wdv.size() > 0)
     mxt->reserve_glyphs(_wdv.size());
+}
+
 }

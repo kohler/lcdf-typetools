@@ -3,7 +3,7 @@
 #define EFONT_AMFM_HH
 #include <efont/metrics.hh>
 #include <efont/t1mm.hh>
-#include "hashmap.hh"
+#include <lcdf/hashmap.hh>
 class Slurper;
 class Filename;
 class ErrorHandler;
