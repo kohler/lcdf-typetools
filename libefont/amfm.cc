@@ -110,19 +110,24 @@ AmfmMetrics::master(int m, ErrorHandler *errh)
     } else {
       PairProgram *sanity_pairp = _sanity_afm->pair_program();
       PairProgram *pairp = afm->pair_program();
+      char buf[1024];
+      buf[0] = 0;
       
-      if (_sanity_afm->nglyphs() != afm->nglyphs()
-	  || _sanity_afm->nfd() != afm->nfd()
-	  || _sanity_afm->nkv() != afm->nkv()
-	  || sanity_pairp->op_count() != pairp->op_count()) {
-	if (errh)
-	  errh->error("%s: AFM for master `%s' failed sanity checks",
-		      _font_name.cc(), master.font_name.cc());
-      } else {
-	master.afm = afm;
-	afm->use();
-      }
-      
+      if (afm->nglyphs() != _sanity_afm->nglyphs())
+	  sprintf(buf, "glyph count (%d vs. %d)", afm->nglyphs(), _sanity_afm->nglyphs());
+      if (afm->nfd() != _sanity_afm->nfd())
+	  sprintf(buf, "fd count (%d vs. %d)", afm->nfd(), _sanity_afm->nfd());
+      if (afm->nkv() != _sanity_afm->nkv())
+	  sprintf(buf, "kv count (%d vs. %d)", afm->nkv(), _sanity_afm->nkv());
+      if (pairp->op_count() != sanity_pairp->op_count())
+	  sprintf(buf, "pair op count (%d vs. %d)", pairp->op_count(), sanity_pairp->op_count());
+
+      if (!buf[0]) {
+	  master.afm = afm;
+	  afm->use();
+      } else if (errh)
+	  errh->error("%s: AFM for master `%s' failed sanity checks (%s)",
+		      _font_name.cc(), master.font_name.cc(), buf);
     }
   }
   
