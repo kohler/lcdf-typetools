@@ -683,7 +683,7 @@ Type1Font::cache_defs() const
 }
 
 Type1MMSpace *
-Type1Font::create_mmspace(ErrorHandler *errh = 0) const
+Type1Font::create_mmspace(ErrorHandler *errh) const
 {
   if (_cached_mmspace)
     return _mmspace;
