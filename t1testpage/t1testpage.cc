@@ -66,34 +66,21 @@ void
 usage()
 {
     printf("\
-`Mmpfb' creates a single-master PostScript Type 1 font by interpolating a\n\
-multiple master font at a point you specify. The resulting font does not\n\
-contain multiple master extensions. It is written to the standard output.\n\
+'T1testpage' creates a PostScript proof document for the specified Type 1\n\
+font file and writes it to the standard output. The proof shows every\n\
+glyph in the font, including its glyph name and encoding.\n\
 \n\
-Usage: %s [OPTION]... FONT\n\
+Usage: %s [OPTION]... [FONT]\n\
 \n\
-FONT is either the name of a PFA or PFB multiple master font file, or a\n\
-PostScript font name. In the second case, mmpfb will find the actual outline\n\
-file using the PSRESOURCEPATH environment variable.\n\
+FONT is either the name of a PFA or PFB font file. If omitted, t1testpage will\n\
+read a font file from the standard input.\n\
 \n\
-General options:\n\
-      --amcp-info              Print AMCP info, if necessary, and exit.\n\
-  -a, --pfa                    Output PFA font.\n\
-  -b, --pfb                    Output PFB font. This is the default.\n\
-  -o, --output=FILE            Write output to FILE.\n\
-  -p, --precision=N            Set precision to N (larger means more precise).\n\
+Options:\n\
+  -o, --output=FILE            Write output to FILE instead of standard out.\n\
   -h, --help                   Print this message and exit.\n\
-  -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
-Interpolation settings:\n\
-  -w, --weight=N               Set weight to N.\n\
-  -W, --width=N                Set width to N.\n\
-  -O, --optical-size=N         Set optical size to N.\n\
-      --style=N                Set style axis to N.\n\
-  --1=N, --2=N, --3=N, --4=N   Set first (second, third, fourth) axis to N.\n\
-\n\
-Report bugs to <eddietwo@lcs.mit.edu>.\n", program_name);
+Report bugs to <kohler@icir.org>.\n", program_name);
 }
 
 
