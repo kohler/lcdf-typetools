@@ -40,8 +40,7 @@ MyFont::kill_def(Type1Definition *t1d, int whichd)
       StringAccum sa;
       sa << '%';
       t1d->gen(sa);
-      int sa_length = sa.length();
-      Type1CopyItem *t1ci = new Type1CopyItem(sa.take(), sa_length);
+      Type1CopyItem *t1ci = new Type1CopyItem(sa.take_string());
       set_item(i, t1ci);
       set_dict(whichd, t1d->name(), 0);
       delete t1d;
