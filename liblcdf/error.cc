@@ -5,8 +5,8 @@
 # pragma implementation "error.hh"
 #endif
 #include "error.hh"
+#include "straccum.hh"
 #include <assert.h>
-#include <string.h>
 #include <stdio.h>
 
 const char *program_name;
@@ -30,13 +30,22 @@ ErrorHandler::error(const Landmark &landmark, const char *s, ...)
   va_end(val);
 }
 
-
 void
 ErrorHandler::fatal(const Landmark &landmark, const char *s, ...)
 {
   va_list val;
   va_start(val, s);
   verror(FatalKind, landmark, s, val);
+  va_end(val);
+}
+
+
+void
+ErrorHandler::message(const char *s, ...)
+{
+  va_list val;
+  va_start(val, s);
+  verror(MessageKind, Landmark(), s, val);
   va_end(val);
 }
 
@@ -73,91 +82,87 @@ void
 ErrorHandler::verror(Kind kind, const Landmark &landmark,
 		     const char *s, va_list val)
 {
-  if (landmark && landmark.has_line())
-    fprintf(stderr, "%s:%u: ", landmark.file().cc(), landmark.line());
+  StringAccum accum;
+  
+  if (kind == MessageKind)
+    /* don't print any identification */;
+  else if (landmark && landmark.has_line())
+    accum << landmark.file() << ":" << landmark.line() << ": ";
   else if (landmark)
-    fprintf(stderr, "%s: ", landmark.file().cc());
+    accum << landmark.file() << ": ";
   else if (program_name)
-    fprintf(stderr, "%s: ", program_name);
+    accum << program_name << ": ";
   
   if (kind == WarningKind)
-    fputs("warning: ", stderr);
+    accum << "warning: ";
   
   while (1) {
     
     const char *pct = strchr(s, '%');
     if (!pct) {
-      if (*s) fputs(s, stderr);
+      if (*s) accum << s;
       break;
     }
     if (pct != s) {
-      fwrite(s, 1, pct - s, stderr);
+      memcpy(accum.extend(pct - s), s, pct - s);
       s = pct;
     }
     
-    while (1)
-      switch (*++s) {
-	
-       case 's':
-	 {
-	   const char *x = va_arg(val, const char *);
-	   if (!x) x = "(null)";
-	   fputs(x, stderr);
-	   goto pctdone;
-	 }
-	 
-       case 'c':
-	 {
-	   int c = va_arg(val, char);
-	   if (c == 0)
-	     fputs("\\0", stderr);
-	   else if (c == '\n')
-	     fputs("\\n", stderr);
-	   else if (c == '\r')
-	     fputs("\\r", stderr);
-	   else if (c == '\t')
-	     fputs("\\t", stderr);
-	   else if (c == '\\')
-	     fputs("\\\\", stderr);
-	   else if (c >= ' ' && c <= '~')
-	     fputc(c, stderr);
-	   else
-	     fprintf(stderr, "\\%03d", c);
-	   goto pctdone;
-	 }
-	 
-       case 'd':
-	 {
-	   int x = va_arg(val, int);
-	   fprintf(stderr, "%d", x);
-	   goto pctdone;
-	 }
-	 
-       case 'u':
-	 {
-	   unsigned x = va_arg(val, unsigned);
-	   fprintf(stderr, "%u", x);
-	   goto pctdone;
-	 }
-	 
-       case 'g':
-	 {
-	   double x = va_arg(val, double);
-	   fprintf(stderr, "%g", x);
-	   goto pctdone;
-	 }
-	 
-       default:
-	assert(0 && "Bad % in error");
-	goto pctdone;
-	
-      }
+    switch (*++s) {
+      
+     case 's': {
+       const char *x = va_arg(val, const char *);
+       if (!x) x = "(null)";
+       accum << x;
+       break;
+     }
+     
+     case 'c': {
+       int c = va_arg(val, char);
+       if (c == 0)
+	 accum << "\\0";
+       else if (c == '\n')
+	 accum << "\\n";
+       else if (c == '\r')
+	 accum << "\\r";
+       else if (c == '\t')
+	 accum << "\\t";
+       else if (c == '\\')
+	 accum << "\\\\";
+       else if (c >= ' ' && c <= '~')
+	 accum << (char)c;
+       else {
+	 int len;
+	 sprintf(accum.reserve(256), "\\%03d%n", c, &len);
+	 accum.forward(len);
+       }
+       break;
+     }
+     
+     case 'd':
+      accum << va_arg(val, int);
+      break;
+      
+     case 'u':
+      accum << va_arg(val, unsigned);
+      break;
+      
+     case 'g':
+      accum << va_arg(val, double);
+      break;
+       
+     default:
+      assert(0 && "Bad % in error");
+      break;
+      
+    }
     
-   pctdone:
     s++;
   }
+
+  accum << '\n' << '\0';
+  fputs(accum.value(), stderr);
   
-  fputc('\n', stderr);
   if (kind == FatalKind)
     exit(1);
 }

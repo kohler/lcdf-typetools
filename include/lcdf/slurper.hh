@@ -43,12 +43,23 @@ class Slurper {
   const Filename &filename() const	{ return _filename; }
   char *peek_line();
   char *next_line();
-  char *append_line(char *);
+  char *append_next_line();
   void save_line()			{ _saved_line = true; }
-
+  
   char *cur_line() const		{ return (char *)_line; }
   unsigned cur_line_length() const	{ return _line_len; }
+  void shorten_line(unsigned);
   
 };
+
+
+inline void
+Slurper::shorten_line(unsigned pos)
+{
+  if (pos < _line_len) {
+    _line_len = pos;
+    _line[_line_len] = 0;
+  }
+}
 
 #endif

@@ -107,7 +107,16 @@ operator<<(StringAccum &sa, char c)
 }
 
 StringAccum &operator<<(StringAccum &, int);
+StringAccum &operator<<(StringAccum &, unsigned);
 StringAccum &operator<<(StringAccum &, double);
+
+inline StringAccum &
+operator<<(StringAccum &sa, const char *s)
+{
+  int len = strlen(s);
+  memcpy(sa.extend(len), s, len);
+  return sa;
+}
 
 inline StringAccum &
 operator<<(StringAccum &sa, PermString s)

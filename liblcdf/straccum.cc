@@ -35,6 +35,15 @@ operator<<(StringAccum &sa, int i)
 }
 
 StringAccum &
+operator<<(StringAccum &sa, unsigned u)
+{
+  int len;
+  sprintf(sa.reserve(256), "%u%n", u, &len);
+  sa.forward(len);
+  return sa;
+}
+
+StringAccum &
 operator<<(StringAccum &sa, double d)
 {
   int len;

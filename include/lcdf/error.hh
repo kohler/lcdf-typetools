@@ -10,7 +10,7 @@ class ErrorHandler {
   
  public:
   
-  enum Kind { WarningKind, ErrorKind, FatalKind };
+  enum Kind { WarningKind, ErrorKind, FatalKind, MessageKind };
   
   ErrorHandler()			{ }
   virtual ~ErrorHandler()		{ }
@@ -23,6 +23,7 @@ class ErrorHandler {
   void error(const Landmark &, const char *, ...);
   void fatal(const Landmark &, const char *, ...);
   
+  void message(const char *, ...);
   void warning(const char *, ...);
   void error(const char *, ...);
   void fatal(const char *, ...);

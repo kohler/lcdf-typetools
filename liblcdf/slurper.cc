@@ -101,7 +101,7 @@ Slurper::get_line_at(unsigned pos)
   //				   since pos == _len
   if (pos == _len) {
     // last line in file didn't end in `\n': must have no data left
-    // ensure we have enough space for terminating null
+    // ensure we have enough space for terminating nul
     if (pos == _cap) grow_buffer();
     next_pos = pos;
     // if already at EOF, don't increment the line number
@@ -157,16 +157,10 @@ Slurper::peek_line()
 }
 
 char *
-Slurper::append_line(char *c_start_at)
+Slurper::append_next_line()
 {
-  unsigned char *start_at = (unsigned char *)c_start_at;
-  if (start_at < _line || start_at >= _line + _line_len)
-    return 0;
-  
-  unsigned delta = (_data + _pos) - start_at;
-  if (delta == 0) {
-    // should never happen, but do nothing anyway
-  } else if (_len - _pos > _line_len) {
+  unsigned delta = (_data + _pos) - (_line + _line_len);
+  if (_len - _pos > _line_len) {
     memmove(_line + delta, _line, _line_len);
     _line += delta;
   } else {
