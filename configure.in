@@ -65,4 +65,4 @@ dnl
 dnl Output
 dnl
 
-AC_OUTPUT(Makefile edlib/Makefile t1lib/Makefile t1lint/Makefile)
+AC_OUTPUT(Makefile edlib/Makefile t1lib/Makefile t1lint/Makefile t1testpage/Makefile)

@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = no-dependencies foreign check-news
 
-SUBDIRS = edlib t1lib t1lint
+SUBDIRS = edlib t1lib t1lint t1testpage
 
 EXTRA_DIST = rpm.spec
 AUTODEPENDENCIES =

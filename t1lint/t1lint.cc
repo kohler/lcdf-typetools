@@ -310,9 +310,9 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
   if (c == EOF)
     errh->fatal("%s: empty file", filename);
   if (c == 128)
-    reader = new Type1PfbReader(f);
+    reader = new Type1PFBReader(f);
   else
-    reader = new Type1PfaReader(f);
+    reader = new Type1PFAReader(f);
   
   Type1Font *font = new Type1Font(*reader);
   
@@ -328,7 +328,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
       weight_vector = new Vector<double>;
       *weight_vector = mmspace->default_weight_vector();
     }
-    int gc = font->glyph_count();
+    int gc = font->nglyphs();
     CharstringChecker cc(font, weight_vector);
     
     for (int i = 0; i < gc; i++) {
