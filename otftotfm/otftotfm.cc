@@ -453,7 +453,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
     Vector<String> glyph_comments(257, String());
-    for (int i = 0; i < 256; i++)
+    Vector<String> glyph_base_comments(257, String());
+    for (int i = 0; i < 256; i++) {
 	if (metrics.glyph(i)) {
 	    PermString name = metrics.code_name(i), expected_name;
 	    if (i >= '0' && i <= '9')
@@ -470,8 +471,16 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	    
 	    if (name != expected_name)
 		glyph_comments[i] = " (COMMENT " + String(name) + ")";
+
+	    int base = metrics.base_code(i);
+	    if (base != i)
+		glyph_base_comments[i] = " (COMMENT " + String(metrics.code_name(base)) + ")";
+	    else
+		glyph_base_comments[i] = glyph_comments[i];
+	    
 	} else
 	    glyph_ids.push_back("X");
+    }
     // finally, BOUNDARYCHAR
     glyph_ids.push_back("BOUNDARYCHAR");
 
@@ -522,8 +531,8 @@ output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	    for (int j = 0; j < settings.size(); j++) {
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
-		    boundser.run_incr(*(cff->glyph(metrics.glyph(s.x))));
-		    sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_comments[s.x] << "\n";
+		    boundser.run_incr(*(cff->glyph(metrics.base_glyph(s.x))));
+		    sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
 		} else if (s.op == Setting::MOVE && vpl) {
 		    boundser.translate(s.x, s.y);
 		    if (s.x)
@@ -707,14 +716,15 @@ output_encoding(const Metrics &metrics,
     static const char * const hex_digits = "0123456789ABCDEF";
 
     // collect encoding data
+    Vector<Metrics::Glyph> glyphs;
+    metrics.base_glyphs(glyphs);
     StringAccum sa;
     for (int i = 0; i < 256; i++) {
 	if ((i & 0xF) == 0)
 	    sa << (i ? "\n%" : "%") << hex_digits[(i >> 4) & 0xF] << '0' << '\n' << ' ';
 	else if ((i & 0x7) == 0)
 	    sa << '\n' << ' ';
-	OpenType::Glyph g = metrics.glyph(i);
-	if (g && g != Metrics::VIRTUAL_GLYPH)
+	if (int g = glyphs[i])
 	    sa << ' ' << '/' << glyph_names[g];
 	else
 	    sa << " /.notdef";
@@ -994,7 +1004,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		    subs[j].add_outer_left(bg);
 	    }
 
-	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%s\n", subs[subno].unparse().c_str());
+	    //for (int subno = 0; subno < subs.size(); subno++) fprintf(stderr, "%5d\t%s\n", i, subs[subno].unparse().c_str());
 	    
 	    int nunderstood = encoding.apply(subs, !dvipsenc_literal);
 
@@ -1041,12 +1051,14 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 
     // apply letterspacing, if any
     if (letterspace) {
-	for (int code = 0; code < 256; code++)
-	    if (encoding.glyph(code) > 0 && code != dvipsenc.boundary_char()) {
+	for (int code = 0; code < 256; code++) {
+	    int g = encoding.glyph(code);
+	    if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != dvipsenc.boundary_char()) {
 		encoding.add_single_positioning(code, letterspace / 2, 0, letterspace);
 		encoding.add_kern(code, 256, -letterspace / 2);
 		encoding.add_kern(256, code, -letterspace / 2);
 	    }
+	}
     }
 
     // reencode right components of boundary_glyph as boundary_char
@@ -1094,18 +1106,6 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    errh->warning("features require virtual fonts");
     }
     
-    // output metrics
-    if (!(output_flags & G_METRICS))
-	/* do nothing */;
-    else if (output_flags & G_BINARY) {
-	String fn = getodir(O_TFM, errh) + "/" + font_name + metrics_suffix + ".tfm";
-	write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, fn, String(), errh);
-    } else {
-	String outfile = getodir(O_PL, errh) + "/" + font_name + metrics_suffix + ".pl";
-	output_pl(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, false, outfile, errh);
-	update_odir(O_PL, outfile, errh);
-    }
-
     // output virtual metrics
     if (!(output_flags & G_VMETRICS))
 	/* do nothing */;
@@ -1118,14 +1118,29 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    if (unlink(vf.c_str()) < 0 && errno != ENOENT)
 		errh->error("removing %s: %s", vf.c_str(), strerror(errno));
 	}
-    } else if (output_flags & G_BINARY) {
-	String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
-	String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
-	write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, tfm, vf, errh);
     } else {
-	String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
-	output_pl(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, true, outfile, errh);
-	update_odir(O_VPL, outfile, errh);
+	if (output_flags & G_BINARY) {
+	    String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
+	    String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
+	    write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, tfm, vf, errh);
+	} else {
+	    String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
+	    output_pl(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, true, outfile, errh);
+	    update_odir(O_VPL, outfile, errh);
+	}
+	encoding.make_base(257);
+    }
+
+    // output metrics
+    if (!(output_flags & G_METRICS))
+	/* do nothing */;
+    else if (output_flags & G_BINARY) {
+	String tfm = getodir(O_TFM, errh) + "/" + font_name + metrics_suffix + ".tfm";
+	write_tfm(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, tfm, String(), errh);
+    } else {
+	String outfile = getodir(O_PL, errh) + "/" + font_name + metrics_suffix + ".pl";
+	output_pl(&font, cmap, encoding, dvipsenc.boundary_char(), glyph_names, false, outfile, errh);
+	update_odir(O_PL, outfile, errh);
     }
 
     // print DVIPS map line
@@ -1146,6 +1161,7 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 	    update_autofont_map(font_name, "", errh);
     }
 }
+
 
 static void
 collect_script_descriptions(const OpenType::ScriptList &script_list, Vector<String> &output, ErrorHandler *errh)

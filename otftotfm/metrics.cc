@@ -22,7 +22,8 @@
 #include <lcdf/straccum.hh>
 
 Metrics::Metrics(int nglyphs)
-    : _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1)
+    : _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1),
+      _liveness_marked(false)
 {
     _encoding.assign(256, Char());
 }
@@ -41,17 +42,32 @@ Metrics::check() const
     // 2. all 'ligatures' entries with 'in1 == c' are in '_encoding[c].ligs'
     // 3. 'virtual_char' SHOW operations point to valid non-virtual chars
     for (int code = 0; code < _encoding.size(); code++) {
-	const Char *c = &_encoding[code];
-	assert((c->virtual_char != 0) == (c->glyph == VIRTUAL_GLYPH));
-	for (const Ligature *l = c->ligatures.begin(); l != c->ligatures.end(); l++)
+	const Char *ch = &_encoding[code];
+	assert((ch->virtual_char != 0) == (ch->glyph == VIRTUAL_GLYPH));
+	for (const Ligature *l = ch->ligatures.begin(); l != ch->ligatures.end(); l++)
 	    assert(valid_code(l->in2) && valid_code(l->out));
-	for (const Kern *k = c->kerns.begin(); k != c->kerns.end(); k++)
+	for (const Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
 	    assert(valid_code(k->in2));
-	if (const VirtualChar *vc = c->virtual_char) {
+	if (const VirtualChar *vc = ch->virtual_char) {
 	    assert(vc->name);
-	    for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		assert(s->valid_op() && (s->op != Setting::SHOW || nonvirtual_code(s->x)));
+	    for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++) {
+		assert(s->valid_op());
+		if (s->op == Setting::SHOW)
+		    assert(nonvirtual_code(s->x));
+	    }
 	}
+	assert(ch->built_in1 < 0 || valid_code(ch->built_in1));
+	assert(ch->built_in2 < 0 || valid_code(ch->built_in2));
+	assert(ch->base_code < 0 || valid_code(ch->base_code));
+	if (valid_code(ch->base_code)) {
+	    const Char *ch2 = &_encoding[ch->base_code];
+	    assert((!ch->virtual_char && ch->glyph)
+		   || (!ch2->virtual_char && ch2->glyph));
+	}
+	if (ch->flag(Char::CONTEXT_ONLY))
+	    assert(ch->virtual_char && ch->built_in1 >= 0 && ch->built_in2 >= 0);
+	if (ch->flag(Char::LIG_LIVE | Char::CONTEXT_ONLY))
+	    assert(ch->flag(Char::LIVE));
     }
 }
 
@@ -101,25 +117,29 @@ Metrics::hard_encoding(Glyph g) const
 Metrics::Code
 Metrics::force_encoding(Glyph g)
 {
+    assert(g >= 0);
     int e = encoding(g);
     if (e >= 0)
 	return e;
     else {
 	Char ch;
 	ch.glyph = g;
+	ch.base_code = _encoding.size();
 	_encoding.push_back(ch);
-	assign_emap(g, _encoding.size() - 1);
-	return _encoding.size() - 1;
+	assign_emap(g, ch.base_code);
+	return ch.base_code;
     }
 }
 
 void
 Metrics::encode(Code code, Glyph g)
 {
-    assert(code >= 0 && g >= 0);
+    assert(code >= 0 && g >= 0 && g != VIRTUAL_GLYPH);
     if (code >= _encoding.size())
 	_encoding.resize(code + 1, Char());
     _encoding[code].glyph = g;
+    if (g > 0)
+	_encoding[code].base_code = code;
     assert(!_encoding[code].virtual_char);
     assign_emap(g, code);
 }
@@ -137,6 +157,15 @@ Metrics::encode_virtual(Code code, PermString name, const Vector<Setting> &v)
     vc->setting = v;
     for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
 	assert(s->valid_op() && (s->op != Setting::SHOW || nonvirtual_code(s->x)));
+}
+
+void
+Metrics::base_glyphs(Vector<Glyph> &v) const
+{
+    v.assign(_encoding.size(), 0);
+    for (Code c = 0; c < _encoding.size(); c++)
+	if (_encoding[c].base_code >= 0)
+	    v[c] = _encoding[ _encoding[c].base_code ].glyph;
 }
 
 
@@ -164,6 +193,12 @@ Metrics::Char::swap(Char &c)
     i = pdy; pdy = c.pdy; c.pdy = i;
     i = adx; adx = c.adx; c.adx = i;
     i = flags; flags = c.flags; c.flags = i;
+    i = built_in1; built_in1 = c.built_in1; c.built_in1 = i;
+    i = built_in2; built_in2 = c.built_in2; c.built_in2 = i;
+    // NB: only a partial switch of base_code!!
+    if (base_code < 0)
+	base_code = c.base_code;
+    c.base_code = -1;
 }
 
 
@@ -188,44 +223,45 @@ Metrics::new_ligature(Code in1, Code in2, Code out)
     _encoding[in1].ligatures.push_back(Ligature(in2, out));
 }
 
+inline void
+Metrics::repoint_ligature(Code, Ligature *l, Code out)
+{
+    l->out = out;
+}
+
 void
 Metrics::add_ligature(Code in1, Code in2, Code out)
 {
     if (Ligature *l = ligature_obj(in1, in2)) {
 	Char &ch = _encoding[l->out];
-	if (ch.virtual_char) {	// replace virtual character with true ligature
-	    // copy old ligatures to the true ligature
+	if (ch.flags & Char::BUILT) {
+	    // move old ligatures to point to the true ligature
 	    for (Ligature *ll = ch.ligatures.begin(); ll != ch.ligatures.end(); ll++)
 		add_ligature(out, ll->in2, ll->out);
-	    l->out = out;
-	} else
-	    /* do nothing; old ligature takes precedence */;
-    } else {
+	    repoint_ligature(in1, l, out);
+	}
+    } else
 	new_ligature(in1, in2, out);
-	// mark that chars are no longer valid context chars
-	_encoding[in1].flags &= ~Char::CONTEXT;
-	if ((_encoding[out].flags & Char::CONTEXT)
-	    && !_encoding[out].context_setting(in1, in2))
-	    _encoding[out].flags &= ~Char::CONTEXT;
-    }
 }
 
 Metrics::Code
-Metrics::pair_code(Code code1, Code code2)
+Metrics::pair_code(Code in1, Code in2)
 {
-    if (const Ligature *l = ligature_obj(code1, code2))
+    if (const Ligature *l = ligature_obj(in1, in2))
 	return l->out;
     else {
 	Char ch;
 	ch.glyph = VIRTUAL_GLYPH;
-	ch.flags = Char::CONTEXT;
+	ch.flags = Char::BUILT;
 	VirtualChar *vc = ch.virtual_char = new VirtualChar;
-	vc->name = permprintf("fake_%s_%s", code_str(code1), code_str(code2));
-	setting(code1, vc->setting, false);
+	vc->name = permprintf("%s__%s", code_str(in1), code_str(in2));
+	setting(in1, vc->setting, SET_INTERMEDIATE);
 	vc->setting.push_back(Setting(Setting::KERN));
-	setting(code2, vc->setting, false);
+	setting(in2, vc->setting, SET_INTERMEDIATE);
+	ch.built_in1 = in1;
+	ch.built_in2 = in2;
 	_encoding.push_back(ch);
-	new_ligature(code1, code2, _encoding.size() - 1);
+	new_ligature(in1, in2, _encoding.size() - 1);
 	return _encoding.size() - 1;
     }
 }
@@ -309,8 +345,9 @@ Metrics::reencode_right_ligkern(Code old_in2, Code new_in2)
 	for (Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
 	    if (k->in2 == old_in2)
 		k->in2 = new_in2;
+	// XXX?
 	if (ch->context_setting(-1, old_in2))
-	    ch->virtual_char->setting[2].x = new_in2;
+	    ch->built_in2 = new_in2;
     }
 }
 
@@ -395,7 +432,7 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
     // XXX does not handle multiply-encoded glyphs
     
     // loop over substitutions
-    int success = 0;
+    int failures = 0;
     for (const Substitution *s = sv.begin(); s != sv.end(); s++)
 	if ((s->is_single() || s->is_alternate()) && allow_single) {
 	    Code e = encoding(s->in_glyph());
@@ -418,55 +455,73 @@ Metrics::apply(const Vector<Substitution> &sv, bool allow_single)
 			add_ligature(e, j, pair_code(out, j));
 		changed[e] = CH_ALL;
 	    }
-	    success++;
-	
-	} else if (s->is_ligature()) {
+
+	} else if (s->is_simple_context()) {
+	    // find a list of 'in' codes
 	    Vector<Glyph> in;
-	    s->in_glyphs(in);
-	    Code c1 = -1, c2 = -1;
-	    for (int i = 0; i < in.size(); i++) {
-		Code e = encoding(in[i]);
-		if (e < 0 || e >= changed.size() || changed[e] == CH_ALL)
-		    goto ligature_fail;
-		if (c1 < 0)
-		    c1 = e;
-		else if (c2 < 0)
-		    c2 = e;
-		else {
-		    c1 = pair_code(c1, c2);
-		    c2 = e;
-		}
+	    s->all_in_glyphs(in);
+	    assert(in.size() >= 2);
+	    bool ok = true;
+	    for (Glyph *inp = in.begin(); inp < in.end(); inp++) {
+		*inp = encoding(*inp);
+		if (*inp < 0 || *inp >= changed.size() || changed[*inp] == CH_ALL)
+		    ok = false;
 	    }
-	    add_ligature(c1, c2, force_encoding(s->out_glyph()));
-	  ligature_fail:
-	    success++;
 
-	} else if (s->is_single_rcontext()) {
-	    int in = encoding(s->in_glyph()), right = encoding(s->right_glyph());
-	    if (in >= 0 && in < changed.size()
-		&& right >= 0 && right < changed.size()
-		&& !in_changed_context(changed, changed_context, in, right)) {
-		if (s->in_glyph() != s->out_glyph())
-		    add_ligature(in, right, pair_code(force_encoding(s->out_glyph()), right));
-		assign_changed_context(changed, changed_context, in, right);
-	    }
-	    success++;
+	    // check if any part of the combination has already changed
+	    int nleft = s->left_nglyphs(), nin = s->in_nglyphs();
+	    int ncheck = nleft + (nin > 2 ? 2 : nin);
+	    if (ncheck == in.size())
+		ncheck--;
+	    for (Glyph *inp = in.begin(); inp < in.begin() + ncheck; inp++)
+		if (in_changed_context(changed, changed_context, inp[0], inp[1]))
+		    ok = false;
 
-	} else if (s->is_single_lcontext()) {
-	    int left = encoding(s->left_glyph()), in = encoding(s->in_glyph());
-	    if (in >= 0 && in < changed.size()
-		&& left >= 0
-		&& !in_changed_context(changed, changed_context, left, in)) {
-		if (s->in_glyph() != s->out_glyph())
-		    add_ligature(left, in, pair_code(left, force_encoding(s->out_glyph())));
-		assign_changed_context(changed, changed_context, left, in);
+	    // if not ok, continue
+	    if (!ok)
+		continue;
+
+	    // mark this combination as changed if appropriate
+	    if (in.size() == 2 && nin == 1)
+		assign_changed_context(changed, changed_context, in[0], in[1]);
+
+	    // build up the character pair
+	    int cin1 = in[0];
+	    for (Glyph *inp = in.begin() + 1; inp < in.end() - 1; inp++)
+		cin1 = pair_code(cin1, *inp);
+	    int cin2 = in.back();
+
+	    // build up the output character
+	    Vector<Glyph> out;
+	    s->all_out_glyphs(out);
+	    int cout = -1;
+	    for (Glyph *outp = out.begin(); outp < out.end(); outp++) {
+		*outp = force_encoding(*outp);
+		cout = (cout < 0 ? *outp : pair_code(cout, *outp));
 	    }
-	    success++;
-	}
+
+	    // check for replacing a fake ligature
+	    int old_out = -1;
+	    if (Ligature *l = ligature_obj(cin1, cin2))
+		if (_encoding[l->out].flags & Char::BUILT)
+		    old_out = l->out;
+		
+	    // make the final ligature
+	    add_ligature(cin1, cin2, cout);
+
+	    // if appropriate, swap old ligatures to point to the new result
+	    if (old_out >= 0)
+		for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
+		    for (Ligature *l = ch->ligatures.begin(); l != ch->ligatures.end(); l++)
+			if (l->out == old_out)
+			    repoint_ligature(ch - _encoding.begin(), l, cout);
+	    
+	} else
+	    failures++;
 
     for (int i = 0; i < changed_context.size(); i++)
 	delete[] changed_context[i];
-    return success;
+    return sv.size() - failures;
 }
 
 
@@ -525,35 +580,102 @@ Metrics::apply(const Vector<Positioning> &pv)
 
 
 /*****************************************************************************/
+/* liveness marking, Ligature3s						     */
+
+inline bool
+operator<(const Metrics::Ligature3 &l1, const Metrics::Ligature3 &l2)
+{
+    // topological < : is l1's output one of l2's inputs?
+    if (l1.out == l2.in1 || l1.out == l2.in2)
+	return true;
+    else
+	return l1.in1 < l2.in1 
+	    || (l1.in1 == l2.in1 && (l1.in2 < l2.in2
+				     || (l1.in2 == l2.in2 && l1.out < l2.out)));
+}
+
+void
+Metrics::all_ligatures(Vector<Ligature3> &all_ligs) const
+{
+    /* Develop a topologically-sorted ligature list. */
+    all_ligs.clear();
+    for (Code code = 0; code < _encoding.size(); code++)
+	for (const Ligature *l = _encoding[code].ligatures.begin(); l != _encoding[code].ligatures.end(); l++)
+	    all_ligs.push_back(Ligature3(code, l->in2, l->out));
+    std::sort(all_ligs.begin(), all_ligs.end());
+}
+
+void
+Metrics::mark_liveness(int size, const Vector<Ligature3> &all_ligs)
+{
+    _liveness_marked = true;
+    
+    /* Characters below 'size' are in both virtual and base encodings. */
+    for (Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
+	if (ch->visible())
+	    ch->flags |= Char::LIVE | Char::LIG_LIVE | (ch->virtual_char ? 0 : Char::BASE_LIVE);
+
+    /* Characters reachable from live chars by live ligatures are live. */
+    for (const Ligature3 *l = all_ligs.begin(); l != all_ligs.end(); l++)
+	if (_encoding[l->in1].flag(Char::LIVE) && _encoding[l->in2].flag(Char::LIVE)) {
+	    Char &ch = _encoding[l->out];
+	    if (!ch.flag(Char::LIVE))
+		ch.flags |= Char::LIVE | Char::LIG_LIVE | Char::CONTEXT_ONLY | (ch.virtual_char ? 0 : Char::BASE_LIVE);
+	    if (!ch.context_setting(l->in1, l->in2))
+		ch.flags &= ~Char::CONTEXT_ONLY;
+	}
+
+    /* Characters reachable from context-only ligatures are live. */
+    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
+	if (ch->flag(Char::CONTEXT_ONLY)) {
+	    _encoding[ch->built_in1].flags |= Char::LIVE;
+	    _encoding[ch->built_in2].flags |= Char::LIVE;
+	}
+    
+    /* Characters reachable from live settings are base-live. */
+    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
+	if (ch->flag(Char::LIVE))
+	    if (VirtualChar *vc = ch->virtual_char)
+		for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
+		    if (s->op == Setting::SHOW)
+			_encoding[s->x].flags |= Char::BASE_LIVE;
+}
+
+void
+Metrics::reencode(const Vector<Code> &reencoding)
+{
+    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++) {
+	for (Ligature *l = ch->ligatures.begin(); l != ch->ligatures.end(); l++) {
+	    l->in2 = reencoding[l->in2];
+	    l->out = reencoding[l->out];
+	}
+	for (Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
+	    k->in2 = reencoding[k->in2];
+	if (VirtualChar *vc = ch->virtual_char)
+	    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
+		if (s->op == Setting::SHOW)
+		    s->x = reencoding[s->x];
+	if (ch->built_in1 >= 0) {
+	    ch->built_in1 = reencoding[ch->built_in1];
+	    ch->built_in2 = reencoding[ch->built_in2];
+	}
+	if (ch->base_code >= 0)
+	    ch->base_code = reencoding[ch->base_code];
+    }
+    _emap.clear();
+}
+
+
+/*****************************************************************************/
 /* shrinking the encoding						     */
 
 bool
-Metrics::Char::possible_context_setting() const
+Metrics::Char::context_setting(Code in1, Code in2) const
 {
     if (!virtual_char || ligatures.size())
-	return false;
-    const Vector<Setting> &s = virtual_char->setting;
-    return (s.size() == 3
-	    && s[0].op == Setting::SHOW
-	    && s[1].op == Setting::KERN
-	    && s[2].op == Setting::SHOW);
-}
-
-bool
-Metrics::Char::context_setting(Code in1, Code in2, const Vector<int> *good) const
-{
-    if (!virtual_char || ligatures.size())
-	return false;
-    const Vector<Setting> &s = virtual_char->setting;
-    if (s.size() != 3
-	|| s[0].op != Setting::SHOW
-	|| s[1].op != Setting::KERN
-	|| s[2].op != Setting::SHOW
-	|| (good && (!(*good)[s[0].x] || !(*good)[s[2].x]))
-	|| (s[0].x != in1 && s[2].x != in2))
 	return false;
     else
-	return true;
+	return (in1 == built_in1 || in2 == built_in2);
 }
 
 void
@@ -568,16 +690,28 @@ Metrics::cut_encoding(int size)
 	return;
     }
 
+    /* Need liveness markings. */
+    if (!_liveness_marked) {
+	Vector<Ligature3> all_ligs;
+	all_ligatures(all_ligs);
+	mark_liveness(size, all_ligs);
+    }
+    
     /* Characters above 'size' are not 'good'. */
     Vector<int> good(_encoding.size(), 0);
     
+    /* Characters encoded via base_code are 'good', though. */
+    for (Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
+	if (ch->base_code >= size)
+	    good[ch->base_code] = 1;
+
     /* Some fake characters might point beyond 'size'; remove them too. No
        need for a multipass algorithm since virtual chars never point to
        virtual chars. */
     for (Code c = 0; c < size; c++) {
 	if (VirtualChar *vc = _encoding[c].virtual_char) {
 	    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		if (s->op == Setting::SHOW && s->x >= size) {
+		if (s->op == Setting::SHOW && !good[s->x]) {
 		    _encoding[c].clear();
 		    goto bad_virtual_char;
 		}
@@ -593,12 +727,16 @@ Metrics::cut_encoding(int size)
     }
     
     /* Remove ligatures and kerns that point beyond 'size', except for valid
-       context ligatures. */
+       context ligatures. Also remove ligatures that have non-live
+       components. */
     for (Code c = 0; c < size; c++) {
 	Char &ch = _encoding[c];
+	if (!ch.flag(Char::LIG_LIVE))
+	    ch.ligatures.clear();
 	for (Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
 	    if (!good[l->in2]
-		|| (!good[l->out] && !_encoding[l->out].context_setting(c, l->in2, &good))) {
+		|| !_encoding[l->in2].flag(Char::LIG_LIVE)
+		|| (!good[l->out] && !_encoding[l->out].context_setting(c, l->in2))) {
 		*l = ch.ligatures.back();
 		ch.ligatures.pop_back();
 		l--;
@@ -611,23 +749,16 @@ Metrics::cut_encoding(int size)
 	    }
     }
 
+
+    /* Finally, change "emptyslot"s to ".notdef"s. */
+    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
+	if (ch->glyph == emptyslot_glyph())
+	    ch->glyph = 0;
+    
     /* We are done! */
 }
 
 namespace {
-struct Ligature3 {
-    Metrics::Code in1;
-    Metrics::Code in2;
-    Metrics::Code out;
-    Ligature3(Metrics::Code in1_, Metrics::Code in2_, Metrics::Code out_) : in1(in1_), in2(in2_), out(out_) { }
-};
-
-inline bool
-operator<(const Ligature3 &l1, const Ligature3 &l2)
-{
-    // topological < : is l1's output one of l2's inputs?
-    return l1.out == l2.in1 || l1.out == l2.in2;
-}
 
 // preference-sorting extra characters
 enum { BASIC_LATIN_SCORE = 2, LATIN1_SUPPLEMENT_SCORE = 5,
@@ -654,12 +785,16 @@ struct Slot {
     Metrics::Code new_code;
     Metrics::Glyph glyph;
     int score;
+    int flags;
 };
 
 inline bool
 operator<(const Slot &a, const Slot &b)
 {
-    return a.score < b.score || (a.score == b.score && a.glyph < b.glyph);
+    // note: will give real glyphs priority over virtual ones at a given
+    // priority
+    return a.score < b.score
+	|| (a.score == b.score && a.glyph < b.glyph);
 }
 }
 
@@ -674,18 +809,19 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	return;
     }
 
+    /* Need a list of all ligatures.. */
+    Vector<Ligature3> all_ligs;
+    all_ligatures(all_ligs);
+
+    /* Need liveness markings. */
+    if (!_liveness_marked)
+	mark_liveness(size, all_ligs);
+    
     /* Score characters by importance. Importance relates first to Unicode
        values, and then recursively to the importances of characters that form
        a ligature. */
 
-    /* First, develop a topologically-sorted ligature list. */
-    Vector<Ligature3> all_ligs;
-    for (Code code = 0; code < _encoding.size(); code++)
-	for (Ligature *l = _encoding[code].ligatures.begin(); l != _encoding[code].ligatures.end(); l++)
-	    all_ligs.push_back(Ligature3(code, l->in2, l->out));
-    std::sort(all_ligs.begin(), all_ligs.end());
-
-    /* Second, create an initial set of scores, based on Unicode values. */
+    /* Create an initial set of scores, based on Unicode values. */
     Vector<int> scores(_encoding.size(), NOCHAR_SCORE);
     {
 	Vector<uint32_t> unicodes = dvipsenc.unicodes();
@@ -698,9 +834,9 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	    scores[i] = unicode_score(unicodes[i]);
     }
 
-    /* Finally, repeat these steps until you reach a stable set of scores:
-       Score ligatures (ligscore = SUM[char scores]), then score characters
-       touched only by fakes. */
+    /* Repeat these steps until you reach a stable set of scores: Score
+       ligatures (ligscore = SUM[char scores]), then score characters touched
+       only by fakes. */
     bool changed = true;
     while (changed) {
 	changed = false;
@@ -725,8 +861,10 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
     /* Collect characters that want to be reassigned. */
     Vector<Slot> slots;
     for (Code c = size; c < _encoding.size(); c++)
-	if (scores[c] < NOCHAR_SCORE && !(_encoding[c].flags & Char::CONTEXT)) {
-	    Slot slot = { c, -1, _encoding[c].glyph, scores[c] };
+	if (scores[c] < NOCHAR_SCORE
+	    && !(_encoding[c].flags & Char::CONTEXT_ONLY)
+	    && (_encoding[c].flags & (Char::LIVE | Char::BASE_LIVE))) {
+	    Slot slot = { c, -1, _encoding[c].glyph, scores[c], _encoding[c].flags };
 	    slots.push_back(slot);
 	}
     // Sort them by score, then by value.
@@ -742,38 +880,76 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	    }
 	}
 
-    /* Then, loop over empty slots. */
-    {
-	int slotnum = 0, c = 0;
-	bool avoid = true;
-	while (slotnum < slots.size() && c < size)
-	    if (slots[slotnum].new_code >= 0)
-		slotnum++;
-	    else if (_encoding[c].glyph == 0 && (!avoid || !dvipsenc.encoded(c))) {
-		_encoding[c].swap(_encoding[slots[slotnum].old_code]);
-		slots[slotnum].new_code = c;
-		c++;
-		slotnum++;
-	    } else {
-		c++;
-		if (c >= size && avoid)
-		    avoid = false, c = 0;
-	    }
+    /* List empty slots in a two phases: Those not encoded by the input
+       encoding, then those encoded by the input encoding (but that character
+       wasn't available). */
+    Vector<Code> empty_codes;
+    for (int want_encoded = 0; want_encoded < 2; want_encoded++) 
+	for (Code c = 0; c < size; c++)
+	    if (_encoding[c].base_code < 0
+		&& dvipsenc.encoded(c) == (bool)want_encoded)
+		empty_codes.push_back(c);
 
-	/* Complain if some characters can't fit. */
-	if (slotnum < slots.size()) {
-	    // collect names of unencoded glyphs
-	    Vector<String> unencoded;
-	    while (slotnum < slots.size())
-		unencoded.push_back(code_name(slots[slotnum++].old_code));
-	    std::sort(unencoded.begin(), unencoded.end());
-	    StringAccum sa;
-	    sa.append_fill_lines(unencoded, 68, "", "  ");
-	    errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable glyphs:" : "ignoring unencodable glyphs:"));
-	    errh->lmessage(" ", "%s(\
+    /* Then, loop over the unencoded characters, assigning them codes. */
+    int nunencoded = 0;
+    Code *both_hole, *overlay_hole, *base_hole, *end_hole;
+    both_hole = overlay_hole = base_hole = empty_codes.begin();
+    end_hole = empty_codes.end();
+
+    for (Slot *slot = slots.begin(); slot != slots.end(); slot++) {
+	if (slot->new_code >= 0)
+	    continue;
+	
+	bool need_base = _encoding[slot->old_code].visible_base();
+	bool need_overlay = _encoding[slot->old_code].flag(Char::LIVE);
+	Code **hole;
+	assert(need_base || need_overlay);
+	if (need_base && need_overlay) {
+	    while (both_hole < end_hole && (_encoding[*both_hole].visible() || _encoding[*both_hole].base_code >= 0))
+		both_hole++;
+	    hole = &both_hole;
+	} else if (need_base) {
+	    while (base_hole < end_hole && _encoding[*base_hole].base_code >= 0)
+		base_hole++;
+	    hole = &base_hole;
+	} else {
+	    while (overlay_hole < end_hole && _encoding[*overlay_hole].visible())
+		overlay_hole++;
+	    hole = &overlay_hole;
+	}
+
+	if (*hole < end_hole) {
+	    if (need_overlay) {
+		assert(!_encoding[**hole].visible());
+		_encoding[**hole].swap(_encoding[slot->old_code]);
+		slot->new_code = **hole;
+	    } else {
+		_encoding[slot->old_code].base_code = **hole;
+		slot->new_code = slot->old_code;
+	    }
+	    if (need_base) {
+		assert(_encoding[**hole].base_code < 0 || _encoding[**hole].base_code == slot->old_code);
+		_encoding[**hole].base_code = slot->old_code;
+	    }
+	    (*hole)++;
+	} else
+	    nunencoded++;
+    }
+
+    /* Complain if some characters can't fit. */
+    if (nunencoded) {
+	// collect names of unencoded glyphs
+	Vector<String> unencoded;
+	for (Slot *slot = slots.begin(); slot != slots.end(); slot++)
+	    if (slot->new_code < 0)
+		unencoded.push_back(code_name(slot->old_code));
+	std::sort(unencoded.begin(), unencoded.end());
+	StringAccum sa;
+	sa.append_fill_lines(unencoded, 68, "", "  ");
+	errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable glyphs:" : "ignoring unencodable glyphs:"));
+	errh->lmessage(" ", "%s(\
 This encoding doesn't have room for all the glyphs used by the\n\
 font, so I've ignored those listed above.)", sa.c_str());
-	}
     }
 
     /* Reencode changed slots. */
@@ -783,19 +959,32 @@ font, so I've ignored those listed above.)", sa.c_str());
     for (Slot *s = slots.begin(); s != slots.end(); s++)
 	if (s->new_code >= 0)
 	    reencoding[s->old_code] = s->new_code;
-    for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++) {
-	for (Ligature *l = ch->ligatures.begin(); l != ch->ligatures.end(); l++) {
-	    l->in2 = reencoding[l->in2];
-	    l->out = reencoding[l->out];
+    reencode(reencoding);
+
+    check();
+}
+
+void
+Metrics::make_base(int size)
+{
+    bool reencoded = false;
+    Vector<Code> reencoding;
+    for (Code c = 0; c < _encoding.size(); c++)
+	reencoding.push_back(c);
+    for (Code c = 0; c < size; c++) {
+	Char &ch = _encoding[c];
+	if (ch.base_code >= 0 && ch.base_code != c) {
+	    reencoding[ch.base_code] = c;
+	    reencoding[c] = ch.base_code;
+	    _encoding[c].swap(_encoding[ch.base_code]);
+	    reencoded = true;
 	}
-	for (Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
-	    k->in2 = reencoding[k->in2];
-	if (VirtualChar *vc = ch->virtual_char)
-	    for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		if (s->op == Setting::SHOW)
-		    s->x = reencoding[s->x];
     }
-    _emap.clear();
+    if (reencoded) {
+	reencode(reencoding);
+	cut_encoding(size);
+    }
+    check();
 }
 
 
@@ -814,9 +1003,9 @@ Metrics::need_virtual(int size) const
 }
 
 bool
-Metrics::setting(Code code, Vector<Setting> &v, bool clear) const
+Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 {
-    if (clear)
+    if (!(sm & SET_KEEP))
 	v.clear();
     
     if (!valid_code(code) || _encoding[code].glyph == 0)
@@ -833,26 +1022,32 @@ Metrics::setting(Code code, Vector<Setting> &v, bool clear) const
 		v.push_back(*s);
 		break;
 	      case Setting::SHOW:
-		good &= setting(s->x, v, false);
+		good &= setting(s->x, v, (SettingMode)(sm | SET_KEEP));
 		break;
 	      case Setting::KERN:
-		if (s > vc->setting.begin() && s + 1 < vc->setting.end()
-		    && s[-1].op == Setting::SHOW
-		    && s[1].op == Setting::SHOW)
+		if (sm & SET_INTERMEDIATE)
+		    v.push_back(*s);
+		else if (s > vc->setting.begin() && s + 1 < vc->setting.end()
+			 && s[-1].op == Setting::SHOW
+			 && s[1].op == Setting::SHOW)
 		    if (int k = kern(s[-1].x, s[1].x))
 			v.push_back(Setting(Setting::MOVE, k, 0));
 		break;
 	    }
 	return good;
 	
-    } else {
+    } else if (ch.base_code >= 0) {
 	if (ch.pdx != 0 || ch.pdy != 0)
 	    v.push_back(Setting(Setting::MOVE, ch.pdx, ch.pdy));
-	v.push_back(Setting(Setting::SHOW, code));
+	
+	v.push_back(Setting(Setting::SHOW, ch.base_code));
+	
 	if (ch.pdy != 0 || ch.adx - ch.pdx != 0)
 	    v.push_back(Setting(Setting::MOVE, ch.adx - ch.pdx, -ch.pdy));
 	return true;
-    }
+	
+    } else
+	return false;
 }
 
 int
@@ -867,16 +1062,15 @@ Metrics::ligatures(Code in1, Vector<Code> &in2, Vector<Code> &out, Vector<int> &
 	in2.push_back(l->in2);
 	const Char &outch = _encoding[l->out];
 	if (outch.context_setting(in1, l->in2)) {
-	    Code out1 = outch.virtual_char->setting[0].x;
-	    Code out2 = outch.virtual_char->setting[2].x;
-	    if (in1 != out1) {
-		out.push_back(out1);
-		context.push_back(1);
-	    } else if (l->in2 != out2) {
-		out.push_back(out2);
-		context.push_back(-1);
-	    } else
+	    if (in1 == outch.built_in1 && l->in2 == outch.built_in2)
 		in2.pop_back();
+	    else if (in1 == outch.built_in1) {
+		out.push_back(outch.built_in2);
+		context.push_back(-1);
+	    } else {
+		out.push_back(outch.built_in1);
+		context.push_back(1);
+	    }
 	} else {
 	    out.push_back(l->out);
 	    context.push_back(0);
@@ -914,10 +1108,37 @@ Metrics::unparse(const Vector<PermString> *glyph_names) const
     for (Code c = 0; c < _encoding.size(); c++)
 	if (_encoding[c].glyph) {
 	    const Char &ch = _encoding[c];
-	    fprintf(stderr, "%4d: %s%s\n", c, code_str(c, glyph_names), (ch.flags & Char::CONTEXT) ? " [C]" : "");
+	    fprintf(stderr, "%4d/%s%s%s%s%s\n", c, code_str(c, glyph_names),
+		    (ch.flag(Char::LIVE) ? " [L]" : ""),
+		    (ch.flag(Char::BASE_LIVE) ? " [B]" : ""),
+		    (ch.flag(Char::CONTEXT_ONLY) ? " [C]" : ""),
+		    (ch.base_code >= 0 ? " <BC>" : ""));
+	    if (ch.base_code >= 0 && ch.base_code != c)
+		fprintf(stderr, "\tBASE %d/%s\n", ch.base_code, code_str(ch.base_code, glyph_names));
+	    if (const VirtualChar *vc = ch.virtual_char) {
+		fprintf(stderr, "\t*");
+		for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
+		    switch (s->op) {
+		      case Setting::SHOW:
+			fprintf(stderr, " %d/%s", s->x, code_str(s->x, glyph_names));
+			break;
+		      case Setting::KERN:
+			fprintf(stderr, " <>");
+			break;
+		      case Setting::MOVE:
+			fprintf(stderr, " <%+d,%+d>", s->x, s->y);
+			break;
+		      case Setting::RULE:
+			fprintf(stderr, " [%d,%d]", s->x, s->y);
+			break;
+		    }
+		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1, glyph_names), ch.built_in2, code_str(ch.built_in2, glyph_names));
+	    }
 	    for (const Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
 		fprintf(stderr, "\t[%d/%s => %d/%s]\n", l->in2, code_str(l->in2, glyph_names), l->out, code_str(l->out, glyph_names));
+#if 0
 	    for (const Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
-		fprintf(stderr, "\t{%d/%s => %+d]\n", k->in2, code_str(k->in2, glyph_names), k->kern);
+		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2, glyph_names), k->kern);
+#endif
 	}
 }
