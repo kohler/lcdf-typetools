@@ -136,6 +136,12 @@ Type1CharstringGen::gen_stack(CharstringInterp &interp, int for_cmd)
     interp.clear();
 }
 
+void
+Type1CharstringGen::append_charstring(const String &s)
+{
+    _ncs << s;
+}
+
 Type1Charstring *
 Type1CharstringGen::output()
 {

@@ -15,6 +15,11 @@ class Type1CharstringGen { public:
     void gen_command(int);
     void gen_stack(CharstringInterp &, int for_cmd);
 
+    void append_charstring(const String &);
+
+    double current_point_x(bool real) const { return (real ? _true_x : _false_x); }
+    double current_point_y(bool real) const { return (real ? _true_y : _false_y); }
+
     Type1Charstring *output();
     void output(Type1Charstring &);
 
