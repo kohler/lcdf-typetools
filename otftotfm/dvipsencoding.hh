@@ -33,6 +33,8 @@ class DvipsEncoding { public:
     int parse_ligkern(const String &ligkern_text, ErrorHandler *);
     int parse_unicoding(const String &unicoding_text, ErrorHandler *);
 
+    bool file_had_comments() const		{ return _file_had_comments; }
+    
     // also modifies 'this':
     void make_literal_metrics(Metrics &, Efont::Cff::Font *);
     void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary * = 0);
@@ -66,6 +68,7 @@ class DvipsEncoding { public:
     String _coding_scheme;
     String _initial_comment;
     String _final_text;
+    bool _file_had_comments;
 
     int parse_ligkern_words(Vector<String> &, ErrorHandler *);
     int parse_unicoding_words(Vector<String> &, ErrorHandler *);

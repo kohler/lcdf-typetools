@@ -102,7 +102,7 @@ enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 
-Clp_Option options[] = {
+static Clp_Option options[] = {
     
     { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
     { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
@@ -153,6 +153,14 @@ Clp_Option options[] = {
     
 };
 
+static const char * const default_ligkerns[] = {
+   "space l =: lslash ; space L =: Lslash ;",
+   "question quoteleft =: questiondown ;",
+   "exclam quoteleft =: exclamdown ;",
+   "hyphen hyphen =: endash ; endash hyphen =: emdash ;",
+   "quoteleft quoteleft =: quotedblleft ;",
+   "quoteright quoteright =: quotedblright ;"
+};
 
 static const char *program_name;
 static String::Initializer initializer;
@@ -534,7 +542,7 @@ output_pl(const OpenType::Font &otf, Cff::Font *cff,
 
     // write MAPFONT
     if (vpl)
-	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s--base)\n   )\n", font_name.c_str());
+	fprintf(f, "(MAPFONT D 0\n   (FONTNAME %s--base)\n   (FONTDSIZE R %.1f)\n   )\n", font_name.c_str(), design_size);
     
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
@@ -1561,6 +1569,11 @@ particular purpose.\n");
 	delete font;
     }
 
+    // apply default ligkern commands
+    if (!dvipsenc.file_had_comments() && !ligkern.size())
+	for (const char * const *lk = default_ligkerns; *lk; lk++)
+	    dvipsenc.parse_ligkern(*lk, ErrorHandler::silent_handler());
+    
     // apply command-line ligkern commands and coding scheme
     cerrh.set_landmark("--ligkern command");
     for (int i = 0; i < ligkern.size(); i++)

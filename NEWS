@@ -1,5 +1,16 @@
 LCDF Typetools NEWS
 
+Version 1.65   24.Nov.2003
+
+* otftotfm: Include default ligatures if user does not specify ligatures.
+  Requested by Adam Lindsay.
+
+* otftotfm: Generated VPL includes FONTDSIZE when referring to base. Bug
+  reported by Adam Lindsay.
+
+* Preliminary support for CID-keyed OpenType fonts.
+
+
 Version 1.60   7.Oct.2003
 
 * cfftot1: Support fonts using the 'seac' operator. Requested by Ralf

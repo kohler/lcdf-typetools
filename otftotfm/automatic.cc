@@ -507,7 +507,8 @@ locate_encoding(String encfile, ErrorHandler *errh, bool literal)
 	if (verbose)
 	    errh->message("encoding file %s found with kpathsea at %s", encfile.c_str(), file.c_str());
 	return file;
-    }
+    } else if (verbose)
+	errh->message("encoding file %s not found with kpathsea", encfile.c_str());
 #endif
 
     if (access(encfile.c_str(), R_OK) >= 0)

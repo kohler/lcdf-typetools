@@ -387,6 +387,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, ErrorHandler *errh)
 int
 DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(Vector<String> &, ErrorHandler *), ErrorHandler *errh)
 {
+    _file_had_comments = true;
     Vector<String> words;
     const char *data = s.data();
     int pos = 0, len = s.length();
@@ -424,6 +425,7 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
     if (errh->nerrors() != before)
 	return -1;
     _filename = filename;
+    _file_had_comments = false;
     filename = printable_filename(filename);
     int pos = 0, line = 1;
 
@@ -474,6 +476,7 @@ DvipsEncoding::parse(String filename, ErrorHandler *errh)
 	    int pp = token.length() - 1;
 	    while (pp > p && isspace(token[pp]))
 		pp--;
+	    _file_had_comments = true;
 	    _coding_scheme = token.substring(p, pp - p);
 	    if (_coding_scheme.length() > 39)
 		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");

@@ -1,5 +1,5 @@
 '\"t
-.ds V 1.60
+.ds V 1.65
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -614,6 +614,17 @@ Finally, the CODINGSCHEME command specifies a default
 for the encoding; for example:
 .nf
   % CODINGSCHEME EXTENDED TEX FONT ENCODING
+.fi
+.PP
+If the encoding file had no commands, and you gave no
+.B --ligkern
+options, otftotfm adds eight default ligatures:
+.nf
+  space l =: lslash ; space L =: Lslash ;
+  question quoteleft =: questiondown ; exclam quoteleft =: exclamdown ;
+  hyphen hyphen =: endash ; endash hyphen =: emdash ;
+  quoteleft quoteleft =: quotedblleft ; 
+  quoteright quoteright =: quotedblright
 .fi
 '
 .SS New glyphs
