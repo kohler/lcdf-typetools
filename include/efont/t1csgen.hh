@@ -23,7 +23,7 @@ class Type1CharstringGen { public:
     Type1Charstring *output();
     void output(Type1Charstring &);
 
-    static void assign_substring_callsubr(Type1Charstring &, int pos, int len, int subr);
+    static String callsubr_string(int subr);
     
   private:
   
