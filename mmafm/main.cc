@@ -1,12 +1,12 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "findmet.hh"
-#include "psres.hh"
+#include <efont/findmet.hh>
+#include <efont/psres.hh>
 #include "slurper.hh"
-#include "afm.hh"
-#include "afmw.hh"
-#include "amfm.hh"
+#include <efont/afm.hh>
+#include <efont/afmw.hh>
+#include <efont/amfm.hh>
 #include "error.hh"
 #include "clp.h"
 #include <cstdio>
@@ -48,6 +48,8 @@ Clp_Option options[] = {
   { "version", 0, VERSION_OPT, 0, 0 },
   { "help", 'h', HELP_OPT, 0, 0 },
 };
+
+using namespace Efont;
 
 
 static const char *program_name;

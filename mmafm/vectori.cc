@@ -14,5 +14,5 @@ template class Vector<PermString>;
 #include "string.hh"
 template class Vector<String>;
 
-#include "pairop.hh"
-template class Vector<PairOp>;
+#include <efont/pairop.hh>
+template class Vector<Efont::PairOp>;

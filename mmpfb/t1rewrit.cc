@@ -2,11 +2,13 @@
 # include <config.h>
 #endif
 #include "t1rewrit.hh"
-#include "t1item.hh"
+#include <efont/t1item.hh>
 #include "error.hh"
 #include "straccum.hh"
 #include <cstdio>
 #include <cmath>
+
+using namespace Efont;
 
 static bool itc_complained = false;
 static ErrorHandler *itc_errh;

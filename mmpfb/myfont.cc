@@ -2,15 +2,16 @@
 # include <config.h>
 #endif
 #include "myfont.hh"
-#include "t1item.hh"
-#include "t1interp.hh"
+#include <efont/t1item.hh>
+#include <efont/t1interp.hh>
 #include "t1rewrit.hh"
-#include "t1mm.hh"
+#include <efont/t1mm.hh>
 #include "error.hh"
 #include "straccum.hh"
 #include <cstring>
 #include <cstdio>
 #include <cmath>
+using namespace Efont;
 
 MyFont::MyFont(Type1Reader &reader)
   : Type1Font(reader)

@@ -1,7 +1,7 @@
 #ifndef T1REWRIT_HH
 #define T1REWRIT_HH
-#include "t1interp.hh"
-#include "t1font.hh"
+#include <efont/t1interp.hh>
+#include <efont/t1font.hh>
 #include "straccum.hh"
 
 class Type1CharstringGen { public:
@@ -14,10 +14,10 @@ class Type1CharstringGen { public:
 
     void gen_number(double, int = 0);
     void gen_command(int);
-    void gen_stack(CharstringInterp &, int for_cmd);
+    void gen_stack(Efont::CharstringInterp &, int for_cmd);
 
-    Type1Charstring *output();
-    void output(Type1Charstring &);
+    Efont::Type1Charstring *output();
+    void output(Efont::Type1Charstring &);
 
   private:
   
@@ -35,13 +35,13 @@ class Type1CharstringGen { public:
 
 class Type1MMRemover {
   
-  Type1Font *_font;
+  Efont::Type1Font *_font;
   Vector<double> *_weight_vector;
   int _precision;
   
   int _nsubrs;
   Vector<int> _subr_done;
-  Vector<Type1Charstring *> _subr_prefix;
+  Vector<Efont::Type1Charstring *> _subr_prefix;
   Vector<int> _must_expand_subr;
   Vector<int> _hint_replacement_subr;
   bool _expand_all_subrs;
@@ -50,16 +50,16 @@ class Type1MMRemover {
   
  public:
   
-  Type1MMRemover(Type1Font *, Vector<double> *, int, ErrorHandler *);
+  Type1MMRemover(Efont::Type1Font *, Vector<double> *, int, ErrorHandler *);
   ~Type1MMRemover();
   
-  EfontProgram *program() const	{ return _font; }
+  Efont::EfontProgram *program() const	{ return _font; }
   Vector<double> *weight_vector() const	{ return _weight_vector; }
   int nmasters() const			{ return _weight_vector->size(); }
   int precision() const			{ return _precision; }
   
-  Type1Charstring *subr_prefix(int);
-  Type1Charstring *subr_expander(int);
+  Efont::Type1Charstring *subr_prefix(int);
+  Efont::Type1Charstring *subr_expander(int);
   
   void run();
   
@@ -68,7 +68,7 @@ class Type1MMRemover {
 
 class Type1SubrRemover {
   
-  Type1Font *_font;
+  Efont::Type1Font *_font;
   
   int _nsubrs;
   Vector<bool> _save;
@@ -80,10 +80,10 @@ class Type1SubrRemover {
   
  public:
   
-  Type1SubrRemover(Type1Font *, ErrorHandler *);
+  Type1SubrRemover(Efont::Type1Font *, ErrorHandler *);
   ~Type1SubrRemover();
   
-  EfontProgram *program() const			{ return _font; }
+  Efont::EfontProgram *program() const		{ return _font; }
   ErrorHandler *errh() const			{ return _errh; }
   
   void mark_save(int n);

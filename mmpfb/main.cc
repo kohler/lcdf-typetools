@@ -1,9 +1,9 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "psres.hh"
-#include "t1rw.hh"
-#include "t1mm.hh"
+#include <efont/psres.hh>
+#include <efont/t1rw.hh>
+#include <efont/t1mm.hh>
 #include "myfont.hh"
 #include "t1rewrit.hh"
 #include "clp.h"
@@ -58,6 +58,7 @@ Clp_Option options[] = {
   { "wt", 0, WEIGHT_OPT, Clp_ArgDouble, 0 },
 };
 
+using namespace Efont;
 
 static const char *program_name;
 static ErrorHandler *errh;
@@ -186,34 +187,36 @@ do_file(const char *filename, PsresDatabase *psres)
 
 
 static void
-print_conversion_program(FILE *f, Type1Charstring *cs, PermString name)
+print_conversion_program(FILE *f, const Type1Charstring &cs, PermString name)
 {
-  if (!cs) return;
-  const unsigned char *data = cs->data();
-  for (int i = 0; i < cs->length(); ) {
-    int l = cs->length() - i;
-    if (l > 32) l = 32;
-    fprintf(f, "%s <", name.cc());
-    for (int j = 0; j < l; j++)
-      fprintf(f, "%02X", data[j]);
-    fprintf(f, ">\n");
-    data += l;
-    i += l;
-  }
+    if (cs) {
+	const unsigned char *data = cs.data();
+	for (int i = 0; i < cs.length(); ) {
+	    int l = cs.length() - i;
+	    if (l > 32)
+		l = 32;
+	    fprintf(f, "%s <", name.cc());
+	    for (int j = 0; j < l; j++)
+		fprintf(f, "%02X", data[j]);
+	    fprintf(f, ">\n");
+	    data += l;
+	    i += l;
+	}
+    }
 }
 
 
 static void
 print_amcp_info(EfontMMSpace *mmspace, FILE *f)
 {
-  Type1Charstring *ndv = mmspace->ndv();
-  Type1Charstring *cdv = mmspace->cdv();
+  const Type1Charstring &ndv = mmspace->ndv();
+  const Type1Charstring &cdv = mmspace->cdv();
   if (!ndv && !cdv)
     fprintf(stderr, "%s does not have conversion programs.\n",
 	    mmspace->font_name().cc());
   else {
-    fprintf(f, "StartConversionPrograms %d %d\n", ndv ? ndv->length() : 0,
-	    cdv ? cdv->length() : 0);
+    fprintf(f, "StartConversionPrograms %d %d\n", ndv.length(),
+	    cdv.length());
     print_conversion_program(f, ndv, "NDV");
     print_conversion_program(f, cdv, "CDV");
     fprintf(f, "EndConversionPrograms\n");
