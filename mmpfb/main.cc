@@ -245,7 +245,7 @@ main(int argc, char **argv)
   int precision = 5;
   int subr_count = -1;
   FILE *outfile = 0;
-  ::errh =
+  ErrorHandler *errh =
       ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
   
   while (1) {
