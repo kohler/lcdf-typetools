@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.15
+
+* AIX compile fixes.  Reported by Vladimir Volovich.
+
+
 Version 2.14   16.Sep.2004
 
 * Use AM_MAINTAINER_MODE.  Suggested by Karl Berry.
