@@ -313,7 +313,6 @@ Type1Interp::callsubr_command()
   Type1Charstring *subr_cs = get_subr(which);
   if (!subr_cs)
     ERROR(errSubr);
-  assert(_error == errOK);
   
   subr_cs->run(*this);
   
