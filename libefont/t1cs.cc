@@ -14,7 +14,7 @@ Type1Charstring::Type1Charstring(int lenIV, unsigned char *d, int l)
 
 
 void
-Type1Charstring::decrypt()
+Type1Charstring::decrypt() const
 {
   if (_key < 0) return;
   int r = _key;
@@ -29,7 +29,7 @@ Type1Charstring::decrypt()
 
 
 inline unsigned char *
-Type1Charstring::data()
+Type1Charstring::data() const
 {
   if (_key >= 0) decrypt();
   return _data;
@@ -37,7 +37,7 @@ Type1Charstring::data()
 
 
 bool
-Type1Charstring::run(Type1Interp &t1interp)
+Type1Charstring::run(Type1Interp &t1interp) const
 {
   unsigned char *data = Type1Charstring::data();
   int left = _len;

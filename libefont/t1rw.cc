@@ -383,7 +383,7 @@ Type1Writer::print(const char *s, int n)
 Type1Writer &
 Type1Writer::operator<<(int x)
 {
-  char str[BUFSIZ];
+  char str[128];
   sprintf(str, "%d", x);
   print(str, strlen(str));
   return *this;
@@ -393,13 +393,13 @@ Type1Writer::operator<<(int x)
 Type1Writer &
 Type1Writer::operator<<(double x)
 {
-  char str[BUFSIZ];
+  char str[256];
   sprintf(str, "%g", x);
   print(str, strlen(str));
   return *this;
 }
 
-  
+
 void
 Type1Writer::switch_eexec(bool on)
 {

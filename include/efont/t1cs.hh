@@ -11,12 +11,12 @@ class Type1Charstring {
   
   unsigned char *_data;
   int _len;
-  int _key;
+  mutable int _key;
   
   Type1Charstring(const Type1Charstring &);
   Type1Charstring &operator=(const Type1Charstring &);
 
-  void decrypt();
+  void decrypt() const;
   
  public:
   
@@ -25,12 +25,12 @@ class Type1Charstring {
   Type1Charstring()				: _data(0), _len(0) { }
   ~Type1Charstring()				{ delete[] _data; }
   
-  unsigned char *data();
+  unsigned char *data() const;
   int length() const				{ return _len; }
   
   void assign(unsigned char *, int);
   
-  bool run(Type1Interp &);
+  bool run(Type1Interp &) const;
   
 };
 
