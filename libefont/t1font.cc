@@ -532,29 +532,32 @@ Type1Font::glyph(PermString name) const
 
 
 bool
-Type1Font::set_subr(int e, const Type1Charstring &t1cs)
+Type1Font::set_subr(int e, const Type1Charstring &t1cs, PermString definer)
 {
-    if (e < 0) return false;
-    if (e >= _subrs.size())
-	_subrs.resize(e + 30, (Type1Subr *)0);
-  
-    Type1Subr *pattern_subr = _subrs[e];
-    if (!pattern_subr) {
-	for (int i = 0; i < _subrs.size() && !pattern_subr; i++)
-	    pattern_subr = _subrs[e];
-    }
-    if (!pattern_subr)
+    if (e < 0)
 	return false;
-  
+    if (e >= _subrs.size())
+	_subrs.resize(e + 1, (Type1Subr *)0);
+
+    if (!definer) {
+	Type1Subr *pattern_subr = _subrs[e];
+	for (int i = 0; i < _subrs.size() && !pattern_subr; i++)
+	    pattern_subr = _subrs[i];
+	if (!pattern_subr)
+	    return false;
+	definer = pattern_subr->definer();
+    }
+    
     delete _subrs[e];
-    _subrs[e] = Type1Subr::make_subr(e, pattern_subr->definer(), t1cs);
+    _subrs[e] = Type1Subr::make_subr(e, t1cs, definer);
     return true;
 }
 
 bool
 Type1Font::remove_subr(int e)
 {
-    if (e < 0 || e >= _subrs.size()) return false;
+    if (e < 0 || e >= _subrs.size())
+	return false;
     delete _subrs[e];
     _subrs[e] = 0;
     return true;

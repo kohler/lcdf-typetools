@@ -43,7 +43,7 @@ class Type1Font : public EfontProgram { public:
     void add_glyph(Type1Subr *);
 
     Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
-    bool set_subr(int, const Type1Charstring &);
+    bool set_subr(int, const Type1Charstring &, PermString definer = PermString());
     bool remove_subr(int);
     
     Type1Subr *glyph_x(int i) const	{ return _glyphs[i]; }
