@@ -93,7 +93,7 @@ Type1MMSpace::set_error(ErrorHandler *errh, const char *s, ...) const
     va_start(val, s);
     assert(strlen(s) < 900);
     sprintf(buf, "%.32s: %s", _font_name.cc(), s);
-    errh->verror(ErrorHandler::isError, Landmark(), s, val);
+    errh->verror(ErrorHandler::isError, Landmark(), buf, val);
     va_end(val);
   }
   return false;
@@ -278,8 +278,12 @@ Type1MMSpace::convert_vector(NumVector &design, NumVector &norm_design,
           weight[m] *= 1 - norm_design[a];
         else if (_master_positions[m][a] == 1)
           weight[m] *= norm_design[a];
-        else
-          return set_error(errh, "error in BlendDesignPositions");
+        else {
+	  if (errh)
+	    errh->error("need intermediate master programs for %s",
+			_font_name.cc());
+	  return false;
+	}
   
   return true;
 }

@@ -121,7 +121,8 @@ class Type1Encoding: public Type1Item {
   Type1Encoding();
   ~Type1Encoding();
   
-  void put(int e, PermString p)		{ assert(e>=0 && e<256); _v[e] = p; }
+  PermString operator[](int e) const	{ assert(e>=0&&e<256); return _v[e]; }
+  void put(int e, PermString p)		{ assert(e>=0&&e<256); _v[e] = p; }
   
   static Type1Encoding *standard_encoding();
 

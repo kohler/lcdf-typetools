@@ -35,6 +35,9 @@ class Type1MMSpace {
   NumVector _weight_vector;
   
   bool set_error(ErrorHandler *, const char *, ...) const;
+
+  Type1MMSpace(const Type1MMSpace &);
+  Type1MMSpace &operator=(const Type1MMSpace &);
   
   bool normalize_vector(NumVector &, NumVector &, NumVector &,
 			ErrorHandler *) const;
@@ -47,6 +50,8 @@ class Type1MMSpace {
   ~Type1MMSpace();
 
   PermString font_name() const		{ return _font_name; }
+  int naxes() const			{ return _naxes; }
+  int nmasters() const			{ return _nmasters; }
   
   int axis(PermString) const;
   double axis_low(int) const;
@@ -57,7 +62,7 @@ class Type1MMSpace {
 
   Type1Charstring *ndv() const		{ return _ndv; }
   Type1Charstring *cdv() const		{ return _cdv; }
-
+  
   void set_master_positions(const Vector<NumVector> &);
   void set_normalize(const Vector<NumVector> &, const Vector<NumVector> &);
   void set_axis_type(int, PermString);
