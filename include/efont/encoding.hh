@@ -1,8 +1,5 @@
 #ifndef ENCODING_HH
 #define ENCODING_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "vector.hh"
 typedef int GlyphIndex;
 

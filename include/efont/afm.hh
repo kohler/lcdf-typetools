@@ -1,8 +1,5 @@
 #ifndef AFM_HH
 #define AFM_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "metrics.hh"
 class AfmParser;
 class Slurper;

@@ -1,8 +1,5 @@
 #ifndef AMFM_HH
 #define AMFM_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "metrics.hh"
 #include "hashmap.hh"
 #include "t1mm.hh"

@@ -1,8 +1,5 @@
 #ifndef AFMW_HH
 #define AFMW_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "afm.hh"
 #include <stdio.h>
 

@@ -1,8 +1,5 @@
 #ifndef AFMPARSE_HH
 #define AFMPARSE_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "slurper.hh"
 #include "permstr.hh"
 #include <stdarg.h>

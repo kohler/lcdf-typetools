@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "findmet.hh"
-#endif
 #include "findmet.hh"
 #include "afmparse.hh"
 #include "afm.hh"

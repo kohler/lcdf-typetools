@@ -1,8 +1,5 @@
 #ifndef PAIROP_HH
 #define PAIROP_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "encoding.hh" /* get GlyphIndex */
 
 enum PairOpDefs {

@@ -1,8 +1,5 @@
 #ifndef METRICS_HH
 #define METRICS_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "permstr.hh"
 #include "vector.hh"
 #include "hashmap.hh"

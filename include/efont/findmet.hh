@@ -1,8 +1,5 @@
 #ifndef FINDMET_HH
 #define FINDMET_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "hashmap.hh"
 #include "vector.hh"
 #include "permstr.hh"
