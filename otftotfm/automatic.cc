@@ -203,6 +203,7 @@ odirname(int o)
     return odir_info[o].name;
 }
 
+#if HAVE_KPATHSEA
 static bool
 file_in_kpathsea_odir(int o, const String &file)
 {
@@ -211,6 +212,7 @@ file_in_kpathsea_odir(int o, const String &file)
 	&& memcmp(file.data(), odir[o].data(), odir[o].length()) == 0
 	&& file[odir[o].length()] == '/';
 }
+#endif
 
 void
 update_odir(int o, String file, ErrorHandler *errh)

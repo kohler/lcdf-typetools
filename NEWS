@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 1.50b3   
+
+* cfftot1: Emit UniqueID as an integer. Reported by Tom Kacvinsky.
+
+
 Version 1.50b2   24.Aug.2003
 
 * otfinfo: New program, requested by Adam Lindsay.
