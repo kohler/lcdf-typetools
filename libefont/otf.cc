@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <netinet/in.h>		// for ntohl()
+#include <efont/otfdata.hh>	// for ntohl()
 
 #ifndef static_assert
 #define static_assert(c) switch (c) case 0: case (c):

@@ -513,7 +513,7 @@ static const Mapping features[] = {
     { T("ruby"), "Ruby Notation Forms" },
     { T("salt"), "Stylistic Alternates" },
     { T("sinf"), "Scientific Inferiors" },
-    { T("size"), "Optical size" },
+    { T("size"), "Optical Size" },
     { T("smcp"), "Small Capitals" },
     { T("smpl"), "Simplified Forms" },
     { T("ss01"), "Stylistic Set 1" },

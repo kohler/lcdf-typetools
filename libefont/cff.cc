@@ -990,7 +990,7 @@ Cff::Font::Font(Cff *cff, PermString font_name, ErrorHandler *errh)
     // find top DICT
     int td_offset, td_length;
     if (cff->font_offset(_font_name, td_offset, td_length) < 0) {
-	errh->error("no font '%s' in CFF", _font_name.cc());
+	errh->error("no font '%s'", _font_name.cc());
 	return;
     }
 

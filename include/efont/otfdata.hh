@@ -3,7 +3,13 @@
 #define EFONT_OTFDATA_HH
 #include <lcdf/string.hh>
 #include <efont/t1cs.hh>		/* for integer types */
-#include <netinet/in.h>			/* for ntohl() */
+#ifdef __linux__
+# include <netinet/in.h>		/* for ntohl() */
+#elif defined(HAVE_SYS_PARAM_H)
+# include <sys/param.h>
+#else
+# error "configury disaster! Report this error to kohler@icir.org"
+#endif
 class ErrorHandler;
 namespace Efont { namespace OpenType {
 

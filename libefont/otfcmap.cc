@@ -7,7 +7,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <netinet/in.h>		// for ntohl()
+#include <efont/otfdata.hh>	// for ntohl()
 
 #define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
 #define SHORT_AT(d)		((int16_t) ntohs(*(const uint16_t *)(d)))
