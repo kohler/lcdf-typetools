@@ -10,25 +10,13 @@
 
 Bezier::Bezier(const point &p1, const point &p2, const point &p3,
 	       const point &p4)
-  : _flags(0)
+  : _flags(0), _left(0), _right(0)
 {
   _p[0] = p1;
   _p[1] = p2;
   _p[2] = p3;
   _p[3] = p4;
 }
-
-
-Bezier::Bezier(int bf, const point &p1, const point &p2, const point &p3,
-	       const point &p4)
-  : _flags(bf), _left(0), _right(0)
-{
-  _p[0] = p1;
-  _p[1] = p2;
-  _p[2] = p3;
-  _p[3] = p4;
-}
-
 
 Bezier::Bezier(Lens *lens, const Bezier &b)
   : _flags(0)

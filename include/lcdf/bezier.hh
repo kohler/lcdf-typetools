@@ -43,7 +43,6 @@ class Bezier {
   const int BBExists	= 0x100;
   
   Bezier()				: _flags(0) { }
-  Bezier(int, const point &, const point &, const point &, const point &);
   Bezier(const point &, const point &, const point &, const point &);
   Bezier(Lens *, const Bezier &);
   
