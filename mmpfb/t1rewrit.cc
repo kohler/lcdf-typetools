@@ -39,7 +39,7 @@ Type1CharstringGen::gen_number(double float_val)
 	val = big_val;
 
     if (val >= -107 && val <= 107)
-	_ncs.push(val + 139);
+	_ncs.append((char)(val + 139));
 
     else if (val >= -1131 && val <= 1131) {
 	int base = val < 0 ? 251 : 247;
@@ -47,22 +47,22 @@ Type1CharstringGen::gen_number(double float_val)
 	val -= 108;
 	int w = val % 256;
 	val = (val - w) / 256;
-	_ncs.push(val + base);
-	_ncs.push(w);
+	_ncs.append((char)(val + base));
+	_ncs.append((char)w);
 
     } else {
-	_ncs.push(255);
+	_ncs.append('\377');
 	long l = val;
-	_ncs.push((int)((l >> 24) & 0xFF));
-	_ncs.push((int)((l >> 16) & 0xFF));
-	_ncs.push((int)((l >> 8) & 0xFF));
-	_ncs.push((int)((l >> 0) & 0xFF));
+	_ncs.append((char)((l >> 24) & 0xFF));
+	_ncs.append((char)((l >> 16) & 0xFF));
+	_ncs.append((char)((l >> 8) & 0xFF));
+	_ncs.append((char)((l >> 0) & 0xFF));
     }
 
     if (frac != 0) {
-	_ncs.push(_precision + 139);
-	_ncs.push(Type1Interp::cEscape);
-	_ncs.push(Type1Interp::cDiv - Type1Interp::cEscapeDelta);
+	_ncs.append((char)(_precision + 139));
+	_ncs.append((char)Type1Interp::cEscape);
+	_ncs.append((char)(Type1Interp::cDiv - Type1Interp::cEscapeDelta));
     }
 }
 
@@ -71,10 +71,10 @@ void
 Type1CharstringGen::gen_command(int command)
 {
     if (command >= Type1Interp::cEscapeDelta) {
-	_ncs.push(Type1Interp::cEscape);
-	_ncs.push(command - Type1Interp::cEscapeDelta);
+	_ncs.append((char)Type1Interp::cEscape);
+	_ncs.append((char)(command - Type1Interp::cEscapeDelta));
     } else
-	_ncs.push(command);
+	_ncs.append((char)command);
 }
 
 void

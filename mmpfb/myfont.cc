@@ -100,8 +100,7 @@ MyFont::set_design_vector(Type1MMSpace *mmspace, const Vector<double> &design,
     for (int a = 0; a < naxes; a++)
       sa << '_' << design[a];
     // Multiple masters actually require an underscore AFTER the font name too
-    sa << '_';
-    sa.push(0);
+    sa << '_' << '\0';
     t1d->set_name(sa.data());
   }
   
