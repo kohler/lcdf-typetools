@@ -23,6 +23,10 @@
 #include <ctype.h>
 #include <errno.h>
 #include "util.hh"
+#include "md5.h"
+#ifdef HAVE_CTIME
+# include <time.h>
+#endif
 #if defined(_MSDOS) || defined(_WIN32)
 # include <fcntl.h>
 # include <io.h>
@@ -41,12 +45,17 @@ using namespace Efont;
 #define ENCODING_TEXT_OPT	305
 #define PFA_OPT			306
 #define PFB_OPT			307
+#define FONTNAME_OPT		308
+#define FULLNAME_OPT		309
 
 Clp_Option options[] = {
     { "help", 'h', HELP_OPT, 0, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "pfa", 'a', PFA_OPT, 0, 0 },
     { "pfb", 'b', PFA_OPT, 0, 0 },
+    { "name", 'n', FONTNAME_OPT, Clp_ArgString, 0 },
+    { "fullname", 'N', FULLNAME_OPT, Clp_ArgString, 0 },
+    { "full-name", 'N', FULLNAME_OPT, Clp_ArgString, 0 },
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "encoding-text", 'E', ENCODING_TEXT_OPT, Clp_ArgString, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
@@ -55,7 +64,9 @@ Clp_Option options[] = {
 
 static const char *program_name;
 static PermString::Initializer initializer;
+static String::Initializer initializer2;
 static HashMap<PermString, int> glyph_order(-1);
+static String encoding_name;
 
 
 void
@@ -92,6 +103,115 @@ Options:\n\
       --version                Print version number and exit.\n\
 \n\
 Report bugs to <kohler@icir.org>.\n", program_name);
+}
+
+
+// FONT MANIPULATION
+
+static void
+kill_def(Type1Font* font, Type1Definition *t1d, int whichd)
+{
+    if (!t1d || font->dict(whichd, t1d->name()) != t1d)
+	return;
+  
+    int icount = font->nitems();
+    for (int i = font->first_dict_item(whichd); i < icount; i++)
+	if (font->item(i) == t1d) {
+	    StringAccum sa;
+	    sa << '%';
+	    t1d->gen(sa);
+	    PermString name = t1d->name();
+	    Type1CopyItem *t1ci = new Type1CopyItem(sa.take_string());
+	    font->set_item(i, t1ci);
+	    font->set_dict(whichd, name, 0);
+	    return;
+	}
+  
+    assert(0);
+}
+
+static void
+adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_name, String new_full_name)
+{
+    // prepare an MD5 digest over the encoding
+    StringAccum etext;
+    for (int i = 0; i < 256; i++)
+	etext << encoding->elt(i) << ' ';
+    MD5_CONTEXT md5;
+    md5_init(&md5);
+    md5_update(&md5, (const unsigned char*) etext.data(), etext.length() - 1);
+    
+    // save UniqueID, then kill its definition
+    int uniqueid;
+    Type1Definition *t1d = font->dict("UniqueID");
+    bool have_uniqueid = (t1d && t1d->value_int(uniqueid));
+    kill_def(font, t1d, Type1Font::dFont);
+    kill_def(font, font->p_dict("UniqueID"), Type1Font::dPrivate);
+    
+    // prepare XUID
+    t1d = font->dict("XUID");
+    Vector<double> xuid;
+    if (!t1d || !t1d->value_numvec(xuid)) {
+	if (have_uniqueid) {
+	    t1d = font->ensure(Type1Font::dFont, "XUID");
+	    xuid.clear();
+	    xuid.push_back(1);
+	    xuid.push_back(uniqueid);
+	} else if (t1d) {
+	    kill_def(font, t1d, Type1Font::dFont);
+	    t1d = 0;
+	}
+    }
+    if (t1d) {
+	uint32_t digest[MD5_DIGEST_SIZE / sizeof(uint32_t) + 1];
+	md5_final((unsigned char *) digest, &md5);
+	
+	// append digest to XUID
+	for (unsigned i = 0; i < MD5_DIGEST_SIZE / sizeof(uint32_t); i++)
+	    xuid.push_back(digest[i]);
+	t1d->set_numvec(xuid);
+    }
+
+    // prepare new font name
+    if (!encoding_name) {
+	char text_digest[MD5_TEXT_DIGEST_SIZE + 1];
+	md5_final_text(text_digest, &md5);
+	encoding_name = "AutoEnc_" + String(text_digest);
+    }
+    
+    t1d = font->dict("FontName");
+    PermString name;
+    if (t1d && t1d->value_name(name)) {
+	if (!new_name)
+	    new_name = name + String("-") + encoding_name;
+	t1d->set_name(new_name.c_str());
+	font->uncache_defs();	// remove cached font name
+    }
+
+    // add a FullName too
+    String full_name;
+    t1d = font->fi_dict("FullName");
+    if (t1d && t1d->value_string(full_name)) {
+	if (!new_full_name)
+	    new_full_name = full_name + " " + encoding_name + " Enc";
+	t1d->set_string(new_full_name.c_str());
+    }
+
+    // add header comments
+    {
+	StringAccum sa;
+#if HAVE_CTIME
+	time_t cur_time = time(0);
+	char *time_str = ctime(&cur_time);
+	sa << "%% Created by t1reencode-" VERSION " on " << time_str;
+	sa.pop_back();
+#else
+	sa << "%% Created by t1reencode-" VERSION "."; 
+#endif
+
+	font->add_header_comment(sa.take_string().c_str());
+	font->add_header_comment("%% T1reencode is free software.  See <http://www.lcdf.org/type/>.");
+    }
 }
 
 
@@ -170,7 +290,7 @@ parse_encoding(String s, String filename, ErrorHandler *errh)
 	errh->lerror(landmark(filename, line), "parse error, expected name");
 	return 0;
     }
-    // _name = token.substring(1);
+    encoding_name = token.substring(1);
 
     if (tokenize(s, pos, line) != "[") {
 	errh->lerror(landmark(filename, line), "parse error, expected [");
@@ -253,6 +373,8 @@ main(int argc, char *argv[])
     const char *output_file = 0;
     const char *encoding_file = 0;
     const char *encoding_text = 0;
+    const char *new_font_name = 0;
+    const char *new_full_name = 0;
     bool binary = true;
     Vector<String> glyph_patterns;
   
@@ -270,6 +392,18 @@ main(int argc, char *argv[])
 	    if (encoding_file || encoding_text)
 		errh->fatal("encoding already specified");
 	    encoding_text = clp->arg;
+	    break;
+
+	  case FONTNAME_OPT:
+	    if (new_font_name)
+		errh->fatal("font name already specified");
+	    new_font_name = clp->arg;
+	    break;
+
+	  case FULLNAME_OPT:
+	    if (new_full_name)
+		errh->fatal("full name already specified");
+	    new_full_name = clp->arg;
 	    break;
 	    
 	  case OUTPUT_OPT:
@@ -343,7 +477,10 @@ particular purpose.\n");
 
     // set the encoding
     font->add_type1_encoding(t1e);
-    
+
+    // adjust definitions
+    adjust_font_definitions(font, t1e, new_font_name, new_full_name);
+
     // write it to output
     FILE *outf;
     if (!output_file || strcmp(output_file, "-") == 0)

@@ -102,6 +102,7 @@ using namespace Efont;
 #define PL_OPT			352
 #define TFM_OPT			353
 #define MAP_FILE_OPT		354
+#define OUTPUT_ENCODING_OPT	355
 
 #define DIR_OPTS		360
 #define ENCODING_DIR_OPT	(DIR_OPTS + O_ENCODING)
@@ -153,6 +154,7 @@ static Clp_Option options[] = {
     { "no-type1", 0, NO_TYPE1_OPT, 0, Clp_OnlyNegated },
     { "no-dotlessj", 0, NO_DOTLESSJ_OPT, 0, Clp_OnlyNegated },
     { "map-file", 0, MAP_FILE_OPT, Clp_ArgString, Clp_Negate },
+    { "output-encoding", 0, OUTPUT_ENCODING_OPT, Clp_ArgString, Clp_Optional },
         
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
     { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
@@ -293,6 +295,7 @@ Output options:\n\
       --no-virtual             Do not generate VFs or VPLs.\n\
       --no-encoding            Do not generate an encoding file.\n\
       --no-map                 Do not generate a psfonts.map line.\n\
+      --output-encoding[=FILE] Only generate an encoding file.\n\
 \n");
     printf("\
 File location options:\n\
@@ -844,7 +847,9 @@ output_encoding(const Metrics &metrics,
     out_encoding_name = "AutoEnc_" + String(text_digest);
 
     // create encoding filename
-    out_encoding_file = getodir(O_ENCODING, errh) + String("/a_") + String(text_digest).substring(0, 6) + ".enc";
+    bool output_encoding_only = (bool) out_encoding_file;
+    if (!out_encoding_file)
+	out_encoding_file = getodir(O_ENCODING, errh) + String("/a_") + String(text_digest).substring(0, 6) + ".enc";
 
     // exit if we're not responsible for generating an encoding
     if (!(output_flags & G_ENCODING))
@@ -854,9 +859,10 @@ output_encoding(const Metrics &metrics,
     // 3.Jun.2003: stick command line definition at the end of the encoding,
     // where it won't confuse idiotic ps2pk
     StringAccum contents;
-    contents << "% THIS FILE WAS AUTOMATICALLY GENERATED -- DO NOT EDIT\n\n\
-%%" << out_encoding_name << "\n\
-% Encoding created by otftotfm" << current_time << "\n\
+    if (!output_encoding_only)
+	contents << "% THIS FILE WAS AUTOMATICALLY GENERATED -- DO NOT EDIT\n\n\
+%%" << out_encoding_name << "\n";
+    contents << "% Encoding created by otftotfm" << current_time << "\n\
 % Command line follows encoding\n";
     
     // the encoding itself
@@ -888,7 +894,9 @@ output_encoding(const Metrics &metrics,
     }
     
     // open encoding file
-    if (write_encoding_file(out_encoding_file, out_encoding_name, contents, errh) == 1)
+    if (out_encoding_file == "-")
+	fwrite(contents.data(), 1, contents.length(), stdout);
+    else if (write_encoding_file(out_encoding_file, out_encoding_name, contents, errh) == 1)
 	update_odir(O_ENCODING, out_encoding_file, errh);
 }
 
@@ -985,7 +993,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
     if (need_virtual) {
 	if (output_flags & G_VMETRICS)
 	    base_font_name = make_base_font_name(font_name);
-	else
+	else if (output_flags & G_METRICS)
 	    errh->warning("features require virtual fonts");
     }
     
@@ -1620,6 +1628,13 @@ main(int argc, char *argv[])
 	  case NO_TYPE1_OPT:
 	  case NO_DOTLESSJ_OPT:
 	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
+	    break;
+
+	  case OUTPUT_ENCODING_OPT:
+	    if (out_encoding_file)
+		usage_error(errh, "encoding output file specified twice");
+	    out_encoding_file = (clp->have_arg ? clp->arg : "-");
+	    output_flags = G_ENCODING;
 	    break;
 
 	  case MINIMUM_KERN_OPT:
