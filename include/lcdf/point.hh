@@ -2,155 +2,124 @@
 #define POINT_HH
 #include <math.h>
 
-struct Point {
+
+struct point {
   
   double x;
   double y;
-  
-  Point()				{ }
-  Point(double xx, double yy)		: x(xx), y(yy) { }
-  
-  operator bool() const			{ return x || y; }
-  
-  double squared_length() const;
-  double length() const;
-  double magnitude() const;
-  static double distance(const Point &, const Point &);
-  
-  double angle() const;
-  
-  Point rotated(double) const;
-  Point normal() const;
-  
-  Point &operator+=(const Point &);
-  Point &operator-=(const Point &);
-  Point &operator*=(double);
-  Point &operator/=(double);
 
-  // Point operator+(Point, const Point &);
-  // Point operator-(Point, const Point &);
-  // Point operator*(Point, double);
-  // Point operator/(Point, double);
-  // Point operator-(const Point &);
+  point()				: x(0), y(0) { }
+  point(double xx, double yy)		: x(xx), y(yy) { }
   
-  // bool operator==(const Point &, const Point &);
-  // bool operator!=(const Point &, const Point &);
+  double squared_length() const		{ return x * x + y * y; }
+  double length() const			{ return sqrt(squared_length()); }
+  
+  static point midpoint(const point &, const point &);
+  static point fraction_point(const point &, const point &, double);
+  
+  static double squared_length(const point &);
+  static double length(const point &);
+  static double distance(const point &, const point &);
+  static point along(const point &, const point &, double);
+  
+  int on_line(const point &, const point &, double) const;
+  int on_segment(const point &, const point &, double) const;
+  
+  friend point operator+(const point &, const point &);
+  friend point operator-(const point &, const point &);
+  point &operator+=(const point &);
+  point &operator-=(const point &);
+  friend point operator*(double, const point &);
+  friend point operator*(const point &, double);
+  friend int operator==(const point &, const point &);
+  friend int operator!=(const point &, const point &);
+  point &operator*=(double);
   
 };
 
-inline double
-Point::squared_length() const
+
+inline point
+point::midpoint(const point &a, const point &b)
 {
-  return x*x + y*y;
+  return point((a.x + b.x) / 2, (a.y + b.y) / 2);
+}
+
+inline point
+operator+(const point &a, const point &b)
+{
+  return point(a.x + b.x, a.y + b.y);
+}
+
+inline point
+operator-(const point &a, const point &b)
+{
+  return point(a.x - b.x, a.y - b.y);
+}
+
+inline point &
+point::operator+=(const point &b)
+{
+  return (*this = *this + b);
+}
+
+inline point &
+point::operator-=(const point &b)
+{
+  return (*this = *this - b);
 }
 
 inline double
-Point::length() const
+point::squared_length(const point &a)
 {
-  return sqrt(x*x + y*y);
+  return a.squared_length();
 }
 
 inline double
-Point::magnitude() const
+point::length(const point &a)
 {
-  return length();
+  return a.length();
 }
 
 inline double
-Point::angle() const
+point::distance(const point &a, const point &b)
 {
-  return atan2(y, x);
+  return length(a - b);
 }
 
-inline Point
-Point::normal() const
+inline point
+operator*(const point &a, double t)
 {
-  double l = length();
-  return (l ? Point(x/l, y/l) : *this);
+  return point(a.x * t, a.y * t);
 }
 
-inline Point &
-Point::operator+=(const Point &p)
+inline point
+operator*(double t, const point &a)
 {
-  x += p.x;
-  y += p.y;
-  return *this;
+  return a * t;
 }
 
-inline Point &
-Point::operator-=(const Point &p)
+inline point &
+point::operator*=(double t)
 {
-  x -= p.x;
-  y -= p.y;
-  return *this;
+  return (*this = *this * t);
 }
 
-inline Point &
-Point::operator*=(double d)
+inline int
+operator==(const point &a, const point &b)
 {
-  x *= d;
-  y *= d;
-  return *this;
+  return (a.x == b.x && a.y == b.y);
 }
 
-inline Point &
-Point::operator/=(double d)
+inline int
+operator!=(const point &a, const point &b)
 {
-  x /= d;
-  y /= d;
-  return *this;
+  return (a.x != b.x || a.y != b.y);
 }
 
-inline bool
-operator==(const Point &a, const Point &b)
+inline point
+point::fraction_point(const point &a, const point &b, double d)
 {
-  return a.x == b.x && a.y == b.y;
-}
-
-inline bool
-operator!=(const Point &a, const Point &b)
-{
-  return a.x != b.x && a.y != b.y;
-}
-
-inline Point
-operator+(Point a, const Point &b)
-{
-  a += b;
-  return a;
-}
-
-inline Point
-operator-(Point a, const Point &b)
-{
-  a -= b;
-  return a;
-}
-
-inline Point
-operator-(const Point &a)
-{
-  return Point(-a.x, -a.y);
-}
-
-inline Point
-operator*(Point a, double scale)
-{
-  a *= scale;
-  return a;
-}
-
-inline Point
-operator/(Point a, double scale)
-{
-  a /= scale;
-  return a;
-}
-
-inline double
-Point::distance(const Point &a, const Point &b)
-{
-  return (a - b).length();
+  return a * (1 - d) + b * d;
 }
 
 #endif
