@@ -1,4 +1,4 @@
-LCDF-TYPETOOLS 1.51
+LCDF-TYPETOOLS 1.52
 ===================
 
 USAGE
@@ -33,8 +33,8 @@ substitutions, and ligatures as far as it is able.  You can say which
 OpenType features should be activated.  See the manual page
 'otftotfm/otftotfm.1' for more information.
 
-   The final program is preliminary and has little or no documentation:
-t1testpage creates a PostScript test page for a given font file.
+   The final program is preliminary: t1testpage creates a PostScript test
+page for a given font file.
 
    Please write me with problems, patches, and suggestions at the address
 below.
@@ -118,9 +118,9 @@ or in the COPYING file in this directory.
 AUTHOR
 ------
    Eddie Kohler, <kohler@icir.org>
-   http://www.lcdf.org/~eddietwo/
+   http://www.lcdf.org/
 
-   The current version of the mminstance package is available on the Web at
-'http://www.lcdf.org/type/'.
+   The current version of the lcdf-typetools package is available on the
+Web at 'http://www.lcdf.org/type/'.
 
    LCDF stands for Little Cambridgeport Design Factory.

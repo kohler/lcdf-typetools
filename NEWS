@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 1.52   4.Sep.2003
+
+* otftotfm: Add --design-size option requested by Johannes Kuester.
+
+* t1testpage: Fix --help and add manual page at C.M. Connelly's request.
+
+
 Version 1.51   2.Sep.2003
 
 * otftotfm: Generated TFM and PL files have DESIGNSIZE set to the font's
