@@ -6,10 +6,10 @@
 class ErrorHandler;
 class Type1Font;
 
-class PsfontMMSpace : public PsfontProgram { public:
+class EfontMMSpace : public EfontProgram { public:
 
-    PsfontMMSpace(PermString, int naxes, int nmasters);
-    ~PsfontMMSpace();
+    EfontMMSpace(PermString, int naxes, int nmasters);
+    ~EfontMMSpace();
   
     typedef Vector<double> NumVector;
   
@@ -85,8 +85,8 @@ class PsfontMMSpace : public PsfontProgram { public:
   
     bool error(ErrorHandler *, const char *, ...) const;
   
-    PsfontMMSpace(const PsfontMMSpace &);
-    PsfontMMSpace &operator=(const PsfontMMSpace &);
+    EfontMMSpace(const EfontMMSpace &);
+    EfontMMSpace &operator=(const EfontMMSpace &);
   
     bool normalize_vector(ErrorHandler *) const;
     bool convert_vector(ErrorHandler *) const;
@@ -95,13 +95,13 @@ class PsfontMMSpace : public PsfontProgram { public:
 
 
 inline const Vector<double> &
-PsfontMMSpace::default_design_vector() const
+EfontMMSpace::default_design_vector() const
 {
   return _default_design_vector;
 }
 
 inline const Vector<double> &
-PsfontMMSpace::default_weight_vector() const
+EfontMMSpace::default_weight_vector() const
 {
   return _default_weight_vector;
 }

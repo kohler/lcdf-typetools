@@ -13,7 +13,7 @@
 
 class Type1Interp { public:
 
-    Type1Interp(const PsfontProgram *, Vector<double> *weight = 0);
+    Type1Interp(const EfontProgram *, Vector<double> *weight = 0);
     virtual ~Type1Interp()			{ }
 
     int error() const				{ return _error; }
@@ -38,9 +38,9 @@ class Type1Interp { public:
     Vector<double> *weight_vector();
     Vector<double> *scratch_vector()		{ return &_scratch_vector; }
   
-    PsfontCharstring *get_subr(int) const;
-    PsfontCharstring *get_gsubr(int) const;
-    PsfontCharstring *get_glyph(PermString) const;
+    EfontCharstring *get_subr(int) const;
+    EfontCharstring *get_gsubr(int) const;
+    EfontCharstring *get_glyph(PermString) const;
 
     virtual void init();
     bool error(int c)				{ return error(c, 0); }
@@ -210,7 +210,7 @@ class Type1Interp { public:
     double _lsbx;
     double _lsby;
   
-    const PsfontProgram *_program;
+    const EfontProgram *_program;
 
     // for processing Type 2 charstrings
     enum Type2State {
@@ -255,19 +255,19 @@ Type1Interp::vec(Vector<double> *v, int i)
 	return v->at_u(i);
 }
 
-inline PsfontCharstring *
+inline EfontCharstring *
 Type1Interp::get_subr(int n) const
 {
     return _program ? _program->subr(n) : 0;
 }
 
-inline PsfontCharstring *
+inline EfontCharstring *
 Type1Interp::get_gsubr(int n) const
 {
     return _program ? _program->gsubr(n) : 0;
 }
 
-inline PsfontCharstring *
+inline EfontCharstring *
 Type1Interp::get_glyph(PermString n) const
 {
     return _program ? _program->glyph(n) : 0;

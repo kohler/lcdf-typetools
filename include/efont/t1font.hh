@@ -12,11 +12,11 @@ class Type1IncludedFont;
 class Type1Subr;
 class Type1Reader;
 class Type1Writer;
-class PsfontMMSpace;
+class EfontMMSpace;
 class StringAccum;
 class ErrorHandler;
 
-class Type1Font : public PsfontProgram { public:
+class Type1Font : public EfontProgram { public:
   
     // note: the order is relevant
     enum Dict {
@@ -70,8 +70,8 @@ class Type1Font : public PsfontProgram { public:
     Type1Definition *ensure(Dict, PermString);
     void add_header_comment(const char *);
   
-    PsfontMMSpace *create_mmspace(ErrorHandler * = 0) const;
-    PsfontMMSpace *mmspace() const;
+    EfontMMSpace *create_mmspace(ErrorHandler * = 0) const;
+    EfontMMSpace *mmspace() const;
 
     void undo_synthetic();
   
@@ -96,7 +96,7 @@ class Type1Font : public PsfontProgram { public:
     Type1Encoding *_encoding;
   
     mutable bool _cached_mmspace;
-    mutable PsfontMMSpace *_mmspace;
+    mutable EfontMMSpace *_mmspace;
 
     Type1IncludedFont *_synthetic_item;
   

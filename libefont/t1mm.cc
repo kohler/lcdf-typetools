@@ -8,14 +8,14 @@
 #include <cstdio>
 #include <cstring>
 
-PsfontMMSpace::PsfontMMSpace(PermString fn, int na, int nm)
+EfontMMSpace::EfontMMSpace(PermString fn, int na, int nm)
     : _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),
       _axis_types(na, PermString()), _axis_labels(na, PermString()),
       _ndv(0), _cdv(0)
 {
 }
 
-PsfontMMSpace::~PsfontMMSpace()
+EfontMMSpace::~EfontMMSpace()
 {
     if (_own_ndv) delete _ndv;
     if (_own_cdv) delete _cdv;
@@ -23,13 +23,13 @@ PsfontMMSpace::~PsfontMMSpace()
 
 
 void
-PsfontMMSpace::set_master_positions(const Vector<NumVector> &mp)
+EfontMMSpace::set_master_positions(const Vector<NumVector> &mp)
 {
     _master_positions = mp;
 }
 
 void
-PsfontMMSpace::set_normalize(const Vector<NumVector> &nin,
+EfontMMSpace::set_normalize(const Vector<NumVector> &nin,
 			     const Vector<NumVector> &nout)
 {
     _normalize_in = nin;
@@ -37,19 +37,19 @@ PsfontMMSpace::set_normalize(const Vector<NumVector> &nin,
 }
 
 void
-PsfontMMSpace::set_axis_type(int ax, PermString t)
+EfontMMSpace::set_axis_type(int ax, PermString t)
 {
     _axis_types[ax] = t;
 }
 
 void
-PsfontMMSpace::set_axis_label(int ax, PermString t)
+EfontMMSpace::set_axis_label(int ax, PermString t)
 {
     _axis_labels[ax] = t;
 }
 
 void
-PsfontMMSpace::set_ndv(Type1Charstring *cs, bool own)
+EfontMMSpace::set_ndv(Type1Charstring *cs, bool own)
 {
     if (_own_ndv) delete _ndv;
     _ndv = cs;
@@ -57,7 +57,7 @@ PsfontMMSpace::set_ndv(Type1Charstring *cs, bool own)
 }
 
 void
-PsfontMMSpace::set_cdv(Type1Charstring *cs, bool own)
+EfontMMSpace::set_cdv(Type1Charstring *cs, bool own)
 {
     if (_own_cdv) delete _cdv;
     _cdv = cs;
@@ -65,20 +65,20 @@ PsfontMMSpace::set_cdv(Type1Charstring *cs, bool own)
 }
 
 void
-PsfontMMSpace::set_design_vector(const NumVector &v)
+EfontMMSpace::set_design_vector(const NumVector &v)
 {
     _default_design_vector = v;
 }
 
 void
-PsfontMMSpace::set_weight_vector(const NumVector &v)
+EfontMMSpace::set_weight_vector(const NumVector &v)
 {
     _default_weight_vector = v;
 }
 
 
 bool
-PsfontMMSpace::error(ErrorHandler *errh, const char *s, ...) const
+EfontMMSpace::error(ErrorHandler *errh, const char *s, ...) const
 {
     if (errh) {
 	char buf[1024];
@@ -95,7 +95,7 @@ PsfontMMSpace::error(ErrorHandler *errh, const char *s, ...) const
 
 
 bool
-PsfontMMSpace::check(ErrorHandler *errh)
+EfontMMSpace::check(ErrorHandler *errh)
 {
     if (_ok)
 	return true;
@@ -142,7 +142,7 @@ PsfontMMSpace::check(ErrorHandler *errh)
 }
 
 bool
-PsfontMMSpace::check_intermediate(ErrorHandler *errh)
+EfontMMSpace::check_intermediate(ErrorHandler *errh)
 {
     if (!_ok || _cdv)
 	return true;
@@ -161,7 +161,7 @@ PsfontMMSpace::check_intermediate(ErrorHandler *errh)
 
 
 int
-PsfontMMSpace::axis(PermString ax) const
+EfontMMSpace::axis(PermString ax) const
 {
     for (int a = 0; a < _naxes; a++)
 	if (_axis_types[a] == ax || _axis_labels[a] == ax)
@@ -170,26 +170,26 @@ PsfontMMSpace::axis(PermString ax) const
 }
 
 double
-PsfontMMSpace::axis_low(int ax) const
+EfontMMSpace::axis_low(int ax) const
 {
     return _normalize_in[ax][0];
 }
 
 double
-PsfontMMSpace::axis_high(int ax) const
+EfontMMSpace::axis_high(int ax) const
 {
     return _normalize_in[ax].back();
 }
 
 
 Vector<double>
-PsfontMMSpace::empty_design_vector() const
+EfontMMSpace::empty_design_vector() const
 {
     return Vector<double>(_naxes, UNKDOUBLE);
 }
 
 bool
-PsfontMMSpace::set_design(NumVector &design_vector, int ax, double value,
+EfontMMSpace::set_design(NumVector &design_vector, int ax, double value,
 			  ErrorHandler *errh) const
 {
     if (ax < 0 || ax >= _naxes)
@@ -213,7 +213,7 @@ PsfontMMSpace::set_design(NumVector &design_vector, int ax, double value,
 }
 
 bool
-PsfontMMSpace::set_design(NumVector &design_vector, PermString ax_name,
+EfontMMSpace::set_design(NumVector &design_vector, PermString ax_name,
 			  double val, ErrorHandler *errh) const
 {
     int ax = axis(ax_name);
@@ -225,7 +225,7 @@ PsfontMMSpace::set_design(NumVector &design_vector, PermString ax_name,
 
 
 bool
-PsfontMMSpace::normalize_vector(ErrorHandler *errh) const
+EfontMMSpace::normalize_vector(ErrorHandler *errh) const
 {
     NumVector &design = *_design_vector;
     NumVector &norm_design = *_norm_design_vector;
@@ -279,7 +279,7 @@ PsfontMMSpace::normalize_vector(ErrorHandler *errh) const
 
 
 bool
-PsfontMMSpace::convert_vector(ErrorHandler *errh) const
+EfontMMSpace::convert_vector(ErrorHandler *errh) const
 {
     NumVector &norm_design = *_norm_design_vector;
     NumVector &weight = *_weight_vector;
@@ -307,7 +307,7 @@ PsfontMMSpace::convert_vector(ErrorHandler *errh) const
 
 
 bool
-PsfontMMSpace::design_to_norm_design(const NumVector &design_in,
+EfontMMSpace::design_to_norm_design(const NumVector &design_in,
 				     NumVector &norm_design,
 				     ErrorHandler *errh) const
 {
@@ -325,8 +325,8 @@ PsfontMMSpace::design_to_norm_design(const NumVector &design_in,
 
 
 bool
-PsfontMMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
-				ErrorHandler *errh) const
+EfontMMSpace::design_to_weight(const NumVector &design_in, NumVector &weight,
+			       ErrorHandler *errh) const
 {
     NumVector design(design_in);
     NumVector norm_design;

@@ -1,14 +1,14 @@
-#ifndef T1LIB_CFF_HH
-#define T1LIB_CFF_HH
+#ifndef EFONT_CFF_HH
+#define EFONT_CFF_HH
 #include "hashmap.hh"
 #include "t1cs.hh"
 class ErrorHandler;
 class Type1Encoding;
 
-class PsfontCFF { public:
+class EfontCFF { public:
 
-    PsfontCFF(const String &, ErrorHandler * = 0);
-    ~PsfontCFF();
+    EfontCFF(const String &, ErrorHandler * = 0);
+    ~EfontCFF();
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
@@ -22,13 +22,13 @@ class PsfontCFF { public:
     int font_offset(int, int &, int &) const;
     int font_offset(PermString, int &, int &) const;
 
-    enum { NSTANDARD_STRINGS = 391 };
+    enum { NSTANDARD_STRINGS = 391, MAX_SID = 64999 };
     int max_sid() const			{ return NSTANDARD_STRINGS - 1 + _strings.size(); }
     int sid(PermString);
     PermString sid_permstring(int sid) const;
 
     int ngsubrs() const			{ return _gsubrs_index.nitems(); }
-    PsfontCharstring *gsubr(int i);
+    EfontCharstring *gsubr(int i);
     
     enum DictOperator {
 	oVersion = 0, oNotice = 1, oFullName = 2, oFamilyName = 3,
@@ -67,7 +67,7 @@ class PsfontCFF { public:
     static const int operator_types[];
 
 
-    class PsfontCFF::IndexIterator { public:
+    class EfontCFF::IndexIterator { public:
 
 	IndexIterator()		: _offset(0), _last_offset(0), _offsize(-1) { }
 	IndexIterator(const unsigned char *, int, int, ErrorHandler * = 0, const char *index_name = "INDEX");
@@ -113,20 +113,18 @@ class PsfontCFF { public:
     mutable HashMap<PermString, int> _strings_map;
 
     IndexIterator _gsubrs_index;
-    Vector<PsfontCharstring *> _gsubrs_cs;
-
-    typedef unsigned char OffSize;
-    struct Header;
-    enum { HEADER_SIZE = 4, INDEX_SIZE = 2 };
+    Vector<EfontCharstring *> _gsubrs_cs;
 
     int parse_header(ErrorHandler *);
+
+    enum { HEADER_SIZE = 4 };
     
 };
 
 
-class PsfontCFF::Dict { public:
+class EfontCFF::Dict { public:
 
-    Dict(PsfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
+    Dict(EfontCFF *, int pos, int dict_len, ErrorHandler * = 0, const char *dict_name = "DICT");
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
@@ -142,7 +140,7 @@ class PsfontCFF::Dict { public:
 
   private:
 
-    PsfontCFF *_cff;
+    EfontCFF *_cff;
     int _pos;
     Vector<int> _operators;
     Vector<int> _pointers;
@@ -151,11 +149,11 @@ class PsfontCFF::Dict { public:
 
 };
 
-class PsfontCFF::Charset { public:
+class EfontCFF::Charset { public:
 
     Charset()				: _error(-1) { }
-    Charset(const PsfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
-    void assign(const PsfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
+    Charset(const EfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
+    void assign(const EfontCFF *, int pos, int nglyphs, ErrorHandler * = 0);
 
     int error() const			{ return _error; }
     
@@ -172,14 +170,14 @@ class PsfontCFF::Charset { public:
     int _error;
 
     void assign(const int *, int, int);
-    int parse(const PsfontCFF *, int pos, int nglyphs, ErrorHandler *);
+    int parse(const EfontCFF *, int pos, int nglyphs, ErrorHandler *);
     
 };
 
 
-class PsfontCFF::Font : public PsfontProgram { public:
+class EfontCFF::Font : public EfontProgram { public:
 
-    Font(PsfontCFF *, PermString = PermString(), ErrorHandler * = 0);
+    Font(EfontCFF *, PermString = PermString(), ErrorHandler * = 0);
     ~Font();
 
     bool ok() const			{ return _error >= 0; }
@@ -188,15 +186,15 @@ class PsfontCFF::Font : public PsfontProgram { public:
     PermString font_name() const	{ return _font_name; }
     
     int nsubrs() const			{ return _subrs_index.nitems(); }
-    PsfontCharstring *subr(int) const;
+    EfontCharstring *subr(int) const;
     int ngsubrs() const			{ return _cff->ngsubrs(); }
-    PsfontCharstring *gsubr(int) const;
+    EfontCharstring *gsubr(int) const;
 
     int nglyphs() const			{ return _charstrings_index.nitems(); }
     void glyph_names(Vector<PermString> &) const;
     PermString glyph_name(int) const;
-    PsfontCharstring *glyph(int) const;
-    PsfontCharstring *glyph(PermString) const;
+    EfontCharstring *glyph(int) const;
+    EfontCharstring *glyph(PermString) const;
 
     Type1Encoding *type1_encoding() const;
 
@@ -204,17 +202,17 @@ class PsfontCFF::Font : public PsfontProgram { public:
     
   private:
 
-    PsfontCFF *_cff;
+    EfontCFF *_cff;
     PermString _font_name;
     int _charstring_type;
 
-    PsfontCFF::Charset _charset;
+    EfontCFF::Charset _charset;
 
     IndexIterator _charstrings_index;
-    mutable Vector<PsfontCharstring *> _charstrings_cs;
+    mutable Vector<EfontCharstring *> _charstrings_cs;
 
     IndexIterator _subrs_index;
-    mutable Vector<PsfontCharstring *> _subrs_cs;
+    mutable Vector<EfontCharstring *> _subrs_cs;
 
     int _encoding[256];
     mutable Type1Encoding *_t1encoding;
@@ -226,13 +224,13 @@ class PsfontCFF::Font : public PsfontProgram { public:
 
     int parse_encoding(int pos, ErrorHandler *);
     int assign_standard_encoding(const int *standard_encoding);
-    PsfontCharstring *charstring(const IndexIterator &, int) const;
+    EfontCharstring *charstring(const IndexIterator &, int) const;
     
 };
 
 
 inline unsigned
-PsfontCFF::IndexIterator::offset_at(const unsigned char *x) const
+EfontCFF::IndexIterator::offset_at(const unsigned char *x) const
 {
     switch (_offsize) {
       case 0:
@@ -249,21 +247,21 @@ PsfontCFF::IndexIterator::offset_at(const unsigned char *x) const
 }
 
 inline const unsigned char *
-PsfontCFF::IndexIterator::operator*() const
+EfontCFF::IndexIterator::operator*() const
 {
     assert(live());
     return _contents + offset_at(_offset);
 }
 
 inline const unsigned char *
-PsfontCFF::IndexIterator::operator[](int which) const
+EfontCFF::IndexIterator::operator[](int which) const
 {
     assert(live() && _offset + which * _offsize <= _last_offset);
     return _contents + offset_at(_offset + which * _offsize);
 }
 
 inline int
-PsfontCFF::Charset::gid_to_sid(int gid) const
+EfontCFF::Charset::gid_to_sid(int gid) const
 {
     if (gid >= 0 && gid < _sids.size())
 	return _sids[gid];
@@ -272,7 +270,7 @@ PsfontCFF::Charset::gid_to_sid(int gid) const
 }
 
 inline int
-PsfontCFF::Charset::sid_to_gid(int sid) const
+EfontCFF::Charset::sid_to_gid(int sid) const
 {
     if (sid >= 0 && sid < _gids.size())
 	return _gids[sid];

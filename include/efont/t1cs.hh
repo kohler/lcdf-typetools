@@ -4,20 +4,20 @@
 #include "string.hh"
 #include "vector.hh"
 class Type1Interp;
-class PsfontMMSpace;
+class EfontMMSpace;
 class Type1Encoding;
 
-class PsfontCharstring { public:
+class EfontCharstring { public:
 
-    PsfontCharstring()				{ }
-    virtual ~PsfontCharstring();
+    EfontCharstring()				{ }
+    virtual ~EfontCharstring();
 
     virtual bool run(Type1Interp &) const = 0;
     
 };
 
 
-class Type1Charstring : public PsfontCharstring { public:
+class Type1Charstring : public EfontCharstring { public:
   
     Type1Charstring()				{ }
     Type1Charstring(const String &);		// unencrypted
@@ -45,7 +45,7 @@ class Type1Charstring : public PsfontCharstring { public:
 };
 
 
-class Type2Charstring : public PsfontCharstring { public:
+class Type2Charstring : public EfontCharstring { public:
   
     Type2Charstring()				{ }
     Type2Charstring(const String &);
@@ -66,26 +66,26 @@ class Type2Charstring : public PsfontCharstring { public:
 };
 
 
-class PsfontProgram { public:
+class EfontProgram { public:
   
-    PsfontProgram()					{ }
-    virtual ~PsfontProgram()				{ }
+    EfontProgram()					{ }
+    virtual ~EfontProgram()				{ }
 
     virtual PermString font_name() const		{ return PermString();}
     
     virtual int nsubrs() const				{ return 0; }
-    virtual PsfontCharstring *subr(int) const		{ return 0; }
+    virtual EfontCharstring *subr(int) const		{ return 0; }
     virtual int ngsubrs() const				{ return 0; }
-    virtual PsfontCharstring *gsubr(int) const		{ return 0; }
+    virtual EfontCharstring *gsubr(int) const		{ return 0; }
     
     virtual int nglyphs() const				{ return 0; }
     virtual PermString glyph_name(int) const		{ return PermString();}
     virtual void glyph_names(Vector<PermString> &) const;
-    virtual PsfontCharstring *glyph(int) const		{ return 0; }
-    virtual PsfontCharstring *glyph(PermString) const	{ return 0; }
+    virtual EfontCharstring *glyph(int) const		{ return 0; }
+    virtual EfontCharstring *glyph(PermString) const	{ return 0; }
 
     virtual bool is_mm() const				{ return mmspace(); }
-    virtual PsfontMMSpace *mmspace() const		{ return 0; }
+    virtual EfontMMSpace *mmspace() const		{ return 0; }
     virtual Vector<double> *design_vector() const	{ return 0; }
     virtual Vector<double> *norm_design_vector() const	{ return 0; }
     virtual Vector<double> *weight_vector() const	{ return 0; }

@@ -5,7 +5,7 @@
 #include "t1interp.hh"
 #include <cstring>
 
-PsfontCharstring::~PsfontCharstring()
+EfontCharstring::~EfontCharstring()
 {
 }
 
@@ -205,7 +205,7 @@ Type2Charstring::run(Type1Interp &interp) const
 
 
 void
-PsfontProgram::glyph_names(Vector<PermString> &gnames) const
+EfontProgram::glyph_names(Vector<PermString> &gnames) const
 {
     int n = nglyphs();
     gnames.resize(n);
@@ -214,7 +214,7 @@ PsfontProgram::glyph_names(Vector<PermString> &gnames) const
 }
 
 double
-PsfontProgram::global_width_x(bool) const
+EfontProgram::global_width_x(bool) const
 {
     return UNKDOUBLE;
 }

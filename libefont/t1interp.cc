@@ -12,7 +12,7 @@
 
 double Type1Interp::double_for_error;
 
-Type1Interp::Type1Interp(const PsfontProgram *prog, Vector<double> *weight)
+Type1Interp::Type1Interp(const EfontProgram *prog, Vector<double> *weight)
     : _error(errOK), _sp(0), _ps_sp(0), _weight_vector(weight),
       _scratch_vector(SCRATCH_SIZE, 0), _program(prog)
 {
@@ -318,7 +318,7 @@ Type1Interp::callsubr_command()
     CHECK_STACK(1);
     int which = (int)pop();
 
-    PsfontCharstring *subr_cs = get_subr(which);
+    EfontCharstring *subr_cs = get_subr(which);
     if (!subr_cs)
 	return error(errSubr, which);
 
@@ -336,7 +336,7 @@ Type1Interp::callgsubr_command()
     CHECK_STACK(1);
     int which = (int)pop();
 
-    PsfontCharstring *subr_cs = get_gsubr(which);
+    EfontCharstring *subr_cs = get_gsubr(which);
     if (!subr_cs)
 	return error(errSubr, which);
 

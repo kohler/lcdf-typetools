@@ -700,7 +700,7 @@ Type1Font::cache_defs() const
   _cached_defs = true;
 }
 
-PsfontMMSpace *
+EfontMMSpace *
 Type1Font::mmspace() const
 {
     if (!_cached_mmspace)
@@ -708,7 +708,7 @@ Type1Font::mmspace() const
     return _mmspace;
 }
 
-PsfontMMSpace *
+EfontMMSpace *
 Type1Font::create_mmspace(ErrorHandler *errh) const
 {
     if (_cached_mmspace)
@@ -728,7 +728,7 @@ Type1Font::create_mmspace(ErrorHandler *errh) const
 	return 0;
     }
     int naxes = master_positions[0].size();
-    _mmspace = new PsfontMMSpace(font_name(), naxes, nmasters);
+    _mmspace = new EfontMMSpace(font_name(), naxes, nmasters);
     _mmspace->set_master_positions(master_positions);
   
     Vector< Vector<double> > normalize_in, normalize_out;
