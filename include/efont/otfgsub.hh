@@ -84,20 +84,31 @@ class OpenType_GSUB { public:
 };
 
 class OpenType_GSUBSingle { public:
-
-
+    OpenType_GSUBSingle(const String &, ErrorHandler * = 0);
+    // default destructor
+    bool ok() const			{ return _str.length() >= 0; }
+    OpenTypeCoverage coverage() const;
+    bool covers(OpenTypeGlyph) const;
     OpenTypeGlyph map(OpenTypeGlyph) const;
-    
-    enum {
-	HEADERSIZE = 6, FORMAT2_RECSIZE = 2
-    };
-    
+    enum { HEADERSIZE = 6, FORMAT2_RECSIZE = 2 };
   private:
-
     String _str;
-
     int check(ErrorHandler *);
-    
+};
+
+class OpenType_GSUBLigature { public:
+    OpenType_GSUBLigature(const String &, ErrorHandler * = 0);
+    // default destructor
+    bool ok() const			{ return _str.length() >= 0; }
+    OpenTypeCoverage coverage() const;
+    bool covers(OpenTypeGlyph) const;
+    bool map(const Vector<OpenTypeGlyph> &, OpenTypeGlyph &, int &) const;
+    enum { HEADERSIZE = 6, RECSIZE = 2,
+	   SET_HEADERSIZE = 2, SET_RECSIZE = 2,
+	   LIG_HEADERSIZE = 4, LIG_RECSIZE = 2 };
+  private:
+    String _str;
+    int check(ErrorHandler *);
 };
 
 inline

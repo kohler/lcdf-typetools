@@ -235,23 +235,57 @@ OpenType_GSUB::check(ErrorHandler *errh)
  *                        *
  **************************/
 
+OpenType_GSUBSingle::OpenType_GSUBSingle(const String &str, ErrorHandler *errh)
+    : _str(str)
+{
+    _str.align(2);
+    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	_str = String();
+}
+
 int
 OpenType_GSUBSingle::check(ErrorHandler *errh)
 {
     const uint8_t *data = _str.udata();
     if (_str.length() < HEADERSIZE
 	|| data[0] != 0
-	|| (data[1] == 2 && _str.length() < HEADERSIZE + FORMAT2_RECSIZE*USHORT_AT(data + 4))
 	|| (data[1] != 1 && data[1] != 2)
-	|| !OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), errh).ok())
+	|| (data[1] == 2 && _str.length() < HEADERSIZE + USHORT_AT(data + 4)*FORMAT2_RECSIZE))
 	return errh->error("GSUB Single Substitution table bad format");
+    OpenTypeCoverage coverage(_str.substring(USHORT_AT(data + 2)), errh);
+    if (!coverage.ok())
+	return -1;
+    if (data[1] == 2 && coverage.size() > USHORT_AT(data + 4))
+	return errh->error("GSUB Single Substitution Format 2 coverage mismatch");
     return 0;
+}
+
+OpenTypeCoverage
+OpenType_GSUBSingle::coverage() const
+{
+    if (!ok())
+	return OpenTypeCoverage();
+    else {
+	const uint8_t *data = _str.udata();
+	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false);
+    }
+}
+
+bool
+OpenType_GSUBSingle::covers(OpenTypeGlyph g) const
+{
+    if (!ok())
+	return false;
+    else {
+	const uint8_t *data = _str.udata();
+	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).covers(g);
+    }
 }
 
 OpenTypeGlyph
 OpenType_GSUBSingle::map(OpenTypeGlyph g) const
 {
-    if (_str.length() == 0)
+    if (!ok())
 	return g;
     const uint8_t *data = _str.udata();
     int ci = OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).lookup(g);
@@ -259,10 +293,100 @@ OpenType_GSUBSingle::map(OpenTypeGlyph g) const
 	return g;
     else if (data[1] == 1)
 	return g + SHORT_AT(data + 4);
-    else if (ci >= USHORT_AT(data + 4))
-	return g;
     else
 	return USHORT_AT(data + HEADERSIZE + FORMAT2_RECSIZE*ci);
+}
+
+
+/**************************
+ * OpenType_GSUBLigature  *
+ *                        *
+ **************************/
+
+OpenType_GSUBLigature::OpenType_GSUBLigature(const String &str, ErrorHandler *errh)
+    : _str(str)
+{
+    _str.align(2);
+    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	_str = String();
+}
+
+int
+OpenType_GSUBLigature::check(ErrorHandler *errh)
+{
+    const uint8_t *data = _str.udata();
+    if (_str.length() < HEADERSIZE
+	|| data[0] != 0
+	|| data[1] != 1
+	|| _str.length() < HEADERSIZE + USHORT_AT(data + 4)*RECSIZE)
+	return errh->error("GSUB Ligature Substitution table bad format");
+    OpenTypeCoverage coverage(_str.substring(USHORT_AT(data + 2)), errh);
+    if (!coverage.ok())
+	return -1;
+    if (coverage.size() > USHORT_AT(data + 4))
+	return errh->error("GSUB Ligature Substitution coverage mismatch");
+    return 0;
+}
+
+OpenTypeCoverage
+OpenType_GSUBLigature::coverage() const
+{
+    if (!ok())
+	return OpenTypeCoverage();
+    else {
+	const uint8_t *data = _str.udata();
+	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false);
+    }
+}
+
+bool
+OpenType_GSUBLigature::covers(OpenTypeGlyph g) const
+{
+    if (!ok())
+	return false;
+    else {
+	const uint8_t *data = _str.udata();
+	return OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).covers(g);
+    }
+}
+
+bool
+OpenType_GSUBLigature::map(const Vector<OpenTypeGlyph> &gs,
+			   OpenTypeGlyph &result, int &consumed) const
+{
+    assert(gs.size() > 0);
+    result = gs[0];
+    consumed = 1;
+    if (!ok())
+	return false;
+    const uint8_t *data = _str.udata();
+    int ci = OpenTypeCoverage(_str.substring(USHORT_AT(data + 2)), 0, false).lookup(gs[0]);
+    if (ci < 0)
+	return false;
+    int off = USHORT_AT(data + HEADERSIZE + RECSIZE*ci), last_off;
+    if (off + SET_HEADERSIZE > _str.length()
+	|| ((last_off = off + SET_HEADERSIZE + USHORT_AT(data + off)*SET_RECSIZE),
+	    last_off > _str.length()))
+	// XXX errh->error("GSUB Ligature Substitution table bad for glyph %d", gs[0]);
+	return false;
+    for (int i = off + SET_HEADERSIZE; i < last_off; i += SET_RECSIZE) {
+	int off2 = off + USHORT_AT(i), ninlig;
+	if (off2 + LIG_HEADERSIZE > _str.length()
+	    || ((ninlig = USHORT_AT(data + off2 + 2)),
+		off2 + LIG_HEADERSIZE + ninlig*LIG_RECSIZE > _str.length()))
+	    // XXX errh->error("GSUB Ligature Substitution ligature bad for glyph %d", gs[0]);
+	    return false;
+	if (ninlig > gs.size() - 1)
+	    goto bad;
+	for (int j = 0; j < ninlig; j++)
+	    if (USHORT_AT(data + off2 + LIG_HEADERSIZE + j*LIG_RECSIZE) != gs[j + 1])
+		goto bad;
+	result = USHORT_AT(data + off2);
+	consumed = ninlig + 1;
+	return true;
+      bad: ;
+    }
+    return false;
 }
 
 }

@@ -114,6 +114,7 @@ class OpenTypeFeatureList { public:
 
 class OpenTypeCoverage { public:
 
+    OpenTypeCoverage();			// empty coverage
     OpenTypeCoverage(const String &, ErrorHandler * = 0, bool check = true);
     // default destructor
 
@@ -122,10 +123,14 @@ class OpenTypeCoverage { public:
 
     int lookup(OpenTypeGlyph) const;
     int operator[](OpenTypeGlyph g) const { return lookup(g); }
+    bool covers(OpenTypeGlyph g) const	{ return lookup(g) >= 0; }
 
     class iterator { public:
 	// private constructor
 	// default destructor
+
+	bool ok() const			{ return _pos < _str.length(); }
+	operator bool() const		{ return ok(); }
 	
 	OpenTypeGlyph operator*() const	{ return _value; }
 	OpenTypeGlyph value() const	{ return _value; }

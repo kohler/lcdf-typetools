@@ -425,6 +425,10 @@ OpenTypeFeatureList::lookups(const OpenTypeScriptList &script_list, OpenTypeTag 
  *                        *
  **************************/
 
+OpenTypeCoverage::OpenTypeCoverage()
+{
+}
+
 OpenTypeCoverage::OpenTypeCoverage(const String &str, ErrorHandler *errh, bool do_check)
     : _str(str)
 {
