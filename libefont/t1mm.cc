@@ -391,4 +391,12 @@ Type1MMSpace::create(const Type1Font *f, ErrorHandler *errh)
     return mmspace;
 }
 
+#else
+
+Type1MMSpace *
+Type1MMSpace::create(const Type1Font *, ErrorHandler *)
+{
+  assert(0 && "not compiled with support for Type1MMSpace::create");
+}
+
 #endif
