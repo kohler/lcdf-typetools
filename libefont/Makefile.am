@@ -14,8 +14,8 @@ libefont_a_SOURCES = \
 	metrics.cc \
 	otf.cc \
 	otfcmap.cc \
+	otfdescrip.cc \
 	otfgsub.cc \
-	otfstrings.cc \
 	pairop.cc \
 	psres.cc \
 	t1bounds.cc \
