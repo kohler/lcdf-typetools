@@ -145,9 +145,11 @@ AfmWriter::write_kerns() const
   
   // Damn. First we have to count how many kerning pairs there are.
   int numkerns = 0;
-  for (PairOpIndex opi = 0; opi < pairp.op_count(); opi++)
-    if (pairp.op(opi).is_kern())
+  for (PairOpIndex opi = 0; opi < pairp.op_count(); opi++) {
+    const PairOp &op = pairp.op(opi);
+    if (op.is_kern() && _m->kv( op.value() ))
       numkerns++;
+  }
   
   if (numkerns == 0) return;
   
@@ -157,7 +159,7 @@ AfmWriter::write_kerns() const
     PairOpIndex opi = pairp.find_left(gi);
     while (opi >= 0) {
       const PairOp &op = pairp.op(opi);
-      if (op.is_kern())
+      if (op.is_kern() && _m->kv( op.value() ))
 	fprintf(_f, "KPX %s %s %.8g\n",
 		_m->name( gi ).cc(),
 		_m->name( op.right() ).cc(),
