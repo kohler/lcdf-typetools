@@ -6,7 +6,7 @@
 class ErrorHandler;
 class Type1Font;
 
-class Type1MMSpace: public Type1Program {
+class Type1MMSpace: public PsfontProgram {
   
   typedef Vector<double> NumVector;
   

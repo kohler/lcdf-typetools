@@ -657,7 +657,7 @@ void
 Type1Subr::gen(Type1Writer &w)
 {
   int len = _cs.length();
-  unsigned char *data = _cs.data();
+  const unsigned char *data = _cs.data();
   
   if (is_subr())
     w << "dup " << _subrno << ' ' << len + w.lenIV() << w.charstring_start();
@@ -666,7 +666,7 @@ Type1Subr::gen(Type1Writer &w)
   
   if (w.lenIV() < 0) {
     // lenIV < 0 means charstrings are unencrypted
-    w.print((char *)data, len);
+    w.print((const char *)data, len);
     
   } else {
     // PERFORMANCE NOTE: Putting the charstring in a buffer of known length

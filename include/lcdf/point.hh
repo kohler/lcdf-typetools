@@ -11,8 +11,6 @@ struct Point {
   Point()				{ }
   Point(double xx, double yy)		: x(xx), y(yy) { }
   
-  operator bool() const			{ return x || y; }
-  
   double squared_length() const;
   double length() const;
   double magnitude() const;

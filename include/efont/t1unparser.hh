@@ -23,7 +23,7 @@ class Type1Unparser: public Type1Interp {
   void clear();
 
   bool number(double);
-  bool command(int);
+  bool type1_command(int);
 
   String value();
 

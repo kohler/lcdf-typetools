@@ -3,7 +3,39 @@
 #endif
 #include "bezier.hh"
 
-Point
+//
+// bounding box
+//
+
+void
+Bezier::make_bb() const
+{
+  _bb = 0;
+  for (int i = 1; i < 4; i++) {
+    if (_p[i].x > bb_right())
+      _bb = (_bb & ~0x03) | (i << 0);
+    else if (_p[i].x < bb_left())
+      _bb = (_bb & ~0x0C) | (i << 2);
+    if (_p[i].y > bb_top())
+      _bb = (_bb & ~0x30) | (i << 4);
+    else if (_p[i].y < bb_bottom())
+      _bb = (_bb & ~0xC0) | (i << 6);
+  }
+}
+
+
+//
+// is_flat, eval
+//
+
+bool
+Bezier::is_flat(double t) const
+{
+  return _p[2].on_segment(_p[0], _p[3], t) &&
+    _p[1].on_segment(_p[0], _p[3], t);
+}
+
+static Point
 eval_bezier(Point *b_in, int degree, double u)
 {
   assert(degree < 4);
@@ -30,8 +62,112 @@ Bezier::eval(double u) const
 }
 
 
-/* Curve fitting code after Philip J. Schneider's algorithm described, and
-   code given, in the first Graphics Gems */
+//
+// halve
+//
+
+void
+Bezier::halve(Bezier &l, Bezier &r) const
+{
+  Point half = Point::midpoint(_p[1], _p[2]);
+  l._p[0] = _p[0];
+  l._p[1] = Point::midpoint(_p[0], _p[1]);
+  l._p[2] = Point::midpoint(l._p[1], half);
+  r._p[3] = _p[3];
+  r._p[2] = Point::midpoint(_p[2], _p[3]);
+  r._p[1] = Point::midpoint(r._p[2], half);
+  r._p[0] = l._p[3] = Point::midpoint(l._p[2], r._p[1]);
+}
+
+
+//
+// hit testing
+//
+
+bool
+Bezier::in_bb(const Point &p, double tolerance) const
+{
+  ensure_bb();
+  if (bb_right() + tolerance < p.x
+      || bb_left() - tolerance > p.x
+      || bb_top() + tolerance < p.y
+      || bb_bottom() - tolerance > p.y)
+    return false;
+  else
+    return true;
+}
+
+double
+Bezier::hit_recurse(const Point &p, double tolerance, double leftd,
+		    double rightd, double leftt, double rightt) const
+{
+  Bezier left, right;
+  double middled, resultt;
+  
+  if (is_flat(tolerance)) {
+    if (p.on_segment(_p[0], _p[3], tolerance))
+      return (leftt + rightt) / 2;
+    else
+      return -1;
+  }
+  
+  if (leftd < tolerance * tolerance)
+    return leftt;
+  if (rightd < tolerance * tolerance)
+    return rightt;
+  
+  if (!in_bb(p, tolerance))
+    return -1;
+  
+  halve(left, right);
+  middled = (right._p[0] - p).squared_length();
+  resultt = left.hit_recurse
+    (p, tolerance, leftd, middled, leftt, (leftt + rightt) / 2);
+  if (resultt >= 0)
+    return resultt;
+  
+  return right.hit_recurse
+    (p, tolerance, middled, rightd, (leftt + rightt) / 2, rightt);
+}
+
+bool
+Bezier::hit(const Point &p, double tolerance) const
+{
+  double leftd = (_p[0] - p).squared_length();
+  double rightd = (_p[3] - p).squared_length();
+  double resultt = hit_recurse(p, tolerance, leftd, rightd, 0, 1);
+  return resultt >= 0;
+}
+
+
+//
+// segmentize to list of points
+//
+// uses recursive subdivision
+//
+
+void
+Bezier::segmentize(Vector<Point> &v, bool first) const
+{
+  if (is_flat(0.5)) {
+    if (first)
+      v.push_back(_p[0]);
+    v.push_back(_p[3]);
+  } else {
+    Bezier left, right;
+    halve(left, right);
+    left.segmentize(v, first);
+    right.segmentize(v, false);
+  }
+}
+
+
+//
+// curve fitting
+//
+// code after Philip J. Schneider's algorithm described, with code, in the
+// first Graphics Gems
+//
 
 static void
 chord_length_parameterize(const Point *d, int nd, Vector<double> &result)
@@ -72,7 +208,6 @@ B3(double u)
 {
   return u*u*u;
 }
-
 
 static Bezier
 generate_bezier(const Point *d, int nd, const Vector<double> &parameters,
@@ -126,25 +261,25 @@ generate_bezier(const Point *d, int nd, const Vector<double> &parameters,
 static double
 newton_raphson_root_find(const Bezier &b, const Point &p, double u)
 {
-  const Point *b_pts = b.points();
+    const Point *b_pts = b.points();
   
-  Point b_det[3];
-  for (int i = 0; i < 3; i++)
-    b_det[i] = (b_pts[i+1] - b_pts[i]) * 3;
-  
-  Point b_det_det[2];
-  for (int i = 0; i < 2; i++)
-    b_det_det[i] = (b_det[i+1] - b_det[i]) * 2;
-  
-  Point b_u = b.eval(u);
-  Point b_det_u = eval_bezier(b_det, 2, u);
-  Point b_det_det_u = eval_bezier(b_det_det, 1, u);
-  
-  double numerator = Point::dot(b_u - p, b_det_u);
-  double denominator = Point::dot(b_det_u, b_det_u) +
-    Point::dot(b_u - p, b_det_det_u);
-  
-  return u - numerator/denominator;
+    Point b_det[3];
+    for (int i = 0; i < 3; i++)
+	b_det[i] = (b_pts[i+1] - b_pts[i]) * 3;
+
+    Point b_det_det[2];
+    for (int i = 0; i < 2; i++)
+	b_det_det[i] = (b_det[i+1] - b_det[i]) * 2;
+
+    Point b_u = b.eval(u);
+    Point b_det_u = eval_bezier(b_det, 2, u);
+    Point b_det_det_u = eval_bezier(b_det_det, 1, u);
+
+    double numerator = Point::dot(b_u - p, b_det_u);
+    double denominator = Point::dot(b_det_u, b_det_u) +
+	Point::dot(b_u - p, b_det_det_u);
+
+    return u - numerator/denominator;
 }
 
 static void
@@ -154,7 +289,6 @@ reparameterize(const Point *d, int nd, Vector<double> &parameters,
   for (int i = 0; i < nd; i++)
     parameters[i] = newton_raphson_root_find(b, d[i], parameters[i]);
 }
-
 
 static double
 compute_max_error(const Point *d, int nd, const Bezier &b,
@@ -171,7 +305,6 @@ compute_max_error(const Point *d, int nd, const Bezier &b,
   }
   return max_dist;
 }
-
 
 static void
 fit0(const Point *d, int nd, Point left_tangent, Point right_tangent,
@@ -219,26 +352,10 @@ fit0(const Point *d, int nd, Point left_tangent, Point right_tangent,
 }
 
 void
-Bezier::fit(const Vector<Point> &points_in, double error,
-	    Vector<Bezier> &result)
+Bezier::fit(const Vector<Point> &points, double error, Vector<Bezier> &result)
 {
-  Vector<Point> points;
-  int last = -1;
-  for (int i = 0; i < points_in.size(); i++)
-    if (last < 0 || points_in[last] != points_in[i]) {
-      points.push_back(points_in[i]);
-      last = i;
-    }
-
   int npoints = points.size();
-
-  if (npoints == 0)
-    return;
-  else if (npoints == 1)
-    result.push_back(Bezier(points[0], points[0], points[0], points[0]));
-  else {
-    Point left_tangent = (points[1] - points[0]).normal();
-    Point right_tangent = (points[npoints-2] - points[npoints-1]).normal();
-    fit0(&points[0], npoints, left_tangent, right_tangent, error, result);
-  }
+  Point left_tangent = (points[1] - points[0]).normal();
+  Point right_tangent = (points[npoints-2] - points[npoints-1]).normal();
+  fit0(&points[0], npoints, left_tangent, right_tangent, error, result);
 }

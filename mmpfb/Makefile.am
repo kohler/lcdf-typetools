@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-AUTOMAKE_OPTIONS = no-dependencies foreign
+AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = mmpfb
 man_MANS = mmpfb.1
@@ -15,10 +15,6 @@ mmpfb_LDADD = ../t1lib/libt1lib.a ../edlib/libedlib.a
 INCLUDES = -I$(top_srcdir)/edlib -I$(top_srcdir)/t1lib
 
 EXTRA_DIST = mmpfb.1
-
-AUTODEPENDENCIES =
-@AUTODEPENDENCIES@
-CLEANFILES = *.d
 
 t1rewrit.o: t1rewrit.cc t1rewrit.hh $(top_srcdir)/t1lib/t1interp.hh
 myfont.o: myfont.cc myfont.hh $(top_srcdir)/t1lib/t1font.hh

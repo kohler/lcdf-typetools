@@ -189,7 +189,7 @@ static void
 print_conversion_program(FILE *f, Type1Charstring *cs, PermString name)
 {
   if (!cs) return;
-  unsigned char *data = cs->data();
+  const unsigned char *data = cs->data();
   for (int i = 0; i < cs->length(); ) {
     int l = cs->length() - i;
     if (l > 32) l = 32;
