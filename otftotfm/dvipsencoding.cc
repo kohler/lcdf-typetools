@@ -73,7 +73,8 @@ DvipsEncoding::parse_glyphlist(String text)
 		    next++;
 	    pos = next - data;
 	    if (*next == ';') {	// read another possibility
-		glyph_name = NEXT_GLYPH_NAME(glyph_name); // XXX handles "DDDD;DDDD DDDD;DDDD" badly
+		glyph_name = NEXT_GLYPH_NAME(glyph_name);
+		// XXX given "DDDD;EEEE EEEE;FFFF", will not store "FFFF"
 		goto read_uni;
 	    }
 	} else
