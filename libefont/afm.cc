@@ -49,7 +49,7 @@ AfmReader::lwarning(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->verror(ErrorHandler::Warning, _l.landmark(), format, val);
+    _errh->verror(ErrorHandler::ERR_WARNING, _l.landmark(), format, val);
     va_end(val);
 }
 
@@ -58,7 +58,7 @@ AfmReader::lerror(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->verror(ErrorHandler::Error, _l.landmark(), format, val);
+    _errh->verror(ErrorHandler::ERR_ERROR, _l.landmark(), format, val);
     va_end(val);
 }
 

@@ -271,7 +271,7 @@ AmfmReader::lwarning(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->verror(ErrorHandler::Warning, _l.landmark(), format, val);
+    _errh->verror(ErrorHandler::ERR_WARNING, _l.landmark(), format, val);
     va_end(val);
 }
 
@@ -280,7 +280,7 @@ AmfmReader::lerror(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->verror(ErrorHandler::Error, _l.landmark(), format, val);
+    _errh->verror(ErrorHandler::ERR_ERROR, _l.landmark(), format, val);
     va_end(val);
 }
 
@@ -481,7 +481,7 @@ AmfmReader::read()
 	return false;
     }
   
-    PinnedErrorHandler pin_errh(_errh, _l.landmark());
+    LandmarkErrorHandler pin_errh(_errh, _l.landmark());
     if (!_amfm->sanity(&pin_errh)) {
 	_errh->lerror(_l.landmark().whole_file(),
 		      "bad AMFM file (missing or inconsistent information)");
