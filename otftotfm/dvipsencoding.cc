@@ -396,21 +396,21 @@ DvipsEncoding::parse_words(const String &s, int (DvipsEncoding::*method)(Vector<
     _file_had_comments = true;
     Vector<String> words;
     const char *data = s.data();
-    int pos = 0, len = s.length();
-    while (pos < len) {
-	while (pos < len && isspace(data[pos]))
-	    pos++;
-	int first = pos;
-	while (pos < len && !isspace(data[pos]) && data[pos] != ';')
-	    pos++;
-	if (pos == first) {
-	    pos++;		// step past semicolon (or harmlessly past EOS)
+    const char *end = s.end();
+    while (data < end) {
+	while (data < end && isspace(*data))
+	    data++;
+	const char *first = data;
+	while (data < end && !isspace(*data) && *data != ';')
+	    data++;
+	if (data == first) {
+	    data++;		// step past semicolon (or harmlessly past EOS)
 	    if (words.size() > 0) {
 		(this->*method)(words, errh);
 		words.clear();
 	    }
 	} else
-	    words.push_back(s.substring(first, pos - first));
+	    words.push_back(s.substring(first, data));
     }
     if (words.size() > 0)
 	(this->*method)(words, errh);
