@@ -1,9 +1,11 @@
 LCDF Typetools NEWS
 
-Version 1.90
+Version 1.90   29.Dec.2003
 
 * mmpfb: Fix behavior with Adobe Jenson and other fonts with intermediate
   masters, and '--minimize' output, which had been broken since 1.65.
+
+* Add t1dotlessj program.
 
 
 Version 1.88   23.Dec.2003
