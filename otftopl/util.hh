@@ -3,7 +3,7 @@
 #include <lcdf/string.hh>
 class ErrorHandler;
 
-String read_file(String filename, ErrorHandler *errh, bool warn = false);
+String read_file(String filename, ErrorHandler *, bool warn = false);
 String printable_filename(const String &);
 
 #endif

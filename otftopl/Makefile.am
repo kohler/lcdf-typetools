@@ -15,3 +15,5 @@ otftopl_SOURCES = \
 otftopl_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
+
+EXTRADIST = otftopl.1

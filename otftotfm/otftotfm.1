@@ -12,14 +12,35 @@ otftopl \- create TeX PL metrics files from PostScript OpenType fonts
 \%[\fIfont\fR [\fIoutput\fR]]
 .SH DESCRIPTION
 .BR Otftopl
-creates TeX PL metrics corresponding, as far as possible, to a
-PostScript-flavored OpenType font. The input file should be a raw CFF file
-or a PostScript-flavored OpenType font. If the file
+creates TeX PL metrics (and, optionally, a DVIPS-like encoding file) that
+correspond, as far as possible, to a PostScript-flavored OpenType font. If
+the file
 .I output
-is not specified output goes to the standard output.
+is not specified the generated PL metrics go to the standard output.
 If the file
 .I input
 is not specified input comes from the standard input.
+.LP
+OpenType supports extensive substitutions and complex positionings that TeX
+can't handle. Many OpenType instructions useful for the Latin script are
+supported by TeX, however, including:
+.IP * 3
+Glyph substitutions, such as replacing 'a' with small caps 
+.SM 'A'.
+.IP * 3
+Pair kerns, such as moving 'AV' closer together.
+.IP * 3
+Ligatures, such as replacing 'f' and 'i' with an integrated 'fi'
+glyph.
+.LP
+Otftopl reads an OpenType font, turns on font features chosen by the user,
+selects the instructions that TeX supports, and generates PL font metrics
+and a DVIPS encoding file that, together, implement those instructions.
+Feed the PL font metrics to
+.BR pltotf (1)
+to get TFM font metrics that TeX can read.
+.LP
+
 '
 .SH OPTIONS
 .PD 0
@@ -67,6 +88,17 @@ Print usage information and exit.
 .BR \-\-version
 Print the version number and some short non-warranty information and exit.
 .PD
+'
+.SH "BUGS"
+.LP
+Otftopl should warn when TeX cannot implement a requested feature (complex
+context-sensitive positionings, for example).
+.LP
+Presumably some context-sensitive positionings and ligatures could be
+implemented with TeX's boundary character, but otftopl doesn't do that yet.
+.LP
+More positionings and ligatures could be supported with the help of virtual
+fonts.
 '
 .SH "SEE ALSO"
 .LP

@@ -26,6 +26,9 @@
 #ifdef HAVE_CTIME
 # include <ctime>
 #endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 using namespace Efont;
 
@@ -43,23 +46,29 @@ using namespace Efont;
 #define ENCODING_FILE_OPT	312
 #define PRINT_SCRIPTS_OPT	313
 #define PRINT_FEATURES_OPT	314
+#define FONT_NAME_OPT		315
+#define TFM_OPT			316
+#define TFM_DIR_OPT		317
 
 Clp_Option options[] = {
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ArgString, 0 },
     { "encoding-name", 0, ENCODING_NAME_OPT, Clp_ArgString, 0 },
-    { "encoding-output", 0, ENCODING_FILE_OPT, Clp_ArgString, 0 },
     { "feature", 'f', FEATURE_OPT, Clp_ArgString, 0 },
     { "list-features", 0, PRINT_FEATURES_OPT, 0, 0 }, // deprecated
     { "list-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 }, // deprecated
-    { "literal-encoding", 'E', LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
+    { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
+    { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "output-encoding", 'E', ENCODING_FILE_OPT, Clp_ArgString, 0 },
     { "print-features", 0, PRINT_FEATURES_OPT, 0, 0 }, // deprecated
     { "print-scripts", 0, PRINT_SCRIPTS_OPT, 0, 0 }, // deprecated
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "script", 's', SCRIPT_OPT, Clp_ArgString, 0 },
+    { "tfm", 't', TFM_OPT, 0, Clp_Negate },
+    { "tfm-directory", 'T', TFM_DIR_OPT, Clp_ArgString, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
 };
 
@@ -79,7 +88,11 @@ static Vector<int> interesting_features_used;
 static String encoding_directory;
 static String encoding_name;
 static String encoding_file;
-static String encoded_font_name;
+
+static String font_name;
+
+static bool tfm = false;
+static String tfm_directory;
 
 static bool stdout_used = false;
 
@@ -112,11 +125,11 @@ Usage: %s [OPTIONS] [FONTFILE [OUTFILE]]\n\
 Options:\n\
   -s, --script=SCRIPT[.LANG]   Use features for script SCRIPT[.LANG] [latn].\n\
   -f, --feature=FEAT           Apply feature FEAT.\n\
-  -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
+      --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
   -E, --literal-encoding=FILE  Use DVIPS encoding FILE as is.\n\
   -o, --output=FILE            Output PL metrics to FILE.\n\
       --encoding-name=NAME     Output encoding name is NAME.\n\
-      --encoding-output=FILE   Output encoding to FILE.\n\
+  -E, --output-encoding=FILE   Output encoding to FILE.\n\
       --encoding-directory=DIR Output encoding to a file in DIR.\n\
       --glyphlist=FILE         Use FILE to map Adobe glyph names to Unicode.\n\
       --print-scripts          Print font's supported scripts and exit.\n\
@@ -223,9 +236,9 @@ static const char * const digit_names[] = {
 };
 
 static void
-output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
-	   const GsubEncoding &gse, const Vector<PermString> &glyph_names,
-	   FILE *f)
+output_pl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
+	  const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	  FILE *f)
 {
     // XXX check DESIGNSIZE and DESIGNUNITS for correctness
 
@@ -281,13 +294,15 @@ output_vpl(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
 	    "   )\n");
 
     // figure out our FONTNAME
-    encoded_font_name = cff->font_name();
-    if (encoding_file) {
-	int slash = encoding_file.find_right('/') + 1;
-	int dot = encoding_file.find_right('.');
-	if (dot < slash)
-	    dot = encoding_file.length();
-	encoded_font_name += String("--") + encoding_file.substring(slash, dot - slash);
+    if (!font_name) {
+	font_name = cff->font_name();
+	if (encoding_file) {
+	    int slash = encoding_file.find_right('/') + 1;
+	    int dot = encoding_file.find_right('.');
+	    if (dot < slash)
+		dot = encoding_file.length();
+	    font_name += String("--") + encoding_file.substring(slash, dot - slash);
+	}
     }
 
     // figure out the proper names and numbers for glyphs
@@ -469,6 +484,87 @@ output_encoding(const GsubEncoding &gsub_encoding,
 	fclose(f);
 }
 
+static int
+temporary_file(String &filename, ErrorHandler *errh)
+{
+#ifdef HAVE_MKSTEMP
+    const char *tmpdir = getenv("TMPDIR");
+    if (tmpdir)
+	filename = String(tmpdir) + "/otftopl.XXXXXX";
+    else {
+# ifdef P_tmpdir
+	filename = P_tmpdir "/otftopl.XXXXXX";
+# else
+	filename = "/tmp/otftopl.XXXXXX";
+# endif
+    }
+    int fd = mkstemp(filename.mutable_c_str());
+    if (fd < 0)
+	errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
+    return fd;
+#else  // !HAVE_MKSTEMP
+    for (int tries = 0; tries < 5; tries++) {
+	if (!(filename = tmpnam(0)))
+	    return errh->error("cannot create temporary file");
+# ifdef O_EXCL
+	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_EXCL | O_TRUNC, 0600);
+# else
+	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
+# endif
+	if (fd >= 0)
+	    return fd;
+    }
+    return errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
+#endif
+}
+
+static void
+output_tfm(Cff::Font *cff, Efont::OpenType::Cmap &cmap,
+	   const GsubEncoding &gse, const Vector<PermString> &glyph_names,
+	   const String &tfm_filename, ErrorHandler *errh)
+{
+    String pl_filename;
+    int pl_fd = temporary_file(pl_filename, errh);
+    if (pl_fd < 0)
+	return;
+
+    String true_tfm_filename;
+    int tfm_fd = -1;
+    if (!tfm_filename && tfm_directory)
+	true_tfm_filename = tfm_directory + "/" + font_name + ".tfm";
+    else if (!tfm_filename || tfm_filename == "-") {
+	if ((tfm_fd = temporary_file(true_tfm_filename, errh)) < 0) {
+	    close(pl_fd);
+	    unlink(pl_filename.c_str());
+	    return;
+	}
+	stdout_used = true;
+    } else
+	true_tfm_filename = tfm_filename;
+
+    FILE *f = fdopen(pl_fd, "w");
+    output_pl(cff, cmap, gse, glyph_names, f);
+    fclose(f);
+
+    StringAccum command;
+    command << "pltotf " << pl_filename << ' ' << true_tfm_filename;
+    int status = system(command.c_str());
+
+    unlink(pl_filename.c_str());
+    
+    if (tfm_fd >= 0) {
+	if (status == 0) { // read file and write the result to stdout
+	    String tfm_text = read_file(true_tfm_filename.c_str(), errh);
+	    fwrite(tfm_text.data(), 1, tfm_text.length(), stdout);
+	}
+	close(tfm_fd);
+	unlink(true_tfm_filename.c_str());
+    }
+
+    if (status != 0)
+	errh->fatal("pltotf execution failed");
+}
+
 static void
 do_file(const OpenType::Font &otf, const char *outfn,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
@@ -558,29 +654,40 @@ do_file(const OpenType::Font &otf, const char *outfn,
 	errh->warning(w.c_str(), sa.c_str(), ssa.c_str());
     }
 
-    if (dvipsenc_literal) {
+    // output encoding
+    if (dvipsenc_literal)
 	encoding_name = dvipsenc_in.name();
+    else if (!encoding_file && !encoding_directory) {
+	errh->error("encoding changed, but no encoding file specified");
+	errh->lmessage(String(" "), "(The features you specified caused the encoding to change. Provide\n\
+either '-E/--output-encoding' or '--encoding-directory' to tell me\n\
+where to write the new encoding, or '--literal-encoding' so I don't\n\
+change the input encoding.)");
+	exit(1);
     } else
 	output_encoding(encoding, glyph_names, errh);
     
-    // output VPL code
-    FILE *f;
-    if (!outfn || strcmp(outfn, "-") == 0) {
-	f = stdout;
-	outfn = "<stdout>";
-	stdout_used = true;
-    } else if (!(f = fopen(outfn, "w")))
-	errh->fatal("%s: %s", outfn, strerror(errno));
+    // output metrics
+    if (tfm) {
+	output_tfm(&font, cmap, encoding, glyph_names, outfn, errh);
+    } else {
+	FILE *f;
+	if (!outfn || strcmp(outfn, "-") == 0) {
+	    f = stdout;
+	    stdout_used = true;
+	} else if (!(f = fopen(outfn, "w")))
+	    errh->fatal("%s: %s", outfn, strerror(errno));
 
-    output_vpl(&font, cmap, encoding, glyph_names, f);
+	output_pl(&font, cmap, encoding, glyph_names, f);
 
-    if (f != stdout)
-	fclose(f);
+	if (f != stdout)
+	    fclose(f);
+    }
 
     // print DVIPS map line
-    if (!stdout_used)
+    if (!stdout_used && errh->nerrors() == 0)
 	printf("%s %s \"%s ReEncodeFont\" <[%s\n",
-	       encoded_font_name.c_str(), font.font_name().c_str(),
+	       font_name.c_str(), font.font_name().c_str(),
 	       encoding_name.c_str(), encoding_file.c_str());
 }
 
@@ -695,57 +802,6 @@ main(int argc, char **argv)
 	int opt = Clp_Next(clp);
 	switch (opt) {
 
-	  case FEATURE_OPT: {
-	      OpenType::Tag t(clp->arg);
-	      if (t.valid())
-		  interesting_features.push_back(t);
-	      else
-		  usage_error(errh, "bad feature tag");
-	      break;
-	  }
-      
-	  case QUIET_OPT:
-	    if (clp->negated)
-		errh = ErrorHandler::default_handler();
-	    else
-		errh = ErrorHandler::silent_handler();
-	    break;
-
-	  case GLYPHLIST_OPT:
-	    glyphlist_file = clp->arg;
-	    break;
-	    
-	  case ENCODING_OPT:
-	    if (encoding_file)
-		usage_error(errh, "encoding specified twice");
-	    encoding_file = clp->arg;
-	    break;
-
-	  case ENCODING_NAME_OPT:
-	    if (encoding_name)
-		usage_error(errh, "encoding name specified twice");
-	    encoding_name = clp->arg;
-	    break;
-	    
-	  case ENCODING_FILE_OPT:
-	    if (::encoding_file)
-		usage_error(errh, "encoding file specified twice");
-	    ::encoding_file = clp->arg;
-	    break;
-	    
-	  case ENCODING_DIR_OPT:
-	    if (encoding_directory)
-		usage_error(errh, "encoding directory specified twice");
-	    encoding_directory = clp->arg;
-	    break;
-	    
-	  case LITERAL_ENCODING_OPT:
-	    if (encoding_file)
-		usage_error(errh, "encoding specified twice");
-	    encoding_file = clp->arg;
-	    literal_encoding = true;
-	    break;
-
 	  case SCRIPT_OPT: {
 	      String arg = clp->arg;
 	      int period = arg.find_left('.');
@@ -765,6 +821,66 @@ main(int argc, char **argv)
 	      break;
 	  }
 
+	  case FEATURE_OPT: {
+	      OpenType::Tag t(clp->arg);
+	      if (t.valid())
+		  interesting_features.push_back(t);
+	      else
+		  usage_error(errh, "bad feature tag");
+	      break;
+	  }
+      
+	  case ENCODING_OPT:
+	    if (encoding_file)
+		usage_error(errh, "encoding specified twice");
+	    encoding_file = clp->arg;
+	    break;
+
+	  case ENCODING_NAME_OPT:
+	    if (encoding_name)
+		usage_error(errh, "encoding name specified twice");
+	    encoding_name = clp->arg;
+	    break;
+	    
+	  case ENCODING_FILE_OPT:
+	    if (::encoding_file)
+		usage_error(errh, "encoding file specified twice");
+	    ::encoding_file = clp->arg;
+	    break;
+
+	  case ENCODING_DIR_OPT:
+	    if (encoding_directory)
+		usage_error(errh, "encoding directory specified twice");
+	    encoding_directory = clp->arg;
+	    break;
+	    
+	  case LITERAL_ENCODING_OPT:
+	    if (encoding_file)
+		usage_error(errh, "encoding specified twice");
+	    encoding_file = clp->arg;
+	    literal_encoding = true;
+	    break;
+
+	  case FONT_NAME_OPT:
+	    if (font_name)
+		usage_error(errh, "font name specified twice");
+	    font_name = clp->arg;
+	    break;
+
+	  case TFM_OPT:
+	    tfm = !clp->negated;
+	    break;
+
+	  case TFM_DIR_OPT:
+	    if (tfm_directory)
+		usage_error(errh, "TFM directory specified twice");
+	    tfm_directory = clp->arg;
+	    break;
+	    
+	  case GLYPHLIST_OPT:
+	    glyphlist_file = clp->arg;
+	    break;
+	    
 	  case PRINT_FEATURES_OPT:
 	    print_features = true;
 	    break;
@@ -773,6 +889,13 @@ main(int argc, char **argv)
 	    print_scripts = true;
 	    break;
 	    
+	  case QUIET_OPT:
+	    if (clp->negated)
+		errh = ErrorHandler::default_handler();
+	    else
+		errh = ErrorHandler::silent_handler();
+	    break;
+
 	  case VERSION_OPT:
 	    printf("otftopl (LCDF typetools) %s\n", VERSION);
 	    printf("Copyright (C) 2002-2003 Eddie Kohler\n\
