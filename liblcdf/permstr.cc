@@ -1,5 +1,8 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifdef __GNUG__
-#pragma implementation "permstr.hh"
+# pragma implementation "permstr.hh"
 #endif
 #include "permstr.hh"
 #include <stdlib.h>
@@ -22,6 +25,7 @@ static PermString::Initializer initializer;
 // must be power of 2
 #define NHASH 1024
 
+static PermString::Doodad zero_char_doodad;
 static PermString::Doodad one_char_doodad[256];
 static PermString::Doodad *buckets[NHASH];
 
@@ -91,8 +95,10 @@ PermString::PermString(const char *s)
   if (m == 0) {
     _rep = 0;
     return;
-  }
-  if (m[0] == 0 || m[1] == 0) {
+  } else if (m[0] == 0) {
+    _rep = zero_char_doodad.data;
+    return;
+  } else if (m[1] == 0) {
     _rep = one_char_doodad[m[0]].data;
     return;
   }
@@ -126,7 +132,7 @@ PermString::PermString(const char *s, int length)
   register unsigned char *mm;
   
   if (length == 0) {
-    _rep = one_char_doodad[0].data;
+    _rep = zero_char_doodad.data;
     return;
   } else if (length == 1) {
     _rep = one_char_doodad[m[0]].data;
@@ -161,9 +167,12 @@ PermString::PermString(const char *s, int length)
 void
 PermString::static_initialize()
 {
+  zero_char_doodad.next = 0;
+  zero_char_doodad.length = 0;
+  zero_char_doodad.data[0] = 0;
   for (int i = 0; i < 256; i++) {
     one_char_doodad[i].next = 0;
-    one_char_doodad[i].length = i != 0;
+    one_char_doodad[i].length = 1;
     one_char_doodad[i].data[0] = i;
     one_char_doodad[i].data[1] = 0;
   }
