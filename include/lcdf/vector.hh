@@ -20,6 +20,11 @@ class Vector { public:
     ~Vector();
   
     int size() const			{ return _n; }
+
+    const T *begin() const		{ return _l; }
+    T *begin()				{ return _l; }
+    const T *end() const		{ return _l + _n; }
+    T *end()				{ return _l + _n; }
   
     const T &at(int i) const		{ assert(i>=0 && i<_n); return _l[i]; }
     const T &operator[](int i) const	{ return at(i); }
