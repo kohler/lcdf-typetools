@@ -132,12 +132,15 @@ class Type1Encoding : public Type1Item { public:
     Type1Encoding();
     Type1Encoding(const Type1Encoding &);
     ~Type1Encoding();
+
+    void clear();
+    void unshare();
   
     PermString operator[](int e) const	{ assert(e>=0&&e<256); return _v[e]; }
     PermString elt(int e) const		{ return (*this)[e]; }
     PermString operator[](unsigned char e) const { return _v[e]; }
     PermString elt(unsigned char e) const { return operator[](e); }
-    void put(int e, PermString p)	{ assert(e>=0&&e<256); _v[e] = p; }
+    inline void put(int e, PermString p);
 
     void set_definer(PermString s)	{ _definer = s; }
     
@@ -255,6 +258,15 @@ inline void
 Type1Definition::set_val(StringAccum &sa)
 {
     _val = sa.take_string();
+}
+
+inline void
+Type1Encoding::put(int e, PermString glyph)
+{
+    if (_copy_of)
+	unshare();
+    assert(e >= 0 && e < 256);
+    _v[e] = glyph;
 }
 
 }

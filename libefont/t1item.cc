@@ -589,6 +589,25 @@ Type1Encoding::~Type1Encoding()
 	delete[] _v;
 }
 
+void
+Type1Encoding::unshare()
+{
+    if (_copy_of) {
+	PermString *new_v = new PermString[256];
+	memcpy(new_v, _v, sizeof(PermString) * 256);
+	_v = new_v;
+	_copy_of = 0;
+    }
+}
+
+void
+Type1Encoding::clear()
+{
+    unshare();
+    for (int i = 0; i < 256; i++)
+	_v[i] = dot_notdef;
+}
+
 
 static Type1Encoding *canonical_standard_encoding;
 
