@@ -964,6 +964,9 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
 
+    // apply LIGKERN ligature commands to the result
+    dvipsenc.apply_ligkern_lig(encoding, errh);
+    
     // simplify more-than-two-character ligatures
     encoding.simplify_ligatures(false);
 
@@ -991,8 +994,8 @@ do_file(const String &input_filename, const OpenType::Font &otf,
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
 
-    // apply LIGKERN commands to the result
-    dvipsenc.apply_ligkern(encoding, errh);
+    // apply LIGKERN kerning commands to the result
+    dvipsenc.apply_ligkern_kern(encoding, errh);
 
     // apply letterspacing, if any
     if (letterspace) {

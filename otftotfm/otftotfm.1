@@ -1,5 +1,5 @@
 '\"t
-.ds V 0.16
+.ds V 0.17
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -524,9 +524,9 @@ are removed and replaced by
 .IR result .
 To preserve the left-hand glyph, for an effect like "\fIglyph1\fR
 \fIglyph2\fR =: \fIglyph1\fR \fIresult\fR", use the "|=:" operator instead.
-You can also say "=:|" to preserve the right-hand glyph, and "|=:|" to
-preserve both. The "|=:>", "=:|>", "|=:|>", and "|=:|>>" operators skip
-over one or two of the resulting glyphs before processing more ligatures.
+You can also say "=:|" to preserve the right-hand glyph. Otftotfm does not
+yet support the other five ligature operators ("|=:|", "|=:>", "=:|>",
+"|=:|>", and "|=:|>>").
 .PP
 To remove all kerns between two characters, say:
 .nf

@@ -260,8 +260,10 @@ comment_tokenize(const String &s, int &pos_in, int &line)
 
 
 static struct { const char *s; int v; } ligkern_ops[] = {
-    { "=:", 0 }, { "|=:", 1 }, { "|=:>", 2 }, { "=:|", 3 },
-    { "=:|>", 4 },{ "|=:|", 5 }, { "|=:>", 6 }, { "|=:|>>", 7 },
+    { "=:", DvipsEncoding::J_LIG }, { "|=:", DvipsEncoding::J_CLIG },
+    { "|=:>", DvipsEncoding::J_CLIG_S }, { "=:|", DvipsEncoding::J_LIGC },
+    { "=:|>", DvipsEncoding::J_LIGC_S }, { "|=:|", DvipsEncoding::J_CLIGC },
+    { "|=:>", DvipsEncoding::J_CLIGC_S }, { "|=:|>>", DvipsEncoding::J_CLIGC_SS },
     { "{}", DvipsEncoding::J_NOKERN }, { "{K}", DvipsEncoding::J_NOKERN },
     { "{L}", DvipsEncoding::J_NOLIG }, { "{LK}", DvipsEncoding::J_NOLIGKERN },
     { "{KL}", DvipsEncoding::J_NOLIGKERN }, { "{k}", DvipsEncoding::J_NOKERN },
@@ -309,7 +311,8 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, ErrorHandler *errh)
 	    return 0;
 	} else
 	    return -1;
-    } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= 0 && op < 8) {
+    } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= J_LIG
+	       && op <= J_CLIGC_SS) {
 	int av = encoding_of(v[0]);
 	if (av < 0)
 	    return errh->warning("'%s' has no encoding, ignoring ligature", v[0].c_str());
@@ -539,28 +542,39 @@ DvipsEncoding::unicodes(Vector<uint32_t> &unicodes) const
 }
 
 void
-DvipsEncoding::apply_ligkern(GsubEncoding &gsub_encoding, ErrorHandler *errh) const
+DvipsEncoding::apply_ligkern_lig(GsubEncoding &gsub_encoding, ErrorHandler *errh) const
 {
     assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);
     for (int i = 0; i < _lig.size(); i++) {
 	const Ligature &l = _lig[i];
-	if (l.c1 < 0 || l.c2 < 0 || l.join < 0)
+	if (l.c1 < 0 || l.c2 < 0 || l.join < 0 || l.join == J_NOKERN)
 	    /* nada */;
-	else if (l.join == J_NOKERN)
-	    gsub_encoding.remove_kerns(l.c1, l.c2);
-	else if (l.join == J_NOLIG)
+	else if (l.join == J_NOLIG || l.join == J_NOLIGKERN)
 	    gsub_encoding.remove_ligatures(l.c1, l.c2);
-	else if (l.join == J_NOLIGKERN) {
-	    gsub_encoding.remove_ligatures(l.c1, l.c2);
-	    gsub_encoding.remove_kerns(l.c1, l.c2);
-	} else if (l.join == 0)
+	else if (l.join == J_LIG)
 	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d);
+	else if (l.join == J_LIGC)
+	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d, 1);
+	else if (l.join == J_CLIG)
+	    gsub_encoding.add_twoligature(l.c1, l.c2, l.d, -1);
 	else {
 	    static int complex_join_warning = 0;
 	    if (!complex_join_warning) {
-		errh->warning("complex LIGKERN ligature removed (I only support '=:' ligatures)");
+		errh->warning("complex LIGKERN ligature removed (I only support '=:', '=:|', and '|=:')");
 		complex_join_warning = 1;
 	    }
 	}
+    }
+}
+
+void
+DvipsEncoding::apply_ligkern_kern(GsubEncoding &gsub_encoding, ErrorHandler *) const
+{
+    assert((int)J_ALL == (int)GsubEncoding::CODE_ALL);
+    for (int i = 0; i < _lig.size(); i++) {
+	const Ligature &l = _lig[i];
+	if (l.c1 >= 0 && l.c2 >= 0
+	    && (l.join == J_NOKERN || l.join == J_NOLIGKERN))
+	    gsub_encoding.remove_kerns(l.c1, l.c2);
     }
 }

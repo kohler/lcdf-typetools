@@ -21,6 +21,28 @@
 #include <algorithm>
 #include <lcdf/straccum.hh>
 
+String
+GsubEncoding::Ligature::unparse(const GsubEncoding *gse) const
+{
+    if (!live())
+	return "<dead>";
+    StringAccum sa;
+    int pc = (context > 0 ? context : 0);
+    for (int i = 0; i < in.size() - pc; i++) {
+	if (context == -i && i)
+	    sa << "| ";
+	sa << gse->debug_code_name(in[i]) << ' ';
+    }
+    sa << "=> " << gse->debug_code_name(out);
+    if (pc) {
+	sa << " |";
+	for (int i = in.size() - pc; i < in.size(); i++)
+	    sa << ' ' << gse->debug_code_name(in[i]);
+    }
+    return sa.take_string();
+}
+
+
 GsubEncoding::GsubEncoding(int nglyphs)
     : _boundary_glyph(nglyphs), _fake_ligatures(false)
 {
@@ -458,57 +480,6 @@ GsubEncoding::reassign_codes(const Vector<int> &reassignment)
     _emap.clear();
 }
 
-// preference-sorting extra characters
-enum { BASIC_LATIN_SCORE = 1, LATIN1_SUPPLEMENT_SCORE = 2,
-       LOW_16_SCORE = 3, OTHER_SCORE = 4, NOCHAR_SCORE = 5,
-       CONTEXT_PENALTY = 2 };
-
-String
-GsubEncoding::Ligature::unparse(const GsubEncoding *gse) const
-{
-    if (!live())
-	return "<dead>";
-    StringAccum sa;
-    int pc = (context > 0 ? context : 0);
-    for (int i = 0; i < in.size() - pc; i++) {
-	if (context == -i && i)
-	    sa << "| ";
-	sa << gse->debug_code_name(in[i]) << ' ';
-    }
-    sa << "=> " << gse->debug_code_name(out);
-    if (pc) {
-	sa << " |";
-	for (int i = in.size() - pc; i < in.size(); i++)
-	    sa << ' ' << gse->debug_code_name(in[i]);
-    }
-    return sa.take_string();
-}
-
-int
-GsubEncoding::Ligature::score(const Vector<uint32_t> &unicodes) const
-{
-    int s = 0;
-    for (int i = 0; i < in.size(); i++) {
-	int e = in[i];
-	if (e >= 0 && e < unicodes.size()) {
-	    uint32_t u = unicodes[e];
-	    if (u == 0)
-		s += NOCHAR_SCORE;
-	    else if (u < 0x0080)
-		s += BASIC_LATIN_SCORE;
-	    else if (u < 0x0100)
-		s += LATIN1_SUPPLEMENT_SCORE;
-	    else if (u < 0x8000)
-		s += LOW_16_SCORE;
-	    else
-		s += OTHER_SCORE;
-	} else
-	    s += NOCHAR_SCORE;
-    }
-    //fprintf(stderr, "%s = %d\n", unparse(g).c_str(), s);
-    return s;
-}
-
 void
 GsubEncoding::cut_encoding(int size)
 {
@@ -528,6 +499,65 @@ GsubEncoding::cut_encoding(int size)
     }
 }
 
+// preference-sorting extra characters
+enum { BASIC_LATIN_SCORE = 2, LATIN1_SUPPLEMENT_SCORE = 5,
+       LOW_16_SCORE = 6, OTHER_SCORE = 7, NOCHAR_SCORE = 100000,
+       CONTEXT_PENALTY = 4 };
+
+static int
+unicode_score(uint32_t u)
+{
+    if (u == 0)
+	return NOCHAR_SCORE;
+    else if (u < 0x0080)
+	return BASIC_LATIN_SCORE;
+    else if (u < 0x0100)
+	return LATIN1_SUPPLEMENT_SCORE;
+    else if (u < 0x8000)
+	return LOW_16_SCORE;
+    else
+	return OTHER_SCORE;
+}
+
+int
+GsubEncoding::ligature_score(const Ligature &l, Vector<int> &scores) const
+{
+    int s = 0;
+    for (int i = 0; i < l.in.size(); i++) {
+	int e = l.in[i];
+	
+	// may need to calculate this character's score
+	if (scores[e] == NOCHAR_SCORE)
+	    for (Vector<Ligature>::const_iterator ll = _ligatures.begin(); ll < _ligatures.end(); ll++)
+		if (ll->live() && ll->out == e) {
+		    int ss = ligature_score(*ll, scores);
+		    fprintf(stderr, "--%s %d\n", ll->unparse(this).c_str(), ss);
+		    if (scores[e] > ss)
+			scores[e] = ss;
+		}
+	
+	s += scores[e];
+    }
+    return s;
+}
+
+inline bool
+GsubEncoding::Ligature::deadp(const Ligature &l)
+{
+    return !l.live();
+}
+
+bool
+operator<(const GsubEncoding::Ligature &l1, const GsubEncoding::Ligature &l2)
+{
+    // topological < : is l1's output one of l2's inputs?
+    assert(l1.live() && l2.live());
+    for (int i = 0; i < l2.in.size(); i++)
+	if (l2.in[i] == l1.out)
+	    return true;
+    return false;
+}
+
 void
 GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names, ErrorHandler *errh)
 {
@@ -536,6 +566,14 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 	return;
     }
 
+    // prepare for ligature importance scoring by sorting _ligatures array
+    // topologically
+    // first remove dead ligatures
+    Vector<Ligature>::iterator endpoint = std::remove_if(_ligatures.begin(), _ligatures.end(), Ligature::deadp);
+    _ligatures.resize(endpoint - _ligatures.begin());
+    // sort remains topologically
+    std::sort(_ligatures.begin(), _ligatures.end());
+    
     // get a hold of Unicode values (for ligature importance scoring)
     Vector<uint32_t> unicodes;
     dvipsenc.unicodes(unicodes);
@@ -544,20 +582,28 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 	unicodes.push_back('\n');
 
     // score new characters: "better" ligatures have lower scores
-    Vector<int> scores(_encoding.size() - size, 0);
-    Vector<const Ligature *> ligmap(_encoding.size() - size, 0);
-    for (Vector<Ligature>::const_iterator l = _ligatures.begin(); l < _ligatures.end(); l++)
-	if (l->live() && l->out >= size) {
-	    int s = l->score(unicodes);
-	    if (scores[l->out - size] == 0 || scores[l->out - size] > s)
-		scores[l->out - size] = s;
-	}
+    Vector<int> scores(_encoding.size(), NOCHAR_SCORE);
+    // first score old characters
+    for (int i = 0; i < unicodes.size(); i++)
+	scores[i] = unicode_score(unicodes[i]);
+    for (int i = unicodes.size(); i < size; i++)
+	scores[i] = OTHER_SCORE;
+    // then score ligatures
+    for (Vector<Ligature>::const_iterator l = _ligatures.begin(); l < _ligatures.end(); l++) {
+	int s = 0;
+	for (int i = 0; i < l->in.size(); i++)
+	    s += scores[l->in[i]];
+	if (scores[l->out] > s)
+	    scores[l->out] = s;
+    }
 
     // collect larger values
+    // 6.Jul: ignore new characters that are not accessible through ligatures;
+    // such characters have score >= NOCHAR_SCORE
     Vector<Slot> slots;
     for (int i = size; i < _encoding.size(); i++)
-	if (_encoding[i]) {
-	    Slot p = { i, -1, _encoding[i], scores[i - size] };
+	if (_encoding[i] && scores[i] < NOCHAR_SCORE) {
+	    Slot p = { i, -1, _encoding[i], scores[i] };
 	    slots.push_back(p);
 	}
     // sort them by score, then by value
@@ -604,8 +650,8 @@ GsubEncoding::shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vec
 	    sa.append_fill_lines(unencoded, 68, "", "  ");
 	    errh->lwarning(" ", (unencoded.size() == 1 ? "ignoring unencodable glyphs:" : "ignoring unencodable glyphs:"));
 	    errh->lmessage(" ", "%s(\
-This encoding doesn't have enough room for all the glyphs used by\n\
-the font, so I've ignored those listed above.)", sa.c_str());
+This encoding doesn't have room for all the glyphs used by the\n\
+font, so I've ignored those listed above.)", sa.c_str());
 	}
     }
 
@@ -622,14 +668,14 @@ the font, so I've ignored those listed above.)", sa.c_str());
 }
 
 void
-GsubEncoding::add_twoligature(int code1, int code2, int outcode)
+GsubEncoding::add_twoligature(int code1, int code2, int outcode, int context)
 {
     Ligature l;
     l.in.push_back(code1);
     l.in.push_back(code2);
     l.out = outcode;
     l.skip = 0;
-    l.context = 0;
+    l.context = context;
     _ligatures.push_back(l);
 }
 

@@ -41,7 +41,7 @@ class GsubEncoding { public:
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &, const Vector<PermString> &glyph_names, ErrorHandler *);
 
-    void add_twoligature(int code1, int code2, int outcode);
+    void add_twoligature(int code1, int code2, int outcode, int context = 0);
     void add_kern(int left, int right, int amount);
     void add_single_positioning(int code, int pdx, int pdy, int adx);
     enum { CODE_ALL = 0x7FFFFFFF };
@@ -71,11 +71,11 @@ class GsubEncoding { public:
 	int out;
 	int skip;
 	int context;
-	int next;
+	int next;			// not usually valid
 	bool live() const		{ return in[0] >= 0; }
 	void kill()			{ in[0] = -1; }
 	String unparse(const GsubEncoding *) const;
-	int score(const Vector<uint32_t> &unicodes) const;
+	static inline bool deadp(const Ligature &);
     };
     Vector<Ligature> _ligatures;
     bool _fake_ligatures;
@@ -101,8 +101,10 @@ class GsubEncoding { public:
     static void reassign_ligature(Ligature &, const Vector<int> &);
     void reassign_codes(const Vector<int> &);
     int find_in_place_twoligature(int, int, Vector<int> &);
+    int ligature_score(const Ligature &, Vector<int> &scores) const;
     const Ligature *find_ligature_for(int code) const;
 
+    friend bool operator<(const Ligature &, const Ligature &);
     friend bool operator<(const Kern &, const Kern &);
     friend bool operator<(const Vfpos &, const Vfpos &);
     

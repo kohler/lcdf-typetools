@@ -1,5 +1,15 @@
 LCDF Typetools NEWS
 
+Version 0.17   6.Jul.2003
+
+* otftotfm: Ligatures removed with LIGKERN commands won't show up in the
+  encoding.
+
+* Improve scoring heuristics by which otftotfm decides which characters are
+  more important (for when there isn't enough encoding space for all new
+  glyphs).
+
+
 Version 0.16   6.Jul.2003
 
 * otftotfm: In automatic mode, store dvips files (encodings and
