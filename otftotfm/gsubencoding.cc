@@ -119,9 +119,27 @@ assign_changed_context(Vector<int> &changed, Vector<int *> &changed_context, int
 }
 
 static bool
-in_changed_context(const Vector<int> &changed, const Vector<int *> &changed_context, int e1, int e2)
+in_changed_context(Vector<int> &changed, Vector<int *> &changed_context, int e1, int e2)
 {
     int n = changed_context.size();
+
+    // grow vectors if necessary
+    if (e1 >= n || e2 >= n) {
+	int new_n = (e1 > e2 ? e1 : e2) + 256;
+	assert(e1 < new_n && e2 < new_n);
+	changed.resize(new_n, CH_NO);
+	changed_context.resize(new_n, 0);
+	for (int i = 0; i < n; i++)
+	    if (int *v = changed_context[i]) {
+		int *nv = new int[((new_n - 1) >> 5) + 1];
+		memcpy(nv, v, sizeof(int) * (((n - 1) >> 5) + 1));
+		memset(nv + (((n - 1) >> 5) + 1), 0, sizeof(int) * (((new_n - 1) >> 5) - ((n - 1) >> 5)));
+		delete[] v;
+		changed_context[i] = nv;
+	    }
+	n = new_n;
+    }
+    
     if (e1 >= 0 && e2 >= 0 && e1 < n && e2 < n) {
 	if (changed[e1] == CH_ALL)
 	    return true;
@@ -134,7 +152,7 @@ in_changed_context(const Vector<int> &changed, const Vector<int *> &changed_cont
 void
 GsubEncoding::add_single_context_substitution(int left, int right, int out, bool is_right)
 {
-    if (out != (is_right ? right : left)) {
+    if (out != (is_right ? left : right)) {
 	Ligature l;
 	l.in.push_back(left);
 	l.in.push_back(right);
@@ -211,7 +229,7 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
 	} else if (s.is_single_lcontext()) {
 	    int left = encoding(s.left_glyph()), in = encoding(s.in_glyph());
 	    if (in >= 0 && in < changed.size()
-		&& left >= 0 && left < changed.size()
+		&& left >= 0
 		&& !in_changed_context(changed, changed_context, left, in)) {
 		add_single_context_substitution(left, in, force_encoding(s.out_glyph()), false);
 		assign_changed_context(changed, changed_context, left, in);
@@ -334,7 +352,7 @@ GsubEncoding::simplify_ligatures(bool add_fake)
 		ll.in[0] = -1;
 	}
     }
-
+    
     // remove null ligatures, which can creep in to override following
     // ligatures in the table
     for (int i = 0; i < _ligatures.size(); i++) {

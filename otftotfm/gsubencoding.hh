@@ -23,6 +23,7 @@ class GsubEncoding { public:
     Glyph boundary_glyph() const		{ return _boundary_glyph; }
 
     inline Glyph glyph(int) const;
+    inline const char *debug_glyph_name(int) const;
     bool setting(int, Vector<Setting> &) const;
     inline int encoding(Glyph) const;
     int force_encoding(Glyph);
@@ -106,6 +107,15 @@ GsubEncoding::glyph(int code) const
 	return 0;
     else
 	return _encoding[code];
+}
+
+inline const char *
+GsubEncoding::debug_glyph_name(int code) const
+{
+    if (code < 0 || code >= _encoding.size())
+	return "<bad code>";
+    else
+	return Efont::OpenType::debug_glyph_names[_encoding[code]].c_str();
 }
 
 inline int
