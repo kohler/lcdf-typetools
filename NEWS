@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.6   12.Jul.2004
+
+* t1testpage adds preliminary support for font smoke proofs with '--smoke'.
+  Requested by Karl Berry.
+
+* t1testpage adds '--glyph' option.
+
+
 Version 2.5   6.Jul.2004
 
 * Support compilation with gcc-3.4.1.  Reported by Thomas Esser.
