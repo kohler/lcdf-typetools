@@ -29,17 +29,18 @@ class GsubEncoding { public:
     
     void encode(int code, Glyph g);
 
-    bool apply(const Substitution &, bool allow_single);
     int apply(const Vector<Substitution> &, bool allow_single);
     void apply_substitutions();
     void simplify_ligatures(bool add_fake);
-    bool apply(const Positioning &);
-    void simplify_kerns();
+    int apply(const Vector<Positioning> &);
+    void simplify_positionings();
 
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &dvipsenc, const Vector<PermString> &glyph_names, ErrorHandler *);
 
     void add_twoligature(int code1, int code2, int outcode);
+    void add_kern(int left, int right, int amount);
+    void add_single_positioning(int code, int pdx, int pdy, int adx);
     enum { CODE_ALL = 0x7FFFFFFF };
     void remove_ligatures(int code1, int code2);
     void remove_kerns(int code1, int code2);
@@ -94,7 +95,7 @@ class GsubEncoding { public:
     int find_skippable_twoligature(int, int, bool add_fake);
 
     friend bool operator<(const Kern &, const Kern &);
-    friend bool operator==(const Kern &, const Kern &);
+    friend bool operator<(const Vfpos &, const Vfpos &);
     
 };
 
@@ -131,10 +132,9 @@ operator<(const GsubEncoding::Kern &k1, const GsubEncoding::Kern &k2)
 }
 
 inline bool
-operator==(const GsubEncoding::Kern &k1, const GsubEncoding::Kern &k2)
-    /* NB: not true equality; useful for remove_kerns, though */
+operator<(const GsubEncoding::Vfpos &p1, const GsubEncoding::Vfpos &p2)
 {
-    return k1.left == k2.left && k1.right == k2.right;
+    return p1.in < p2.in;
 }
 
 #endif

@@ -201,8 +201,8 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
 	} else if (s.is_single_rcontext()) {
 	    int in = encoding(s.in_glyph()), right = encoding(s.right_glyph());
 	    if (in >= 0 && in < changed.size()
-		&& !in_changed_context(changed, changed_context, in, right)
-		&& right >= 0 && right < changed.size()) {
+		&& right >= 0 && right < changed.size()
+		&& !in_changed_context(changed, changed_context, in, right)) {
 		add_single_context_substitution(in, right, force_encoding(s.out_glyph()), true);
 		assign_changed_context(changed, changed_context, in, right);
 	    }
@@ -211,8 +211,8 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
 	} else if (s.is_single_lcontext()) {
 	    int left = encoding(s.left_glyph()), in = encoding(s.in_glyph());
 	    if (in >= 0 && in < changed.size()
-		&& !in_changed_context(changed, changed_context, left, in)
-		&& left >= 0 && left < changed.size()) {
+		&& left >= 0 && left < changed.size()
+		&& !in_changed_context(changed, changed_context, left, in)) {
 		add_single_context_substitution(left, in, force_encoding(s.out_glyph()), false);
 		assign_changed_context(changed, changed_context, left, in);
 	    }
@@ -225,33 +225,62 @@ GsubEncoding::apply(const Vector<Substitution> &sv, bool allow_single)
     return success;
 }
 
-bool
-GsubEncoding::apply(const Positioning &p)
+static bool			// returns old value
+assign_bitvec(int *&bitvec, int e, int n)
 {
-    if (p.is_pairkern()) {
-	int code1 = encoding(p.left_glyph());
-	int code2 = encoding(p.right_glyph());
-	if (code1 >= 0 && code2 >= 0) {
-	    Kern k;
-	    k.left = code1;
-	    k.right = code2;
-	    k.amount = p.left().adx;
-	    _kerns.push_back(k);
+    if (e >= 0 && e < n) {
+	if (!bitvec) {
+	    bitvec = new int[((n - 1) >> 5) + 1];
+	    memset(bitvec, 0, sizeof(int) * (((n - 1) >> 5) + 1));
 	}
-	return true;
-    } else if (p.is_single()) {
-	int code = encoding(p.left_glyph());
-	if (code >= 0) {
-	    Vfpos v;
-	    v.in = code;
-	    v.pdx = p.left().pdx;
-	    v.pdy = p.left().pdy;
-	    v.adx = p.left().adx;
-	    _vfpos.push_back(v);
-	}
-	return true;
+	bool result = (bitvec[e >> 5] & (1 << (e & 0x1F))) != 0;
+	bitvec[e >> 5] |= (1 << (e & 0x1F));
+	return result;
     } else
 	return false;
+}
+
+static bool
+in_bitvec(const int *bitvec, int e, int n)
+{
+    if (e >= 0 && e < n && bitvec)
+	return (bitvec[e >> 5] & (1 << (e & 0x1F))) != 0;
+    else
+	return false;
+}
+
+int
+GsubEncoding::apply(const Vector<Positioning> &pv)
+{
+    // keep track of what substitutions we have performed
+    int *single_changed = 0;
+    Vector<int *> pair_changed(_encoding.size(), 0);
+
+    // XXX encodings that encode the same glyph multiple times?
+    
+    // loop over substitutions
+    int success = 0;
+    for (int i = 0; i < pv.size(); i++) {
+	const Positioning &p = pv[i];
+	if (p.is_pairkern()) {
+	    int code1 = encoding(p.left_glyph());
+	    int code2 = encoding(p.right_glyph());
+	    if (code1 >= 0 && code2 >= 0
+		&& !assign_bitvec(pair_changed[code1], code2, _encoding.size()))
+		add_kern(code1, code2, p.left().adx);
+	    success++;
+	} else if (p.is_single()) {
+	    int code = encoding(p.left_glyph());
+	    if (code >= 0 && !assign_bitvec(single_changed, code, _encoding.size()))
+		add_single_positioning(code, p.left().pdx, p.left().pdy, p.left().adx);
+	    success++;
+	}
+    }
+
+    delete[] single_changed;
+    for (int i = 0; i < pair_changed.size(); i++)
+	delete[] pair_changed[i];
+    return success;
 }
 
 int
@@ -326,14 +355,40 @@ GsubEncoding::simplify_ligatures(bool add_fake)
 }
 
 void
-GsubEncoding::simplify_kerns()
+GsubEncoding::simplify_positionings()
 {
     if (_kerns.size()) {
-	// given two kerns for the same set of characters, prefer the first,
-	// since it came from an earlier lookup
-	std::stable_sort(_kerns.begin(), _kerns.end());
-	Kern *end = std::unique(_kerns.begin(), _kerns.end());
-	_kerns.resize(end - _kerns.begin());
+	// combine kerns for the same set of characters
+	std::sort(_kerns.begin(), _kerns.end());
+	int delta;
+	for (int i = 0; i + 1 < _kerns.size(); i += delta) {
+	    Kern &k1 = _kerns[i];
+	    for (delta = 1; i + delta < _kerns.size(); delta++) {
+		Kern &k2 = _kerns[i + delta];
+		if (k1.left != k2.left || k1.right != k2.right)
+		    break;
+		k1.amount += k2.amount;
+		k2.left = -1;
+	    }
+	}
+    }
+
+    if (_vfpos.size()) {
+	// combine positionings for the same character
+	std::sort(_vfpos.begin(), _vfpos.end());
+	int delta;
+	for (int i = 0; i + 1 < _vfpos.size(); i += delta) {
+	    Vfpos &p1 = _vfpos[i];
+	    for (delta = 1; i + delta < _vfpos.size(); delta++) {
+		Vfpos &p2 = _vfpos[i + delta];
+		if (p1.in != p2.in)
+		    break;
+		p1.pdx += p2.pdx;
+		p1.pdy += p2.pdy;
+		p1.adx += p2.adx;
+		p2.in = -1;
+	    }
+	}
     }
 }
 
@@ -483,6 +538,27 @@ GsubEncoding::add_twoligature(int code1, int code2, int outcode)
     l.skip = 0;
     l.context = 0;
     _ligatures.push_back(l);
+}
+
+void
+GsubEncoding::add_kern(int left, int right, int amount)
+{
+    Kern k;
+    k.left = left;
+    k.right = right;
+    k.amount = amount;
+    _kerns.push_back(k);
+}
+
+void
+GsubEncoding::add_single_positioning(int code, int pdx, int pdy, int adx)
+{
+    Vfpos p;
+    p.in = code;
+    p.pdx = pdx;
+    p.pdy = pdy;
+    p.adx = adx;
+    _vfpos.push_back(p);
 }
 
 void
