@@ -46,7 +46,10 @@ inline const V &
 HashMap<K, V>::find(K key) const
 {
   int i = bucket(key);
-  return _e[i].k ? _e[i].v : _default_v;
+  if (_e[i].k)
+    return _e[i].v;
+  else
+    return _default_v;
 }
 
 template <class K, class V>

@@ -20,11 +20,10 @@
 #  include <ndir.h>
 # endif
 #endif
-
+#include <string.h>
 
 static String::Initializer initializer;
 static String empty_string;
-
 
 PsresDatabase::PsresDatabase()
   : _section_map(0)

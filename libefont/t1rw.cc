@@ -179,27 +179,27 @@ Type1Reader::test_charstring(StringAccum &str)
     while (isspace(*s))
       s++;
   } else
-    goto not;
+    goto not_charstring;
 
   // Force one literal space rather than isspace().
   // Why? Consistency: we force 1 literal space around _charstring_definer.
   while (*s != ' ' && *s)
     s++;
   if (*s++ != ' ' || !isdigit(*s))
-    goto not;
+    goto not_charstring;
   start = s;
   s++;
   while (*s != ' ' && *s)
     s++;
   if (strncmp(s, _charstring_definer.cc(), _charstring_definer.length()) != 0)
-    goto not;
+    goto not_charstring;
   
   _charstring_len = strtol(start, 0, 10);
   _charstring_start = (s - str.data()) + _charstring_definer.length();
   str.pop();
   return str.length() <= _charstring_start + _charstring_len;
   
- not:
+ not_charstring:
   str.pop();
   return false;
 }

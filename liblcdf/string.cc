@@ -6,6 +6,7 @@
 # include "straccum.hh"
 #else
 # include <stdio.h>
+# include <string.h>
 #endif
 #include <assert.h>
 

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
+#include <string.h>
 
 AmfmMetrics::AmfmMetrics(MetricsFinder *finder)
   : _finder(finder),

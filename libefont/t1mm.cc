@@ -14,6 +14,7 @@
 #include "error.hh"
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 Type1MMSpace::Type1MMSpace(PermString fn, int na, int nm)
   : _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),

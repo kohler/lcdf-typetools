@@ -10,6 +10,7 @@
 #include "straccum.hh"
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 MyFont::MyFont(Type1Reader &reader)
   : Type1Font(reader)

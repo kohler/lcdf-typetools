@@ -4,26 +4,14 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-class PermString {
-  
-  struct Doodad {
-    Doodad *next;
-    int length;
-    char data[2];
-  };
-  
-  char *_rep;
-  
-  PermString(Doodad *d)			: _rep(d->data) { }
-  Doodad *doodad() const { return (Doodad *)(_rep - offsetof(Doodad, data)); }
-  
-  class Initializer;
-  friend class PermString::Initializer;
-  static void static_initialize();
-  
+class PermString { struct Doodad;
+
  public:
   
   typedef Doodad *Capsule;
+  // Declare a PermString::Initializer in any file in which you declare
+  // static global PermStrings.
+  struct Initializer { Initializer(); };
   
   PermString()				: _rep(0) { }
   PermString(int i)			: _rep(0) { assert(!i); }
@@ -48,11 +36,26 @@ class PermString {
   friend PermString permprintf(const char *, ...);
   friend PermString vpermprintf(const char *, va_list);
   friend PermString permcat(PermString, PermString);
-  friend PermString permcat(PermString, PermString, PermString);
+  friend PermString permcat(PermString, PermString, PermString);  
+
+ private:
   
-  // Declare a PermString::Initializer in any file in which you declare
-  // static global PermStrings.
-  struct Initializer { Initializer(); };
+  struct Doodad {
+    Doodad *next;
+    int length;
+    char data[2];
+  };
+  
+  char *_rep;
+  
+  PermString(Doodad *d)			: _rep(d->data) { }
+  Doodad *doodad() const { return (Doodad *)(_rep - offsetof(Doodad, data)); }
+  
+  friend class PermString::Initializer;
+  static void static_initialize();
+
+  static const int NHASH = 1024; // must be power of 2
+  static Doodad zero_char_doodad, one_char_doodad[256], *buckets[NHASH];
   
 };
 

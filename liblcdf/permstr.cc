@@ -19,12 +19,9 @@ PermString::Initializer::Initializer()
 static PermString::Initializer initializer;
 
 
-// must be power of 2
-#define NHASH 1024
-
-static PermString::Doodad zero_char_doodad;
-static PermString::Doodad one_char_doodad[256];
-static PermString::Doodad *buckets[NHASH];
+PermString::Doodad PermString::zero_char_doodad;
+PermString::Doodad PermString::one_char_doodad[256];
+PermString::Doodad *PermString::buckets[NHASH];
 
 // This scatter array, and the ideas behind it, are stolen from lcc.
 static int scatter[] = {        /* map characters to random values */

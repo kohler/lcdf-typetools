@@ -4,41 +4,14 @@
 # include "permstr.hh"
 #endif
 
-class String {
+class String { public:
   
-  struct Memo {
-    int _refcount;
-    int _capacity;
-    int _dirty;
-    char *_real_data;
-    
-    Memo();
-    Memo(int, int);
-    ~Memo();
-  };
-  
-  const char *_data;
-  int _length;
-  Memo *_memo;
-  
-  String(const char *, int, Memo *);
-  
-  void assign(const String &);
-  void assign(const char *, int);
-#ifdef HAVE_PERMSTRING
-  void assign(PermString);
-#endif
-  void deref();
-  void out_of_memory();
-  
-  static Memo *null_memo;
-  static Memo *permanent_memo;
-  static String *null_string_p;
-  
-  class Initializer;
-  friend class String::Initializer;
-
- public:
+  // Call static_initialize() before any function which might deal with
+  // Strings, and declare a String::Initializer in any file in which you
+  // declare static global Strings.
+  struct Initializer { Initializer(); };
+  static void static_initialize();
+  static void static_cleanup();
   
   String();
   String(const String &s);
@@ -110,14 +83,40 @@ class String {
   // String operator+(const char *, PermString);
   // String operator+(PermString, PermString);
   // String operator+(String, char);
+
+ private:
+
+  struct Memo {
+    int _refcount;
+    int _capacity;
+    int _dirty;
+    char *_real_data;
+    
+    Memo();
+    Memo(int, int);
+    ~Memo();
+  };
   
-  // Call static_initialize() before any function which might deal with
-  // Strings, and declare a String::Initializer in any file in which you
-  // declare static global Strings.
-  struct Initializer { Initializer(); };
-  static void static_initialize();
-  static void static_cleanup();
+  const char *_data;
+  int _length;
+  Memo *_memo;
   
+  String(const char *, int, Memo *);
+  
+  void assign(const String &);
+  void assign(const char *, int);
+#ifdef HAVE_PERMSTRING
+  void assign(PermString);
+#endif
+  void deref();
+  void out_of_memory();
+  
+  static Memo *null_memo;
+  static Memo *permanent_memo;
+  static String *null_string_p;
+
+  friend class String::Initializer;
+
 };
 
 
