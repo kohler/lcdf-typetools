@@ -7,6 +7,7 @@ man_MANS = mmpfb.1
 mmpfb_SOURCES = templatei.cc \
 	myfont.cc myfont.hh \
 	main.cc \
+	t1minimize.cc t1minimize.hh \
 	t1rewrit.cc t1rewrit.hh
 
 mmpfb_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a

@@ -6,6 +6,7 @@
 #include <efont/t1mm.hh>
 #include "myfont.hh"
 #include "t1rewrit.hh"
+#include "t1minimize.hh"
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
 #include <cstdlib>
@@ -35,6 +36,7 @@
 #define QUIET_OPT	314
 #define PRECISION_OPT	315
 #define SUBRS_OPT	316
+#define MINIMIZE_OPT	317
 
 Clp_Option options[] = {
   { "1", '1', N1_OPT, Clp_ArgDouble, 0 },
@@ -43,6 +45,7 @@ Clp_Option options[] = {
   { "4", '4', N4_OPT, Clp_ArgDouble, 0 },
   { "amcp-info", 0, AMCP_INFO_OPT, 0, 0 },
   { "help", 'h', HELP_OPT, 0, 0 },
+  { "minimize", 'm', MINIMIZE_OPT, 0, Clp_Negate },
   { "optical-size", 'O', OPSIZE_OPT, Clp_ArgDouble, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "pfa", 'a', PFA_OPT, 0, 0 },
@@ -130,7 +133,7 @@ set_design(PermString a, double v)
 static void
 set_design(int a, double v)
 {
-  ax_names.push_back(0);
+  ax_names.push_back(PermString());
   ax_nums.push_back(a);
   values.push_back(v);
 }
@@ -236,6 +239,7 @@ main(int argc, char **argv)
   
   bool write_pfb = true;
   bool amcp_info = false;
+  bool minimize = false;
   int precision = 5;
   int subr_count = -1;
   FILE *outfile = 0;
@@ -302,13 +306,17 @@ main(int argc, char **argv)
 	subr_count = clp->val.i;
       break;
       
+      case MINIMIZE_OPT:
+	minimize = !clp->negated;
+	break;
+      
      case QUIET_OPT:
       if (clp->negated)
 	errh = default_errh;
       else
 	errh = ErrorHandler::silent_handler();
       break;
-      
+
      case OUTPUT_OPT:
       if (outfile) errh->fatal("output file already specified");
       if (strcmp(clp->arg, "-") == 0)
@@ -321,7 +329,7 @@ main(int argc, char **argv)
       
      case VERSION_OPT:
       printf("mmpfb (LCDF mminstance) %s\n", VERSION);
-      printf("Copyright (C) 1997-2002 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2003 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -379,6 +387,20 @@ particular purpose.\n");
 
   font->interpolate_dicts(errh);
   font->interpolate_charstrings(precision, errh);
+
+  if (subr_count >= 0) {
+      Type1SubrRemover sr(font, errh);
+      sr.run(subr_count);
+  }
+
+  font->fill_in_subrs();
+
+  Type1Font *t1font;
+  if (minimize) {
+      t1font = ::minimize(font);
+      delete font;
+  } else
+      t1font = font;
   
   { // Add an identifying comment.
 #if HAVE_CTIME
@@ -393,22 +415,17 @@ particular purpose.\n");
     sprintf(buf, "%%%% Interpolated by mmpfb-%s.", VERSION);
 #endif
 
-    font->add_header_comment(buf);
-    font->add_header_comment("%% Mmpfb is free software.  See <http://www.lcdf.org/type/>.");
+    t1font->add_header_comment(buf);
+    t1font->add_header_comment("%% Mmpfb is free software.  See <http://www.lcdf.org/type/>.");
     delete[] buf;
-  }
-
-  if (subr_count >= 0) {
-    Type1SubrRemover sr(font, errh);
-    sr.run(subr_count);
   }
   
   if (write_pfb) {
     Type1PFBWriter w(outfile);
-    font->write(w);
+    t1font->write(w);
   } else {
     Type1PFAWriter w(outfile);
-    font->write(w);
+    t1font->write(w);
   }
   
   return 0;
