@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "permstr.hh"
-#endif
 #include "permstr.hh"
 #include <stdlib.h>
 #include <string.h>
@@ -91,7 +88,7 @@ PermString::PermString(const char *s)
   register unsigned char *m = (unsigned char *)s;
   register unsigned char *mm;
   int len;
-
+  
   if (m == 0) {
     _rep = 0;
     return;
@@ -186,6 +183,16 @@ PermString::static_initialize()
 }
 
 
+bool
+operator==(PermString a, const char *b)
+{
+  if (!a || !b)
+    return !a && !b;
+  int l = strlen(b);
+  return a.length() == l && memcmp(a.cc(), b, l) == 0;
+}
+
+
 static int pspos;
 static int pscap = 64;
 static char *psc = (char *)malloc(pscap);
@@ -212,8 +219,6 @@ extend(int len)
   }
 }
 
-
-typedef PermString::Capsule Capsule;
 
 PermString
 vpermprintf(const char *s, va_list val)
@@ -274,7 +279,7 @@ vpermprintf(const char *s, va_list val)
        }
        
        case 'p': {
-	 Capsule x = va_arg(val, Capsule);
+	 PermString::Capsule x = va_arg(val, PermString::Capsule);
 	 PermString px;
 	 if (x)
 	   px = PermString::decapsule(x);
@@ -338,7 +343,7 @@ vpermprintf(const char *s, va_list val)
    pctdone:
     s++;
   }
-
+  
   return PermString(psc, pspos);
 }
 

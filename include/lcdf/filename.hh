@@ -1,8 +1,5 @@
 #ifndef FILENAME_HH
 #define FILENAME_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "permstr.hh"
 #include <stdio.h>
 

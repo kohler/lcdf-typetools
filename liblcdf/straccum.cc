@@ -1,9 +1,6 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef __GNUG__
-# pragma implementation "straccum.hh"
-#endif
 #include "straccum.hh"
 #include <stdio.h>
 

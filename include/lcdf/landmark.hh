@@ -1,8 +1,5 @@
 #ifndef LANDMARK_HH
 #define LANDMARK_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include "permstr.hh"
 
 class Landmark {

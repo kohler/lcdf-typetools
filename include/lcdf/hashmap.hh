@@ -1,9 +1,5 @@
 #ifndef HASHMAP_HH
 #define HASHMAP_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 
 template <class K, class V>
 class HashMap {
@@ -27,7 +23,7 @@ class HashMap {
   HashMap(const HashMap<K, V> &);
   ~HashMap()				{ delete[] _e; }
   
-  int count() const			{ return _n; }
+  int size() const			{ return _n; }
   bool empty() const			{ return _n == 0; }
   
   const V &find(K) const;

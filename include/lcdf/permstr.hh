@@ -1,8 +1,5 @@
 #ifndef PERMSTR_HH
 #define PERMSTR_HH
-#ifdef __GNUG__
-#pragma interface
-#endif
 #include <assert.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -29,7 +26,7 @@ class PermString {
   typedef Doodad *Capsule;
   
   PermString()				: _rep(0) { }
-  PermString(int i)			: _rep(0) { if (i) assert(0); }
+  PermString(int i)			: _rep(0) { assert(!i); }
   explicit PermString(char c);
   PermString(const char *);
   PermString(const char *, int);
@@ -66,16 +63,12 @@ operator==(PermString a, PermString b)
   return a._rep == b._rep;
 }
 
-inline bool
-operator==(PermString a, const char *b)
-{
-  return a == PermString(b);
-}
+bool operator==(PermString, const char *);
 
 inline bool
 operator==(const char *a, PermString b)
 {
-  return PermString(a) == b;
+  return b == a;
 }
 
 inline bool
@@ -87,13 +80,13 @@ operator!=(PermString a, PermString b)
 inline bool
 operator!=(PermString a, const char *b)
 {
-  return a != PermString(b);
+  return !(a == b);
 }
 
 inline bool
 operator!=(const char *a, PermString b)
 {
-  return PermString(a) != b;
+  return !(b == a);
 }
 
 #endif

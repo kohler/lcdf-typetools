@@ -1,7 +1,4 @@
 #include "hashmap.hh"
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // 		k1 == k2  (must exist)
 //		K::K()
