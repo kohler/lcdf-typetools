@@ -57,8 +57,6 @@ class Type1Font: public Type1Program {
   mutable bool _cached_mmspace;
   mutable Type1MMSpace *_mmspace;
   
-  Vector<double> *_weight_vector;
-  
   Type1Font(const Type1Font &);
   Type1Font &operator=(const Type1Font &);
   
@@ -99,9 +97,6 @@ class Type1Font: public Type1Program {
   Type1MMSpace *create_mmspace(ErrorHandler * = 0) const;
   Type1MMSpace *mmspace() const;
 
-  Vector<double> *weight_vector() const		{ return _weight_vector; }
-  void set_weight_vector(Vector<double> *v)	{ _weight_vector = v; }
-  
   void write(Type1Writer &);
   
 };

@@ -10,7 +10,7 @@
 
 Type1Font::Type1Font(Type1Reader &reader)
   : _cached_defs(false), _glyph_map(-1), _encoding(0),
-    _cached_mmspace(0), _mmspace(0), _weight_vector(0)
+    _cached_mmspace(0), _mmspace(0)
 {
   _dict = new HashMap<PermString, Type1Definition *>[4]((Type1Definition *)0);
   for (int i = 0; i < 6; i++)

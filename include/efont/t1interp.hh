@@ -119,7 +119,7 @@ class Type1Interp {
   
  public:
   
-  Type1Interp(const Type1Program *);
+  Type1Interp(const Type1Program *, Vector<double> *weight = 0);
   virtual ~Type1Interp()			{ }
   
   int error() const				{ return _error; }
