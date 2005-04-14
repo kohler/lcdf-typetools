@@ -364,19 +364,24 @@ Metrics::add_kern(Code in1, Code in2, int kern)
 }
 
 void
-Metrics::remove_kerns(Code in1, Code in2)
+Metrics::set_kern(Code in1, Code in2, int kern)
 {
     if (in1 == CODE_ALL) {
 	for (in1 = 0; in1 < _encoding.size(); in1++)
-	    remove_kerns(in1, in2);
+	    set_kern(in1, in2, kern);
     } else {
 	Char &ch = _encoding[in1];
-	if (in2 == CODE_ALL)
+	if (in2 == CODE_ALL) {
+	    assert(kern == 0);
 	    ch.kerns.clear();
-	else if (Kern *k = kern_obj(in1, in2)) {
-	    *k = ch.kerns.back();
-	    ch.kerns.pop_back();
-	}
+	} else if (Kern *k = kern_obj(in1, in2)) {
+	    if (kern == 0) {
+		*k = ch.kerns.back();
+		ch.kerns.pop_back();
+	    } else
+		k->kern = kern;
+	} else if (kern != 0)
+	    ch.kerns.push_back(Kern(in2, kern));
     }
 }
 

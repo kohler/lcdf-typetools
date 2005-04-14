@@ -1,6 +1,6 @@
 #! /bin/sh
 
-ALL_OPTS=
+ALL_OPTS='--no-updmap'
 OPTS='-aeeka'
 
 call_nopts () {
@@ -20,10 +20,6 @@ call_nopts -ae7t -fliga -fkern ~/Fonts/+OTF/MinionPro/MinionPro-It.otf MinioProI
 }
 
 W () {
-    call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka
-
-    exit 0
-
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fsmcp -fsmcp
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fcpsp -fcpsp
 
@@ -166,11 +162,12 @@ Mz () {
 }
 
 #rm -rf /tmp/pk/Warno* ~/texmf/fonts/tfm/lcdftools/Warno*; WW; WWW
-W; exit
-M; exit
+#W; updmap; exit
+#M; updmap; exit
 WW; WWW; MM; MMM
 W
 M
 A
 My
 Ex
+updmap

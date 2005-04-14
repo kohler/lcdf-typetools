@@ -42,7 +42,7 @@ class DvipsEncoding { public:
     enum { J_BAD = -1,
 	   J_LIG = 0, J_CLIG = 1, J_CLIG_S = 2, J_LIGC = 3,
 	   J_LIGC_S = 4, J_CLIGC = 5, J_CLIGC_S = 6, J_CLIGC_SS = 7,
-	   J_NOKERN = 100, J_NOLIG = 101, J_NOLIGKERN = 102,
+	   J_KERN = 100, J_NOLIG = 101, J_NOLIGKERN = 102,
 	   J_ALL = 0x7FFFFFFF }; // also see nokern_names in dvipsencoding.cc
     
   private:

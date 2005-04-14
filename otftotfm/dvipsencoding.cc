@@ -281,13 +281,13 @@ static struct { const char *s; int v; } ligkern_ops[] = {
     { "|=:>", DvipsEncoding::J_CLIG_S }, { "=:|", DvipsEncoding::J_LIGC },
     { "=:|>", DvipsEncoding::J_LIGC_S }, { "|=:|", DvipsEncoding::J_CLIGC },
     { "|=:>", DvipsEncoding::J_CLIGC_S }, { "|=:|>>", DvipsEncoding::J_CLIGC_SS },
-    { "{}", DvipsEncoding::J_NOKERN }, { "{K}", DvipsEncoding::J_NOKERN },
+    { "{}", DvipsEncoding::J_KERN }, { "{K}", DvipsEncoding::J_KERN },
     { "{L}", DvipsEncoding::J_NOLIG }, { "{LK}", DvipsEncoding::J_NOLIGKERN },
-    { "{KL}", DvipsEncoding::J_NOLIGKERN }, { "{k}", DvipsEncoding::J_NOKERN },
+    { "{KL}", DvipsEncoding::J_NOLIGKERN }, { "{k}", DvipsEncoding::J_KERN },
     { "{l}", DvipsEncoding::J_NOLIG }, { "{lk}", DvipsEncoding::J_NOLIGKERN },
     { "{kl}", DvipsEncoding::J_NOLIGKERN },
     // some encodings have @{@} instead of {}
-    { "@{@}", DvipsEncoding::J_NOKERN },
+    { "@{@}", DvipsEncoding::J_KERN },
     { 0, 0 }
 };
 
@@ -318,6 +318,10 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
     long l;
     char *endptr;
     if (v.size() == 3) {
+	// empty string fails
+	if (!v[0])
+	    return -1;
+	// bondary char setting
 	if (v[0] == "||" && v[1] == "=") {
 	    char *endptr;
 	    if (override > 0 || _boundary_char < 0)
@@ -326,7 +330,9 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 		return 0;
 	    else
 		return errh->error("parse error in boundary character assignment");
-	} else if (v[0] == "^^" && v[1] == "=") {
+	}
+	// altselector char setting
+	if (v[0] == "^^" && v[1] == "=") {
 	    char *endptr;
 	    if (override > 0 || _altselector_char < 0)
 		_altselector_char = strtol(v[2].c_str(), &endptr, 10);
@@ -334,29 +340,45 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 		return 0;
 	    else
 		return errh->error("parse error in altselector character assignment");
-	} else if ((l = strtol(v[0].c_str(), &endptr, 0)) && endptr == v[0].end() && v[1] == "=") {
+	}
+	// encoding
+	l = strtol(v[0].c_str(), &endptr, 0);
+	if (endptr == v[0].end() && v[1] == "=") {
 	    if (l >= 0 && l < 256) {
 		if (override > 0 || !_e[l])
 		    encode(l, v[2]);
 		return 0;
 	    } else
-		return errh->error("encoding value '%d' out of range", l); 
-	} else if ((op = find_ligkern_op(v[1])) >= J_NOKERN) {
-	    int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
-	    if (av < 0)
-		return errh->warning("'%s' has no encoding, ignoring %s", v[0].c_str(), nokern_names[op - J_NOKERN]);
-	    int bv = (v[2] == "*" ? J_ALL : encoding_of(v[2]));
-	    if (bv < 0)
-		return errh->warning("'%s' has no encoding, ignoring %s", v[2].c_str(), nokern_names[op - J_NOKERN]);
-	    Ligature lig = { av, bv, op, 0 };
-	    Ligature *what = std::find(_lig.begin(), _lig.end(), lig);
-	    if (override > 0 && what < _lig.end())
-		*what = lig;
-	    else if (what == _lig.end())
-		_lig.push_back(lig);
-	    return 0;
-	} else
+		return errh->error("encoding value '%d' out of range", l);
+	}
+	// kern operation
+	if (v[1].length() >= 3 && v[1][0] == '{' && v[1].back() == '}') {
+	    String middle = v[1].substring(1, v[1].length() - 2);
+	    l = strtol(middle.c_str(), &endptr, 0);
+	    if (endptr == middle.end()) {
+		op = J_KERN;
+		goto found_kernop;
+	    }
+	}
+	if ((op = find_ligkern_op(v[1])) < J_KERN)
 	    return -1;
+      found_kernop:
+	int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
+	if (av < 0)
+	    return errh->warning("'%s' has no encoding, ignoring %s", v[0].c_str(), nokern_names[op - J_KERN]);
+	int bv = (v[2] == "*" ? J_ALL : encoding_of(v[2]));
+	if (bv < 0)
+	    return errh->warning("'%s' has no encoding, ignoring %s", v[2].c_str(), nokern_names[op - J_KERN]);
+	if (op == J_KERN && l && (av == J_ALL || bv == J_ALL))
+	    return errh->warning("'%s %s %s' illegal, only {0} works with *", v[0].c_str(), v[1].c_str(), v[2].c_str());
+	Ligature lig = { av, bv, op, l };
+	Ligature *what = std::find(_lig.begin(), _lig.end(), lig);
+	if (override > 0 && what < _lig.end())
+	    *what = lig;
+	else if (what == _lig.end())
+	    _lig.push_back(lig);
+	return 0;
+
     } else if (v.size() == 4 && (op = find_ligkern_op(v[2])) >= J_LIG
 	       && op <= J_CLIGC_SS) {
 	int av = encoding_of(v[0], override > 0);
@@ -375,6 +397,7 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	else if (what == _lig.end())
 	    _lig.push_back(lig);
 	return 0;
+	
     } else
 	return errh->error("parse error in LIGKERN");
 }
@@ -685,7 +708,7 @@ DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const
     assert((int)J_ALL == (int)Metrics::CODE_ALL);
     for (int i = 0; i < _lig.size(); i++) {
 	const Ligature &l = _lig[i];
-	if (l.c1 < 0 || l.c2 < 0 || l.join < 0 || l.join == J_NOKERN)
+	if (l.c1 < 0 || l.c2 < 0 || l.join < 0 || l.join == J_KERN)
 	    /* nada */;
 	else if (l.join == J_NOLIG || l.join == J_NOLIGKERN)
 	    metrics.remove_ligatures(l.c1, l.c2);
@@ -715,7 +738,7 @@ DvipsEncoding::apply_ligkern_kern(Metrics &metrics, ErrorHandler *) const
     for (int i = 0; i < _lig.size(); i++) {
 	const Ligature &l = _lig[i];
 	if (l.c1 >= 0 && l.c2 >= 0
-	    && (l.join == J_NOKERN || l.join == J_NOLIGKERN))
-	    metrics.remove_kerns(l.c1, l.c2);
+	    && (l.join == J_KERN || l.join == J_NOLIGKERN))
+	    metrics.set_kern(l.c1, l.c2, l.d);
     }
 }

@@ -68,11 +68,11 @@ class Metrics { public:
     void add_ligature(Code in1, Code in2, Code out);
     Code pair_code(Code, Code, int lookup_source = -1);
     void add_kern(Code in1, Code in2, int kern);
+    void set_kern(Code in1, Code in2, int kern);
     void add_single_positioning(Code, int pdx, int pdy, int adx);
     
     enum { CODE_ALL = 0x7FFFFFFF };
     void remove_ligatures(Code in1, Code in2);
-    void remove_kerns(Code in1, Code in2);
     int reencode_right_ligkern(Code old_in2, Code new_in2);
     
     int apply(const Vector<Substitution>&, bool allow_single, int lookup, const GlyphFilter&, const Vector<PermString>& glyph_names);
