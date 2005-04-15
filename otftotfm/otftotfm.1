@@ -882,9 +882,13 @@ removes all kerns with "a" as the left-hand character, and
 .fi
 removes all kerns.
 .PP
-.B Otftotfm 
-can also inhibit ligatures via LIGKERNX
-commands.  This:
+.B Otftotfm
+also supports extended syntax for setting kern values and inhibiting
+ligatures.  To add an \fIn\fR-unit kern between two glyphs, say:
+.nf
+    % LIGKERNX \fIglyph1\fR {\fIn\fR} \fIglyph2\fR ;
+.fi
+where \fIn\fR is an integer.  This:
 .nf
     % LIGKERNX \fIglyph1\fR {L} \fIglyph2\fR ;
 .fi
@@ -892,8 +896,7 @@ inhibits any ligature between
 .I glyph1
 and
 .IR glyph2 .
-"{K}", like "{}", inhibits kerns only, and "{LK}" and "{KL}" inhibit both
-ligatures and kerns.
+"{LK}" and "{KL}" inhibit both ligatures and kerns.
 .PP
 You can set the 
 .B \-\-boundary\-char
@@ -918,7 +921,8 @@ The
 .B \-\-unicoding
 and
 .B \-\-ligkern
-options let you add virtual UNICODING and LIGKERN comments to an encoding.
+options let you add virtual UNICODING and LIGKERN/LIGKERNX comments to an
+encoding.
 .PP
 .B Otftotfm
 has a default set of eight ligatures, namely:
