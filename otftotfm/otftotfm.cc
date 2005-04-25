@@ -162,8 +162,8 @@ static Clp_Option options[] = {
     { "clear-alternates", 0, CLEAR_ALTERNATES_OPT, 0, 0 },
     { "alternates-filter", 0, ALTERNATES_FILTER_OPT, Clp_ArgString, 0 },
     { "space-factor", 0, SPACE_FACTOR_OPT, Clp_ArgDouble, 0 },
-    { "math-spacing", 0, MATH_SPACING_OPT, 0, Clp_Negate },
-    
+    { "math-spacing", 0, MATH_SPACING_OPT, Clp_ArgInt, Clp_Negate | Clp_Optional },
+
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
     { "no-encoding", 0, NO_ENCODING_OPT, 0, Clp_OnlyNegated },
@@ -172,7 +172,7 @@ static Clp_Option options[] = {
     { "no-updmap", 0, NO_UPDMAP_OPT, 0, Clp_OnlyNegated },
     { "map-file", 0, MAP_FILE_OPT, Clp_ArgString, Clp_Negate },
     { "output-encoding", 0, OUTPUT_ENCODING_OPT, Clp_ArgString, Clp_Optional },
-        
+    
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
     { "name", 'n', FONT_NAME_OPT, Clp_ArgString, 0 },
     { "vendor", 'v', VENDOR_OPT, Clp_ArgString, 0 },
@@ -235,6 +235,7 @@ static double design_size;
 static double minimum_kern = 2.0;
 static double space_factor = 1.0;
 static bool math_spacing = false;
+static int skew_char = -1;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -288,7 +289,7 @@ Font feature and transformation options:\n\
   -E, --extend=F               Widen characters by a factor of F.\n\
   -S, --slant=AMT              Oblique characters by AMT, generally <<1.\n\
   -L, --letterspacing=AMT      Letterspace each character by AMT units.\n\
-      --math-spacing           Use letterspacing appropriate for math.\n\
+      --math-spacing[=SKEWCH]  Use letterspacing appropriate for math.\n\
   -k, --min-kern=N             Omit kerns with absolute value < N [2.0].\n\
       --space-factor=F         Scale wordspace by a factor of F.\n\
       --design-size=SIZE       Set font design size to SIZE.\n\
@@ -476,6 +477,28 @@ real_string(double value, double du)
     }
 }
 
+static int
+font_xheight(const Cff::Font *family_cff, const OpenType::Cmap &cmap,
+	     const Transform &font_xform)
+{
+    int bounds[4], width;
+    int xheight = 1000;
+    // XXX what if 'x', 'm', 'z' were subject to substitution?
+    static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
+    for (const int *x = xheight_unis; *x; x++)
+	if (char_bounds(bounds, width, family_cff, cmap, *x, font_xform) && bounds[3] < xheight)
+	    xheight = bounds[3];
+    return xheight;
+}
+
+static double
+font_slant(const Cff::Font *family_cff)
+{
+    double val;
+    (void) family_cff->dict_value(Efont::Cff::oItalicAngle, &val);
+    return -tan(val * M_PI / 180.0) + slant;
+}
+
 static void
 output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	  const OpenType::Font &family_otf, const Cff::Font *family_cff,
@@ -512,14 +535,13 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     int bounds[4], width;
     double du = (design_units == 1000 ? 1. : design_units / 1000.);
     
-    double val;
-    (void) family_cff->dict_value(Efont::Cff::oItalicAngle, &val);
-    double actual_slant = -tan(val * M_PI / 180.0) + slant;
+    double actual_slant = font_slant(family_cff);
     if (actual_slant)
 	fprintf(f, "   (SLANT R %g)\n", actual_slant);
 
     OpenType::Cmap cmap(family_otf.table("cmap"));
-    
+
+    double val;
     if (char_bounds(bounds, width, family_cff, cmap, ' ', font_xform)) {
 	// advance space width by letterspacing, scale by space_factor
 	double space_width = (width + letterspace) * space_factor;
@@ -536,12 +558,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	}
     }
 
-    // XXX what if 'x', 'm', 'z' were subject to substitution?
-    int xheight = 1000;
-    static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
-    for (const int *x = xheight_unis; *x; x++)
-	if (char_bounds(bounds, width, family_cff, cmap, 'x', font_xform) && bounds[3] < xheight)
-	    xheight = bounds[3];
+    int xheight = font_xheight(family_cff, cmap, font_xform);
     if (xheight < 1000)
 	fprint_real(f, "   (XHEIGHT", xheight, du);
     
@@ -859,7 +876,8 @@ output_encoding(const Metrics &metrics,
 	    sa << (i ? "\n%" : "%") << hex_digits[(i >> 4) & 0xF] << '0' << '\n' << ' ';
 	else if ((i & 0x7) == 0)
 	    sa << '\n' << ' ';
-	if (int g = glyphs[i])
+	int g = glyphs[i];
+	if (g > 0 && g < glyph_names.size())
 	    sa << ' ' << '/' << glyph_names[g];
 	else
 	    sa << " /.notdef";
@@ -1221,6 +1239,41 @@ do_gpos(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& fea
 }
 
 static void
+do_math_spacing(Metrics &metrics, Cff::Font *font,
+		const DvipsEncoding &dvipsenc, const OpenType::Cmap &cmap)
+{
+    Transform font_xform;
+    if (extend)
+	font_xform.scale(extend, 1);
+    if (slant)
+	font_xform.shear(slant);
+    CharstringBounds boundser(font_xform);
+
+    int x_height = font_xheight(font, cmap, font_xform);
+    double slant = font_slant(font);
+    int boundary_char = dvipsenc.boundary_char();
+    
+    int bounds[4], width;
+    
+    for (int code = 0; code < 256; code++) {
+	int g = metrics.glyph(code);
+	if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
+	    if (char_bounds(bounds, width, font, cmap, code, font_xform)) {
+		int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
+		int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
+		metrics.add_single_positioning(code, left_sb, 0, left_sb + right_sb);
+		
+		if (skew_char >= 0) {
+		    double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
+		    int skew = (int)(slant * virtual_height + left_sb - right_sb);
+		    metrics.add_kern(code, skew_char, skew);
+		}
+	    }
+	}
+    }
+}
+
+static void
 do_file(const String &otf_filename, const OpenType::Font &otf,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
 	ErrorHandler *errh)
@@ -1324,21 +1377,8 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     }
 
     // apply math letterspacing, if any
-    if (math_spacing) {
-	Transform font_xform;
-	CharstringBounds boundser(font_xform);
-	int bounds[4], width;
-	for (int code = 0; code < 256; code++) {
-	    int g = metrics.glyph(code);
-	    if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
-		if (char_bounds(bounds, width, font, cmap, code, font_xform)) {
-		    int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
-		    int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
-		    metrics.add_single_positioning(code, left_sb, 0, left_sb + right_sb);
-		}
-	    }
-	}
-    }
+    if (math_spacing)
+	do_math_spacing(metrics, font, dvipsenc, cmap);
 
     // reencode right components of boundary_glyph as boundary_char
     if (metrics.reencode_right_ligkern(256, boundary_char) > 0
@@ -1560,6 +1600,11 @@ main(int argc, char *argv[])
 
 	  case MATH_SPACING_OPT:
 	    math_spacing = !clp->negated;
+	    if (math_spacing && clp->have_arg) {
+		if (clp->val.i < 0 || clp->val.i > 255)
+		    usage_error(errh, "--math-spacing skew character must be between 0 and 255");
+		skew_char = clp->val.i;
+	    }
 	    break;
 	    
 	  case DESIGN_SIZE_OPT:

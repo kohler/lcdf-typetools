@@ -321,7 +321,7 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	// empty string fails
 	if (!v[0])
 	    return -1;
-	// bondary char setting
+	// boundary char setting
 	if (v[0] == "||" && v[1] == "=") {
 	    char *endptr;
 	    if (override > 0 || _boundary_char < 0)

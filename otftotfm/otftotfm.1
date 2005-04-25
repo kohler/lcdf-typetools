@@ -397,11 +397,19 @@ kerns are added to maintain alignment at the ends of lines.
 '
 .Sp
 .TP 5
-.BI \-\-math\-spacing
+.BR \-\-math\-spacing "[=\fIskewchar\fR]"
 Ignore the font's claimed character widths, deriving horizontal metrics
 from bounding boxes instead.  This results in similar spacing as the
 Computer Modern Math Italic font, with increased sidebearings for letters
 like f and j.
+.Sp
+If you provide a
+.IR skewchar ,
+.B otftotfm
+adds heuristically-derived kerns to the font that may improve accent
+positions in math mode.  To get the benefits, you must tell TeX about the
+.I skewchar
+with a command like "\eskewchar\efont=\fIskewchar\fR".
 '
 .Sp
 .TP 5
