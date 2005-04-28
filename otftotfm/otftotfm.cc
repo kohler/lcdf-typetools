@@ -1260,11 +1260,11 @@ do_math_spacing(Metrics &metrics, Cff::Font *font,
 	if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
 	    if (char_bounds(bounds, width, font, cmap, code, font_xform)) {
 		int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
-		int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
-		metrics.add_single_positioning(code, left_sb, 0, left_sb + right_sb);
+		metrics.add_single_positioning(code, left_sb, 0, left_sb);
 		
 		if (skew_char >= 0) {
 		    double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
+		    int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
 		    int skew = (int)(slant * virtual_height + left_sb - right_sb);
 		    metrics.add_kern(code, skew_char, skew);
 		}

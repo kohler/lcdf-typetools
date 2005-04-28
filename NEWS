@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.28   25.Apr.2005
+
+* otftotfm: '--math-spacing' doesn't set italic corrections to 0.  Thanks
+  to Achim Blumensath.
+
+
 Version 2.27   24.Apr.2005
 
 * otftotfm: Add support for setting kerns: '--ligkern "A {5} B"'.  Thanks
