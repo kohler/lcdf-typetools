@@ -6,6 +6,12 @@ class Metrics;
 class Transform;
 struct Setting;
 
+struct FontInfo {
+    const Efont::OpenType::Font *otf;
+    const Efont::Cff::Font *cff;
+    const Efont::OpenType::Cmap *cmap;
+};
+
 class Secondary { public:
     Secondary()				: _next(0) { }
     virtual ~Secondary();
@@ -18,13 +24,11 @@ class Secondary { public:
 };
 
 class T1Secondary : public Secondary { public:
-    T1Secondary(const Efont::Cff::Font *, const Efont::OpenType::Cmap &);
-    void set_font_information(const String &font_name, const Efont::OpenType::Font &, const String &otf_file_name);
+    T1Secondary(const FontInfo &, const String &font_name, const String &otf_file_name);
     bool encode_uni(int code, PermString name, uint32_t uni, Metrics &, ErrorHandler *);
     bool setting(uint32_t uni, Vector<Setting> &, Metrics &, ErrorHandler *);
   private:
-    const Efont::OpenType::Font *_otf;
-    const Efont::Cff::Font *_cff;
+    const FontInfo &_finfo;
     String _font_name;
     String _otf_file_name;
     int _xheight;
@@ -34,8 +38,10 @@ class T1Secondary : public Secondary { public:
     int dotlessj_font(Metrics &, ErrorHandler *, Glyph &dj_glyph);
 };
 
-bool char_bounds(int bounds[4], int &width,
-		 const Efont::Cff::Font *, const Efont::OpenType::Cmap &,
-		 uint32_t uni, const Transform &);
+bool char_bounds(int bounds[4], int &width, const FontInfo &,
+		 const Transform &, uint32_t uni);
+
+int char_one_bound(const FontInfo &, const Transform &,
+		   int dimen, bool max, int best, uint32_t uni, ...);
 
 #endif

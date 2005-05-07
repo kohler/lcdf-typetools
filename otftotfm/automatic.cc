@@ -378,10 +378,10 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 String
 installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, bool allow_generate, ErrorHandler *errh)
 {
-    if (verbose)
-	errh->message("trying to create dotless-j font for %s", ps_fontname.c_str());
     if (!ps_fontname)
 	return String();
+    if (verbose)
+	errh->message("searching for dotless-j font for %s", ps_fontname.c_str());
     
     String j_ps_fontname = ps_fontname + "LCDFJ";
     

@@ -407,10 +407,10 @@ make_base_font_name(const String &font_name)
 }
 
 static double
-get_design_size(const OpenType::Font &otf)
+get_design_size(const FontInfo &finfo)
 {
     try {
-	String gpos_table = otf.table("GPOS");
+	String gpos_table = finfo.otf->table("GPOS");
 	if (!gpos_table)
 	    throw OpenType::Error();
 
@@ -477,32 +477,17 @@ real_string(double value, double du)
     }
 }
 
-static int
-font_xheight(const Cff::Font *family_cff, const OpenType::Cmap &cmap,
-	     const Transform &font_xform)
-{
-    int bounds[4], width;
-    int xheight = 1000;
-    // XXX what if 'x', 'm', 'z' were subject to substitution?
-    static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
-    for (const int *x = xheight_unis; *x; x++)
-	if (char_bounds(bounds, width, family_cff, cmap, *x, font_xform) && bounds[3] < xheight)
-	    xheight = bounds[3];
-    return xheight;
-}
-
-static double
-font_slant(const Cff::Font *family_cff)
+double
+font_slant(const FontInfo &finfo)
 {
     double val;
-    (void) family_cff->dict_value(Efont::Cff::oItalicAngle, &val);
+    (void) finfo.cff->dict_value(Efont::Cff::oItalicAngle, &val);
     return -tan(val * M_PI / 180.0) + slant;
 }
 
 static void
 output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
-	  const OpenType::Font &family_otf, const Cff::Font *family_cff,
-	  bool vpl, FILE *f)
+	  const FontInfo &finfo, bool vpl, FILE *f)
 {
     // XXX check DESIGNSIZE and DESIGNUNITS for correctness
 
@@ -519,7 +504,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     int design_units = metrics.design_units();
 
     if (design_size <= 0)
-	design_size = get_design_size(family_otf);
+	design_size = get_design_size(finfo);
     fprintf(f, "(DESIGNSIZE R %.1f)\n"
 	    "(DESIGNUNITS R %d.0)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
@@ -535,18 +520,16 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     int bounds[4], width;
     double du = (design_units == 1000 ? 1. : design_units / 1000.);
     
-    double actual_slant = font_slant(family_cff);
+    double actual_slant = font_slant(finfo);
     if (actual_slant)
 	fprintf(f, "   (SLANT R %g)\n", actual_slant);
 
-    OpenType::Cmap cmap(family_otf.table("cmap"));
-
     double val;
-    if (char_bounds(bounds, width, family_cff, cmap, ' ', font_xform)) {
+    if (char_bounds(bounds, width, finfo, font_xform, ' ')) {
 	// advance space width by letterspacing, scale by space_factor
 	double space_width = (width + letterspace) * space_factor;
 	fprint_real(f, "   (SPACE", space_width, du);
-	if (family_cff->dict_value(Efont::Cff::oIsFixedPitch, &val) && val) {
+	if (finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &val) && val) {
 	    // fixed-pitch: no space stretch or shrink
 	    fprint_real(f, "   (STRETCH", 0, du);
 	    fprint_real(f, "   (SHRINK", 0, du);
@@ -558,7 +541,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	}
     }
 
-    int xheight = font_xheight(family_cff, cmap, font_xform);
+    int xheight = font_x_height(finfo, font_xform);
     if (xheight < 1000)
 	fprint_real(f, "   (XHEIGHT", xheight, du);
     
@@ -656,14 +639,14 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	    // unparse settings into DVI commands
 	    sa.clear();
 	    CharstringBounds boundser(font_xform);
-	    const CharstringProgram *program = family_cff;
+	    const CharstringProgram *program = finfo.cff;
 	    for (int j = 0; j < settings.size(); j++) {
 		Setting &s = settings[j];
 		if (s.op == Setting::SHOW) {
 		    boundser.char_bounds(program->glyph_context(s.y));
 		    // 3.Aug.2004 -- reported by Marco Kuhlmann: Don't use
 		    // glyph_ids[] array when looking at a different font.
-		    if (program == family_cff)
+		    if (program == finfo.cff)
 			sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
 		    else
 			sa << "      (SETCHAR D " << s.x << ")\n";
@@ -701,8 +684,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 
 static void
 output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
-	  const OpenType::Font &family_otf, const Cff::Font *family_cff,
-	  bool vpl, String filename, ErrorHandler *errh)
+	  const FontInfo &finfo, bool vpl, String filename, ErrorHandler *errh)
 {
     if (no_create)
 	errh->message("would create %s", filename.c_str());
@@ -710,7 +692,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	if (verbose)
 	    errh->message("creating %s", filename.c_str());
 	if (FILE *f = fopen(filename.c_str(), "w")) {
-	    output_pl(metrics, ps_name, boundary_char, family_otf, family_cff, vpl, f);
+	    output_pl(metrics, ps_name, boundary_char, finfo, vpl, f);
 	    fclose(f);
 	} else
 	    errh->error("%s: %s", filename.c_str(), strerror(errno));
@@ -950,8 +932,8 @@ output_encoding(const Metrics &metrics,
 
 static void
 output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
-	   const OpenType::Font &family_otf, const Cff::Font *family_cff,
-	   String tfm_filename, String vf_filename, ErrorHandler *errh)
+	   const FontInfo &finfo, String tfm_filename, String vf_filename,
+	   ErrorHandler *errh)
 {
     String pl_filename;
     int pl_fd = temporary_file(pl_filename, errh);
@@ -967,7 +949,7 @@ output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
 	if (verbose)
 	    errh->message("writing %s to temporary file", (vpl ? "VPL" : "PL"));
 	FILE *f = fdopen(pl_fd, "w");
-	output_pl(metrics, ps_name, boundary_char, family_otf, family_cff, vpl, f);
+	output_pl(metrics, ps_name, boundary_char, finfo, vpl, f);
 	fclose(f);
     }
 
@@ -993,7 +975,7 @@ output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
 
 void
 output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
-	       const OpenType::Font &family_otf, const Cff::Font *family_cff,
+	       const FontInfo &finfo,
 	       const String &encoding_name, const String &encoding_file,
 	       const String &font_name,
 	       void (*dvips_include)(const String &ps_name, StringAccum &, ErrorHandler *),
@@ -1026,10 +1008,10 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	if (output_flags & G_BINARY) {
 	    String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
 	    String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
-	    output_tfm(metrics, ps_name, boundary_char, family_otf, family_cff, tfm, vf, errh);
+	    output_tfm(metrics, ps_name, boundary_char, finfo, tfm, vf, errh);
 	} else {
 	    String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
-	    output_pl(metrics, ps_name, boundary_char, family_otf, family_cff, true, outfile, errh);
+	    output_pl(metrics, ps_name, boundary_char, finfo, true, outfile, errh);
 	    update_odir(O_VPL, outfile, errh);
 	}
 	metrics.make_base(257);
@@ -1043,10 +1025,10 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	/* do nothing */;
     else if (output_flags & G_BINARY) {
 	String tfm = getodir(O_TFM, errh) + "/" + base_font_name + ".tfm";
-	output_tfm(metrics, ps_name, boundary_char, family_otf, family_cff, tfm, String(), errh);
+	output_tfm(metrics, ps_name, boundary_char, finfo, tfm, String(), errh);
     } else {
 	String outfile = getodir(O_PL, errh) + "/" + base_font_name + ".pl";
-	output_pl(metrics, ps_name, boundary_char, family_otf, family_cff, false, outfile, errh);
+	output_pl(metrics, ps_name, boundary_char, finfo, false, outfile, errh);
 	update_odir(O_PL, outfile, errh);
     }
     minimum_kern = save_minimum_kern;
@@ -1239,8 +1221,8 @@ do_gpos(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& fea
 }
 
 static void
-do_math_spacing(Metrics &metrics, Cff::Font *font,
-		const DvipsEncoding &dvipsenc, const OpenType::Cmap &cmap)
+do_math_spacing(Metrics &metrics, const FontInfo &finfo,
+		const DvipsEncoding &dvipsenc)
 {
     Transform font_xform;
     if (extend)
@@ -1249,8 +1231,8 @@ do_math_spacing(Metrics &metrics, Cff::Font *font,
 	font_xform.shear(slant);
     CharstringBounds boundser(font_xform);
 
-    int x_height = font_xheight(font, cmap, font_xform);
-    double slant = font_slant(font);
+    int x_height = font_x_height(finfo, font_xform);
+    double slant = font_slant(finfo);
     int boundary_char = dvipsenc.boundary_char();
     
     int bounds[4], width;
@@ -1258,7 +1240,7 @@ do_math_spacing(Metrics &metrics, Cff::Font *font,
     for (int code = 0; code < 256; code++) {
 	int g = metrics.glyph(code);
 	if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
-	    if (char_bounds(bounds, width, font, cmap, code, font_xform)) {
+	    if (char_bounds(bounds, width, finfo, font_xform, code)) {
 		int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
 		metrics.add_single_positioning(code, left_sb, 0, left_sb);
 		
@@ -1292,6 +1274,14 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	return;
     }
 
+    OpenType::Cmap cmap(otf.table("cmap"), errh);
+    assert(cmap.ok());
+
+    FontInfo finfo;
+    finfo.otf = &otf;
+    finfo.cff = font;
+    finfo.cmap = &cmap;
+    
     // save glyph names
     Vector<PermString> glyph_names;
     font->glyph_names(glyph_names);
@@ -1313,13 +1303,10 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // initialize encoding
     DvipsEncoding dvipsenc(dvipsenc_in); // make copy
     Metrics metrics(font, font->nglyphs());
-    OpenType::Cmap cmap(otf.table("cmap"), errh);
-    assert(cmap.ok());
     if (dvipsenc_literal)
 	dvipsenc.make_metrics(metrics, cmap, font, 0, true, errh);
     else {
-	T1Secondary secondary(font, cmap);
-	secondary.set_font_information(font_name, otf, otf_filename);
+	T1Secondary secondary(finfo, font_name, otf_filename);
 	dvipsenc.make_metrics(metrics, cmap, font, &secondary, false, errh);
     }
     // encode boundary glyph at 256; pretend its Unicode value is '\n'
@@ -1378,7 +1365,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 
     // apply math letterspacing, if any
     if (math_spacing)
-	do_math_spacing(metrics, font, dvipsenc, cmap);
+	do_math_spacing(metrics, finfo, dvipsenc);
 
     // reencode right components of boundary_glyph as boundary_char
     if (metrics.reencode_right_ligkern(256, boundary_char) > 0
@@ -1428,7 +1415,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // output
     ::otf_filename = otf_filename;
     output_metrics(metrics, font->font_name(), dvipsenc.boundary_char(),
-		   otf, font,
+		   finfo,
 		   out_encoding_name, out_encoding_file,
 		   font_name, main_dvips_map, errh);
     

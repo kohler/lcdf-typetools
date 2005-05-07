@@ -19,6 +19,7 @@ libefont_a_SOURCES = \
 	otfgpos.cc \
 	otfgsub.cc \
 	otfname.cc \
+	otfos2.cc \
 	pairop.cc \
 	psres.cc \
 	t1bounds.cc \

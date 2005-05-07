@@ -39,6 +39,7 @@ EXTRA_DIST = \
 	include/efont/otfgpos.hh \
 	include/efont/otfgsub.hh \
 	include/efont/otfname.hh \
+	include/efont/otfos2.hh \
 	include/efont/pairop.hh \
 	include/efont/psres.hh \
 	include/efont/t1bounds.hh \

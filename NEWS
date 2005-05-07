@@ -1,5 +1,15 @@
 LCDF Typetools NEWS
 
+Version 2.29   7.May.2005
+
+* otftotfm: Fix crash reported by Ryuji Suzuki.
+
+* otftotfm: Add support for 'capitalcompwordmark' and
+  'ascendercompwordmark', requested by Michael Zedler.
+
+* otftotfm: Use OpenType OS/2 table to determine x-height, if available.
+
+
 Version 2.28   25.Apr.2005
 
 * otftotfm: '--math-spacing' doesn't set italic corrections to 0.  Thanks

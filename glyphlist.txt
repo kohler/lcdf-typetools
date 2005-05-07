@@ -4329,7 +4329,11 @@ arrowrightbothalf;21C1
 arrowrighttophalf;21C0
 arrowsoutheast;2198
 arrowsouthwest;2199
+# ascendercompwordmark: taller cwm, invalid Unicode
+ascendercompwordmark;D80A
 bardbl;2225
+# capitalcompwordmark: taller cwm, invalid Unicode
+capitalcompwordmark;D809
 ceilingleft;2308
 ceilingright;2309
 circlecopyrt;20DD;25CB

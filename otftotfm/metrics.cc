@@ -1,6 +1,6 @@
 /* metrics.{cc,hh} -- an encoding during and after OpenType features
  *
- * Copyright (c) 2003-2004 Eddie Kohler
+ * Copyright (c) 2003-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -1225,7 +1225,7 @@ Metrics::make_base(int size)
 	    reencoded = true;
 	}
 	if (ch.virtual_char) {	// force it to be removed by cut_encoding
-	    ch.virtual_char->setting[0] = Setting(Setting::SHOW, size + 1);
+	    ch.virtual_char->setting[0] = Setting(Setting::SHOW, size);
 	    reencoded = true;
 	}
     }

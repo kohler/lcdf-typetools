@@ -20,9 +20,11 @@
 #include <efont/t1bounds.hh>
 #include <efont/t1font.hh>
 #include <efont/t1rw.hh>
+#include <efont/otfos2.hh>
 #include <lcdf/straccum.hh>
 #include <stdarg.h>
 #include <errno.h>
+#include <limits.h>
 #include <algorithm>
 
 enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
@@ -36,6 +38,8 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_FLSMALL = 0xD806,	// invalid Unicode
        U_FFISMALL = 0xD807,	// invalid Unicode
        U_FFLSMALL = 0xD808,	// invalid Unicode
+       U_CAPITALCWM = 0xD809,	// invalid Unicode
+       U_ASCENDERCWM = 0xD80A,	// invalid Unicode
        U_VS1 = 0xFE00,
        U_VS16 = 0xFE0F,
        U_VS17 = 0xE0100,
@@ -66,26 +70,14 @@ Secondary::encode_uni(int code, PermString name, uint32_t uni, Metrics &metrics,
 	return false;
 }
 
-T1Secondary::T1Secondary(const Efont::Cff::Font *cff, const Efont::OpenType::Cmap &cmap)
-    : _otf(0), _cff(cff), _xheight(1000), _spacewidth(1000)
+T1Secondary::T1Secondary(const FontInfo &finfo, const String &font_name,
+			 const String &otf_file_name)
+    : _finfo(finfo), _font_name(font_name), _otf_file_name(otf_file_name),
+      _xheight(font_x_height(finfo, Transform())), _spacewidth(1000)
 {
     int bounds[4], width;
-    
-    static const int xheight_unis[] = { 'x', 'm', 'z', 0 };
-    for (const int *x = xheight_unis; *x; x++)
-	if (char_bounds(bounds, width, cff, cmap, *x, Transform()) && bounds[3] < _xheight)
-	    _xheight = bounds[3];
-
-    if (char_bounds(bounds, width, cff, cmap, ' ', Transform()))
+    if (char_bounds(bounds, width, finfo, Transform(), ' '))
 	_spacewidth = width;
-}
-
-void
-T1Secondary::set_font_information(const String &font_name, const Efont::OpenType::Font &otf, const String &otf_file_name)
-{
-    _font_name = font_name;
-    _otf = &otf;
-    _otf_file_name = otf_file_name;
 }
 
 bool
@@ -148,7 +140,7 @@ dotlessj_dvips_include(const String &, StringAccum &sa, ErrorHandler *)
 int
 T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph)
 {
-    if (!_font_name || !_otf)
+    if (!_font_name || !_finfo.otf)
 	return -1;
     
     String dj_name = suffix_font_name(_font_name, "--lcdfj");
@@ -156,7 +148,7 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	if (metrics.mapped_font_name(i) == dj_name)
 	    return i;
     
-    if (String filename = installed_type1_dotlessj(_otf_file_name, _cff->font_name(), (output_flags & G_DOTLESSJ) && (output_flags & G_TYPE1), errh)) {
+    if (String filename = installed_type1_dotlessj(_otf_file_name, _finfo.cff->font_name(), (output_flags & G_DOTLESSJ) && (output_flags & G_TYPE1), errh)) {
 
 	// check for special case: "\0" means the font's "j" is already
 	// dotless
@@ -201,7 +193,7 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	    return -1;
 	}
 	::dotlessj_file_name = filename;
-	output_metrics(dj_metrics, font->font_name(), -1, *_otf, _cff, String(), String(), dj_name, dotlessj_dvips_include, errh);
+	output_metrics(dj_metrics, font->font_name(), -1, _finfo, String(), String(), dj_name, dotlessj_dvips_include, errh);
 	
 	// add font to metrics
 	return metrics.add_mapped_font(font, dj_name);
@@ -218,6 +210,14 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
       case U_CWM:
       case U_ALTSELECTOR:
 	v.push_back(Setting(Setting::RULE, 0, _xheight));
+	return true;
+
+      case U_CAPITALCWM:
+	v.push_back(Setting(Setting::RULE, 0, font_cap_height(_finfo, Transform())));
+	return true;
+
+      case U_ASCENDERCWM:
+	v.push_back(Setting(Setting::RULE, 0, font_ascender(_finfo, Transform())));
 	return true;
 
       case U_VISIBLESPACE:
@@ -310,12 +310,68 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 
 
 bool
-char_bounds(int bounds[4], int &width,
-	    const Efont::Cff::Font *cff, const Efont::OpenType::Cmap &cmap,
-	    uint32_t uni, const Transform &transform)
+char_bounds(int bounds[4], int &width, const FontInfo &finfo,
+	    const Transform &transform, uint32_t uni)
 {
-    if (Efont::OpenType::Glyph g = cmap.map_uni(uni))
-	return Efont::CharstringBounds::bounds(transform, cff->glyph_context(g), bounds, width);
+    if (Efont::OpenType::Glyph g = finfo.cmap->map_uni(uni))
+	return Efont::CharstringBounds::bounds(transform, finfo.cff->glyph_context(g), bounds, width);
     else
 	return false;
+}
+
+int
+char_one_bound(const FontInfo &finfo, const Transform &transform,
+	       int dimen, bool max, int best, uint32_t uni, ...)
+{
+    int bounds[5];
+    va_list val;
+    va_start(val, uni);
+    while (uni != 0) {
+	if (char_bounds(bounds, bounds[4], finfo, transform, uni))
+	    if (max ? bounds[dimen] > best : bounds[dimen] < best)
+		best = bounds[dimen];
+	uni = va_arg(val, uint32_t);
+    }
+    va_end(val);
+    return best;
+}
+
+int
+font_x_height(const FontInfo &finfo, const Transform &font_xform)
+{
+    try {
+	Efont::OpenType::Os2 os2(finfo.otf->table("OS/2"));
+	return os2.x_height();
+    } catch (Efont::OpenType::Bounds) {
+	// XXX what if 'x', 'm', 'z' were subject to substitution?
+	return char_one_bound(finfo, font_xform, 3, false, 1000,
+			      'x', 'm', 'z', 0);
+    }
+}
+
+int
+font_cap_height(const FontInfo &finfo, const Transform &font_xform)
+{
+    try {
+	Efont::OpenType::Os2 os2(finfo.otf->table("OS/2"));
+	return os2.cap_height();
+    } catch (Efont::OpenType::Bounds) {
+	// XXX what if 'x', 'm', 'z' were subject to substitution?
+	return char_one_bound(finfo, font_xform, 3, false, 1000,
+			      'H', 'O', 'B', 0);
+    }
+}
+
+int
+font_ascender(const FontInfo &finfo, const Transform &font_xform)
+{
+    try {
+	Efont::OpenType::Os2 os2(finfo.otf->table("OS/2"));
+	return os2.typo_ascender();
+    } catch (Efont::OpenType::Bounds) {
+	// XXX what if 'x', 'm', 'z' were subject to substitution?
+	return char_one_bound(finfo, font_xform, 3, true,
+			      font_x_height(finfo, font_xform),
+			      'd', 'l', 0);
+    }
 }
