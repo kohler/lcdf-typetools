@@ -28,7 +28,6 @@ Os2::Os2(const Data &data, ErrorHandler *errh)
     : _data(data)
 {
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
-    fprintf(stderr, "%u %d %d\n", _data.u16(4), typo_ascender(), x_height());
     if (_error < 0)
 	_data = Data();
 }
