@@ -589,7 +589,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		glyph_base_comments[i] = glyph_comments[i];
 	    
 	} else
-	    glyph_ids.push_back("X");
+	    glyph_ids.push_back("D " + String(i));
     }
     // finally, BOUNDARYCHAR
     glyph_ids.push_back("BOUNDARYCHAR");
@@ -1303,14 +1303,14 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // initialize encoding
     DvipsEncoding dvipsenc(dvipsenc_in); // make copy
     Metrics metrics(font, font->nglyphs());
+    // encode boundary glyph at 256; pretend its Unicode value is '\n'
+    metrics.encode(256, '\n', metrics.boundary_glyph());
     if (dvipsenc_literal)
 	dvipsenc.make_metrics(metrics, cmap, font, 0, true, errh);
     else {
 	T1Secondary secondary(finfo, font_name, otf_filename);
 	dvipsenc.make_metrics(metrics, cmap, font, &secondary, false, errh);
     }
-    // encode boundary glyph at 256; pretend its Unicode value is '\n'
-    metrics.encode(256, '\n', metrics.boundary_glyph());
 
     // maintain statistics about features
     HashMap<uint32_t, int> feature_usage(0);

@@ -51,7 +51,9 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_FSMALL = 0xF766,
        U_ISMALL = 0xF769,
        U_LSMALL = 0xF76C,
-       U_SSMALL = 0xF773 };
+       U_SSMALL = 0xF773,
+       U_DBLBRACKETLEFT = 0x27E6,
+       U_DBLBRACKETRIGHT = 0x27E7 };
 
 Secondary::~Secondary()
 {
@@ -300,6 +302,30 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	      return true;
 	  break;
       }
+
+      case U_DBLBRACKETLEFT:
+	if (char_setting(v, metrics, '[', 0)) {
+	    double d;
+	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
+		d = char_one_bound(_finfo, Transform(), 4, true, 0, '[', 0);
+		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
+	    }
+	    char_setting(v, metrics, '[', 0);
+	    return true;
+	}
+	break;
+
+      case U_DBLBRACKETRIGHT:
+	if (char_setting(v, metrics, ']', 0)) {
+	    double d;
+	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
+		d = char_one_bound(_finfo, Transform(), 4, true, 0, ']', 0);
+		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
+	    }
+	    char_setting(v, metrics, ']', 0);
+	    return true;
+	}
+	break;
 	
     }
 

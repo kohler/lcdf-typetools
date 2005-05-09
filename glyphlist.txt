@@ -4343,6 +4343,8 @@ circleminus;2296
 coproduct;2A3F
 # cwm: Unicode for ZWNJ, used for secondary replacement from EC.enc
 cwm;200C
+dblbracketleft;27E6
+dblbracketright;27E7
 diamond;2662;2666
 diamondmath;22C4
 # 0237 is the proposed allocation for dotless j as of Unicode 4.0

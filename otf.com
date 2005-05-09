@@ -20,6 +20,9 @@ call_nopts -ae7t -fliga -fkern ~/Fonts/+OTF/MinionPro/MinionPro-It.otf MinioProI
 }
 
 W () {
+call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka
+exit
+
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fsmcp -fsmcp
     call -fliga -fkern ~/Fonts/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fcpsp -fcpsp
 
@@ -161,7 +164,7 @@ Mz () {
     call -fliga -fkern --design-size=9 ~/Fonts/+OTF/MinionProOpticals/MinionPro-Regular.otf MinioProReg--eka--D9
 }
 
-#rm -rf /tmp/pk/Warno* ~/texmf/fonts/tfm/lcdftools/Warno*; WW; WWW
+rm -rf /tmp/pk/Warno*; W; updmap; exit
 #W; updmap; exit
 #M; updmap; exit
 WW; WWW; MM; MMM
