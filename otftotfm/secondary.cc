@@ -99,8 +99,11 @@ T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
     va_start(val, uni);
     for (; uni; uni = va_arg(val, int)) {
 	int code = metrics.unicode_encoding(uni);
-	if (code < 0)
-	    return false;
+	if (code < 0) {
+	    Glyph glyph = _finfo.cmap->map_uni(uni);
+	    if (glyph == 0 || (code = metrics.force_encoding(glyph)) < 0)
+		return false;
+	}
 	codes.push_back(code);
     }
     va_end(val);
