@@ -39,16 +39,18 @@ class DvipsEncoding { public:
     void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
     void apply_ligkern_kern(Metrics &, ErrorHandler *) const;
     
-    enum { J_BAD = -1,
-	   J_LIG = 0, J_CLIG = 1, J_CLIG_S = 2, J_LIGC = 3,
-	   J_LIGC_S = 4, J_CLIGC = 5, J_CLIGC_S = 6, J_CLIGC_SS = 7,
-	   J_KERN = 100, J_NOLIG = 101, J_NOLIGKERN = 102,
+    enum { JT_KERN = 32, JT_LIG = 64, JT_ADDLIG = 128, JT_LIGALL = 199,
+	   JL_LIG = JT_LIG | JT_ADDLIG, JL_CLIG = JL_LIG | 1,
+	   JL_CLIG_S = JL_LIG | 2, JL_LIGC = JL_LIG | 3,
+	   JL_LIGC_S = JL_LIG | 4, JL_CLIGC = JL_LIG | 5,
+	   JL_CLIGC_S = JL_LIG | 6, JL_CLIGC_SS = JL_LIG | 7,
+	   JT_NOLIGKERN = JT_KERN | JT_LIG,
 	   J_ALL = 0x7FFFFFFF }; // also see nokern_names in dvipsencoding.cc
     
   private:
 
     struct Ligature {
-	int c1, c2, join, d;
+	int c1, c2, join, k, d;
     };
 
     Vector<PermString> _e;
@@ -69,6 +71,7 @@ class DvipsEncoding { public:
     String _final_text;
     bool _file_had_ligkern;
 
+    void add_ligkern(const Ligature &, int override);
     int parse_ligkern_words(Vector<String> &, int override, ErrorHandler *);
     int parse_unicoding_words(Vector<String> &, int override, ErrorHandler *);
     int parse_words(const String &, int override, int (DvipsEncoding::*)(Vector<String> &, int, ErrorHandler *), ErrorHandler *);
