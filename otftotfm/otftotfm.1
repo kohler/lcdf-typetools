@@ -168,9 +168,11 @@ font map	\-	\-\-map\-file
 .B Otftotfm
 will update the
 .I TEXMF/ls-R
-file when installing files under TEXMF, and run the
+file when installing files under TEXMF.  It will also run the
 .M updmap 1
-program after changing a map file.  However, if an executable file called
+program after changing a map file, unless the 
+.B \-\-no\-updmap
+option was supplied.  However, if an executable file called
 .IR TEXMF/dvips/updmap
 exists, this file is executed (from the
 .I TEXMF/dvips
