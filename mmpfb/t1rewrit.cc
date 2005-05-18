@@ -1,6 +1,6 @@
 /* t1rewrit.cc -- routines for multiple- to single-master charstring conversion
  *
- * Copyright (c) 1997-2004 Eddie Kohler
+ * Copyright (c) 1997-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -79,29 +79,29 @@ HintReplacementDetector::type1_command(int cmd)
 {
     switch (cmd) {
 	
-      case CS::cCallothersubr: {
+      case Cs::cCallothersubr: {
 	  if (size() < 2)
 	      goto unknown;
 	  int command = (int)top(0);
 	  int n = (int)top(1);
-	  if (command == CS::othcReplacehints && n == 1) {
+	  if (command == Cs::othcReplacehints && n == 1) {
 	      pop(2);
 	      _hint_replacements[(int)top()] = 1;
 	      ps_clear();
 	      ps_push(top());
 	      pop();
 	      break;
-	  } else if (command >= CS::othcMM1 && command <= CS::othcMM6) {
+	  } else if (command >= Cs::othcMM1 && command <= Cs::othcMM6) {
 	      pop(2);
 	      return mm_command(command, n);
-	  } else if (command >= CS::othcITC_load && command <= CS::othcITC_random) {
+	  } else if (command >= Cs::othcITC_load && command <= Cs::othcITC_random) {
 	      pop(2);
 	      return itc_command(command, n);
 	  } else
 	      goto unknown;
       }
 
-      case CS::cCallsubr: {
+      case Cs::cCallsubr: {
 	  if (size() < 1)
 	      return error(errUnderflow, cmd);
 	  int which = (int)pop();
@@ -121,32 +121,32 @@ HintReplacementDetector::type1_command(int cmd)
 	  return !done();
       }
 
-      case CS::cEndchar:
-      case CS::cReturn:
+      case Cs::cEndchar:
+      case Cs::cReturn:
 	return CharstringInterp::type1_command(cmd);
     
-      case CS::cBlend:
-      case CS::cAbs:
-      case CS::cAdd:
-      case CS::cSub:
-      case CS::cDiv:
-      case CS::cNeg:
-      case CS::cRandom:
-      case CS::cMul:
-      case CS::cSqrt:
-      case CS::cDrop:
-      case CS::cExch:
-      case CS::cIndex:
-      case CS::cRoll:
-      case CS::cDup:
-      case CS::cAnd:
-      case CS::cOr:
-      case CS::cNot:
-      case CS::cEq:
-      case CS::cIfelse:
+      case Cs::cBlend:
+      case Cs::cAbs:
+      case Cs::cAdd:
+      case Cs::cSub:
+      case Cs::cDiv:
+      case Cs::cNeg:
+      case Cs::cRandom:
+      case Cs::cMul:
+      case Cs::cSqrt:
+      case Cs::cDrop:
+      case Cs::cExch:
+      case Cs::cIndex:
+      case Cs::cRoll:
+      case Cs::cDup:
+      case Cs::cAnd:
+      case Cs::cOr:
+      case Cs::cNot:
+      case Cs::cEq:
+      case Cs::cIfelse:
 	return arith_command(cmd);
 
-      case CS::cPop:
+      case Cs::cPop:
 	if (ps_size() >= 1)
 	    push(ps_pop());
 	break;
@@ -258,7 +258,7 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
     int base = size() - on_stack - 2;
     switch (command) {
 
-      case CS::othcITC_load: {
+      case Cs::othcITC_load: {
 	  if (on_stack != 1)
 	      return false;
 	  int offset = (int)at(base);
@@ -269,13 +269,13 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	  if (gen) {
 	      gen->gen_number(offset);
 	      gen->gen_number(1);
-	      gen->gen_number(CS::othcITC_load);
-	      gen->gen_command(CS::cCallothersubr);
+	      gen->gen_number(Cs::othcITC_load);
+	      gen->gen_command(Cs::cCallothersubr);
 	  }
 	  break;
       }
 
-      case CS::othcITC_put: {
+      case Cs::othcITC_put: {
 	  if (on_stack != 2)
 	      return false;
 	  int offset = (int)at(base+1);
@@ -286,13 +286,13 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	      gen->gen_number(at(base));
 	      gen->gen_number(offset);
 	      gen->gen_number(2);
-	      gen->gen_number(CS::othcITC_put);
-	      gen->gen_command(CS::cCallothersubr);
+	      gen->gen_number(Cs::othcITC_put);
+	      gen->gen_command(Cs::cCallothersubr);
 	  }
 	  break;
       }
    
-      case CS::othcITC_get: {
+      case Cs::othcITC_get: {
 	  if (on_stack != 1)
 	      return false;
 	  int offset = (int)at(base);
@@ -305,35 +305,35 @@ Type1OneMMRemover::itc_command(int command, int on_stack)
 	  break;
       }
    
-      case CS::othcITC_add: {
+      case Cs::othcITC_add: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) + at(base+1));
 	  break;
       }
    
-      case CS::othcITC_sub: {
+      case Cs::othcITC_sub: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) - at(base+1));
 	  break;
       }
    
-      case CS::othcITC_mul: {
+      case Cs::othcITC_mul: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) * at(base+1));
 	  break;
       }
    
-      case CS::othcITC_div: {
+      case Cs::othcITC_div: {
 	  if (on_stack != 2)
 	      return false;
 	  ps_push(at(base) / at(base+1));
 	  break;
       }
    
-      case CS::othcITC_ifelse: {
+      case Cs::othcITC_ifelse: {
 	  if (on_stack != 4)
 	      return false;
 	  if (at(base+2) <= at(base+3))
@@ -357,19 +357,19 @@ Type1OneMMRemover::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case CS::cCallothersubr: {
+      case Cs::cCallothersubr: {
 	  // Expand known othersubr calls. If we cannot expand the othersubr
 	  // call completely, then write it to the expander.
 	  if (size() < 2)
 	      goto partial_othersubr;
 	  int command = (int)top(0);
 	  int n = (int)top(1);
-	  if (command >= CS::othcITC_load && command <= CS::othcITC_random) {
+	  if (command >= Cs::othcITC_load && command <= Cs::othcITC_random) {
 	      if (!itc_complained)
 		  itc_complain();
 	      if (size() < 2 + n || !itc_command(command, n))
 		  goto partial_othersubr;
-	  } else if (command >= CS::othcMM1 && command <= CS::othcMM6) {
+	  } else if (command >= Cs::othcMM1 && command <= Cs::othcMM6) {
 	      if (size() < 2 + n)
 		  goto partial_othersubr;
 	      pop(2);
@@ -385,11 +385,11 @@ Type1OneMMRemover::type1_command(int cmd)
 	      goto normal;
 	  }
 	  _prefix_gen.gen_stack(*this, 0);
-	  _prefix_gen.gen_command(CS::cCallothersubr);
+	  _prefix_gen.gen_command(Cs::cCallothersubr);
 	  break;
       }
    
-      case CS::cCallsubr: {
+      case Cs::cCallsubr: {
 	  // expand subroutines in line if necessary
 	  if (size() < 1)
 	      goto normal;
@@ -407,24 +407,24 @@ Type1OneMMRemover::type1_command(int cmd)
 	  break;
       }
    
-      case CS::cPop:
+      case Cs::cPop:
 	if (ps_size() >= 1)
 	    push(ps_pop());
 	else if (_in_prefix && ps_size() == 0) {
 	    _prefix_gen.gen_stack(*this, 0);
-	    _prefix_gen.gen_command(CS::cPop);
+	    _prefix_gen.gen_command(Cs::cPop);
 	} else
 	    goto normal;
 	break;
     
-      case CS::cDiv:
+      case Cs::cDiv:
 	if (size() < 2)
 	    goto normal;
 	top(1) /= top(0);
 	pop();
 	break;
     
-      case CS::cReturn:
+      case Cs::cReturn:
 	return false;
     
       normal:
@@ -432,7 +432,7 @@ Type1OneMMRemover::type1_command(int cmd)
 	_main_gen.gen_stack(*this, cmd);
 	_main_gen.gen_command(cmd);
 	_in_prefix = 0;
-	return (cmd != CS::cEndchar);
+	return (cmd != Cs::cEndchar);
     
     }
     return true;
@@ -455,14 +455,14 @@ Type1OneMMRemover::run(const Type1Charstring &cs,
     CharstringInterp::interpret(_remover->program(), &cs);
 
     if (in_subr) {
-	_main_gen.gen_stack(*this, CS::cReturn);
-	_main_gen.gen_command(CS::cReturn);
+	_main_gen.gen_stack(*this, Cs::cReturn);
+	_main_gen.gen_command(Cs::cReturn);
     }
     if (_must_expand)
 	return true;
     if (fresh && in_subr) {
 	if (_main_gen.length() == 0
-	    || (_main_gen.length() == 1 && _main_gen.data()[0] == CS::cReturn))
+	    || (_main_gen.length() == 1 && _main_gen.data()[0] == Cs::cReturn))
 	    return true;
     }
     return false;
@@ -490,7 +490,7 @@ Type1Charstring *
 Type1OneMMRemover::output_prefix()
 {
     if (_prefix_gen.length() > 0) {
-	_prefix_gen.gen_command(CS::cReturn);
+	_prefix_gen.gen_command(Cs::cReturn);
 	return _prefix_gen.output();
     } else
 	return 0;
@@ -533,7 +533,7 @@ Type1BadCallRemover::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case CS::cCallsubr: {
+      case Cs::cCallsubr: {
 	  if (size() < 1)
 	      goto normal;
 	  int subrno = (int)top();
@@ -548,7 +548,7 @@ Type1BadCallRemover::type1_command(int cmd)
       default:
 	_gen.gen_stack(*this, 0);
 	_gen.gen_command(cmd);
-	return (cmd != CS::cEndchar && cmd != CS::cReturn);
+	return (cmd != Cs::cEndchar && cmd != Cs::cReturn);
     
     }
 }
@@ -756,7 +756,7 @@ SubrExpander::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case CS::cCallsubr: {
+      case Cs::cCallsubr: {
 	  if (size() < 1)
 	      goto unknown;
 	  int subrno = (int)top(0);
@@ -774,11 +774,11 @@ SubrExpander::type1_command(int cmd)
 	  return !done();
       }
    
-      case CS::cEndchar:
+      case Cs::cEndchar:
 	set_done();
 	goto end_cs;
     
-      case CS::cReturn:
+      case Cs::cReturn:
 	if (_subr_level)
 	    return false;
 	goto end_cs;

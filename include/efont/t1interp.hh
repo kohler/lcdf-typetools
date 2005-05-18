@@ -91,7 +91,7 @@ class CharstringInterp { public:
     virtual void act_vstem3(int cmd, double x0, double dx0, double x1, double dx1, double x2, double dx2);
     virtual void act_hintmask(int cmd, const uint8_t *data, int nhints);
 
-    typedef Charstring CS;
+    typedef Charstring Cs;
     
     enum Errors {
 	errOK		= 0,

@@ -2,7 +2,7 @@
 
 /* t1csgen.{cc,hh} -- Type 1 charstring generation
  *
- * Copyright (c) 1998-2004 Eddie Kohler
+ * Copyright (c) 1998-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -258,17 +258,17 @@ void
 Type1CharstringGenInterp::gen_sbw(bool hints_follow)
 {
     if (!hints_follow && nhints())
-	act_hintmask(CS::cHintmask, 0, nhints());
+	act_hintmask(Cs::cHintmask, 0, nhints());
     else if (left_sidebearing().y == 0 && _width.y == 0) {
 	gen_number(left_sidebearing().x, 'X');
 	gen_number(_width.x);
-	gen_command(CS::cHsbw);
+	gen_command(Cs::cHsbw);
     } else {
 	gen_number(left_sidebearing().x, 'X');
 	gen_number(left_sidebearing().y, 'Y');
 	gen_number(_width.x);
 	gen_number(_width.y);
-	gen_command(CS::cSbw);
+	gen_command(Cs::cSbw);
     }
     _state = S_CLOSED;
 }
@@ -289,7 +289,7 @@ Type1CharstringGenInterp::act_seac(int, double asb, double adx, double ady, int 
     gen_number(ady);
     gen_number(bchar);
     gen_number(achar);
-    gen_command(CS::cSeac);
+    gen_command(Cs::cSeac);
     _state = S_SEAC;
 }
 
@@ -332,7 +332,7 @@ Type1CharstringGenInterp::gen_hints(const unsigned char *data, int nhints) const
 	    double offset = (_stem_hstem[i] ? left_sidebearing().y : left_sidebearing().x);
 	    _hint_csgen.gen_number(_stem_pos[i] - offset);
 	    _hint_csgen.gen_number(_stem_width[i]);
-	    _hint_csgen.gen_command(_stem_hstem[i] ? CS::cHstem : CS::cVstem);
+	    _hint_csgen.gen_command(_stem_hstem[i] ? Cs::cHstem : Cs::cVstem);
 	}
 	if ((mask >>= 1) == 0)
 	    data++, mask = 0x80;
@@ -343,7 +343,7 @@ Type1CharstringGenInterp::gen_hints(const unsigned char *data, int nhints) const
 void
 Type1CharstringGenInterp::act_hintmask(int cmd, const unsigned char *data, int nhints)
 {
-    if (cmd == CS::cCntrmask || nhints > Type1CharstringGenInterp::nhints())
+    if (cmd == Cs::cCntrmask || nhints > Type1CharstringGenInterp::nhints())
 	return;
     
     String data_holder;
@@ -362,7 +362,7 @@ Type1CharstringGenInterp::act_hintmask(int cmd, const unsigned char *data, int n
 	_csgen.append_charstring(hints);
     } else if (_hr_storage && hints != _last_hints) {
 	_last_hints = hints;
-	hints += (char)(CS::cReturn);
+	hints += (char)(Cs::cReturn);
 
 	int subrno = -1, nsubrs = _hr_storage->nsubrs();
 	for (int i = _hr_firstsubr; i < nsubrs; i++)
@@ -378,7 +378,7 @@ Type1CharstringGenInterp::act_hintmask(int cmd, const unsigned char *data, int n
 	if (subrno >= 0) {
 	    _csgen.gen_number(subrno);
 	    _csgen.gen_number(4);
-	    _csgen.gen_command(CS::cCallsubr);
+	    _csgen.gen_command(Cs::cCallsubr);
 	}
     }
 }
@@ -394,14 +394,14 @@ Type1CharstringGenInterp::act_line(int cmd, const Point &a, const Point &b)
     _state = S_OPEN;
     if (a.x == b.x) {
 	gen_number(b.y - a.y, 'y');
-	gen_command(CS::cVlineto);
+	gen_command(Cs::cVlineto);
     } else if (a.y == b.y) {
 	gen_number(b.x - a.x, 'x');
-	gen_command(CS::cHlineto);
+	gen_command(Cs::cHlineto);
     } else {
 	gen_number(b.x - a.x, 'x');
 	gen_number(b.y - a.y, 'y');
-	gen_command(CS::cRlineto);
+	gen_command(Cs::cRlineto);
     }
 }
 
@@ -419,13 +419,13 @@ Type1CharstringGenInterp::act_curve(int cmd, const Point &a, const Point &b, con
 	gen_number(c.x - b.x, 'x');
 	gen_number(c.y - b.y, 'y');
 	gen_number(d.y - c.y, 'y');
-	gen_command(CS::cHvcurveto);
+	gen_command(Cs::cHvcurveto);
     } else if (b.x == a.x && d.y == c.y) {
 	gen_number(b.y - a.y, 'y');
 	gen_number(c.x - a.x, 'x');
 	gen_number(c.y - b.y, 'y');
 	gen_number(d.x - c.x, 'x');
-	gen_command(CS::cVhcurveto);
+	gen_command(Cs::cVhcurveto);
     } else {
 	gen_number(b.x - a.x, 'x');
 	gen_number(b.y - a.y, 'y');
@@ -433,7 +433,7 @@ Type1CharstringGenInterp::act_curve(int cmd, const Point &a, const Point &b, con
 	gen_number(c.y - b.y, 'y');
 	gen_number(d.x - c.x, 'x');
 	gen_number(d.y - c.y, 'y');
-	gen_command(CS::cRrcurveto);
+	gen_command(Cs::cRrcurveto);
     }
 }
 
@@ -481,41 +481,41 @@ Type1CharstringGenInterp::act_flex(int cmd, const Point &p0, const Point &p1, co
 	Point p_reference = (h_ok ? Point(p3_4.x, p0.y) : Point(p0.x, p3_4.y));
 
 	_csgen.gen_number(1);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p_reference, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p1, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p2, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p3_4, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p5, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p6, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_moveto(p7, false);
 	_csgen.gen_number(2);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	_csgen.gen_number(flex_depth);
 	_csgen.gen_number(p7.x, 'X');
 	_csgen.gen_number(p7.y, 'Y');
 	_csgen.gen_number(0);
-	_csgen.gen_command(CS::cCallsubr);
+	_csgen.gen_command(Cs::cCallsubr);
 
 	double flex_height = fabs(h_ok ? p3_4.y - p0.y : p3_4.x - p0.x);
 	if (flex_height > _max_flex_height)
@@ -532,7 +532,7 @@ Type1CharstringGenInterp::act_closepath(int cmd)
 {
     if (_in_hr)
 	act_hintmask(cmd, 0, nhints());
-    gen_command(CS::cClosepath);
+    gen_command(Cs::cClosepath);
     _state = S_CLOSED;
 }
 
@@ -541,7 +541,7 @@ Type1CharstringGenInterp::intermediate_output(Type1Charstring &out)
 {
     _csgen.output(out);
     _state = S_INITIAL;
-    act_hintmask(CS::cEndchar, 0, nhints());
+    act_hintmask(Cs::cEndchar, 0, nhints());
 }
 
 void
@@ -558,9 +558,9 @@ Type1CharstringGenInterp::run(const CharstringContext &g, Type1Charstring &out)
     if (_state == S_INITIAL)
 	gen_sbw(false);
     else if (_in_hr)
-	act_hintmask(CS::cEndchar, 0, nhints());
+	act_hintmask(Cs::cEndchar, 0, nhints());
     if (_state != S_SEAC)
-	_csgen.gen_command(CS::cEndchar);
+	_csgen.gen_command(Cs::cEndchar);
     
     _csgen.output(out);
 }

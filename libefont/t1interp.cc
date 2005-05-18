@@ -2,7 +2,7 @@
 
 /* t1interp.{cc,hh} -- Type 1/2 charstring interpretation
  *
- * Copyright (c) 1998-2004 Eddie Kohler
+ * Copyright (c) 1998-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -150,20 +150,20 @@ CharstringInterp::vector_command(int cmd)
   
     switch (cmd) {
     
-      case CS::cPut:
+      case Cs::cPut:
 	CHECK_STACK(2);
 	offset = (int)top(0);
 	vec(&_scratch_vector, offset) = top(1);
 	pop(2);
 	break;
     
-      case CS::cGet:
+      case Cs::cGet:
 	CHECK_STACK(1);
 	offset = (int)top();
 	top() = vec(&_scratch_vector, offset);
 	break;
     
-      case CS::cStore:
+      case Cs::cStore:
 	CHECK_STACK(4);
 	which_vector = (CharstringProgram::VectorType)((int)top(3));
 	vectoroff = (int)top(2);
@@ -184,7 +184,7 @@ CharstringInterp::vector_command(int cmd)
 	    _weight_vector.clear();
 	break;
 
-      case CS::cLoad:
+      case Cs::cLoad:
 	CHECK_STACK(3);
 	which_vector = (CharstringProgram::VectorType)((int)top(2));
 	offset = (int)top(1);
@@ -215,7 +215,7 @@ CharstringInterp::vector_command(int cmd)
 bool
 CharstringInterp::blend_command()
 {
-    const int cmd = CS::cBlend;
+    const int cmd = Cs::cBlend;
     CHECK_STACK(1);
     int nargs = (int)pop();
 
@@ -241,7 +241,7 @@ CharstringInterp::blend_command()
 bool
 CharstringInterp::roll_command()
 {
-    const int cmd = CS::cRoll;
+    const int cmd = Cs::cRoll;
     CHECK_STACK(2);
     int amount = (int)pop();
     int n = (int)pop();
@@ -271,39 +271,39 @@ CharstringInterp::arith_command(int cmd)
   
     switch (cmd) {
     
-      case CS::cBlend:
+      case Cs::cBlend:
 	return blend_command();
     
-      case CS::cAbs:
+      case Cs::cAbs:
 	CHECK_STACK(1);
 	if (top() < 0)
 	    top() = -top();
 	break;
     
-      case CS::cAdd:
+      case Cs::cAdd:
 	CHECK_STACK(1);
 	d = pop();
 	top() += d;
 	break;
     
-      case CS::cSub:
+      case Cs::cSub:
 	CHECK_STACK(1);
 	d = pop();
 	top() -= d;
 	break;
     
-      case CS::cDiv:
+      case Cs::cDiv:
 	CHECK_STACK(2);
 	d = pop();
 	top() /= d;
 	break;
     
-      case CS::cNeg:
+      case Cs::cNeg:
 	CHECK_STACK(1);
 	top() = -top();
 	break;
     
-      case CS::cRandom: {
+      case Cs::cRandom: {
 	  double d;
 	  do {
 	      d = random() / ((double)RAND_MAX);
@@ -312,32 +312,32 @@ CharstringInterp::arith_command(int cmd)
 	  break;
       }
     
-      case CS::cMul:
+      case Cs::cMul:
 	CHECK_STACK(2);
 	d = pop();
 	top() *= d;
 	break;
     
-      case CS::cSqrt:
+      case Cs::cSqrt:
 	CHECK_STACK(1);
 	if (top() < 0)
 	    return error(errValue, cmd);
 	top() = sqrt(top());
 	break;
     
-      case CS::cDrop:
+      case Cs::cDrop:
 	CHECK_STACK(1);
 	pop();
 	break;
     
-      case CS::cExch:
+      case Cs::cExch:
 	CHECK_STACK(2);
 	d = top(0);
 	top(0) = top(1);
 	top(1) = d;
 	break;
     
-      case CS::cIndex:
+      case Cs::cIndex:
 	CHECK_STACK(1);
 	i = (int)top();
 	if (i < 0)
@@ -346,45 +346,45 @@ CharstringInterp::arith_command(int cmd)
 	top() = top(i+1);
 	break;
     
-      case CS::cRoll:
+      case Cs::cRoll:
 	return roll_command();
     
-      case CS::cDup:
+      case Cs::cDup:
 	CHECK_STACK(1);
 	push(top());
 	break;
     
-      case CS::cAnd:
+      case Cs::cAnd:
 	CHECK_STACK(2);
 	d = pop();
 	top() = (top() != 0) && (d != 0);
 	break;
     
-      case CS::cOr:
+      case Cs::cOr:
 	CHECK_STACK(2);
 	d = pop();
 	top() = (top() != 0) || (d != 0);
 	break;
     
-      case CS::cNot:
+      case Cs::cNot:
 	CHECK_STACK(1);
 	top() = (top() == 0);
 	break;
     
-      case CS::cEq:
+      case Cs::cEq:
 	CHECK_STACK(2);
 	d = pop();
 	top() = (top() == d);
 	break;
     
-      case CS::cIfelse:
+      case Cs::cIfelse:
 	CHECK_STACK(4);
 	if (top(1) > top(0))
 	    top(3) = top(2);
 	pop(3);
 	break;
     
-      case CS::cPop:
+      case Cs::cPop:
 	if (ps_size() < 1)
 	    return error(errUnderflow, cmd);
 	push(ps_pop());
@@ -407,7 +407,7 @@ CharstringInterp::arith_command(int cmd)
 bool
 CharstringInterp::callsubr_command()
 {
-    const int cmd = CS::cCallsubr;
+    const int cmd = Cs::cCallsubr;
     CHECK_STACK(1);
     int which = (int)pop();
 
@@ -430,7 +430,7 @@ CharstringInterp::callsubr_command()
 bool
 CharstringInterp::callgsubr_command()
 {
-    const int cmd = CS::cCallgsubr;
+    const int cmd = Cs::cCallgsubr;
     CHECK_STACK(1);
     int which = (int)pop();
 
@@ -459,11 +459,11 @@ CharstringInterp::mm_command(int command, int on_stack)
   
     int nargs;
     switch (command) {
-      case CS::othcMM1: nargs = 1; break;
-      case CS::othcMM2: nargs = 2; break;
-      case CS::othcMM3: nargs = 3; break;
-      case CS::othcMM4: nargs = 4; break;
-      case CS::othcMM6: nargs = 6; break;
+      case Cs::othcMM1: nargs = 1; break;
+      case Cs::othcMM2: nargs = 2; break;
+      case Cs::othcMM3: nargs = 3; break;
+      case Cs::othcMM4: nargs = 4; break;
+      case Cs::othcMM6: nargs = 6; break;
       default: return error(errInternal, command);
     }
   
@@ -498,7 +498,7 @@ CharstringInterp::itc_command(int command, int on_stack)
     int base = size() - on_stack;
     switch (command) {
 
-      case CS::othcITC_load: {
+      case Cs::othcITC_load: {
 	  if (on_stack != 1)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base);
@@ -507,7 +507,7 @@ CharstringInterp::itc_command(int command, int on_stack)
 	  break;
       }
 
-      case CS::othcITC_put: {
+      case Cs::othcITC_put: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base+1);
@@ -515,7 +515,7 @@ CharstringInterp::itc_command(int command, int on_stack)
 	  break;
       }
    
-      case CS::othcITC_get: {
+      case Cs::othcITC_get: {
 	  if (on_stack != 1)
 	      return error(errOthersubr, command);
 	  int offset = (int)at(base);
@@ -523,35 +523,35 @@ CharstringInterp::itc_command(int command, int on_stack)
 	  break;
       }
    
-      case CS::othcITC_add: {
+      case Cs::othcITC_add: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) + at(base+1));
 	  break;
       }
 	
-      case CS::othcITC_sub: {
+      case Cs::othcITC_sub: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) - at(base+1));
 	  break;
       }
    
-      case CS::othcITC_mul: {
+      case Cs::othcITC_mul: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) * at(base+1));
 	  break;
       }
    
-      case CS::othcITC_div: {
+      case Cs::othcITC_div: {
 	  if (on_stack != 2)
 	      return error(errOthersubr, command);
 	  ps_push(at(base) / at(base+1));
 	  break;
       }
    
-      case CS::othcITC_ifelse: {
+      case Cs::othcITC_ifelse: {
 	  if (on_stack != 4)
 	      return error(errOthersubr, command);
 	  if (at(base+2) <= at(base+3))
@@ -614,13 +614,13 @@ CharstringInterp::callothersubr_command(int othersubrnum, int n)
 {
     switch (othersubrnum) {
 	
-      case CS::othcFlexend:
+      case Cs::othcFlexend:
 	if (n != 3)
 	    goto unknown;
 	if (!_flex || ps_size() != 16)
 	    return error(errFlex);
 	CHECK_PATH_START();
-	act_flex(CS::cCallothersubr, Point(ps_at(0), ps_at(1)),
+	act_flex(Cs::cCallothersubr, Point(ps_at(0), ps_at(1)),
 		 Point(ps_at(4), ps_at(5)), Point(ps_at(6), ps_at(7)),
 		 Point(ps_at(8), ps_at(9)), Point(ps_at(10), ps_at(11)),
 		 Point(ps_at(12), ps_at(13)), Point(ps_at(14), ps_at(15)),
@@ -632,7 +632,7 @@ CharstringInterp::callothersubr_command(int othersubrnum, int n)
 	_state = S_PATH;
 	break;
 	
-      case CS::othcFlexbegin:
+      case Cs::othcFlexbegin:
 	if (n != 0)
 	    goto unknown;
 	if (_flex)
@@ -644,7 +644,7 @@ CharstringInterp::callothersubr_command(int othersubrnum, int n)
 	_state = S_IPATH;
 	break;
 
-      case CS::othcFlexmiddle:
+      case Cs::othcFlexmiddle:
 	if (n != 0)
 	    goto unknown;
 	if (!_flex)
@@ -653,30 +653,30 @@ CharstringInterp::callothersubr_command(int othersubrnum, int n)
 	ps_push(_cp.y);
 	break;
     
-      case CS::othcReplacehints:
+      case Cs::othcReplacehints:
 	if (n != 1)
 	    goto unknown;
 	ps_clear();
 	ps_push(top());
 	break;
     
-      case CS::othcMM1:
-      case CS::othcMM2:
-      case CS::othcMM3:
-      case CS::othcMM4:
-      case CS::othcMM6:
+      case Cs::othcMM1:
+      case Cs::othcMM2:
+      case Cs::othcMM3:
+      case Cs::othcMM4:
+      case Cs::othcMM6:
 	return mm_command(othersubrnum, n);
 
-      case CS::othcITC_load:
-      case CS::othcITC_add:
-      case CS::othcITC_sub:
-      case CS::othcITC_mul:
-      case CS::othcITC_div:
-      case CS::othcITC_put:
-      case CS::othcITC_get:
-      case CS::othcITC_unknown:
-      case CS::othcITC_ifelse:
-      case CS::othcITC_random:
+      case Cs::othcITC_load:
+      case Cs::othcITC_add:
+      case Cs::othcITC_sub:
+      case Cs::othcITC_mul:
+      case Cs::othcITC_div:
+      case Cs::othcITC_put:
+      case Cs::othcITC_get:
+      case Cs::othcITC_unknown:
+      case Cs::othcITC_ifelse:
+      case Cs::othcITC_random:
 	return itc_command(othersubrnum, n);
     
       default:			// unknown
@@ -697,10 +697,10 @@ CharstringInterp::type1_command(int cmd)
 {
     switch (cmd) {
     
-      case CS::cReturn:
+      case Cs::cReturn:
 	return false;
 
-      case CS::cHsbw:
+      case Cs::cHsbw:
 	CHECK_STACK(2);
 	if (_state > S_SEAC && _careful)
 	    return error(errOrdering, cmd);
@@ -715,7 +715,7 @@ CharstringInterp::type1_command(int cmd)
 	}
 	break;
 
-      case CS::cSbw:
+      case Cs::cSbw:
 	CHECK_STACK(4);
 	if (_state > S_SEAC && _careful)
 	    return error(errOrdering, cmd);
@@ -730,7 +730,7 @@ CharstringInterp::type1_command(int cmd)
 	}
 	break;
 	
-      case CS::cSeac:
+      case Cs::cSeac:
 	CHECK_STACK(5);
 	if (_state > S_SBW)
 	    return error(errOrdering, cmd);
@@ -738,10 +738,10 @@ CharstringInterp::type1_command(int cmd)
 	clear();
 	return false;
 
-      case CS::cCallsubr:
+      case Cs::cCallsubr:
 	return callsubr_command();
     
-      case CS::cCallothersubr: {
+      case Cs::cCallothersubr: {
 	  CHECK_STACK(2);
 	  int othersubrnum = (int)top(0);
 	  int n = (int)top(1);
@@ -751,126 +751,126 @@ CharstringInterp::type1_command(int cmd)
 	  return callothersubr_command(othersubrnum, n);
       }
     
-      case CS::cPut:
-      case CS::cGet:
-      case CS::cStore:
-      case CS::cLoad:
+      case Cs::cPut:
+      case Cs::cGet:
+      case Cs::cStore:
+      case Cs::cLoad:
 	return vector_command(cmd);
     
-      case CS::cBlend:
-      case CS::cAbs:
-      case CS::cAdd:
-      case CS::cSub:
-      case CS::cDiv:
-      case CS::cNeg:
-      case CS::cRandom:
-      case CS::cMul:
-      case CS::cSqrt:
-      case CS::cDrop:
-      case CS::cExch:
-      case CS::cIndex:
-      case CS::cRoll:
-      case CS::cDup:
-      case CS::cAnd:
-      case CS::cOr:
-      case CS::cNot:
-      case CS::cEq:
-      case CS::cIfelse:
-      case CS::cPop:
+      case Cs::cBlend:
+      case Cs::cAbs:
+      case Cs::cAdd:
+      case Cs::cSub:
+      case Cs::cDiv:
+      case Cs::cNeg:
+      case Cs::cRandom:
+      case Cs::cMul:
+      case Cs::cSqrt:
+      case Cs::cDrop:
+      case Cs::cExch:
+      case Cs::cIndex:
+      case Cs::cRoll:
+      case Cs::cDup:
+      case Cs::cAnd:
+      case Cs::cOr:
+      case Cs::cNot:
+      case Cs::cEq:
+      case Cs::cIfelse:
+      case Cs::cPop:
 	return arith_command(cmd);
 
-      case CS::cHlineto:
+      case Cs::cHlineto:
 	CHECK_STACK(1);
 	CHECK_PATH_START();
 	actp_rlineto(cmd, at(0), 0);
 	break;
 	
-      case CS::cHmoveto:
+      case Cs::cHmoveto:
 	CHECK_STACK(1);
 	CHECK_PATH_END();
 	actp_rmoveto(cmd, at(0), 0);
 	break;
 	
-      case CS::cHvcurveto:
+      case Cs::cHvcurveto:
 	CHECK_STACK(4);
 	CHECK_PATH_START();
 	actp_rrcurveto(cmd, at(0), 0, at(1), at(2), 0, at(3));
 	break;
 
-      case CS::cRlineto:
+      case Cs::cRlineto:
 	CHECK_STACK(2);
 	CHECK_PATH_START();
 	actp_rlineto(cmd, at(0), at(1));
 	break;
 
-      case CS::cRmoveto:
+      case Cs::cRmoveto:
 	CHECK_STACK(2);
 	CHECK_PATH_END();
 	actp_rmoveto(cmd, at(0), at(1));
 	break;
 
-      case CS::cRrcurveto:
+      case Cs::cRrcurveto:
 	CHECK_STACK(6);
 	CHECK_PATH_START();
 	actp_rrcurveto(cmd, at(0), at(1), at(2), at(3), at(4), at(5));
 	break;
 
-      case CS::cVhcurveto:
+      case Cs::cVhcurveto:
 	CHECK_STACK(4);
 	CHECK_PATH_START();
 	actp_rrcurveto(cmd, 0, at(0), at(1), at(2), at(3), 0);
 	break;
 
-      case CS::cVlineto:
+      case Cs::cVlineto:
 	CHECK_STACK(1);
 	CHECK_PATH_START();
 	actp_rlineto(cmd, 0, at(0));
 	break;
 
-      case CS::cVmoveto:
+      case Cs::cVmoveto:
 	CHECK_STACK(1);
 	CHECK_PATH_END();
 	actp_rmoveto(cmd, 0, at(0));
 	break;
 
-      case CS::cDotsection:
+      case Cs::cDotsection:
 	break;
 
-      case CS::cHstem:
+      case Cs::cHstem:
 	CHECK_STACK(2);
 	act_hstem(cmd, _lsb.y + at(0), at(1));
 	break;
 
-      case CS::cHstem3:
+      case Cs::cHstem3:
 	CHECK_STACK(6);
 	act_hstem3(cmd, _lsb.y + at(0), at(1), _lsb.y + at(2), at(3), _lsb.y + at(4), at(5));
 	break;
 
-      case CS::cVstem:
+      case Cs::cVstem:
 	CHECK_STACK(2);
 	act_vstem(cmd, _lsb.x + at(0), at(1));
 	break;
 
-      case CS::cVstem3:
+      case Cs::cVstem3:
 	CHECK_STACK(6);
 	act_vstem3(cmd, _lsb.x + at(0), at(1), _lsb.x + at(2), at(3), _lsb.x + at(4), at(5));
 	break;
 
-      case CS::cSetcurrentpoint:
+      case Cs::cSetcurrentpoint:
 	CHECK_STACK(2);
 	_cp = Point(at(0), at(1));
 	break;
 
-      case CS::cClosepath:
+      case Cs::cClosepath:
 	CHECK_PATH_END();
 	break;
 	
-      case CS::cEndchar:
+      case Cs::cEndchar:
 	CHECK_PATH_END();
 	set_done();
 	return false;
     
-      case CS::cError:
+      case Cs::cError:
       default:
 	return error(errUnimplemented, cmd);
     
@@ -907,8 +907,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
     
     switch (cmd) {
 
-      case CS::cHstem:
-      case CS::cHstemhm:
+      case Cs::cHstem:
+      case Cs::cHstemhm:
 	CHECK_STACK(2);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
@@ -922,8 +922,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	}
 	break;
 
-      case CS::cVstem:
-      case CS::cVstemhm:
+      case Cs::cVstem:
+      case Cs::cVstemhm:
 	CHECK_STACK(2);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
@@ -937,8 +937,8 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	}
 	break;
 
-      case CS::cHintmask:
-      case CS::cCntrmask:
+      case Cs::cHintmask:
+      case Cs::cCntrmask:
 	if (_state <= S_SEAC && size() >= 1) {
 	    bottom = type2_handle_width(cmd, (size() % 2) == 1);
 	    for (double pos = 0; bottom + 1 < size(); bottom += 2) {
@@ -965,7 +965,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	*left -= ((_t2nhints - 1) >> 3) + 1;
 	break;
 
-      case CS::cRmoveto:
+      case Cs::cRmoveto:
 	CHECK_STACK(2);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 2);
@@ -976,7 +976,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cHmoveto:
+      case Cs::cHmoveto:
 	CHECK_STACK(1);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 1);
@@ -987,7 +987,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cVmoveto:
+      case Cs::cVmoveto:
 	CHECK_STACK(1);
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 1);
@@ -998,7 +998,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cRlineto:
+      case Cs::cRlineto:
 	CHECK_STACK(2);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1006,7 +1006,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	    actp_rlineto(cmd, at(bottom), at(bottom + 1));
 	break;
 	
-      case CS::cHlineto:
+      case Cs::cHlineto:
 	CHECK_STACK(1);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1017,7 +1017,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	}
 	break;
 	
-      case CS::cVlineto:
+      case Cs::cVlineto:
 	CHECK_STACK(1);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1028,7 +1028,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	}
 	break;
 
-      case CS::cRrcurveto:
+      case Cs::cRrcurveto:
 	CHECK_STACK(6);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1036,7 +1036,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	    actp_rrcurveto(cmd, at(bottom), at(bottom + 1), at(bottom + 2), at(bottom + 3), at(bottom + 4), at(bottom + 5));
 	break;
 
-      case CS::cHhcurveto:
+      case Cs::cHhcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1048,7 +1048,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	    actp_rrcurveto(cmd, at(bottom), 0, at(bottom + 1), at(bottom + 2), at(bottom + 3), 0);
 	break;
 
-      case CS::cHvcurveto:
+      case Cs::cHvcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1068,7 +1068,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cRcurveline:
+      case Cs::cRcurveline:
 	CHECK_STACK(8);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1080,7 +1080,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cRlinecurve:
+      case Cs::cRlinecurve:
 	CHECK_STACK(8);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1092,7 +1092,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cVhcurveto:
+      case Cs::cVhcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1112,7 +1112,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cVvcurveto:
+      case Cs::cVvcurveto:
 	CHECK_STACK(4);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1124,7 +1124,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	    actp_rrcurveto(cmd, 0, at(bottom), at(bottom + 1), at(bottom + 2), 0, at(bottom + 3));
 	break;
 
-      case CS::cFlex:
+      case Cs::cFlex:
 	CHECK_STACK(13);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1138,7 +1138,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cHflex:
+      case Cs::cHflex:
 	CHECK_STACK(7);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1152,7 +1152,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cHflex1:
+      case Cs::cHflex1:
 	CHECK_STACK(9);
 	CHECK_STATE();
 	CHECK_PATH_START();
@@ -1166,7 +1166,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
 	break;
 
-      case CS::cFlex1: {
+      case Cs::cFlex1: {
 	  CHECK_STACK(11);
 	  CHECK_STATE();
 	  CHECK_PATH_START();
@@ -1189,7 +1189,7 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 #endif
       }
 	
-      case CS::cEndchar:
+      case Cs::cEndchar:
 	if (_state <= S_SEAC)
 	    bottom = type2_handle_width(cmd, size() > 0 && size() != 4);
 	if (bottom + 3 < size() && _state == S_INITIAL)
@@ -1199,47 +1199,47 @@ CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left)
 	clear();
 	return false;
     
-      case CS::cReturn:
+      case Cs::cReturn:
 	return false;
 
-      case CS::cCallsubr:
+      case Cs::cCallsubr:
 	return callsubr_command();
 
-      case CS::cCallgsubr:
+      case Cs::cCallgsubr:
 	return callgsubr_command();
     
-      case CS::cPut:
-      case CS::cGet:
-      case CS::cStore:
-      case CS::cLoad:
+      case Cs::cPut:
+      case Cs::cGet:
+      case Cs::cStore:
+      case Cs::cLoad:
 	return vector_command(cmd);
     
-      case CS::cBlend:
-      case CS::cAbs:
-      case CS::cAdd:
-      case CS::cSub:
-      case CS::cDiv:
-      case CS::cNeg:
-      case CS::cRandom:
-      case CS::cMul:
-      case CS::cSqrt:
-      case CS::cDrop:
-      case CS::cExch:
-      case CS::cIndex:
-      case CS::cRoll:
-      case CS::cDup:
-      case CS::cAnd:
-      case CS::cOr:
-      case CS::cNot:
-      case CS::cEq:
-      case CS::cIfelse:
-      case CS::cPop:
+      case Cs::cBlend:
+      case Cs::cAbs:
+      case Cs::cAdd:
+      case Cs::cSub:
+      case Cs::cDiv:
+      case Cs::cNeg:
+      case Cs::cRandom:
+      case Cs::cMul:
+      case Cs::cSqrt:
+      case Cs::cDrop:
+      case Cs::cExch:
+      case Cs::cIndex:
+      case Cs::cRoll:
+      case Cs::cDup:
+      case Cs::cAnd:
+      case Cs::cOr:
+      case Cs::cNot:
+      case Cs::cEq:
+      case Cs::cIfelse:
+      case Cs::cPop:
 	return arith_command(cmd);
 
-      case CS::cDotsection:
+      case Cs::cDotsection:
 	break;
 
-      case CS::cError:
+      case Cs::cError:
       default:
 	return error(errUnimplemented, cmd);
     

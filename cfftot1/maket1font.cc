@@ -1,6 +1,6 @@
 /* maket1font.{cc,hh} -- translate CFF fonts to Type 1 fonts
  *
- * Copyright (c) 2002-2004 Eddie Kohler
+ * Copyright (c) 2002-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -346,11 +346,11 @@ MakeType1CharstringInterp::type2_command(int cmd, const uint8_t *data, int *left
 {
     switch (cmd) {
     
-      case CS::cCallsubr:
-      case CS::cCallgsubr:
+      case Cs::cCallsubr:
+      case Cs::cCallgsubr:
 	if (subr_depth() < MAX_SUBR_DEPTH && size() == 1) {
 	    //fprintf(stderr, "succeeded %d\n", (int) top());
-	    bool g = (cmd == CS::cCallgsubr);
+	    bool g = (cmd == Cs::cCallgsubr);
 	    CsRef csref = ((int)top() + program()->xsubr_bias(g)) | (g ? CSR_GSUBR : CSR_SUBR);
 	    Subr *callee = csr_subr(csref, true);
 	    if (callee)

@@ -2,7 +2,7 @@
 
 /* t1unparser.{cc,hh} -- debug printing of Type 1 fonts
  *
- * Copyright (c) 1998-2004 Eddie Kohler
+ * Copyright (c) 1998-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -59,8 +59,8 @@ CharstringUnparser::type1_command(int cmd)
 	_start_of_line = false;
     } else
 	_sa << ' ';
-    if (cmd >= 0 && cmd <= CS::cLastCommand)
-	_sa << CS::command_names[cmd];
+    if (cmd >= 0 && cmd <= Cs::cLastCommand)
+	_sa << Cs::command_names[cmd];
     else
 	_sa << "UNKNOWN_12_" << (cmd - 32);
     if (_one_command_per_line) {
@@ -79,14 +79,14 @@ CharstringUnparser::type2_command(int cmd, const unsigned char *data, int *left)
     } else
 	_sa << ' ';
     
-    if (cmd >= 0 && cmd <= CS::cLastCommand)
-	_sa << CS::command_names[cmd];
+    if (cmd >= 0 && cmd <= Cs::cLastCommand)
+	_sa << Cs::command_names[cmd];
     else
 	_sa << "UNKNOWN_12_" << (cmd - 32);
 
     switch (cmd) {
-      case CS::cHstem: case CS::cHstemhm: case CS::cVstem: case CS::cVstemhm:
-      case CS::cHintmask: case CS::cCntrmask:
+      case Cs::cHstem: case Cs::cHstemhm: case Cs::cVstem: case Cs::cVstemhm:
+      case Cs::cHintmask: case Cs::cCntrmask:
 	CharstringInterp::type2_command(cmd, data, left);
 	break;
     }

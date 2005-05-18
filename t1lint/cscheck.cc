@@ -1,6 +1,6 @@
 /* cscheck.{cc,hh} -- checking Type 1 charstrings for validity
  *
- * Copyright (c) 1999-2004 Eddie Kohler
+ * Copyright (c) 1999-2005 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -235,18 +235,18 @@ CharstringChecker::callothersubr()
 bool
 CharstringChecker::type1_command(int cmd)
 {
-  if (cmd == CS::cCallsubr)
+  if (cmd == Cs::cCallsubr)
     return callsubr_command();
-  else if (cmd == CS::cCallothersubr) {
+  else if (cmd == Cs::cCallothersubr) {
     CHECK_STACK(2);
     return callothersubr();
-  } else if (cmd == CS::cReturn) {
+  } else if (cmd == Cs::cReturn) {
     return false;
-  } else if (cmd == CS::cPop || cmd == CS::cDiv) {
+  } else if (cmd == Cs::cPop || cmd == Cs::cDiv) {
     return arith_command(cmd);
   }
 
-  if (cmd != CS::cHsbw && cmd != CS::cSbw) {
+  if (cmd != Cs::cHsbw && cmd != Cs::cSbw) {
     if (!_started)
       _errh->warning("first command not `hsbw' or `sbw'");
   } else {
@@ -257,78 +257,78 @@ CharstringChecker::type1_command(int cmd)
   
   switch (cmd) {
     
-   case CS::cHsbw:
+   case Cs::cHsbw:
     CHECK_STACK(2);
     moveto(at(0), 0, false);
     clear();
     break;
     
-   case CS::cSbw:
+   case Cs::cSbw:
     CHECK_STACK(4);
     moveto(at(0), at(1), false);
     clear();
     break;
     
-   case CS::cClosepath:
+   case Cs::cClosepath:
     _cp_exists = false;
     clear();
     break;
     
-   case CS::cHlineto:
+   case Cs::cHlineto:
     CHECK_STACK_CP(1);
     rlineto(at(0), 0);
     clear();
     break;
     
-   case CS::cHmoveto:
+   case Cs::cHmoveto:
     CHECK_STACK(1);
     rmoveto(at(0), 0);
     clear();
     break;
     
-   case CS::cHvcurveto:
+   case Cs::cHvcurveto:
     CHECK_STACK_CP(4);
     rrcurveto(at(0), 0, at(1), at(2), 0, at(3));
     clear();
     break;
     
-   case CS::cRlineto:
+   case Cs::cRlineto:
     CHECK_STACK_CP(2);
     rlineto(at(0), at(1));
     clear();
     break;
     
-   case CS::cRmoveto:
+   case Cs::cRmoveto:
     CHECK_STACK(2);
     rmoveto(at(0), at(1));
     clear();
     break;
     
-   case CS::cRrcurveto:
+   case Cs::cRrcurveto:
     CHECK_STACK_CP(6);
     rrcurveto(at(0), at(1), at(2), at(3), at(4), at(5));
     clear();
     break;
     
-   case CS::cVhcurveto:
+   case Cs::cVhcurveto:
     CHECK_STACK_CP(4);
     rrcurveto(0, at(0), at(1), at(2), at(3), 0);
     clear();
     break;
     
-   case CS::cVlineto:
+   case Cs::cVlineto:
     CHECK_STACK_CP(1);
     rlineto(0, at(0));
     clear();
     break;
     
-   case CS::cVmoveto:
+   case Cs::cVmoveto:
     CHECK_STACK(1);
     rmoveto(0, at(0));
     clear();
     break;
     
-   case CS::cHstem:
+   case Cs::cHstem:
     CHECK_STACK(2);
     if (_hstem3 && !_hstem)
       _errh->error("charstring has both `hstem' and `hstem3'");
@@ -337,7 +337,7 @@ CharstringChecker::type1_command(int cmd)
     clear();
     break;
     
-   case CS::cVstem:
+   case Cs::cVstem:
     CHECK_STACK(2);
     if (_vstem3 && !_vstem)
       _errh->error("charstring has both `vstem' and `vstem3'");
@@ -346,14 +346,14 @@ CharstringChecker::type1_command(int cmd)
     clear();
     break;
     
-   case CS::cEndchar:
+   case Cs::cEndchar:
     set_done();
     return false;
     
-   case CS::cDotsection:
+   case Cs::cDotsection:
     break;
     
-   case CS::cVstem3:
+   case Cs::cVstem3:
     CHECK_STACK(6);
     if (_vstem && !_vstem3)
       _errh->error("charstring has both `vstem' and `vstem3'");
@@ -366,7 +366,7 @@ CharstringChecker::type1_command(int cmd)
     clear();
     break;
     
-   case CS::cHstem3:
+   case Cs::cHstem3:
     CHECK_STACK(6);
     if (_hstem && !_hstem3)
       _errh->error("charstring has both `hstem' and `hstem3'");
@@ -379,7 +379,7 @@ CharstringChecker::type1_command(int cmd)
     clear();
     break;
     
-   case CS::cSeac: {
+   case Cs::cSeac: {
      CHECK_STACK(5);
 #if 0
      double asb = at(0);
@@ -416,17 +416,17 @@ CharstringChecker::type1_command(int cmd)
      return false;
    }
     
-   case CS::cSetcurrentpoint:
+   case Cs::cSetcurrentpoint:
     CHECK_STACK(2);
     _cp = Point(at(0), at(1));
     _cp_exists = true;
     clear();
     break;
     
-   case CS::cPut:
-   case CS::cGet:
-   case CS::cStore:
-   case CS::cLoad:
+   case Cs::cPut:
+   case Cs::cGet:
+   case Cs::cStore:
+   case Cs::cLoad:
     return vector_command(cmd);
     
    default:
