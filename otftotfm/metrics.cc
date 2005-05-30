@@ -227,20 +227,21 @@ void
 Metrics::Char::swap(Char &c)
 {
     std::swap(glyph, c.glyph);
+    // NB: only a partial switch of base_code!!
+    if (base_code < 0)
+	base_code = c.base_code;
+    c.base_code = -1;
+    std::swap(unicode, c.unicode);
     ligatures.swap(c.ligatures);
     kerns.swap(c.kerns);
     std::swap(virtual_char, c.virtual_char);
     std::swap(pdx, c.pdx);
     std::swap(pdy, c.pdy);
     std::swap(adx, c.adx);
-    std::swap(flags, c.flags);
     std::swap(built_in1, c.built_in1);
     std::swap(built_in2, c.built_in2);
     std::swap(lookup_source, c.lookup_source);
-    // NB: only a partial switch of base_code!!
-    if (base_code < 0)
-	base_code = c.base_code;
-    c.base_code = -1;
+    std::swap(flags, c.flags);
 }
 
 
@@ -965,17 +966,19 @@ Metrics::cut_encoding(int size)
     /* Remove ligatures and kerns that point beyond 'size', except for valid
        context ligatures. Also remove ligatures that have non-live
        components. */
+    /* 30.May.2005 -- Kerns might point involve a too-high character; kill
+       them. */
     for (Code c = 0; c < size; c++) {
 	Char &ch = _encoding[c];
 	for (Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
-	    if (!good[l->in2]
+	    if (!good[l->in2] || l->in2 >= size
 		|| (!good[l->out] && !_encoding[l->out].context_setting(c, l->in2))) {
 		*l = ch.ligatures.back();
 		ch.ligatures.pop_back();
 		l--;
 	    }
 	for (Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
-	    if (!good[k->in2]) {
+	    if (!good[k->in2] || k->in2 >= size) {
 		*k = ch.kerns.back();
 		ch.kerns.pop_back();
 		k--;
@@ -986,7 +989,6 @@ Metrics::cut_encoding(int size)
 }
 
 namespace {
-
 // preference-sorting extra characters
 enum { BASIC_LATIN_SCORE = 2, LATIN1_SUPPLEMENT_SCORE = 5,
        LOW_16_SCORE = 6, OTHER_SCORE = 7, NOCHAR_SCORE = 100000,
@@ -1114,7 +1116,7 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	    }
 	}
 
-    /* List empty slots in a two phases: Those not encoded by the input
+    /* List empty slots in two phases: Those not encoded by the input
        encoding, then those encoded by the input encoding (but that character
        wasn't available). */
     Vector<Code> empty_codes;

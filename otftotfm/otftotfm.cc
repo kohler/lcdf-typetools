@@ -999,10 +999,12 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	    String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
 	    if (no_create)
 		errh->message("would remove potential VF file '%s'", vf.c_str());
-	    else if (verbose)
-		errh->message("removing potential VF file '%s'", vf.c_str());
-	    if (!no_create && unlink(vf.c_str()) < 0 && errno != ENOENT)
-		errh->error("removing %s: %s", vf.c_str(), strerror(errno));
+	    else {
+		if (verbose)
+		    errh->message("removing potential VF file '%s'", vf.c_str());
+		if (unlink(vf.c_str()) < 0 && errno != ENOENT)
+		    errh->error("removing %s: %s", vf.c_str(), strerror(errno));
+	    }
 	}
     } else {
 	if (output_flags & G_BINARY) {
