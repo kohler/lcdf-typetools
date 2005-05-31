@@ -205,7 +205,7 @@ Metrics::base_glyphs(Vector<Glyph> &v) const
     v.assign(_encoding.size(), 0);
     for (Code c = 0; c < _encoding.size(); c++)
 	if (_encoding[c].base_code >= 0)
-	    v[c] = _encoding[ _encoding[c].base_code ].glyph;
+	    v[_encoding[c].base_code] = _encoding[c].glyph;
 }
 
 
@@ -216,10 +216,15 @@ void
 Metrics::Char::clear()
 {
     glyph = 0;
+    base_code = -1;
+    unicode = 0;
     ligatures.clear();
+    kerns.clear();
     delete virtual_char;
     virtual_char = 0;
     pdx = pdy = adx = 0;
+    built_in1 = built_in2 = -1;
+    lookup_source = -1;
     flags = 0;
 }
 
@@ -1293,7 +1298,7 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 	if (ch.pdx != 0 || ch.pdy != 0)
 	    v.push_back(Setting(Setting::MOVE, ch.pdx, ch.pdy));
 	
-	v.push_back(Setting(Setting::SHOW, ch.base_code, base_glyph(code)));
+	v.push_back(Setting(Setting::SHOW, ch.base_code, ch.glyph));
 	
 	if (ch.pdy != 0 || ch.adx - ch.pdx != 0)
 	    v.push_back(Setting(Setting::MOVE, ch.adx - ch.pdx, -ch.pdy));

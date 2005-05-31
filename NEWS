@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.32   31.May.2005
+
+* otftotfm: Report correct dimensions for characters only in the base
+  encoding.  Reported by Michael Zedler.
+
+
 Version 2.31   30.May.2005
 
 * otftotfm: Fix crash tickled by constructed characters, reported by

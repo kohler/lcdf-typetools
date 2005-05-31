@@ -134,7 +134,7 @@ class Metrics { public:
 	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8, BASE_LIVE = 16 };
 	int flags;
 	
-	Char()			: glyph(0), base_code(-1), virtual_char(0), pdx(0), pdy(0), adx(0), built_in1(-1), built_in2(-1), lookup_source(-1), flags(0) { }
+	Char()				: virtual_char(0) { clear(); }
 	void clear();
 	void swap(Char &);
 	bool visible() const		{ return glyph != 0; }
@@ -216,7 +216,7 @@ Metrics::base_glyph(Code code) const
     if (code < 0 || code >= _encoding.size() || _encoding[code].base_code < 0)
 	return 0;
     else
-	return _encoding[ _encoding[code].base_code ].glyph;
+	return _encoding[code].glyph;
 }
 
 inline Metrics::Code

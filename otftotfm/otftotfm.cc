@@ -564,31 +564,34 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     Vector<String> glyph_ids;
     Vector<String> glyph_comments(257, String());
     Vector<String> glyph_base_comments(257, String());
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < metrics.encoding_size(); i++) {
 	if (metrics.glyph(i)) {
 	    PermString name = metrics.code_name(i), expected_name;
 	    if (i >= '0' && i <= '9')
 		expected_name = digit_names[i - '0'];
 	    else if ((i >= 'A' && i <= 'Z') || (i >= 'a' && i <= 'z'))
 		expected_name = PermString((char)i);
-	    
+	    String glyph_comment;
+	    if (name != expected_name)
+		glyph_comment = " (COMMENT " + String(name) + ")";
+
+	    int base = metrics.base_code(i);
+	    if (base >= 0 && base < 256)
+		glyph_base_comments[base] = glyph_comment;
+
+	    if (i >= 256)
+		continue;
+
 	    if (expected_name
 		&& name.length() >= expected_name.length()
 		&& memcmp(name.c_str(), expected_name.c_str(), expected_name.length()) == 0)
 		glyph_ids.push_back("C " + String((char)i));
 	    else
 		glyph_ids.push_back("D " + String(i));
-	    
-	    if (name != expected_name)
-		glyph_comments[i] = " (COMMENT " + String(name) + ")";
 
-	    int base = metrics.base_code(i);
-	    if (base != i)
-		glyph_base_comments[i] = " (COMMENT " + String(metrics.code_name(base)) + ")";
-	    else
-		glyph_base_comments[i] = glyph_comments[i];
+	    glyph_comments[i] = glyph_base_comments[i] = glyph_comment;
 	    
-	} else
+	} else if (i < 256)
 	    glyph_ids.push_back("D " + String(i));
     }
     // finally, BOUNDARYCHAR
