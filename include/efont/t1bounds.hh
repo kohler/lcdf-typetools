@@ -30,6 +30,7 @@ class CharstringBounds : public CharstringInterp { public:
     void clear();
     bool char_bounds(const CharstringContext&, bool shift = true);
     void translate(double dx, double dy);
+    inline Point transform(const Point &) const;
     bool output(int bb[4], int& width, bool use_cur_width = false) const;
 
     static bool bounds(const CharstringContext&, int bounds[4], int& width);
@@ -81,6 +82,11 @@ inline bool CharstringBounds::xf_inside(const Point& p) const
 inline bool CharstringBounds::xf_controls_inside(const Bezier& b) const
 {
     return xf_inside(b.point(1)) && xf_inside(b.point(2));
+}
+
+inline Point CharstringBounds::transform(const Point& p) const
+{
+    return p * _xf;
 }
 
 }
