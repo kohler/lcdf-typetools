@@ -7,13 +7,13 @@ class DvipsEncoding;
 class GlyphFilter;
 
 struct Setting {
-    enum { NONE, FONT, SHOW, KERN, MOVE, RULE, DEAD };
+    enum { NONE, FONT, SHOW, KERN, MOVE, RULE, PUSH, POP, DEAD };
     int op;
     int x;
     int y;
     Setting(int op_in, int x_in = 0, int y_in = 0)
 	: op(op_in), x(x_in), y(y_in) { }
-    bool valid_op() const		{ return op >= FONT && op <= RULE; }
+    bool valid_op() const		{ return op >= FONT && op <= POP; }
 };
 
 class Metrics { public:

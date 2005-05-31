@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.31   30.May.2005
+
+* otftotfm: Fix crash tickled by constructed characters, reported by
+  Michael Zedler.
+
+* Compilation fixes suggested by Nelson H.F. Beebe.
+
+
 Version 2.30   8.May.2005
 
 * otftotfm: Add support for 'dblbracketleft' and 'dblbracketright'.

@@ -1128,34 +1128,28 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 
     /* Then, loop over the unencoded characters, assigning them codes. */
     int nunencoded = 0;
-    Code *both_hole, *overlay_hole, *base_hole, *end_hole;
-    both_hole = overlay_hole = base_hole = empty_codes.begin();
+    Code *holes[4], *end_hole;
+    holes[1] = holes[2] = holes[3] = empty_codes.begin();
     end_hole = empty_codes.end();
 
     for (Slot *slot = slots.begin(); slot != slots.end(); slot++) {
 	if (slot->new_code >= 0)
 	    continue;
-	
-	bool need_base = _encoding[slot->old_code].visible_base();
-	bool need_overlay = _encoding[slot->old_code].flag(Char::LIVE);
+
+	int needs = (_encoding[slot->old_code].visible_base() ? 1 : 0)
+	    + (_encoding[slot->old_code].flag(Char::LIVE) ? 2 : 0);
+	assert(needs > 0);
 	Code **hole;
-	assert(need_base || need_overlay);
-	if (need_base && need_overlay) {
-	    while (both_hole < end_hole && (_encoding[*both_hole].visible() || _encoding[*both_hole].base_code >= 0))
-		both_hole++;
-	    hole = &both_hole;
-	} else if (need_base) {
-	    while (base_hole < end_hole && _encoding[*base_hole].base_code >= 0)
-		base_hole++;
-	    hole = &base_hole;
-	} else {
-	    while (overlay_hole < end_hole && _encoding[*overlay_hole].visible())
-		overlay_hole++;
-	    hole = &overlay_hole;
+
+	for (hole = &holes[needs]; *hole < end_hole; (*hole)++) {
+	    int haves = (!_encoding[**hole].base_code >= 0 ? 1 : 0)
+		+ (!_encoding[**hole].visible() ? 2 : 0);
+	    if ((needs & haves) == needs)
+		break;
 	}
 
 	if (*hole < end_hole) {
-	    if (need_overlay) {
+	    if (needs & 2) {
 		assert(!_encoding[**hole].visible());
 		_encoding[**hole].swap(_encoding[slot->old_code]);
 		slot->new_code = **hole;
@@ -1163,7 +1157,7 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 		_encoding[slot->old_code].base_code = **hole;
 		slot->new_code = slot->old_code;
 	    }
-	    if (need_base) {
+	    if (needs & 1) {
 		assert(_encoding[**hole].base_code < 0 || _encoding[**hole].base_code == slot->old_code);
 		_encoding[**hole].base_code = slot->old_code;
 	    }
@@ -1207,11 +1201,10 @@ font, so I've ignored these:\n%s.)", sa.c_str());
 void
 Metrics::make_base(int size)
 {
-    if (_encoding.size() <= size) {
+    if (_encoding.size() <= size)
 	/* If the encoding has not grown, there cannot be any base characters
 	   left to swap in. */
 	return;
-    }
     
     assert(_encoding.size() > size);
     bool reencoded = false;
@@ -1226,10 +1219,8 @@ Metrics::make_base(int size)
 	    _encoding[c].swap(_encoding[ch.base_code]);
 	    reencoded = true;
 	}
-	if (ch.virtual_char) {	// force it to be removed by cut_encoding
-	    ch.virtual_char->setting[0] = Setting(Setting::SHOW, size);
-	    reencoded = true;
-	}
+	if (ch.virtual_char)	// remove it
+	    ch.clear();
     }
     if (reencoded) {
 	reencode(reencoding);
@@ -1271,6 +1262,8 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 	    switch (s->op) {
 	      case Setting::MOVE:
 	      case Setting::RULE:
+	      case Setting::PUSH:
+	      case Setting::POP:
 		v.push_back(*s);
 		break;
 	      case Setting::FONT:
@@ -1392,6 +1385,12 @@ Metrics::unparse() const
 			break;
 		      case Setting::RULE:
 			fprintf(stderr, " [%d,%d]", s->x, s->y);
+			break;
+		      case Setting::PUSH:
+			fprintf(stderr, " (");
+			break;
+		      case Setting::POP:
+			fprintf(stderr, " )");
 			break;
 		    }
 		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1), ch.built_in2, code_str(ch.built_in2));

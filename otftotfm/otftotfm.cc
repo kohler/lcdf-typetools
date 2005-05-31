@@ -631,6 +631,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     // CHARACTERs
     Vector<Setting> settings;
     StringAccum sa;
+    Vector<Point> push_stack;
     
     for (int i = 0; i < 256; i++)
 	if (metrics.setting(i, settings)) {
@@ -638,34 +639,59 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 
 	    // unparse settings into DVI commands
 	    sa.clear();
+	    push_stack.clear();
 	    CharstringBounds boundser(font_xform);
 	    const CharstringProgram *program = finfo.cff;
-	    for (int j = 0; j < settings.size(); j++) {
-		Setting &s = settings[j];
-		if (s.op == Setting::SHOW) {
-		    boundser.char_bounds(program->glyph_context(s.y));
+	    for (const Setting *s = settings.begin(); s < settings.end(); s++)
+		switch (s->op) {
+		    
+		  case Setting::SHOW:
+		    boundser.char_bounds(program->glyph_context(s->y));
 		    // 3.Aug.2004 -- reported by Marco Kuhlmann: Don't use
 		    // glyph_ids[] array when looking at a different font.
 		    if (program == finfo.cff)
-			sa << "      (SETCHAR " << glyph_ids[s.x] << ')' << glyph_base_comments[s.x] << "\n";
+			sa << "      (SETCHAR " << glyph_ids[s->x] << ')' << glyph_base_comments[s->x] << "\n";
 		    else
-			sa << "      (SETCHAR D " << s.x << ")\n";
-		} else if (s.op == Setting::MOVE && vpl) {
-		    boundser.translate(s.x, s.y);
-		    if (s.x)
-			sa << "      (MOVERIGHT R " << real_string(s.x, du) << ")\n";
-		    if (s.y)
-			sa << "      (MOVEUP R " << real_string(s.y, du) << ")\n";
-		} else if (s.op == Setting::RULE && vpl) {
+			sa << "      (SETCHAR D " << s->x << ")\n";
+		    break;
+
+		  case Setting::MOVE:
+		    boundser.translate(s->x, s->y);
+		    if (s->x)
+			sa << "      (MOVERIGHT R " << real_string(s->x, du) << ")\n";
+		    if (s->y)
+			sa << "      (MOVEUP R " << real_string(s->y, du) << ")\n";
+		    break;
+
+		  case Setting::RULE:
 		    boundser.mark(Point(0, 0));
-		    boundser.mark(Point(s.x, s.y));
-		    boundser.translate(s.x, 0);
-		    sa << "      (SETRULE R " << real_string(s.y, du) << " R " << real_string(s.x, du) << ")\n";
-		} else if (s.op == Setting::FONT && vpl) {
-		    sa << "      (SELECTFONT D " << (int) s.x << ")\n";
-		    program = metrics.mapped_font((int) s.x);
+		    boundser.mark(Point(s->x, s->y));
+		    boundser.translate(s->x, 0);
+		    sa << "      (SETRULE R " << real_string(s->y, du) << " R " << real_string(s->x, du) << ")\n";
+		    break;
+
+		  case Setting::FONT:
+		    program = metrics.mapped_font((int) s->x);
+		    sa << "      (SELECTFONT D " << (int) s->x << ")\n";
+		    break;
+
+		  case Setting::PUSH:
+		    push_stack.push_back(boundser.transform(Point(0, 0)));
+		    sa << "      (PUSH)\n";
+		    break;
+
+		  case Setting::POP: {
+		      assert(push_stack.size());
+		      Point p = push_stack.back() - boundser.transform(Point(0, 0));
+		      boundser.translate(p.x, p.y);
+		      push_stack.pop_back();
+		      sa << "      (POP)\n";
+		      break;
+		  }
+		    
 		}
-	    }
+	    
+	    assert(push_stack.size() == 0);
 
 	    // output information
 	    boundser.output(bounds, width);
