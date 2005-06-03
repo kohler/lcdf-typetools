@@ -1,3 +1,4 @@
+# lcdf-typetools glyphlist.txt, Version 2.33
 # Contents: The Adobe Glyph List, followed by extensions for TeX fonts and
 # encodings. We also extend the second field so that it can contain
 # multiple Unicode scalar values, separated by semicolons, analogous to
@@ -4331,6 +4332,7 @@ arrowsoutheast;2198
 arrowsouthwest;2199
 # ascendercompwordmark: taller cwm, invalid Unicode
 ascendercompwordmark;D80A
+asteriskcentered;2217
 bardbl;2225
 # capitalcompwordmark: taller cwm, invalid Unicode
 capitalcompwordmark;D809
@@ -4361,6 +4363,9 @@ follows;227B
 followsequal;227D
 greatermuch;226B
 heart;2661;2665
+interrobang;203D
+# interrobangdown: inverted interrobang, invalid Unicode
+interrobangdown;D80B
 intersectionsq;2293
 latticetop;22A4
 lessmuch;226A
@@ -4369,7 +4374,10 @@ natural;266E
 negationslash;0338
 ng;014B
 owner;220B
-# XXX phi?
+pertenthousand;2031
+# TeX encodings such as 'texmital.enc' disagree with Unicode and the Adobe
+# glyph list; in TeX, the "straight" form of phi takes the name "phi",
+# whereas the more-common "loopy" form of phi, \varphi, takes the name "phi1".
 phi;03D5;03C6
 phi1;03C6
 pi1;03D6
@@ -4389,6 +4397,8 @@ triangleleft;25B9
 triangleright;25C3
 turnstileleft;22A2
 turnstileright;22A3
+# twelveudash: 2/3-em dash; invalid Unicode
+twelveudash;D80C
 unionmulti;228E
 unionsq;2294
 vector;20D7
@@ -4403,7 +4413,7 @@ compwordmark;200C
 # dbar = dcroat
 dbar;0111
 # rangedash = endash
-endash;2013
+rangedash;2013
 # hyphenchar = hyphen
 hyphenchar;002D
 # punctdash = emdash

@@ -27,8 +27,23 @@
 #include <limits.h>
 #include <algorithm>
 
-enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
+enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
+       U_DEGREE = 0x00B0,	// U+00B0 DEGREE SIGN
+       U_QUESTIONDOWN = 0x00BF,	// U+00BF INVERTED QUESTION MARK
+       U_IJ = 0x0132,		// U+0132 LATIN CAPITAL LIGATURE IJ
+       U_ij = 0x0133,		// U+0133 LATIN SMALL LIGATURE IJ
+       U_DOTLESSJ = 0x0237,	// U+0237 LATIN SMALL LETTER DOTLESS J
+       U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
+       U_ENDASH = 0x2013,	// U+2013 EN DASH
+       U_PERTENTHOUSAND = 0x2031, // U+2031 PER TEN THOUSAND SIGN
+       U_INTERROBANG = 0x203D,	// U+203D INTERROBANG
+       U_FRACTION = 0x2044,	// U+2044 FRACTION SLASH
+       U_CENTIGRADE = 0x2103,	// U+2103 DEGREE CELSIUS
+       U_ASTERISKMATH = 0x2217,	// U+2217 ASTERISK OPERATOR
+       U_BARDBL = 0x2225,	// U+2225 PARALLEL TO
        U_VISIBLESPACE = 0x2423,	// U+2423 OPEN BOX
+       U_DBLBRACKETLEFT = 0x27E6,
+       U_DBLBRACKETRIGHT = 0x27E7,
        U_SS = 0xD800,		// invalid Unicode
        U_EMPTYSLOT = 0xD801,	// invalid Unicode (not handled by Secondary)
        U_ALTSELECTOR = 0xD802,	// invalid Unicode
@@ -40,20 +55,18 @@ enum { U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_FFLSMALL = 0xD808,	// invalid Unicode
        U_CAPITALCWM = 0xD809,	// invalid Unicode
        U_ASCENDERCWM = 0xD80A,	// invalid Unicode
+       U_INTERROBANGDOWN = 0xD80B, // invalid Unicode
+       U_TWELVEUDASH = 0xD80C,	// invalid Unicode
        U_VS1 = 0xFE00,
        U_VS16 = 0xFE0F,
        U_VS17 = 0xE0100,
        U_VS256 = 0xE01FF,
-       U_IJ = 0x0132,
-       U_ij = 0x0133,
-       U_DOTLESSJ = 0x0237,
        U_DOTLESSJ_2 = 0xF6BE,
+       U_THREEQUARTERSEMDASH = 0xF6DE,
        U_FSMALL = 0xF766,
        U_ISMALL = 0xF769,
        U_LSMALL = 0xF76C,
-       U_SSMALL = 0xF773,
-       U_DBLBRACKETLEFT = 0x27E6,
-       U_DBLBRACKETRIGHT = 0x27E7 };
+       U_SSMALL = 0xF773 };
 
 Secondary::~Secondary()
 {
@@ -210,6 +223,9 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 bool
 T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHandler *errh)
 {
+    Transform xform;
+    int vsize = v.size();
+    
     switch (uni) {
 	
       case U_CWM:
@@ -218,11 +234,11 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	return true;
 
       case U_CAPITALCWM:
-	v.push_back(Setting(Setting::RULE, 0, font_cap_height(_finfo, Transform())));
+	v.push_back(Setting(Setting::RULE, 0, font_cap_height(_finfo, xform)));
 	return true;
 
       case U_ASCENDERCWM:
-	v.push_back(Setting(Setting::RULE, 0, font_ascender(_finfo, Transform())));
+	v.push_back(Setting(Setting::RULE, 0, font_ascender(_finfo, xform)));
 	return true;
 
       case U_VISIBLESPACE:
@@ -307,7 +323,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, '[', 0)) {
 	    double d;
 	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, Transform(), 4, true, 0, '[', 0);
+		d = char_one_bound(_finfo, xform, 4, true, 0, '[', 0);
 		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
 	    }
 	    char_setting(v, metrics, '[', 0);
@@ -319,7 +335,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, ']', 0)) {
 	    double d;
 	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, Transform(), 4, true, 0, ']', 0);
+		d = char_one_bound(_finfo, xform, 4, true, 0, ']', 0);
 		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
 	    }
 	    char_setting(v, metrics, ']', 0);
@@ -327,7 +343,99 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	}
 	break;
 	
+      case U_BARDBL:
+	if (char_setting(v, metrics, '|', 0)) {
+	    double d;
+	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
+		d = char_one_bound(_finfo, Transform(), 4, true, 0, '|', 0);
+		v.push_back(Setting(Setting::MOVE, (int) (-0.333 * d), 0));
+	    }
+	    char_setting(v, metrics, '|', 0);
+	    return true;
+	}
+	break;
+
+      case U_ASTERISKMATH: {
+	  int bounds[5];
+	  double dropdown = 0;
+	  if (char_bounds(bounds, bounds[4], _finfo, xform, '*'))
+	      dropdown += std::max(bounds[3], 0) + std::min(bounds[1], 0);
+	  if (char_bounds(bounds, bounds[4], _finfo, xform, '('))
+	      dropdown -= std::max(bounds[3], 0) + std::min(bounds[1], 0);
+	  v.push_back(Setting(Setting::MOVE, 0, (int) (-dropdown / 2)));
+	  if (char_setting(v, metrics, '*', 0))
+	      return true;
+	  break;
+      }
+
+      case U_TWELVEUDASH:
+	if (char_setting(v, metrics, U_ENDASH, 0)) {
+	    double d;
+	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
+		d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
+		v.push_back(Setting(Setting::MOVE, (int) (667 - 2 * d), 0));
+	    }
+	    char_setting(v, metrics, U_ENDASH, 0);
+	    return true;
+	}
+	break;
+	
+      case U_THREEQUARTERSEMDASH:
+	if (char_setting(v, metrics, U_ENDASH, 0)) {
+	    double d;
+	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
+		d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
+		v.push_back(Setting(Setting::MOVE, (int) (750 - 2 * d), 0));
+	    }
+	    char_setting(v, metrics, U_ENDASH, 0);
+	    return true;
+	}
+	break;
+	
+      case U_CENTIGRADE:
+        // TODO: set italic correction to that of a 'C'
+	if (char_setting(v, metrics, U_DEGREE, 'C', 0))
+	    return true;
+	break;
+	
+      case U_INTERROBANG: {
+	  double exclam_offset =
+	      (char_one_bound(_finfo, xform, 4, true, 0, '?', 0)
+	       - char_one_bound(_finfo, xform, 4, true, 0, '!', 0)) * 0.5 + 50;
+	  v.push_back(Setting(Setting::PUSH));
+	  v.push_back(Setting(Setting::MOVE, (int) exclam_offset, 0));
+	  if (char_setting(v, metrics, '!', 0)) {
+	      v.push_back(Setting(Setting::POP));
+	      if (char_setting(v, metrics, '?', 0))
+		  return true;
+	  }
+	  break;
+      }
+
+      case U_INTERROBANGDOWN: {
+	  double exclam_offset =
+	      (char_one_bound(_finfo, xform, 4, true, 0, U_QUESTIONDOWN, 0)
+	       - char_one_bound(_finfo, xform, 4, true, 0, U_EXCLAMDOWN, 0)) * 0.5 + 50;
+	  v.push_back(Setting(Setting::PUSH));
+	  v.push_back(Setting(Setting::MOVE, (int) exclam_offset, 0));
+	  if (char_setting(v, metrics, U_EXCLAMDOWN, 0)) {
+	      v.push_back(Setting(Setting::POP));
+	      if (char_setting(v, metrics, U_QUESTIONDOWN, 0))
+		  return true;
+	  }
+	  break;
+      }
+
+      case U_PERTENTHOUSAND:
+	if (char_setting(v, metrics, 0xF661, U_FRACTION, 0xF655, 0xF655, 0xF655, 0))
+	    return true;
+	break;
+
     }
+
+    // didn't find a good setting, restore v to pristine state
+    while (v.size() > vsize)
+	v.pop_back();
 
     // variant selectors get the same setting as ALTSELECTOR
     if ((uni >= U_VS1 && uni <= U_VS16) || (uni >= U_VS17 && uni <= U_VS256))

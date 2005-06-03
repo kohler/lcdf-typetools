@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.33
+
+* otftotfm: Include more secondary replacements, including double-bar,
+  centered asterisk, per-ten-thousand, and so forth.  Patch from Michael
+  Zedler.
+
+
 Version 2.32   31.May.2005
 
 * otftotfm: Report correct dimensions for characters only in the base
