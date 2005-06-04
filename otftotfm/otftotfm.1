@@ -485,6 +485,18 @@ options.
 '
 .Sp
 .TP 5
+.BI \-\-position= command
+Execute the specified POSITION
+.IR command
+in addition to any in the encoding.  See ENCODINGS, below, for more
+information on POSITION syntax.  For example, "\fB\-\-position\fR 'T 10 0
+20'" adds ten units of space to either side of the "T" character.  You can
+supply multiple
+.B \-\-position
+options.
+'
+.Sp
+.TP 5
 .BI \-\-unicoding= command
 Execute the specified UNICODING
 .IR command
@@ -920,6 +932,28 @@ from an encoding file with commands like this:
 As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
 commands, separated by spaced semicolons.
 .PP
+The POSITION command shifts a glyph within its bounding box.  The syntax is
+.nf
+    % POSITION \fIglyph\fR \fIpdx\fR \fIpdy\fR \fIadx\fR ;
+.fi
+This will add
+.I pdx
+units of space to
+.IR glyph 's
+left edge; raise it up by
+.I pdy
+units; and add
+.I adx
+units to its width.  For example, to add 10 units of space to either side
+of the "T" glyph, supply
+.nf
+    % POSITION T 10 0 20
+.fi
+To move the "degree" symbol up by 20 units, supply
+.nf
+    % POSITION degree 0 20 0
+.fi
+.PP
 Finally, the CODINGSCHEME command specifies a default
 .B \-\-coding\-scheme
 for the encoding; for example:
@@ -928,11 +962,12 @@ for the encoding; for example:
 .fi
 .PP
 The
-.B \-\-unicoding
+.BR \-\-unicoding ,
+.BR \-\-ligkern ,
 and
-.B \-\-ligkern
-options let you add virtual UNICODING and LIGKERN/LIGKERNX comments to an
-encoding.
+.B \-\-position
+options let you add virtual UNICODING, LIGKERN/LIGKERNX, and POSITION
+comments to an encoding.
 .PP
 .B Otftotfm
 has a default set of eight ligatures, namely:

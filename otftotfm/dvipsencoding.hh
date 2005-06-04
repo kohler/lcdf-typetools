@@ -29,6 +29,7 @@ class DvipsEncoding { public:
 
     int parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *);
     int parse_ligkern(const String &ligkern_text, int override, ErrorHandler *);
+    int parse_position(const String &ligkern_text, int override, ErrorHandler *);
     int parse_unicoding(const String &unicoding_text, int override, ErrorHandler *);
 
     bool file_had_ligkern() const		{ return _file_had_ligkern; }
@@ -38,6 +39,7 @@ class DvipsEncoding { public:
     
     void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
     void apply_ligkern_kern(Metrics &, ErrorHandler *) const;
+    void apply_position(Metrics &, ErrorHandler *) const;
     
     enum { JT_KERN = 32, JT_LIG = 64, JT_ADDLIG = 128, JT_LIGALL = 199,
 	   JL_LIG = JT_LIG | JT_ADDLIG, JL_CLIG = JL_LIG | 1,
@@ -59,6 +61,7 @@ class DvipsEncoding { public:
     int _altselector_char;
 
     Vector<Ligature> _lig;
+    Vector<Ligature> _pos;
     HashMap<PermString, int> _unicoding_map;
     Vector<int> _unicoding;
 
@@ -73,6 +76,7 @@ class DvipsEncoding { public:
 
     void add_ligkern(const Ligature &, int override);
     int parse_ligkern_words(Vector<String> &, int override, ErrorHandler *);
+    int parse_position_words(Vector<String> &, int override, ErrorHandler *);
     int parse_unicoding_words(Vector<String> &, int override, ErrorHandler *);
     int parse_words(const String &, int override, int (DvipsEncoding::*)(Vector<String> &, int, ErrorHandler *), ErrorHandler *);
     void bad_codepoint(int);

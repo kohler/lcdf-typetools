@@ -410,6 +410,33 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 }
 
 int
+DvipsEncoding::parse_position_words(Vector<String> &v, int override, ErrorHandler *errh)
+{
+    if (v.size() != 4)
+	return errh->error("parse error in POSITION");
+
+    int c = encoding_of(v[0], override > 0);
+    if (c < 0)
+	return (override > 0 ? errh->warning("'%s' has no encoding, ignoring positioning", v[0].c_str()) : -1);
+    
+    char *endptr;
+    int pdx, pdy, adx;
+    if (!v[1] || !v[2] || !v[3]
+	|| (pdx = strtol(v[1].c_str(), &endptr, 10), *endptr)
+	|| (pdy = strtol(v[2].c_str(), &endptr, 10), *endptr)
+	|| (adx = strtol(v[3].c_str(), &endptr, 10), *endptr))
+	return errh->error("parse error in POSITION");
+
+    Ligature l = { c, pdx, pdy, adx, 0 };
+    Ligature *old = std::find(_pos.begin(), _pos.end(), l);
+    if (old == _pos.end())
+	_pos.push_back(l);
+    else if (override > 0)
+	*old = l;
+    return 0;
+}
+
+int
 DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandler *errh)
 {
     int av;
@@ -532,6 +559,13 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(10), 1, &DvipsEncoding::parse_unicoding_words, &lerrh);
 	    
+	} else if (token.length() >= 9
+		   && memcmp(token.data(), "POSITION", 8) == 0
+		   && isspace(token[8])
+		   && !ignore_other) {
+	    lerrh.set_landmark(landmark(filename, line));
+	    parse_words(token.substring(9), 1, &DvipsEncoding::parse_position_words, &lerrh);
+	    
 	} else if (token.length() >= 13
 		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
 		   && isspace(token[12])
@@ -559,6 +593,12 @@ int
 DvipsEncoding::parse_ligkern(const String &ligkern_text, int override, ErrorHandler *errh)
 {
     return parse_words(ligkern_text, override, &DvipsEncoding::parse_ligkern_words, errh);
+}
+
+int
+DvipsEncoding::parse_position(const String &position_text, int override, ErrorHandler *errh)
+{
+    return parse_words(position_text, override, &DvipsEncoding::parse_position_words, errh);
 }
 
 int
@@ -715,19 +755,18 @@ void
 DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const
 {
     assert((int)J_ALL == (int)Metrics::CODE_ALL);
-    for (int i = 0; i < _lig.size(); i++) {
-	const Ligature &l = _lig[i];
-	if (l.c1 < 0 || l.c2 < 0 || l.join < 0 || !(l.join & JT_LIG))
+    for (const Ligature *l = _lig.begin(); l < _lig.end(); l++) {
+	if (l->c1 < 0 || l->c2 < 0 || l->join < 0 || !(l->join & JT_LIG))
 	    continue;
-	metrics.remove_ligatures(l.c1, l.c2);
-	if (!(l.join & JT_ADDLIG))
+	metrics.remove_ligatures(l->c1, l->c2);
+	if (!(l->join & JT_ADDLIG))
 	    /* nada */;
-	else if ((l.join & JT_LIGALL) == JL_LIG)
-	    metrics.add_ligature(l.c1, l.c2, l.d);
-	else if ((l.join & JT_LIGALL) == JL_LIGC)
-	    metrics.add_ligature(l.c1, l.c2, metrics.pair_code(l.d, l.c2));
-	else if ((l.join & JT_LIGALL) == JL_CLIG)
-	    metrics.add_ligature(l.c1, l.c2, metrics.pair_code(l.c1, l.d));
+	else if ((l->join & JT_LIGALL) == JL_LIG)
+	    metrics.add_ligature(l->c1, l->c2, l->d);
+	else if ((l->join & JT_LIGALL) == JL_LIGC)
+	    metrics.add_ligature(l->c1, l->c2, metrics.pair_code(l->d, l->c2));
+	else if ((l->join & JT_LIGALL) == JL_CLIG)
+	    metrics.add_ligature(l->c1, l->c2, metrics.pair_code(l->c1, l->d));
 	else {
 	    static int complex_join_warning = 0;
 	    if (!complex_join_warning) {
@@ -742,9 +781,15 @@ void
 DvipsEncoding::apply_ligkern_kern(Metrics &metrics, ErrorHandler *) const
 {
     assert((int)J_ALL == (int)Metrics::CODE_ALL);
-    for (int i = 0; i < _lig.size(); i++) {
-	const Ligature &l = _lig[i];
-	if (l.c1 >= 0 && l.c2 >= 0 && (l.join & JT_KERN))
-	    metrics.set_kern(l.c1, l.c2, l.k);
-    }
+    for (const Ligature *l = _lig.begin(); l < _lig.end(); l++)
+	if (l->c1 >= 0 && l->c2 >= 0 && (l->join & JT_KERN))
+	    metrics.set_kern(l->c1, l->c2, l->k);
+}
+
+void
+DvipsEncoding::apply_position(Metrics &metrics, ErrorHandler *) const
+{
+    for (const Ligature *l = _pos.begin(); l < _pos.end(); l++)
+	if (l->c1 >= 0)
+	    metrics.add_single_positioning(l->c1, l->c2, l->join, l->k);
 }

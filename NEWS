@@ -1,9 +1,12 @@
 LCDF Typetools NEWS
 
-Version 2.33
+Version 2.33   3.Jun.2005
 
 * otftotfm: Include more secondary replacements, including double-bar,
   centered asterisk, per-ten-thousand, and so forth.  Patch from Michael
+  Zedler.
+
+* otftotfm: Add '% POSITION' and '--position'.  Requested by Michael
   Zedler.
 
 

@@ -94,6 +94,7 @@ using namespace Efont;
 #define ALTERNATES_FILTER_OPT	336
 #define SPACE_FACTOR_OPT	337
 #define MATH_SPACING_OPT	338
+#define POSITION_OPT		339
 
 #define AUTOMATIC_OPT		341
 #define FONT_NAME_OPT		342
@@ -148,6 +149,7 @@ static Clp_Option options[] = {
     { "minimum-kern", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "kern-precision", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
+    { "position", 0, POSITION_OPT, Clp_ArgString, 0 },
     { "no-encoding-commands", 0, NO_ECOMMAND_OPT, 0, Clp_OnlyNegated },
     { "default-ligkern", 0, DEFAULT_LIGKERN_OPT, 0, Clp_Negate },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
@@ -299,6 +301,7 @@ Encoding options:\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
       --ligkern=COMMAND        Add a LIGKERN command.\n\
+      --position=COMMAND       Add a POSITION command.\n\
       --unicoding=COMMAND      Add a UNICODING command.\n\
       --no-encoding-commands   Ignore encoding file's LIGKERN/UNICODINGs.\n\
       --default-ligkern        Ignore encoding file's LIGKERNs, use defaults.\n\
@@ -1374,8 +1377,9 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	errh->warning("GPOS '%s' error, continuing", e.description.c_str());
     }
 
-    // apply LIGKERN kerning commands to the result
+    // apply LIGKERN kerning and POS positioning commands to the result
     dvipsenc.apply_ligkern_kern(metrics, errh);
+    dvipsenc.apply_position(metrics, errh);
 
     // remove extra characters
     metrics.cut_encoding(257);
@@ -1503,6 +1507,7 @@ main(int argc, char *argv[])
     const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
     bool literal_encoding = false;
     Vector<String> ligkern;
+    Vector<String> pos;
     Vector<String> unicoding;
     bool no_ecommand = false, default_ligkern = true;
     String codingscheme;
@@ -1635,6 +1640,10 @@ main(int argc, char *argv[])
 
 	  case LIGKERN_OPT:
 	    ligkern.push_back(clp->arg);
+	    break;
+
+	  case POSITION_OPT:
+	    pos.push_back(clp->arg);
 	    break;
 
 	  case NO_ECOMMAND_OPT:
@@ -1906,6 +1915,9 @@ particular purpose.\n");
 	cerrh.set_landmark("--ligkern command");
 	for (int i = 0; i < ligkern.size(); i++)
 	    dvipsenc.parse_ligkern(ligkern[i], 1, &cerrh);
+	cerrh.set_landmark("--position command");
+	for (int i = 0; i < pos.size(); i++)
+	    dvipsenc.parse_position(pos[i], 1, &cerrh);
 	cerrh.set_landmark("--unicoding command");
 	for (int i = 0; i < unicoding.size(); i++)
 	    dvipsenc.parse_unicoding(unicoding[i], 1, &cerrh);
