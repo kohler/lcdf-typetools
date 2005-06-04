@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.26
+.ds V 2.33
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -98,7 +98,7 @@ standard (http://www.tug.org/tds/), such as most Unix TeX installations.
 Automatic mode should run seamlessly out of the box.
 .B Otftotfm
 will install metrics files, encodings, map files, and Type\~1 fonts into
-.I $HOME/texmf
+.I $HOME/.texmf-var
 or any other writable TEXMF directory, and run
 .M updmap 1
 to update the global lists of installed fonts.  (On older teTeX
@@ -138,7 +138,7 @@ font map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
 	or TEXMF/dvips/\fIvendor\fR/
 .TE
 .PP
-"TEXMF" stands for the writable $TEXMF directory.  \fITexname\fR is the
+"TEXMF" stands for the writable TEXMF directory.  \fITexname\fR is the
 font name supplied as 
 .BR otftotfm 's
 second argument, and \fIPStexname\fR is the PostScript name of the input
@@ -1005,11 +1005,83 @@ shorter ligatures composed of unaccented letters get precedence.
 .PP
 .B Otftotfm
 can synthesize some glyphs using virtual font manipulations, if a required
-glyph is not available in the input font. Specifically, it will synthesize
-"IJ", "ij", "Germandbls" (a capital "sharp-s", namely "SS"), "SSsmall"
-(similarly, a small-capital "sharp-s"), "cwm" (the TeX T1 encoding's
-compound word mark), and "visualspace" (the TeX T1 encoding's visible
-space).
+glyph is not available in the input font. Specifically, it will synthesize:
+.Sp
+.TP 22
+.PD 0
+cwm
+TeX's compound word mark (a zero-width "strut" rule with height equal to the font's x-height)
+.TP
+ascendercompwordmark
+"cwm" with height equal to the font's ascenders
+.TP
+capitalcompwordmark
+"cwm" with height equal to the font's capitals
+.TP
+visualspace
+A square cup used to represent spaces
+.TP
+dotlessj
+A dotless "j", synthesized with
+.M t1dotlessj 1
+.TP
+dblbracketleft
+Kerned version of "[["
+.TP
+dblbracketright
+Kerned version of "]]"
+.TP
+bardbl
+The parallel symbol "||"
+.TP
+asteriskmath
+Centered "*"
+.TP
+twelveudash
+2/3-em-wide dash
+.TP
+threequartersemdash
+3/4-em-wide dash
+.TP
+centigrade
+"(degrees)C"
+.TP
+interrobang
+Combined "?!" symbol
+.TP
+interrobangdown
+Inverted interrobang
+.TP
+pertenthousand
+Per-ten-thousand sign (% with two extra 0s)
+.TP
+IJ
+"IJ" ligature
+.TP
+ij
+"ij" ligature
+.TP
+Germandbls
+"SS" (a capital sharp-s)
+.TP
+SSsmall
+Small-capital version of "SS"
+.TP
+FFsmall
+Small-capital version of "FF"
+.TP
+FIsmall
+Small-capital version of "FI"
+.TP
+FLsmall
+Small-capital version of "FL"
+.TP
+FFIsmall
+Small-capital version of "FFI"
+.TP
+FFIsmall
+Small-capital version of "FFL"
+.PD
 '
 '
 .SH "GLYPH PATTERNS"
@@ -1271,8 +1343,10 @@ Replaces the zero character with a slashed zero.  Supported.
 no writable directory found in $TEXMF
 '
 .B Otftotfm
-could not find a writable directory in your $VARTEXMF or $TEXMF path.  Did
+could not find a writable directory in your $TEXMFVAR or $TEXMF path.  Did
 you create a
+.I $HOME/.texmf-var
+or
 .I $HOME/texmf
 directory?  If so, run the command "kpsewhich \-\-expand\-path='$TEXMF'" to
 verify that directory is not being found.  You may need to set your TEXMF
@@ -1331,14 +1405,20 @@ Use the
 .B \-V
 option to see what it's doing.  Often the culprit is the
 .M updmap 1
-program.
+program; if you're planning to run
+.B otftotfm
+multiple times, give it the
+.B \-\-no\-updmap
+option and run
+.B updmap
+manually when you're done.
 '
 .SH "BUGS"
-.LP
-Presumably some context-sensitive positionings and ligatures could be
-implemented with TeX's boundary character, but 
-.B otftotfm
-doesn't do that yet.
+.\" .LP
+.\" Presumably some context-sensitive positionings and ligatures could be
+.\" implemented with TeX's boundary character, but 
+.\" .B otftotfm
+.\" doesn't do that yet.
 .LP
 See the documentation for 
 .B \-\-pl
@@ -1387,7 +1467,10 @@ Michel Goossens, Frank Mittelbach, and Alexander Samarin,
 (for information on the .fd file format).
 '
 .SH AUTHOR
-Eddie Kohler (kohler@icir.org)
+Eddie Kohler (kohler@cs.ucla.edu)
 .PP
-Thanks to Karl Berry, Marco Kuhlmann, Adam Lindsay, Bruce D'Arcus, and
-Claire Connelly for suggestions, bug reports, and help.
+Thanks to Karl Berry, Marco Kuhlmann, Adam Lindsay, Bruce D'Arcus, Thomas
+Esser, Claire Connelly, Nelson H.F. Beebe, and Ryuji Suzuki for
+suggestions, bug reports, and help.  Particular thanks to Achim Blumensath
+and Michael Zedler for suggestions and patches, some of them extensive.
+
