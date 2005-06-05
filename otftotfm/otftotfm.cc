@@ -164,7 +164,7 @@ static Clp_Option options[] = {
     { "clear-alternates", 0, CLEAR_ALTERNATES_OPT, 0, 0 },
     { "alternates-filter", 0, ALTERNATES_FILTER_OPT, Clp_ArgString, 0 },
     { "space-factor", 0, SPACE_FACTOR_OPT, Clp_ArgDouble, 0 },
-    { "math-spacing", 0, MATH_SPACING_OPT, Clp_ArgInt, Clp_Negate | Clp_Optional },
+    { "math-spacing", 0, MATH_SPACING_OPT, CHAR_OPTTYPE, Clp_Negate | Clp_Optional },
 
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
