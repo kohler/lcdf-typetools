@@ -1889,8 +1889,6 @@ particular purpose.\n");
 	    glyphlist_file = kpsei_find_file("glyphlist.txt", KPSEI_FMT_OTHER_TEXT);
 	    if (glyphlist_file && verbose)
 		errh->message("glyphlist.txt found with kpathsea at %s", glyphlist_file.c_str());
-	    if (!glyphlist_file && verbose)
-		errh->message("fuckhead");
 	}
 #endif
 	if (!glyphlist_file)
