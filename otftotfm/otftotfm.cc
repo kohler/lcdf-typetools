@@ -1490,7 +1490,7 @@ main(int argc, char *argv[])
     Clp_AddType(clp, CHAR_OPTTYPE, 0, clp_parse_char, 0);
     program_name = Clp_ProgramName(clp);
 #if HAVE_KPATHSEA
-    kpsei_init(argv[0]);
+    kpsei_init(argv[0], "lcdftools");
 #endif
 #ifdef HAVE_CTIME
     {
@@ -1504,7 +1504,7 @@ main(int argc, char *argv[])
     
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
-    const char *glyphlist_file = SHAREDIR "/glyphlist.txt";
+    String glyphlist_file;
     bool literal_encoding = false;
     Vector<String> ligkern;
     Vector<String> pos;
@@ -1883,6 +1883,19 @@ particular purpose.\n");
 	std::sort(interesting_features.begin(), interesting_features.end());
 	std::sort(altselector_features.begin(), altselector_features.end());
 
+	// find glyphlist
+#if HAVE_KPATHSEA
+	if (!glyphlist_file) {
+	    glyphlist_file = kpsei_find_file("glyphlist.txt", KPSEI_FMT_OTHER_TEXT);
+	    if (glyphlist_file && verbose)
+		errh->message("glyphlist.txt found with kpathsea at %s", glyphlist_file.c_str());
+	    if (!glyphlist_file && verbose)
+		errh->message("fuckhead");
+	}
+#endif
+	if (!glyphlist_file)
+	    glyphlist_file = SHAREDIR "/glyphlist.txt";
+	
 	// read glyphlist
 	if (String s = read_file(glyphlist_file, errh, true))
 	    DvipsEncoding::parse_glyphlist(s);

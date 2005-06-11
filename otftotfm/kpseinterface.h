@@ -4,10 +4,11 @@
 extern "C" {
 #endif
 
-void kpsei_init(const char* argv0);
+void kpsei_init(const char* argv0, const char* progname);
 extern int kpsei_env_sep_char;
 char* kpsei_path_expand(const char* path); /* free() result */
-enum { KPSEI_FMT_WEB2C, KPSEI_FMT_ENCODING, KPSEI_FMT_TYPE1 };
+enum { KPSEI_FMT_WEB2C, KPSEI_FMT_ENCODING, KPSEI_FMT_TYPE1,
+       KPSEI_FMT_OTHER_TEXT };
 char* kpsei_find_file(const char* name, int format);
 void kpsei_set_debug_flags(unsigned flags);
 

@@ -26,9 +26,9 @@
 int kpsei_env_sep_char = ENV_SEP;
 
 void
-kpsei_init(const char* argv0)
+kpsei_init(const char* argv0, const char* progname)
 {
-    kpse_set_progname(argv0);
+    kpse_set_program_name(argv0, progname);
 #ifdef SELFAUTODIR
     putenv("SELFAUTODIR=" SELFAUTODIR);
 #endif
@@ -56,6 +56,8 @@ kpsei_find_file(const char* name, int format)
 	return kpse_find_file(name, kpse_tex_ps_header_format, true);
       case KPSEI_FMT_TYPE1:
 	return kpse_find_file(name, kpse_type1_format, false);
+      case KPSEI_FMT_OTHER_TEXT:
+	return kpse_find_file(name, kpse_program_text_format, true);
       default:
 	return 0;
     }

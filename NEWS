@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.34   
+
+* otftotfm: Search for 'glyphlist.txt' using kpathsea, and set kpathsea
+  program name to 'lcdftools'.  Requested by Karl Berry.
+
+
 Version 2.33   3.Jun.2005
 
 * otftotfm: Include more secondary replacements, including double-bar,
