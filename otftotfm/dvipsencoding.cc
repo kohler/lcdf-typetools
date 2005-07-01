@@ -34,10 +34,9 @@ PermString DvipsEncoding::dot_notdef(".notdef");
 #define NEXT_GLYPH_NAME(gn)	("/" + (gn))
 
 int
-DvipsEncoding::parse_glyphlist(String text)
+DvipsEncoding::add_glyphlist(String text)
 {
     // XXX ignores glyph names that map to multiple characters
-    glyphlist.clear();
     const char *data = text.c_str();
     int pos = 0, len = text.length();
     while (1) {

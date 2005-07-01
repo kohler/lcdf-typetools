@@ -58,6 +58,8 @@ kpsei_find_file(const char* name, int format)
 	return kpse_find_file(name, kpse_type1_format, false);
       case KPSEI_FMT_OTHER_TEXT:
 	return kpse_find_file(name, kpse_program_text_format, true);
+      case KPSEI_FMT_MAP:
+	return kpse_find_file(name, kpse_fontmap_format, true);
       default:
 	return 0;
     }

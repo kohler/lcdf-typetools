@@ -1504,7 +1504,7 @@ main(int argc, char *argv[])
     
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
-    String glyphlist_file;
+    Vector<String> glyphlist_files;
     bool literal_encoding = false;
     Vector<String> ligkern;
     Vector<String> pos;
@@ -1780,7 +1780,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case GLYPHLIST_OPT:
-	    glyphlist_file = clp->arg;
+	    glyphlist_files.push_back(clp->arg);
 	    break;
 	    
 	  case QUERY_FEATURES_OPT:
@@ -1885,18 +1885,28 @@ particular purpose.\n");
 
 	// find glyphlist
 #if HAVE_KPATHSEA
-	if (!glyphlist_file) {
-	    glyphlist_file = kpsei_find_file("glyphlist.txt", KPSEI_FMT_OTHER_TEXT);
-	    if (glyphlist_file && verbose)
-		errh->message("glyphlist.txt found with kpathsea at %s", glyphlist_file.c_str());
+	if (!glyphlist_files.size()) {
+	    if (String g = kpsei_find_file("glyphlist.txt", KPSEI_FMT_MAP)) {
+		glyphlist_files.push_back(g);
+		if (verbose)
+		    errh->message("glyphlist.txt found with kpathsea at %s", g.c_str());
+	    }
+	    if (String g = kpsei_find_file("texglyphlist.txt", KPSEI_FMT_MAP)) {
+		glyphlist_files.push_back(g);
+		if (verbose)
+		    errh->message("texglyphlist.txt found with kpathsea at %s", g.c_str());
+	    }
 	}
 #endif
-	if (!glyphlist_file)
-	    glyphlist_file = SHAREDIR "/glyphlist.txt";
+	if (!glyphlist_files.size()) {
+	    glyphlist_files.push_back(SHAREDIR "/glyphlist.txt");
+	    glyphlist_files.push_back(SHAREDIR "/texglyphlist.txt");
+	}
 	
 	// read glyphlist
-	if (String s = read_file(glyphlist_file, errh, true))
-	    DvipsEncoding::parse_glyphlist(s);
+	for (String *g = glyphlist_files.begin(); g < glyphlist_files.end(); g++)
+	    if (String s = read_file(*g, errh, true))
+		DvipsEncoding::add_glyphlist(s);
 
 	// read encoding
 	DvipsEncoding dvipsenc;

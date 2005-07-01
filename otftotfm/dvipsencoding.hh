@@ -10,7 +10,7 @@ class DvipsEncoding { public:
 
     DvipsEncoding();
 
-    static int parse_glyphlist(String);
+    static int add_glyphlist(String);
     static int glyphname_unicode(const String &, bool *more = 0);
     static void glyphname_unicode(String, Vector<int> &, bool *more = 0);
 
