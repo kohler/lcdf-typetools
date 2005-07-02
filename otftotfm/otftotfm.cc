@@ -95,6 +95,7 @@ using namespace Efont;
 #define SPACE_FACTOR_OPT	337
 #define MATH_SPACING_OPT	338
 #define POSITION_OPT		339
+#define WARN_MISSING_OPT	340
 
 #define AUTOMATIC_OPT		341
 #define FONT_NAME_OPT		342
@@ -150,6 +151,7 @@ static Clp_Option options[] = {
     { "kern-precision", 'k', MINIMUM_KERN_OPT, Clp_ArgDouble, 0 },
     { "ligkern", 0, LIGKERN_OPT, Clp_ArgString, 0 },
     { "position", 0, POSITION_OPT, Clp_ArgString, 0 },
+    { "warn-missing", 0, WARN_MISSING_OPT, 0, Clp_Negate },
     { "no-encoding-commands", 0, NO_ECOMMAND_OPT, 0, Clp_OnlyNegated },
     { "default-ligkern", 0, DEFAULT_LIGKERN_OPT, 0, Clp_Negate },
     { "unicoding", 0, UNICODING_OPT, Clp_ArgString, 0 },
@@ -299,20 +301,21 @@ Font feature and transformation options:\n\
     printf("\
 Encoding options:\n\
   -e, --encoding=FILE          Use DVIPS encoding FILE as a base encoding.\n\
-      --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
-      --ligkern=COMMAND        Add a LIGKERN command.\n\
-      --position=COMMAND       Add a POSITION command.\n\
-      --unicoding=COMMAND      Add a UNICODING command.\n\
-      --no-encoding-commands   Ignore encoding file's LIGKERN/UNICODINGs.\n\
-      --default-ligkern        Ignore encoding file's LIGKERNs, use defaults.\n\
-      --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
       --boundary-char=CHAR     Set the boundary character to CHAR.\n\
       --altselector-char=CHAR  Set the alternate selector character to CHAR.\n\
       --altselector-feature=F  Activate feature F for --altselector-char.\n\
       --alternates-filter=PAT  Include only alternate characters matching PAT.\n\
-      --include-alternates=PAT Same, but cumulative.\n\
+      --include-alternates=PAT Same as --alternates-filter, but cumulative.\n\
       --exclude-alternates=PAT Ignore alternate characters matching PAT.\n\
       --clear-alternates       Clear included/excluded alternates.\n\
+      --ligkern=COMMAND        Add a ligature or kern.\n\
+      --position=COMMAND       Add a POSITION command.\n\
+      --unicoding=COMMAND      Add a UNICODING command.\n\
+      --no-encoding-commands   Ignore encoding file's LIGKERN/UNICODINGs.\n\
+      --no-default-ligkern     Don't include default LIGKERNs.\n\
+      --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
+      --warn-missing           Warn about characters not supported by font.\n\
+      --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
 \n");
     printf("\
 Automatic mode options:\n\
@@ -692,6 +695,24 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		      boundser.translate(p.x, p.y);
 		      push_stack.pop_back();
 		      sa << "      (POP)\n";
+		      break;
+		  }
+
+		  case Setting::SPECIAL: {
+		      bool needhex = false;
+		      for (const char *str = s->s.begin(); str < s->s.end() && !needhex; str++)
+			  if (*str < ' ' || *str > '~' || *str == '(' || *str == ')')
+			      needhex = true;
+		      if (needhex) {
+			  sa << "      (SPECIALHEX ";
+			  for (const char *str = s->s.begin(); str < s->s.end(); str++) {
+			      static const char hexdig[] = "0123456789ABCDEF";
+			      int val = (unsigned char) *str;
+			      sa << hexdig[val >> 4] << hexdig[val & 0xF];
+			  }
+			  sa << ")\n";
+		      } else
+			  sa << "      (SPECIAL " << s->s << ")\n";
 		      break;
 		  }
 		    
@@ -1510,6 +1531,7 @@ main(int argc, char *argv[])
     Vector<String> pos;
     Vector<String> unicoding;
     bool no_ecommand = false, default_ligkern = true;
+    int warn_missing = -1;
     String codingscheme;
 
     GlyphFilter current_substitution_filter;
@@ -1644,6 +1666,10 @@ main(int argc, char *argv[])
 
 	  case POSITION_OPT:
 	    pos.push_back(clp->arg);
+	    break;
+
+	  case WARN_MISSING_OPT:
+	    warn_missing = !clp->negated;
 	    break;
 
 	  case NO_ECOMMAND_OPT:
@@ -1884,23 +1910,23 @@ particular purpose.\n");
 	std::sort(altselector_features.begin(), altselector_features.end());
 
 	// find glyphlist
-#if HAVE_KPATHSEA
 	if (!glyphlist_files.size()) {
+#if HAVE_KPATHSEA
 	    if (String g = kpsei_find_file("glyphlist.txt", KPSEI_FMT_MAP)) {
 		glyphlist_files.push_back(g);
 		if (verbose)
 		    errh->message("glyphlist.txt found with kpathsea at %s", g.c_str());
-	    }
+	    } else
+#endif
+		glyphlist_files.push_back(SHAREDIR "/glyphlist.txt");
+#if HAVE_KPATHSEA
 	    if (String g = kpsei_find_file("texglyphlist.txt", KPSEI_FMT_MAP)) {
 		glyphlist_files.push_back(g);
 		if (verbose)
 		    errh->message("texglyphlist.txt found with kpathsea at %s", g.c_str());
-	    }
-	}
+	    } else
 #endif
-	if (!glyphlist_files.size()) {
-	    glyphlist_files.push_back(SHAREDIR "/glyphlist.txt");
-	    glyphlist_files.push_back(SHAREDIR "/texglyphlist.txt");
+		glyphlist_files.push_back(SHAREDIR "/texglyphlist.txt");
 	}
 	
 	// read glyphlist
@@ -1944,6 +1970,8 @@ particular purpose.\n");
 	    dvipsenc.parse_unicoding(unicoding[i], 1, &cerrh);
 	if (codingscheme)
 	    dvipsenc.set_coding_scheme(codingscheme);
+	if (warn_missing >= 0)
+	    dvipsenc.set_warn_missing(warn_missing);
 
 	do_file(input_file, otf, dvipsenc, literal_encoding, errh);
 	

@@ -464,71 +464,6 @@ for more information.
 '
 .Sp
 .TP 5
-.BI \-\-literal\-encoding= encoding
-Select the
-.M dvips 1
-encoding used for the font.  No glyph substitutions will be permitted, so
-the output encoding will equal the input encoding (and 
-.B otftotfm
-will not generate an output encoding).
-'
-.Sp
-.TP 5
-.BI \-\-ligkern= command
-Execute the specified LIGKERN
-.IR command
-in addition to any in the encoding.  For example, "\fB\-\-ligkern\fR 'T {L}
-h'" suppresses any T_h ligature in the font.  You can supply multiple
-.B \-\-ligkern
-options.  See ENCODINGS, below.
-'
-.Sp
-.TP 5
-.BI \-\-position= command
-Execute the specified POSITION
-.IR command
-in addition to any in the encoding.  For example, "\fB\-\-position\fR 'T 10
-0 20'" adds ten units of space to either side of the "T" character.  You
-can supply multiple
-.B \-\-position
-options.  See ENCODINGS, below.
-'
-.Sp
-.TP 5
-.BI \-\-unicoding= command
-Execute the specified UNICODING
-.IR command
-in addition to any in the encoding.  For example, "\fB\-\-unicoding\fR 'pi1
-=: uni03D6'" tells
-.B otftotfm 
-to encode "/pi1" as U+03D6 GREEK PI SYMBOL.  You can supply multiple
-.B \-\-unicoding
-options.  See ENCODINGS, below.
-'
-.Sp
-.TP 5
-.BI \-\-no\-encoding\-commands
-Ignore any LIGKERN and/or UNICODING commands in the encoding file.
-'
-.Sp
-.TP 5
-.BI \-\-no\-default\-ligkern
-Don't include
-.BR otftotfm 's
-default LIGKERN commands.
-'
-.Sp
-.TP 5
-.BI \-\-coding\-scheme= scheme
-Set the font's TFM coding scheme to
-.IR scheme ,
-which must be a string less than 40 characters long containing no
-parentheses.  The default is the encoding's PostScript name.  Most tools
-ignore the coding scheme, so you probably don't need to worry about this
-command unless you are using fontinst.
-'
-.Sp
-.TP 5
 .BI \-\-boundary\-char= char
 Set the font's boundary character to
 .IR char ,
@@ -622,6 +557,71 @@ alternates, but not to "salt" alternates.
 .nf
     \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-alternates\fR='*.end' \fB\-f\fRaalt \.\.\.
 .fi
+'
+.Sp
+.TP 5
+.BI \-\-ligkern= command
+Add a LIGKERN
+.IR command
+to the encoding.  For example, "\fB\-\-ligkern\fR 'T {L} h'" suppresses any
+T_h ligature in the font.  You can supply multiple
+.B \-\-ligkern
+options.  See ENCODINGS, below.
+'
+.Sp
+.TP 5
+.BI \-\-position= command
+Add a POSITION
+.IR command
+to the encoding.  For example, "\fB\-\-position\fR 'T 10 0 20'" adds ten
+units of space to either side of the "T" character.  You can supply
+multiple
+.B \-\-position
+options.  See ENCODINGS, below.
+'
+.Sp
+.TP 5
+.BI \-\-unicoding= command
+Add a UNICODING
+.IR command
+to the encoding.  For example, "\fB\-\-unicoding\fR 'pi1 =: uni03D6'" tells
+.B otftotfm 
+to encode "/pi1" as U+03D6 GREEK PI SYMBOL.  You can supply multiple
+.B \-\-unicoding
+options.  See ENCODINGS, below.
+'
+.Sp
+.TP 5
+.BI \-\-no\-encoding\-commands
+Ignore any LIGKERN and/or UNICODING commands in the encoding file.
+'
+.Sp
+.TP 5
+.BI \-\-no\-default\-ligkern
+Don't include
+.BR otftotfm 's
+default LIGKERN commands.
+'
+.Sp
+.TP 5
+.BI \-\-coding\-scheme= scheme
+Add a CODINGSCHEME to the encoding.  See ENCODINGS, below.
+'
+.Sp
+.TP 5
+.BI \-\-warn\-missing
+Warn about encoded characters not supported by the font.  See the
+WARNMISSING command in ENCODINGS, below.
+'
+.Sp
+.TP 5
+.BI \-\-literal\-encoding= encoding
+Select the
+.M dvips 1
+encoding used for the font.  No glyph substitutions will be permitted, so
+the output encoding will equal the input encoding (and 
+.B otftotfm
+will not generate an output encoding).
 '
 .PD
 '
@@ -809,28 +809,33 @@ Print the version number and some short non-warranty information and exit.
 '
 .SH ENCODINGS
 .B Otftotfm
-interprets encoding files as Unicode.  For example, if an input encoding
-has "/dotlessi" at position 10, then
-.B otftotfm
-detects that the user wants to encode Unicode character U+0131 LATIN SMALL
-LETTER DOTLESS I at position 10.  The output encoding will use whatever
-glyph the font suggests for that Unicode character, given the collection of
-features you chose.
+interprets encoding files as Unicode.  For example, say an input encoding
+has "/dotlessi" at position 10.
+.B Otftotfm
+detects that position 10 should contain Unicode character U+0131 LATIN
+SMALL LETTER DOTLESS I, and uses the font's glyph for that character
+(possibly modified by any active features).  The selected glyph might not
+be named "dotlessi"; only the Unicode value matters.
 .PP
-You can control this process with "UNICODING" comments in the input
-encoding file.  UNICODING comments have the following format:
+.B Otftotfm
+assigns Unicode values to glyph names using a table published by Adobe (SEE
+ALSO has a reference), with extensions for TeX.  For more fine-grained
+control, add UNICODING commands to the input encoding file.  These commands
+have the following format:
 .nf
     % UNICODING \fIglyph\fR =: \fIchoice1\fR [\fIchoice2\fR ...] ;
 .fi
-\fIGlyph\fR and the
-.IR choice s
-are PostScript glyph names.  This comment tells
+This tells
 .B otftotfm
 that the glyph named
 .I glyph 
 translates into the first Unicode value in the
 .I choice
-list that has a character in the font.  For example,
+list that has a character in the font.  \fIGlyph\fR and the
+.IR choice s
+are PostScript glyph names; the initial "%" sign is required; and each
+UNICODING line can contain multiple commands, separated by spaced
+semicolons.  For example,
 .nf
     % UNICODING pi1 =: uni03D6 ;
 .fi
@@ -845,34 +850,22 @@ glyph names:
 .nf
     % UNICODING Delta =: Deltagreek Delta ;
 .fi
-.B Otftotfm
-uses Adobe's
-.I glyphlist.txt
-file to translate glyph names to Unicode; see
-.IR http://partners.adobe.com/asn/developer/type/unicodegn.html .
-.LP
-You can map a glyph to nothing to remove that glyph from the input
-encoding.  This is useful to remove optional characters; for instance:
+Supply zero choices to remove a glyph from the input encoding.  For
+instance:
 .nf
     % UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
 .fi
 The f-ligatures will be added back to the encoding, preferably at their
-original locations, if some font feature requires them.
-.LP
-Map a glyph to 'emptyslot' if you don't want 
+original locations, if some font feature requires them.  Finally, map a
+glyph to \&'emptyslot' if you don't want
 .B otftotfm
-to use the slot for a ligature character.  For example, given this
-UNICODING,
+to use the slot for a ligature character.  For example, this will leave the
+\&'ff' slot unused if the font has no \&'ff' glyph:
 .nf
    % UNICODING ff =: ff emptyslot ;
 .fi
-.B otftotfm
-will leave the 'ff' encoding slot unused if the font has no 'ff' glyph.
 (Note that most OpenType fonts provide a visible representation for unused
 encoding slots, namely a box with an X inside.)
-.LP
-Each UNICODING line can contain multiple commands, separated by spaced
-semicolons.
 .PP
 LIGKERN comments in the encoding can add ligatures and inhibit kerns, as in
 .M afm2tfm 1 .
@@ -885,8 +878,8 @@ are removed and replaced by
 .IR result .
 To preserve the left-hand glyph, for an effect like "\fIglyph1\fR
 \fIglyph2\fR =: \fIglyph1\fR \fIresult\fR", use "|=:" instead; to preserve
-the right-hand glyph, use "=:|".  The other five ligature operators are not
-yet supported.
+the right-hand glyph, use "=:|".
+.\" The other five ligature operators are not yet supported.
 To remove all kerns between two characters, say:
 .nf
     % LIGKERN \fIglyph1\fR {} \fIglyph2\fR ;
@@ -929,6 +922,21 @@ from an encoding file with commands like this:
 As with UNICODING, each LIGKERN or LIGKERNX line can contain multiple
 commands, separated by spaced semicolons.
 .PP
+.B Otftotfm
+has a default set of eight ligatures, namely:
+.nf
+    space l =: lslash ; space L =: Lslash ;
+    question quoteleft =: questiondown ; exclam quoteleft =: exclamdown ;
+    hyphen hyphen =: endash ; endash hyphen =: emdash ;
+    quoteleft quoteleft =: quotedblleft ; 
+    quoteright quoteright =: quotedblright
+.fi
+LIGKERN commands in the encoding file and
+.B \-\-ligkern
+options can override these defaults, or supply the
+.B \-\-no\-default\-ligkern
+option to turn them off.
+.PP
 The POSITION command shifts a glyph within its bounding box.  The syntax is
 .nf
     % POSITION \fIglyph\fR \fIpdx\fR \fIpdy\fR \fIadx\fR ;
@@ -951,45 +959,44 @@ To move the "degree" symbol up by 20 units, supply
     % POSITION degree 0 20 0
 .fi
 .PP
-Finally, the CODINGSCHEME command specifies a default
-.B \-\-coding\-scheme
-for the encoding; for example:
+The CODINGSCHEME command specifies the coding scheme for fonts using this
+encoding.  This is a string, less than 40 characters long and containing no
+parentheses, that classifies the encoding for TeX's purposes.  Sample
+coding schemes include "TEX TEXT", "TEX MATH ITALIC", and "EXTENDED TEX
+FONT ENCODING - LATIN".  For example:
 .nf
-    % CODINGSCHEME EXTENDED TEX FONT ENCODING
+    % CODINGSCHEME EXTENDED TEX FONT ENCODING - LATIN
+.fi
+Most tools ignore the coding scheme; fontinst is an exception.
+.B Otftotfm
+uses the encoding's PostScript name for the default coding scheme.
+.PP
+Finally, the WARNMISSING command makes any glyphs not supported by the
+input font appear as black boxes.  The
+.M dvips 1
+processor will also print a warning when encountering these glyphs.  For
+example:
+.nf
+    % WARNMISSING yes
 .fi
 .PP
 The
 .BR \-\-unicoding ,
 .BR \-\-ligkern ,
+.BR \-\-position ,
+.BR \-\-coding\-scheme ,
 and
-.B \-\-position
-options let you add virtual UNICODING, LIGKERN/LIGKERNX, and POSITION
-comments to an encoding.
-.PP
-.B Otftotfm
-has a default set of eight ligatures, namely:
-.nf
-    space l =: lslash ; space L =: Lslash ;
-    question quoteleft =: questiondown ; exclam quoteleft =: exclamdown ;
-    hyphen hyphen =: endash ; endash hyphen =: emdash ;
-    quoteleft quoteleft =: quotedblleft ; 
-    quoteright quoteright =: quotedblright
-.fi
-LIGKERN commands in the encoding file and
-.B \-\-ligkern
-options can override these defaults, or supply the
-.B \-\-no\-default\-ligkern
-option to turn them off.
-.PP
-Some common encoding files have commands that are inappropriate for
-OpenType fonts.  For example, "t1.enc" hard-codes f-ligatures, which can
-cause problems with small-cap fonts.  Supply the
+.B \-\-warn\-missing
+options add UNICODING, LIGKERN/LIGKERNX, POSITION, CODINGSCHEME, and
+WARNMISSING commands to an encoding, and can override commands in the
+encoding itself.  Some common encoding files have commands that are
+inappropriate for OpenType fonts; for example, "t1.enc" hard-codes
+f-ligatures, which can cause problems with small-cap fonts.  Supply the
 .B \-\-no\-encoding\-commands
-option to ignore all commands from the encoding file.  Explicit
+option to ignore all commands from the encoding file.  Commands from
+options like
 .B \-\-ligkern
-and
-.B \-\-unicoding
-options are processed in any case.
+are processed in any case.
 '
 .SS New Glyphs
 .PP
@@ -1461,7 +1468,11 @@ http://www.tug.org/TUGboat/Articles/tb21-2/tb67tole.pdf
 .LP
 Michel Goossens, Frank Mittelbach, and Alexander Samarin,
 .IR "The LaTeX Companion"
-(for information on the .fd file format).
+(for information on the .fd file format)
+.LP
+Adobe Systems, "Unicode and Glyph Names".  Refers to the glyphlist.txt file
+used to translate glyph names to Unicode code points.
+http://partners.adobe.com/public/developer/opentype/index_glyph.html
 '
 .SH AUTHOR
 Eddie Kohler (kohler@cs.ucla.edu)
@@ -1470,4 +1481,3 @@ Thanks to Karl Berry, Marco Kuhlmann, Adam Lindsay, Bruce D'Arcus, Thomas
 Esser, Claire Connelly, Nelson H.F. Beebe, and Ryuji Suzuki for
 suggestions, bug reports, and help.  Particular thanks to Achim Blumensath
 and Michael Zedler for suggestions and patches, some of them extensive.
-

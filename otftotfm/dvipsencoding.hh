@@ -20,6 +20,7 @@ class DvipsEncoding { public:
     int boundary_char() const			{ return _boundary_char; }
     const String &coding_scheme() const		{ return _coding_scheme; }
     void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
+    void set_warn_missing(bool wm)		{ _warn_missing = wm; }
 
     void encode(int, PermString);
     inline int encoding_of(PermString) const;
@@ -73,13 +74,14 @@ class DvipsEncoding { public:
     String _initial_comment;
     String _final_text;
     bool _file_had_ligkern;
+    bool _warn_missing;
 
     void add_ligkern(const Ligature &, int override);
     int parse_ligkern_words(Vector<String> &, int override, ErrorHandler *);
     int parse_position_words(Vector<String> &, int override, ErrorHandler *);
     int parse_unicoding_words(Vector<String> &, int override, ErrorHandler *);
     int parse_words(const String &, int override, int (DvipsEncoding::*)(Vector<String> &, int, ErrorHandler *), ErrorHandler *);
-    void bad_codepoint(int);
+    void bad_codepoint(int, Metrics &, Vector<String> &);
     bool x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const;
     
     static PermString dot_notdef;

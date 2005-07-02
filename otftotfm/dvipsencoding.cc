@@ -18,6 +18,7 @@
 #include "metrics.hh"
 #include "secondary.hh"
 #include <lcdf/error.hh>
+#include <lcdf/straccum.hh>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -135,7 +136,8 @@ DvipsEncoding::glyphname_unicode(const String &gn, bool *more)
 
 
 DvipsEncoding::DvipsEncoding()
-    : _boundary_char(-1), _altselector_char(-1), _unicoding_map(-1)
+    : _boundary_char(-1), _altselector_char(-1), _unicoding_map(-1),
+      _warn_missing(false)
 {
 }
 
@@ -505,6 +507,22 @@ landmark(const String &filename, int line)
     return filename + String::stable_string(":", 1) + String(line);
 }
 
+static String
+trim_space(const String &s, int pos)
+{
+    while (pos < s.length() && isspace(s[pos]))
+	pos++;
+    int epos = s.length();
+    for (int x = 0; x < 2; x++) {
+	while (epos > pos && isspace(s[epos - 1]))
+	    epos--;
+	if (epos == pos || s[epos - 1] != ';')
+	    break;
+	epos--;
+    }
+    return s.substring(pos, epos - pos);
+}
+
 int
 DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *errh)
 {
@@ -569,13 +587,7 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
 		   && isspace(token[12])
 		   && !ignore_other) {
-	    int p = 13;
-	    while (p < token.length() && isspace(token[p]))
-		p++;
-	    int pp = token.length() - 1;
-	    while (pp > p && isspace(token[pp]))
-		pp--;
-	    _coding_scheme = token.substring(p, pp - p);
+	    _coding_scheme = trim_space(token, 13);
 	    if (_coding_scheme.length() > 39)
 		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");
 	    if (std::find(_coding_scheme.begin(), _coding_scheme.end(), '(') < _coding_scheme.end()
@@ -583,6 +595,18 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 		lerrh.lerror(landmark(filename, line), "CODINGSCHEME cannot contain parentheses");
 		_coding_scheme = String();
 	    }
+
+	} else if (token.length() >= 11
+		   && memcmp(token.data(), "WARNMISSING", 11) == 0
+		   && (token.length() == 11 || isspace(token[11]))
+		   && !ignore_other) {
+	    String value = trim_space(token, 11);
+	    if (value == "1" || value == "yes" || value == "true" || !value)
+		_warn_missing = true;
+	    else if (value == "0" || value == "no" || value == "false")
+		_warn_missing = false;
+	    else
+		lerrh.lerror(landmark(filename, line), "WARNMISSING command not understood");
 	}
 
     return 0;
@@ -607,7 +631,7 @@ DvipsEncoding::parse_unicoding(const String &unicoding_text, int override, Error
 }
 
 void
-DvipsEncoding::bad_codepoint(int code)
+DvipsEncoding::bad_codepoint(int code, Metrics &metrics, Vector<String> &unencoded)
 {
     for (int i = 0; i < _lig.size(); i++) {
 	Ligature &l = _lig[i];
@@ -615,6 +639,18 @@ DvipsEncoding::bad_codepoint(int code)
 	    l.join = 0;
 	else if ((l.join & JT_ADDLIG) && l.d == code)
 	    l.join &= ~JT_LIGALL;
+    }
+
+    if (_warn_missing) {
+	Vector<uint32_t> unicodes;
+	bool unicodes_explicit = x_unicodes(_e[code], unicodes);
+	if (!unicodes_explicit || unicodes.size() > 0) {
+	    Vector<Setting> v;
+	    v.push_back(Setting(Setting::RULE, 500, 500));
+	    v.push_back(Setting(Setting::SPECIAL, String("Warning: missing glyph '") + _e[code] + "'"));
+	    metrics.encode_virtual(code, _e[code], 0, v);
+	    unencoded.push_back(_e[code]);
+	}
     }
 }
 
@@ -721,7 +757,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	// 1. We were not able to find the glyph using Unicode.
 	// 2. There might be a named_glyph.
 	// May need to try secondaries later.  Store this slot.
-	// Try secondaries, if there is no named_glyph, or explicit unicoding.
+	// Try secondaries, if there's explicit unicoding or no named_glyph.
 	if (unicodes_explicit || named_glyph <= 0)
 	    for (uint32_t *u = unicodes.begin(); u < unicodes.end(); u++)
 		if (secondary->encode_uni(code, chname, *u, metrics, errh))
@@ -742,9 +778,25 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
     }
 
     // final pass: complain
+    Vector<String> unencoded;
     for (int code = 0; code < _e.size(); code++)
 	if (_e[code] != dot_notdef && metrics.glyph(code) <= 0)
-	    bad_codepoint(code);
+	    bad_codepoint(code, metrics, unencoded);
+
+    if (unencoded.size() == 1) {
+	errh->warning("'%s' glyph not found in font", unencoded[0].c_str());
+	errh->message("(This glyph will appear as a blot and cause warnings if used.)");
+    } else if (unencoded.size() > 1) {
+	std::sort(unencoded.begin(), unencoded.end());
+	StringAccum sa;
+	for (const String* a = unencoded.begin(); a < unencoded.end(); a++)
+	    sa << *a << ' ';
+	sa.pop_back();
+	sa.append_break_lines(sa.take_string(), 68, "  ");
+	sa.pop_back();
+	errh->warning("%d glyphs not found in font:", unencoded.size());
+	errh->message("%s\n(These glyphs will appear as blots and cause warnings if used.)", sa.c_str());
+    }
 
     metrics.set_coding_scheme(_coding_scheme);
 }

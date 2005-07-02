@@ -1269,6 +1269,7 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 	      case Setting::RULE:
 	      case Setting::PUSH:
 	      case Setting::POP:
+	      case Setting::SPECIAL:
 		v.push_back(*s);
 		break;
 	      case Setting::FONT:
@@ -1396,6 +1397,9 @@ Metrics::unparse() const
 			break;
 		      case Setting::POP:
 			fprintf(stderr, " )");
+			break;
+		      case Setting::SPECIAL:
+			fprintf(stderr, " S{%s}", s->s.c_str());
 			break;
 		    }
 		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1), ch.built_in2, code_str(ch.built_in2));
