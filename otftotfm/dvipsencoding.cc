@@ -57,24 +57,24 @@ DvipsEncoding::add_glyphlist(String text)
 	  read_uni:
 	    if (first == pos
 		|| pos + 1 >= len
-		|| data[pos] != ';'
+		|| (data[pos] != ';' && data[pos] != ',')
 		|| !isxdigit(data[pos+1])
 		|| ((value = strtol(data + pos + 1, &next, 16)),
-		    (!isspace(*next) && *next && *next != ';')))
+		    (!isspace(*next) && *next && *next != ';' && *next != ',')))
 		return -1;
 	    while (*next == ' ' || *next == '\t')
 		next++;
 	    if (*next == '\r' || *next == '\n')
 		glyphlist.insert(glyph_name, value);
-	    else if (*next == ';')
+	    else if (*next == ';' || *next == ',')
 		glyphlist.insert(glyph_name, value | GLYPHLIST_MORE);
 	    else
-		while (*next != '\r' && *next != '\n' && *next != ';')
+		while (*next != '\r' && *next != '\n' && *next != ';' && *next != ',')
 		    next++;
 	    pos = next - data;
-	    if (*next == ';') {	// read another possibility
+	    if (*next == ';' || *next == ',') {	// read another possibility
 		glyph_name = NEXT_GLYPH_NAME(glyph_name);
-		// XXX given "DDDD;EEEE EEEE;FFFF", will not store "FFFF"
+		// XXX given "DDDD,EEEE EEEE,FFFF", will not store "FFFF"
 		goto read_uni;
 	    }
 	} else

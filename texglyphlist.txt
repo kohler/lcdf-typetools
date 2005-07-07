@@ -1,10 +1,10 @@
 # lcdf-typetools texglyphlist.txt, Version 2.33
 # Contents: Extensions to the Adobe Glyph List for TeX fonts and
 # encodings. We also extend the second field so that it can contain
-# multiple Unicode scalar values, separated by semicolons, analogous to
+# multiple Unicode scalar values, separated by commas, analogous to
 # otftotfm's "% UNICODING" comments.
 ###############################################################################
-Delta;2206;0394
+Delta;2206,0394
 Ifractur;2111
 # FFsmall, FFIsmall, FFLsmall, FIsmall, FLsmall: invalid Unicode
 FFsmall;D804
@@ -17,7 +17,7 @@ Germandbls;D800
 # Germandblssmall: invalid Unicode
 Germandblssmall;D803
 Ng;014A
-Omega;2126;03A9
+Omega;2126,03A9
 Rfractur;211C
 # SS: invalid Unicode, used for secondary replacement from EC.enc
 SS;D800
@@ -25,8 +25,8 @@ SS;D800
 SSsmall;D803
 # altselector: invalid Unicode
 altselector;D802
-angbracketleft;27E8;2329
-angbracketright;27E9;232A
+angbracketleft;27E8,2329
+angbracketright;27E9,232A
 arrowbothv;2195
 arrowdblbothv;21D5
 arrowleftbothalf;21BD
@@ -45,7 +45,7 @@ bardbl;2225
 capitalcompwordmark;D809
 ceilingleft;2308
 ceilingright;2309
-circlecopyrt;20DD;25CB
+circlecopyrt;20DD,25CB
 circledivide;2298
 circledot;2299
 circleminus;2296
@@ -54,11 +54,11 @@ coproduct;2A3F
 cwm;200C
 dblbracketleft;27E6
 dblbracketright;27E7
-diamond;2662;2666
+diamond;2662,2666
 diamondmath;22C4
 # 0237 is the proposed allocation for dotless j as of Unicode 4.0
-dotlessj;0237;F6BE
-emptyset;2205;F638
+dotlessj;0237,F6BE
+emptyset;2205,F638
 # emptyslot: invalid Unicode; the user explicitly wants this slot empty
 emptyslot;D801
 epsilon1;03F5
@@ -69,7 +69,7 @@ floorright;230B
 follows;227B
 followsequal;227D
 greatermuch;226B
-heart;2661;2665
+heart;2661,2665
 interrobang;203D
 # interrobangdown: inverted interrobang, invalid Unicode
 interrobangdown;D80B
@@ -85,11 +85,11 @@ pertenthousand;2031
 # TeX encodings such as 'texmital.enc' disagree with Unicode and the Adobe
 # glyph list; in TeX, the "straight" form of phi takes the name "phi",
 # whereas the more-common "loopy" form of phi, \varphi, takes the name "phi1".
-phi;03D5;03C6
+phi;03D5,03C6
 phi1;03C6
 pi1;03D6
 precedesequal;227C
-prime;2032;02B9
+prime;2032,02B9
 rho1;03F1
 sharp;266F
 similarequal;2243
