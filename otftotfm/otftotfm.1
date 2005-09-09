@@ -1191,13 +1191,12 @@ Lets the user choose between context-appropriate swash forms for each
 character.  For example, in the words "Ab AC", the first "A" might be
 translated to a swash form, while the second might not.  There may be more
 than one choice for a given letter, in which case the user should be able
-to select among them.  TeX can't support complex contextual swashes, or
-alternate selection, but 
-.B otftotfm
+to select among them.
+.B Otftotfm
 supports some fonts quite well.  The input encoding should have lots of
 empty space for swash variants, and it should specify a boundary
 character.  See also
-.IR calt .
+.IR calt " and " swsh .
 .TP 5
 .IR dlig ", Discretionary Ligatures"
 Activates uncommon ligatures, such as "c_t", "s_p", and "s_t".  Supported.
@@ -1326,7 +1325,10 @@ Activates all swash forms for each character. There may be more than one
 swash form, in which case 
 .B otftotfm
 will pick the first one listed.  Supported, except that swash variants
-other than the first are inaccessible.
+other than the first are inaccessible.  Note that some fonts with swash
+variants support the
+.I cswh
+feature exclusively.
 .TP 5
 .IR tnum ", Tabular Figures"
 All digits will have the same width, so that tables and the like will align
