@@ -50,7 +50,8 @@ using namespace Efont;
 #define QUERY_OPTICAL_SIZE_OPT	322
 #define QUERY_POSTSCRIPT_NAME_OPT 323
 #define QUERY_GLYPHS_OPT	324
-#define TABLES_OPT		325
+#define QUERY_FVERSION_OPT	325
+#define TABLES_OPT		326
 
 Clp_Option options[] = {
     
@@ -61,6 +62,7 @@ Clp_Option options[] = {
     { "scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
     { "optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
     { "postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
+    { "font-version", 'v', QUERY_FVERSION_OPT, 0, 0 },
     { "glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
     { "tables", 0, TABLES_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
@@ -110,11 +112,12 @@ Usage: %s [-sfzpg] [OTFFILES...]\n\n",
 	   program_name);
     printf("\
 Query options:\n\
-  -s, --scripts              Report font's supported scripts.\n\
-  -f, --features             Report font's GSUB/GPOS features.\n\
-  -z, --optical-size         Report font's optical size information.\n\
-  -p, --postscript-name      Report font's PostScript name.\n\
-  -g, --glyphs               Report font's glyph names.\n\
+  -s, --scripts                Report font's supported scripts.\n\
+  -f, --features               Report font's GSUB/GPOS features.\n\
+  -z, --optical-size           Report font's optical size information.\n\
+  -p, --postscript-name        Report font's PostScript name.\n\
+  -v, --font-version           Report font's version information.\n\
+  -g, --glyphs                 Report font's glyph names.\n\
 \n\
 Other options:\n\
       --script=SCRIPT[.LANG]   Set script used for --features [latn].\n\
@@ -308,6 +311,22 @@ do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHan
 }
 
 static void
+do_query_font_version(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    String version = "no version information";
+
+    if (String name_table = otf.table("name")) {
+	OpenType::Name name(name_table, errh);
+	if (name.ok())
+	    version = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(OpenType::Name::N_VERSION)));
+    }
+
+    if (errh->nerrors() == before_nerrors)
+	result_errh->message("%s", version.c_str());
+}
+
+static void
 do_query_glyphs(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
     int before_nerrors = errh->nerrors();
@@ -396,6 +415,7 @@ main(int argc, char *argv[])
 	  case QUERY_OPTICAL_SIZE_OPT:
 	  case QUERY_POSTSCRIPT_NAME_OPT:
 	  case QUERY_GLYPHS_OPT:
+	  case QUERY_FVERSION_OPT:
 	  case TABLES_OPT:
 	    if (query)
 		usage_error(errh, "supply exactly one query type option");
@@ -477,6 +497,8 @@ particular purpose.\n");
 	    do_query_postscript_name(otf, &cerrh, result_errh);
 	else if (query == QUERY_GLYPHS_OPT)
 	    do_query_glyphs(otf, &cerrh, result_errh);
+	else if (query == QUERY_FVERSION_OPT)
+	    do_query_font_version(otf, &cerrh, result_errh);
 	else if (query == TABLES_OPT)
 	    do_tables(otf, &cerrh, result_errh);
     }

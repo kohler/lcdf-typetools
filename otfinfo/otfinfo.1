@@ -12,7 +12,7 @@
 otfinfo \- report information about OpenType fonts
 .SH SYNOPSIS
 .B otfinfo
-\%[\fB-sfzpg\fR]
+\%[\fB-sfzpvg\fR]
 \%[\fIFILE...\fR]
 '
 .SH DESCRIPTION
@@ -75,6 +75,14 @@ Print optical size information. For example:
 Print each font's PostScript name. For example:
 .nf
   MinionPro-SemiboldItCapt
+.fi
+'
+.Sp
+.TP 5
+.BR \-v ", " \-\-font\-version
+Print font version information, if available. For example:
+.nf
+  OTF 1.013;PS 001.000;Core 1.0.27;makeotf.lib(1.11)
 .fi
 '
 .Sp
