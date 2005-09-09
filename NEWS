@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.36   9.Sep.2005
+
+* t1reencode: Add many more standard encodings to t1reencode.  Patch from
+  Peter Betzler.
+
+
 Version 2.35   2.Jul.2005
 
 * otftotfm: Split TeX extensions out from 'glyphlist.txt' into
