@@ -1,9 +1,12 @@
 LCDF Typetools NEWS
 
-Version 2.36   9.Sep.2005
+Version 2.36   12.Sep.2005
 
 * t1reencode: Add many more standard encodings to t1reencode.  Patch from
   Peter Betzler.
+
+* otftotfm: Allow '--ligkern "T h=:T_h"' (note lack of spaces around '=:').
+  Inspired by Michael Saunders.
 
 * otfinfo: Add '-v/--font-version' option.
 

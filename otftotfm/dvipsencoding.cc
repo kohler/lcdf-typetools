@@ -276,6 +276,13 @@ comment_tokenize(const String &s, int &pos_in, int &line)
     }
 }
 
+static bool
+retokenize_isword(char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+	|| (c >= '0' && c <= '9') || c == '.' || c == '_';
+}
+
 
 static struct { const char *s; int v; } ligkern_ops[] = {
     { "=:", DvipsEncoding::JL_LIG }, { "|=:", DvipsEncoding::JL_CLIG },
@@ -407,14 +414,14 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	return 0;
 	
     } else
-	return errh->error("parse error in LIGKERN");
+	return -EPARSE;
 }
 
 int
 DvipsEncoding::parse_position_words(Vector<String> &v, int override, ErrorHandler *errh)
 {
     if (v.size() != 4)
-	return errh->error("parse error in POSITION");
+	return -EPARSE;
 
     int c = encoding_of(v[0], override > 0);
     if (c < 0)
@@ -442,7 +449,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
 {
     int av;
     if (v.size() < 2 || (v[1] != "=" && v[1] != "=:" && v[1] != ":="))
-	return errh->error("parse error in UNICODING");
+	return -EPARSE;
     else if (v[0] == "||" || (av = encoding_of(v[0])) < 0)
 	return errh->error("target '%s' has no encoding, ignoring UNICODING", v[0].c_str());
 
@@ -475,8 +482,46 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
     return 0;
 }
 
+const DvipsEncoding::WordType DvipsEncoding::word_types[] = {
+    { "LIGKERN", &DvipsEncoding::parse_ligkern_words },
+    { "POSITION", &DvipsEncoding::parse_position_words },
+    { "UNICODING", &DvipsEncoding::parse_unicoding_words }
+};
+
+void
+DvipsEncoding::parse_word_group(Vector<String> &words, int override, int wt, ErrorHandler *errh)
+{
+    if (words.size() > 0) {
+	int (DvipsEncoding::*method)(Vector<String> &, int, ErrorHandler *) = word_types[wt].parsefunc;
+	if ((this->*method)(words, override, errh) == -EPARSE) {
+	    Vector<String> rewords;
+	    for (String *sp = words.begin(); sp != words.end(); sp++) {
+		const char *s = sp->begin(), *ends = sp->end();
+		while (s != ends) {
+		    const char *word = s;
+		    if (*s == '{') {
+			for (s++; s != ends && *s != '}'; s++)
+			    /* nada */;
+			if (s != ends)
+			    s++;
+		    } else {
+			bool x = retokenize_isword(*s);
+			for (s++; s != ends && x == retokenize_isword(*s); s++)
+			    /* nada */;
+		    }
+		    rewords.push_back(sp->substring(word, s));
+		}
+	    }
+	    if ((this->*method)(rewords, override, errh) == -EPARSE)
+		errh->error("parse error in %s", word_types[wt].name);
+		
+	}
+	words.clear();
+    }
+}
+
 int
-DvipsEncoding::parse_words(const String &s, int override, int (DvipsEncoding::*method)(Vector<String> &, int, ErrorHandler *), ErrorHandler *errh)
+DvipsEncoding::parse_words(const String &s, int override, int wt, ErrorHandler *errh)
 {
     Vector<String> words;
     const char *data = s.data();
@@ -489,15 +534,11 @@ DvipsEncoding::parse_words(const String &s, int override, int (DvipsEncoding::*m
 	    data++;
 	if (data == first) {
 	    data++;		// step past semicolon (or harmlessly past EOS)
-	    if (words.size() > 0) {
-		(this->*method)(words, override, errh);
-		words.clear();
-	    }
+	    parse_word_group(words, override, wt, errh);
 	} else
 	    words.push_back(s.substring(first, data));
     }
-    if (words.size() > 0)
-	(this->*method)(words, override, errh);
+    parse_word_group(words, override, wt, errh);
     return 0;
 }
 
@@ -560,28 +601,28 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	    && isspace(token[7])
 	    && !ignore_ligkern) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(8), 1, &DvipsEncoding::parse_ligkern_words, &lerrh);
+	    parse_words(token.substring(8), 1, WT_LIGKERN, &lerrh);
 	    
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
 		   && isspace(token[8])
 		   && !ignore_ligkern) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(9), 1, &DvipsEncoding::parse_ligkern_words, &lerrh);
+	    parse_words(token.substring(9), 1, WT_LIGKERN, &lerrh);
 	    
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace(token[9])
 		   && !ignore_other) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(10), 1, &DvipsEncoding::parse_unicoding_words, &lerrh);
+	    parse_words(token.substring(10), 1, WT_UNICODING, &lerrh);
 	    
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "POSITION", 8) == 0
 		   && isspace(token[8])
 		   && !ignore_other) {
 	    lerrh.set_landmark(landmark(filename, line));
-	    parse_words(token.substring(9), 1, &DvipsEncoding::parse_position_words, &lerrh);
+	    parse_words(token.substring(9), 1, WT_POSITION, &lerrh);
 	    
 	} else if (token.length() >= 13
 		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
@@ -615,19 +656,19 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 int
 DvipsEncoding::parse_ligkern(const String &ligkern_text, int override, ErrorHandler *errh)
 {
-    return parse_words(ligkern_text, override, &DvipsEncoding::parse_ligkern_words, errh);
+    return parse_words(ligkern_text, override, WT_LIGKERN, errh);
 }
 
 int
 DvipsEncoding::parse_position(const String &position_text, int override, ErrorHandler *errh)
 {
-    return parse_words(position_text, override, &DvipsEncoding::parse_position_words, errh);
+    return parse_words(position_text, override, WT_POSITION, errh);
 }
 
 int
 DvipsEncoding::parse_unicoding(const String &unicoding_text, int override, ErrorHandler *errh)
 {
-    return parse_words(unicoding_text, override, &DvipsEncoding::parse_unicoding_words, errh);
+    return parse_words(unicoding_text, override, WT_UNICODING, errh);
 }
 
 void

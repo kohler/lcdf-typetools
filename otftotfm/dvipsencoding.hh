@@ -76,11 +76,20 @@ class DvipsEncoding { public:
     bool _file_had_ligkern;
     bool _warn_missing;
 
+    struct WordType {
+	const char *name;
+	int (DvipsEncoding::*parsefunc)(Vector<String>&, int, ErrorHandler*);
+    };
+    static const WordType word_types[];
+    enum { WT_LIGKERN = 0, WT_POSITION, WT_UNICODING };
+
     void add_ligkern(const Ligature &, int override);
+    enum { EPARSE = 90000 };
     int parse_ligkern_words(Vector<String> &, int override, ErrorHandler *);
     int parse_position_words(Vector<String> &, int override, ErrorHandler *);
     int parse_unicoding_words(Vector<String> &, int override, ErrorHandler *);
-    int parse_words(const String &, int override, int (DvipsEncoding::*)(Vector<String> &, int, ErrorHandler *), ErrorHandler *);
+    void parse_word_group(Vector<String> &, int override, int wt, ErrorHandler *);
+    int parse_words(const String &, int override, int wt, ErrorHandler *);
     void bad_codepoint(int, Metrics &, Vector<String> &);
     bool x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const;
     
