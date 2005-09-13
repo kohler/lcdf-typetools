@@ -8,7 +8,7 @@ Version 2.36   12.Sep.2005
 * otftotfm: Allow '--ligkern "T h=:T_h"' (note lack of spaces around '=:').
   Inspired by Michael Saunders.
 
-* otfinfo: Add '-v/--font-version' option.
+* otfinfo: Add '-v/--font-version' option and document '-t/--tables' option.
 
 
 Version 2.35   2.Jul.2005

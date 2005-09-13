@@ -64,7 +64,7 @@ Clp_Option options[] = {
     { "postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
     { "font-version", 'v', QUERY_FVERSION_OPT, 0, 0 },
     { "glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
-    { "tables", 0, TABLES_OPT, 0, 0 },
+    { "tables", 't', TABLES_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
     // old synonyms
@@ -118,6 +118,7 @@ Query options:\n\
   -p, --postscript-name        Report font's PostScript name.\n\
   -v, --font-version           Report font's version information.\n\
   -g, --glyphs                 Report font's glyph names.\n\
+  -t, --tables                 Report font's OpenType tables.\n\
 \n\
 Other options:\n\
       --script=SCRIPT[.LANG]   Set script used for --features [latn].\n\
@@ -466,7 +467,7 @@ particular purpose.\n");
     
   done:
     if (!query)
-	usage_error(errh, "supply exactly one --query option");
+	usage_error(errh, "supply exactly one query option");
     if (!input_files.size())
 	input_files.push_back("-");
     if (script.null())
