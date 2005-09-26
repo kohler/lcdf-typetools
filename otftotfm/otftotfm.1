@@ -363,7 +363,7 @@ In the command line below, the '<Number>' pattern will force the "onum"
 feature to substitute only numbers (and not, for example, punctuation).
 The "salt" feature can still substitute any character.
 .nf
-    \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-subs\fR='<Number>' \fB\-f\fRonum \.\.\.
+    \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-subs\fR="<Number>" \fB\-f\fRonum \.\.\.
 .fi
 '
 .Sp
@@ -481,8 +481,7 @@ versions of a character from within a TeX file.  For instance, say that your
 font provides three versions of "A".  If you want to access them all, pick a
 character to be your alternate selector -- say "*".  Then give 
 .B otftotfm
-the
-.BR \-\-altselector\-char= '*'
+the '\-\-altselector\-char="*"'
 option.  In TeX, "A" will produce the normal version, "A*" will produce the
 first alternate, and "A**" will produce the second alternate.  Furthermore,
 "s*t" will activate any discretionary "s_t" ligature in the font.  The
@@ -549,13 +548,13 @@ alternates, "ordfeminine", "Asmall", "asuperior", "a.end", and
 option lets you cycle through these alternates, but it's better to leave
 out the ones you don't want, to avoid overfull encodings.  Thus, if you were
 only interested in ".end" variants, you might supply an
-.BR \-\-include\-alternates= "'*.end'"
+'\-\-include\-alternates="*.end"'
 option.
 .Sp
 In the command line below, the '*.end' pattern will apply to "aalt"
 alternates, but not to "salt" alternates.
 .nf
-    \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-alternates\fR='*.end' \fB\-f\fRaalt \.\.\.
+    \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-alternates\fR="*.end" \fB\-f\fRaalt \.\.\.
 .fi
 '
 .Sp
@@ -563,7 +562,7 @@ alternates, but not to "salt" alternates.
 .BI \-\-ligkern= command
 Add a LIGKERN
 .IR command
-to the encoding.  For example, "\fB\-\-ligkern\fR 'T {L} h'" suppresses any
+to the encoding.  For example, '\fB\-\-ligkern\fR "T {L} h"' suppresses any
 T_h ligature in the font.  You can supply multiple
 .B \-\-ligkern
 options.  See ENCODINGS, below.
@@ -573,7 +572,7 @@ options.  See ENCODINGS, below.
 .BI \-\-position= command
 Add a POSITION
 .IR command
-to the encoding.  For example, "\fB\-\-position\fR 'T 10 0 20'" adds ten
+to the encoding.  For example, '\fB\-\-position\fR "T 10 0 20"' adds ten
 units of space to either side of the "T" character.  You can supply
 multiple
 .B \-\-position
@@ -584,7 +583,7 @@ options.  See ENCODINGS, below.
 .BI \-\-unicoding= command
 Add a UNICODING
 .IR command
-to the encoding.  For example, "\fB\-\-unicoding\fR 'pi1 =: uni03D6'" tells
+to the encoding.  For example, '\fB\-\-unicoding\fR "pi1 =: uni03D6"' tells
 .B otftotfm 
 to encode "/pi1" as U+03D6 GREEK PI SYMBOL.  You can supply multiple
 .B \-\-unicoding
@@ -1395,7 +1394,7 @@ encoding distributed with
 .TP 5
 How can I get a small-caps "SS" in place of the German sharp-S?
 '
-Supply the option "\fB\-\-unicoding\fR 'germandbls =: SSsmall'".
+Supply the option '\fB\-\-unicoding\fR "germandbls =: SSsmall"'.
 '
 .TP 5
 How can I prevent f-ligatures from forming in a small-caps font?  
