@@ -1,17 +1,9 @@
 LCDF Typetools NEWS
 
-Version 2.36   12.Sep.2005
-
-* t1reencode: Add many more standard encodings to t1reencode.  Patch from
-  Peter Betzler.
+Version 2.35   3.Oct.2005
 
 * otftotfm: Allow '--ligkern "T h=:T_h"' (note lack of spaces around '=:').
   Inspired by Michael Saunders.
-
-* otfinfo: Add '-v/--font-version' option and document '-t/--tables' option.
-
-
-Version 2.35   2.Jul.2005
 
 * otftotfm: Split TeX extensions out from 'glyphlist.txt' into
   'texglyphlist.txt', leaving 'glyphlist.txt' exactly as distributed by
@@ -20,6 +12,11 @@ Version 2.35   2.Jul.2005
 * otftotfm: Add '% WARNMISSING' and '--warn-missing', so that missing
   characters result in blots and cause warnings when processed by dvips.
   Requested by Michael Zedler.
+
+* otfinfo: Add '-v/--font-version' option and document '-t/--tables' option.
+
+* t1reencode: Add many more standard encodings to t1reencode, and fix
+  existing ones.  Patch from Peter Betzler.
 
 
 Version 2.34   11.Jun.2005
