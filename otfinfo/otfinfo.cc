@@ -52,6 +52,7 @@ using namespace Efont;
 #define QUERY_GLYPHS_OPT	324
 #define QUERY_FVERSION_OPT	325
 #define TABLES_OPT		326
+#define QUERY_FAMILY_OPT	327
 
 Clp_Option options[] = {
     
@@ -62,6 +63,7 @@ Clp_Option options[] = {
     { "scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
     { "optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
     { "postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
+    { "family", 'a', QUERY_FAMILY_OPT, 0, 0 },
     { "font-version", 'v', QUERY_FVERSION_OPT, 0, 0 },
     { "glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
     { "tables", 't', TABLES_OPT, 0, 0 },
@@ -116,6 +118,7 @@ Query options:\n\
   -f, --features               Report font's GSUB/GPOS features.\n\
   -z, --optical-size           Report font's optical size information.\n\
   -p, --postscript-name        Report font's PostScript name.\n\
+  -a, --family                 Report font's family name.\n\
   -v, --font-version           Report font's version information.\n\
   -g, --glyphs                 Report font's glyph names.\n\
   -t, --tables                 Report font's OpenType tables.\n\
@@ -296,6 +299,22 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 }
 
 static void
+do_query_family_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    String family_name = "no family name information";
+
+    if (String name_table = otf.table("name")) {
+	OpenType::Name name(name_table, errh);
+	if (name.ok())
+	    family_name = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(OpenType::Name::N_FAMILY)));
+    }
+
+    if (errh->nerrors() == before_nerrors)
+	result_errh->message("%s", family_name.c_str());
+}
+
+static void
 do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
     int before_nerrors = errh->nerrors();
@@ -416,6 +435,7 @@ main(int argc, char *argv[])
 	  case QUERY_OPTICAL_SIZE_OPT:
 	  case QUERY_POSTSCRIPT_NAME_OPT:
 	  case QUERY_GLYPHS_OPT:
+	  case QUERY_FAMILY_OPT:
 	  case QUERY_FVERSION_OPT:
 	  case TABLES_OPT:
 	    if (query)
@@ -498,6 +518,8 @@ particular purpose.\n");
 	    do_query_postscript_name(otf, &cerrh, result_errh);
 	else if (query == QUERY_GLYPHS_OPT)
 	    do_query_glyphs(otf, &cerrh, result_errh);
+	else if (query == QUERY_FAMILY_OPT)
+	    do_query_family_name(otf, &cerrh, result_errh);
 	else if (query == QUERY_FVERSION_OPT)
 	    do_query_font_version(otf, &cerrh, result_errh);
 	else if (query == TABLES_OPT)

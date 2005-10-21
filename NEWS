@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.36
+
+* otfinfo: Add '-a/--family' option.  Based on patch from Ottavio G. Rizzo.
+
+
 Version 2.35   3.Oct.2005
 
 * otftotfm: Allow '--ligkern "T h=:T_h"' (note lack of spaces around '=:').
