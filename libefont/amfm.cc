@@ -246,7 +246,7 @@ AmfmReader::AmfmReader(AfmParser &afmp, AmfmMetrics *amfm, ErrorHandler *errh)
     : _amfm(amfm), _finder(amfm->_finder), _l(afmp),
       _mmspace(amfm->_mmspace)
 {
-    _errh = errh ? errh : ErrorHandler::silent_handler();
+    _errh = errh ? errh : ErrorHandler::ignore_handler();
 }
 
 AmfmMetrics *

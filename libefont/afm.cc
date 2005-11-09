@@ -29,7 +29,7 @@ AfmReader::AfmReader(AfmParser &parser, Metrics *afm, AfmMetricsXt *afm_xt,
     : _afm(afm), _afm_xt(afm_xt), _l(parser),
       _composite_warned(false), _metrics_sets_warned(false), _y_width_warned(0)
 {
-    _errh = errh ? errh : ErrorHandler::silent_handler();
+    _errh = errh ? errh : ErrorHandler::ignore_handler();
 }
 
 Metrics *

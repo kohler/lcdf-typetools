@@ -587,7 +587,7 @@ Gsub::Gsub(const Data &d, const Font *otf, ErrorHandler *errh) throw (Error)
     // Check for "correct" chaining context rules, as suggested by Adobe's
     // OpenType FDK
     try {
-	Name nametable(otf->table("name"), ErrorHandler::silent_handler());
+	Name nametable(otf->table("name"), ErrorHandler::ignore_handler());
 	String vstr = nametable.name(std::find_if(nametable.begin(), nametable.end(), Name::PlatformPred(Name::N_VERSION, 1, 0, 0)));
 	const char *v = vstr.begin(), *endv = vstr.end();
 	if (v + 20 <= endv) {

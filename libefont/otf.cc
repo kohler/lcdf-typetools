@@ -41,7 +41,7 @@ Font::Font(const String &s, ErrorHandler *errh)
     : _str(s)
 {
     _str.align(4);
-    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
+    _error = parse_header(errh ? errh : ErrorHandler::ignore_handler());
 }
 
 int
@@ -223,7 +223,7 @@ ScriptList::assign(const String &str, ErrorHandler *errh)
 {
     _str = str;
     _str.align(4);
-    int result = check_header(errh ? errh : ErrorHandler::silent_handler());
+    int result = check_header(errh ? errh : ErrorHandler::ignore_handler());
     if (result < 0)
 	_str = String();
     return result;
@@ -368,7 +368,7 @@ FeatureList::assign(const String &str, ErrorHandler *errh)
 {
     _str = str;
     _str.align(2);
-    int result = check_header(errh ? errh : ErrorHandler::silent_handler());
+    int result = check_header(errh ? errh : ErrorHandler::ignore_handler());
     if (result < 0)
 	_str = String();
     return result;
@@ -404,7 +404,7 @@ FeatureList::params(int fid, int length, ErrorHandler *errh, bool old_style_offs
     if (_str.length() == 0 || length < 0)
 	return String();
     if (errh == 0)
-	errh = ErrorHandler::silent_handler();
+	errh = ErrorHandler::ignore_handler();
 
     const uint8_t *data = _str.udata();
     int len = _str.length();
@@ -486,7 +486,7 @@ FeatureList::lookups(int fid, Vector<int> &results, ErrorHandler *errh, bool cle
     if (_str.length() == 0)
 	return -1;
     if (errh == 0)
-	errh = ErrorHandler::silent_handler();
+	errh = ErrorHandler::ignore_handler();
 
     const uint8_t *data = _str.udata();
     int len = _str.length();
@@ -587,7 +587,7 @@ Coverage::Coverage(const String &str, ErrorHandler *errh, bool do_check) throw (
 {
     _str.align(2);
     if (do_check) {
-	if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+	if (check(errh ? errh : ErrorHandler::ignore_handler()) < 0)
 	    _str = String();
     } else {			// check()'s shorten-string side effect
 	const uint8_t *data = _str.udata();
@@ -987,7 +987,7 @@ ClassDef::ClassDef(const String &str, ErrorHandler *errh) throw ()
     : _str(str)
 {
     _str.align(2);
-    if (check(errh ? errh : ErrorHandler::silent_handler()) < 0)
+    if (check(errh ? errh : ErrorHandler::ignore_handler()) < 0)
 	_str = String();
 }
 
