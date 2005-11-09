@@ -391,11 +391,11 @@ main(int argc, char *argv[])
     switch (opt) {
       
      case QUIET_OPT:
-      if (clp->negated)
-	errh = ErrorHandler::default_handler();
-      else
-	errh = ErrorHandler::silent_handler();
-      break;
+       if (clp->negated)
+	   errh = ErrorHandler::default_handler();
+       else
+	   errh = new SilentErrorHandler;
+       break;
       
      case VERSION_OPT:
       printf("t1lint (LCDF typetools) %s\n", VERSION);

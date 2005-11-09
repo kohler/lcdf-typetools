@@ -282,7 +282,7 @@ main(int argc, char *argv[])
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
 	    else
-		errh = ErrorHandler::silent_handler();
+		errh = new SilentErrorHandler;
 	    break;
 
 	  case NAME_OPT:

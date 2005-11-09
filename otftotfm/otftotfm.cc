@@ -420,7 +420,7 @@ get_design_size(const FontInfo &finfo)
 	if (!gpos_table)
 	    throw OpenType::Error();
 
-	ErrorHandler *errh = ErrorHandler::silent_handler();
+	ErrorHandler *errh = ErrorHandler::ignore_handler();
 	OpenType::Gpos gpos(gpos_table, errh);
 
 	// extract 'size' feature(s)
@@ -1240,7 +1240,7 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
 	altselector_features.swap(interesting_features);
 	altselector_feature_filters.swap(feature_filters);
 	Vector<Lookup> alt_lookups(gsub.nlookups(), Lookup());
-	find_lookups(gsub.script_list(), gsub.feature_list(), alt_lookups, ErrorHandler::silent_handler());
+	find_lookups(gsub.script_list(), gsub.feature_list(), alt_lookups, ErrorHandler::ignore_handler());
 	Vector<OpenType::Substitution> alt_subs;
 	for (int i = 0; i < alt_lookups.size(); i++)
 	    if (alt_lookups[i].used) {
@@ -1821,7 +1821,9 @@ main(int argc, char *argv[])
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
 	    else
-		errh = ErrorHandler::silent_handler();
+		// 9.Nov.05 -- need a new SilentErrorHandler, because we use
+		// the base SilentErrorHandler elsewhere to ignore errors
+		errh = new SilentErrorHandler;
 	    break;
 
 	  case VERBOSE_OPT:
@@ -1956,7 +1958,7 @@ particular purpose.\n");
 
 	// apply default ligkern commands
 	if (default_ligkern)
-	    dvipsenc.parse_ligkern(default_ligkerns, 0, ErrorHandler::silent_handler());
+	    dvipsenc.parse_ligkern(default_ligkerns, 0, ErrorHandler::ignore_handler());
     
 	// apply command-line ligkern commands and coding scheme
 	cerrh.set_landmark("--ligkern command");

@@ -335,11 +335,11 @@ main(int argc, char *argv[])
 	break;
       
      case QUIET_OPT:
-      if (clp->negated)
-	errh = ErrorHandler::default_handler();
-      else
-	errh = ErrorHandler::silent_handler();
-      break;
+       if (clp->negated)
+	   errh = ErrorHandler::default_handler();
+       else
+	   errh = new SilentErrorHandler;
+       break;
 
      case OUTPUT_OPT:
       if (outfile) errh->fatal("output file already specified");
