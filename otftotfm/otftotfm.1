@@ -127,9 +127,9 @@ installs files under that directory tree as follows:
 .TS
 l	l	l	.
 \fBFile type\fR	\fBDirectory\fR	\fBFilename\fR
-TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[--base].tfm
+TFM	TEXMF/fonts/tfm/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[\-\-base].tfm
 VF	TEXMF/fonts/vf/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vf
-PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[--base].pl
+PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[\-\-base].pl
 VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vpl
 encoding	TEXMF/fonts/enc/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
 	or TEXMF/dvips/\fIvendor\fR/
@@ -207,37 +207,37 @@ for the first set of fonts.  Note the "\fB\-f\fRkern \fB\-f\fRliga"
 options, which access pair kerns and the default "f" ligatures.
 .Sp
 .nf
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Regular.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-Regular
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-It.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-It
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Semibold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-Semibold
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-SemiboldIt.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-SemiboldIt
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Bold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-Bold
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-BoldIt.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga LY1--MinionPro-BoldIt
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Regular.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-Regular
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-It.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-It
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Semibold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-Semibold
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-SemiboldIt.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-SemiboldIt
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Bold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-Bold
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-BoldIt.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga LY1\-\-MinionPro\-BoldIt
 .fi
 .Sp
 The small-caps fonts are generated with an additional "\fB\-f\fRsmcp"
-option.  We append "--fsmcp" to the font metric names as well,
+option.  We append "\-\-fsmcp" to the font metric names as well,
 differentiating them from the regular fonts.  Although MinionPro's italic
 fonts support small-caps, the LaTeX font selection scheme can't access them
 easily, so we've left them off.
 .Sp
 .nf
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Regular.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1--MinionPro-Regular--fsmcp
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Semibold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1--MinionPro-Semibold--fsmcp
-    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro-Bold.otf \e
-            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1--MinionPro-Bold--fsmcp
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Regular.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1\-\-MinionPro-Regular\-\-fsmcp
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Semibold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1\-\-MinionPro\-Semibold\-\-fsmcp
+    \fBotftotfm\fR \fB\-a\fR \fB\-e\fR texnansx MinionPro\-Bold.otf \e
+            \fB\-f\fRkern \fB\-f\fRliga \fB\-f\fRsmcp LY1\-\-MinionPro\-Bold\-\-fsmcp
 .fi
 .Sp
 To get old-style numerals, just add the "\fB\-f\fRonum" option to each
-invocation -- and, to reduce confusion, append "--fonum" to the font metric
+invocation -- and, to reduce confusion, append "\-\-fonum" to the font metric
 names.
 .PP
 At this point, all our font metric files are installed, and it's finally
@@ -249,21 +249,21 @@ Let's call the LaTeX font family "MinionPro".  Then the ".fd" file is
 .nf
     \eDeclareFontFamily{LY1}{MinionPro}{}
     \eDeclareFontShape{LY1}{MinionPro}{m}{n}%
-            { <\-> LY1--MinionPro-Regular }{}
-    \eDeclareFontShape{LY1}{MinionPro}{m}{it}{ <\-> LY1--MinionPro-It }{}
+            { <\-> LY1\-\-MinionPro\-Regular }{}
+    \eDeclareFontShape{LY1}{MinionPro}{m}{it}{ <\-> LY1\-\-MinionPro\-It }{}
     \eDeclareFontShape{LY1}{MinionPro}{m}{sc}%
-            { <\-> LY1--MinionPro-Regular--fsmcp }{}
+            { <\-> LY1\-\-MinionPro\-Regular\-\-fsmcp }{}
     \eDeclareFontShape{LY1}{MinionPro}{sb}{n}%
-            { <\-> LY1--MinionPro-Semibold }{}
+            { <\-> LY1\-\-MinionPro\-Semibold }{}
     \eDeclareFontShape{LY1}{MinionPro}{sb}{it}%
-            { <\-> LY1--MinionPro-SemiboldIt }{}
+            { <\-> LY1\-\-MinionPro\-SemiboldIt }{}
     \eDeclareFontShape{LY1}{MinionPro}{sb}{sc}%
-            { <\-> LY1--MinionPro-Semibold--fsmcp }{}
-    \eDeclareFontShape{LY1}{MinionPro}{b}{n}{ <\-> LY1--MinionPro-Bold }{}
+            { <\-> LY1\-\-MinionPro\-Semibold\-\-fsmcp }{}
+    \eDeclareFontShape{LY1}{MinionPro}{b}{n}{ <\-> LY1\-\-MinionPro-Bold }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{it}%
-            { <\-> LY1--MinionPro-BoldIt }{}
+            { <\-> LY1\-\-MinionPro\-BoldIt }{}
     \eDeclareFontShape{LY1}{MinionPro}{b}{sc}%
-            { <\-> LY1--MinionPro-Bold--fsmcp }{}
+            { <\-> LY1\-\-MinionPro\-Bold\-\-fsmcp }{}
     \eDeclareFontShape{LY1}{MinionPro}{bx}{n}%
             { <\-> ssub * MinionPro/b/n }{}
     \eDeclareFontShape{LY1}{MinionPro}{bx}{it}%
@@ -359,7 +359,7 @@ followed by
 .BI \-\-include\-subs " pattern\fR. "
 For pattern syntax, see CHARACTER PATTERNS, below.
 .Sp
-In the command line below, the '<Number>' pattern will force the "onum"
+In the command line below, the \&'<Number>' pattern will force the "onum"
 feature to substitute only numbers (and not, for example, punctuation).
 The "salt" feature can still substitute any character.
 .nf
@@ -481,7 +481,7 @@ versions of a character from within a TeX file.  For instance, say that your
 font provides three versions of "A".  If you want to access them all, pick a
 character to be your alternate selector -- say "*".  Then give 
 .B otftotfm
-the '\-\-altselector\-char="*"'
+the \&'\-\-altselector\-char="*"'
 option.  In TeX, "A" will produce the normal version, "A*" will produce the
 first alternate, and "A**" will produce the second alternate.  Furthermore,
 "s*t" will activate any discretionary "s_t" ligature in the font.  The
@@ -548,10 +548,10 @@ alternates, "ordfeminine", "Asmall", "asuperior", "a.end", and
 option lets you cycle through these alternates, but it's better to leave
 out the ones you don't want, to avoid overfull encodings.  Thus, if you were
 only interested in ".end" variants, you might supply an
-'\-\-include\-alternates="*.end"'
+\&'\-\-include\-alternates="*.end"'
 option.
 .Sp
-In the command line below, the '*.end' pattern will apply to "aalt"
+In the command line below, the \&'*.end' pattern will apply to "aalt"
 alternates, but not to "salt" alternates.
 .nf
     \fBotftotfm\fR \fB\-f\fRsalt \fB\-\-include\-alternates\fR="*.end" \fB\-f\fRaalt \.\.\.
@@ -562,7 +562,7 @@ alternates, but not to "salt" alternates.
 .BI \-\-ligkern= command
 Add a LIGKERN
 .IR command
-to the encoding.  For example, '\fB\-\-ligkern\fR "T {L} h"' suppresses any
+to the encoding.  For example, \&'\fB\-\-ligkern\fR "T {L} h"' suppresses any
 T_h ligature in the font.  You can supply multiple
 .B \-\-ligkern
 options.  See ENCODINGS, below.
@@ -572,7 +572,7 @@ options.  See ENCODINGS, below.
 .BI \-\-position= command
 Add a POSITION
 .IR command
-to the encoding.  For example, '\fB\-\-position\fR "T 10 0 20"' adds ten
+to the encoding.  For example, \&'\fB\-\-position\fR "T 10 0 20"' adds ten
 units of space to either side of the "T" character.  You can supply
 multiple
 .B \-\-position
@@ -583,7 +583,7 @@ options.  See ENCODINGS, below.
 .BI \-\-unicoding= command
 Add a UNICODING
 .IR command
-to the encoding.  For example, '\fB\-\-unicoding\fR "pi1 =: uni03D6"' tells
+to the encoding.  For example, \&'\fB\-\-unicoding\fR "pi1 =: uni03D6"' tells
 .B otftotfm 
 to encode "/pi1" as U+03D6 GREEK PI SYMBOL.  You can supply multiple
 .B \-\-unicoding
@@ -1355,7 +1355,7 @@ or
 .I $HOME/texmf
 directory?  If so, run the command "kpsewhich \-\-expand\-path='$TEXMF'" to
 verify that directory is not being found.  You may need to set your TEXMF
-environment variable, to '{!!'"$HOME"'/texmf,!!$TEXMFMAIN}', for instance
+environment variable, to \&'{!!'"$HOME"'/texmf,!!$TEXMFMAIN}', for instance
 (note the different kinds of quotes; on my machine, this expands to
 \&'{!!/home/kohler/texmf,!!$TEXMFMAIN}').
 '
@@ -1373,7 +1373,7 @@ file, or it might be an oversight.  Either fix the encoding file or ignore
 the warning.
 '
 .TP 5
-can't map '\fIchar\fR' to Unicode
+can't map \&'\fIchar\fR' to Unicode
 '
 Another encoding file problem: One of the glyph names in an UNICODING block
 could not be converted to Unicode.  This is problematic since UNICODING
@@ -1394,7 +1394,7 @@ encoding distributed with
 .TP 5
 How can I get a small-caps "SS" in place of the German sharp-S?
 '
-Supply the option '\fB\-\-unicoding\fR "germandbls =: SSsmall"'.
+Supply the option \&'\fB\-\-unicoding\fR "germandbls =: SSsmall"'.
 '
 .TP 5
 How can I prevent f-ligatures from forming in a small-caps font?  
