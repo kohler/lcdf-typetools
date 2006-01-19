@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.37   18.Jan.2006
+
+* otftotfm: Add 'ringfitted'.  Requested by Michael Zedler.
+
+
 Version 2.36   9.Nov.2005
 
 * otfinfo: Add '-a/--family' option.  Based on patch from Ottavio G. Rizzo.

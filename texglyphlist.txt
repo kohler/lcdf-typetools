@@ -56,8 +56,9 @@ dblbracketleft;27E6
 dblbracketright;27E7
 diamond;2662,2666
 diamondmath;22C4
-# 0237 is the proposed allocation for dotless j as of Unicode 4.0
-dotlessj;0237,F6BE
+# U+0237 is the proposed allocation for dotless j as of Unicode 4.0
+# U+1D6A5 is the mathematical italic version approved in Unicode 5.0
+dotlessj;0237,F6BE,1D6A5
 emptyset;2205,F638
 # emptyslot: invalid Unicode; the user explicitly wants this slot empty
 emptyslot;D801
@@ -91,6 +92,8 @@ pi1;03D6
 precedesequal;227C
 prime;2032,02B9
 rho1;03F1
+# ringfitted: a ring character centered on the x-width of A, invalid Unicode
+ringfitted;D80D
 sharp;266F
 similarequal;2243
 slurabove;2322

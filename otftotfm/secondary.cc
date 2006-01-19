@@ -33,6 +33,8 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
        U_IJ = 0x0132,		// U+0132 LATIN CAPITAL LIGATURE IJ
        U_ij = 0x0133,		// U+0133 LATIN SMALL LIGATURE IJ
        U_DOTLESSJ = 0x0237,	// U+0237 LATIN SMALL LETTER DOTLESS J
+       U_RINGABOVE = 0x02DA,	// U+02DA RING ABOVE
+       U_COMBININGRINGABOVE = 0x030A,	// U+030A COMBINING RING ABOVE
        U_CWM = 0x200C,		// U+200C ZERO WIDTH NON-JOINER
        U_ENDASH = 0x2013,	// U+2013 EN DASH
        U_PERTENTHOUSAND = 0x2031, // U+2031 PER TEN THOUSAND SIGN
@@ -57,6 +59,7 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
        U_ASCENDERCWM = 0xD80A,	// invalid Unicode
        U_INTERROBANGDOWN = 0xD80B, // invalid Unicode
        U_TWELVEUDASH = 0xD80C,	// invalid Unicode
+       U_RINGFITTED = 0xD80D,	// invalid Unicode
        U_VS1 = 0xFE00,
        U_VS16 = 0xFE0F,
        U_VS17 = 0xE0100,
@@ -66,7 +69,9 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
        U_FSMALL = 0xF766,
        U_ISMALL = 0xF769,
        U_LSMALL = 0xF76C,
-       U_SSMALL = 0xF773 };
+       U_SSMALL = 0xF773,
+       U_MATHDOTLESSJ = 0x1D6A5
+};
 
 Secondary::~Secondary()
 {
@@ -307,7 +312,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	break;
 
       case U_DOTLESSJ:
-      case U_DOTLESSJ_2: {
+      case U_DOTLESSJ_2:
+      case U_MATHDOTLESSJ: {
 	  Glyph dj_glyph;
 	  int which = dotlessj_font(metrics, errh, dj_glyph);
 	  if (which >= 0) {
@@ -431,6 +437,25 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	    return true;
 	break;
 
+      case U_RINGFITTED: {
+	  int A_width = char_one_bound(_finfo, xform, 4, true, -1000, 'A', 0);
+	  uint32_t ring_char = U_RINGABOVE;
+	  int ring_width = char_one_bound(_finfo, xform, 4, true, -1000, ring_char, 0);
+	  if (ring_width <= -1000) {
+	      ring_char = U_COMBININGRINGABOVE;
+	      ring_width = char_one_bound(_finfo, xform, 4, true, -1000, ring_char, 0);
+	  }
+	  if (A_width > -1000 && ring_width > -1000) {
+	      int offset = (A_width - ring_width) / 2;
+	      v.push_back(Setting(Setting::MOVE, offset, 0));
+	      if (char_setting(v, metrics, ring_char, 0)) {
+		  v.push_back(Setting(Setting::MOVE, A_width - ring_width - offset, 0));
+		  return true;
+	      }
+	  }
+	  break;
+      }
+	
     }
 
     // didn't find a good setting, restore v to pristine state

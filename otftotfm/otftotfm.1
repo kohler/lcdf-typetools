@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.35
+.ds V 2.37
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -1040,6 +1040,9 @@ The parallel symbol "||"
 asteriskmath
 Vertically-centered "*"
 .TP
+ringfitted
+Ring accent centered on the width of "A"
+.TP
 twelveudash
 2/3-em-wide dash
 .TP
@@ -1294,7 +1297,8 @@ for TeX, since it refers exclusively to stylistic alternates.
 .TP 5
 .IR sinf ", Scientific Inferiors"
 Replaces digits and some punctuation marks with smaller, lowered forms
-intended for subscripts.  Supported.
+intended for subscripts.  Supported.  Compare
+.IR subs .
 .TP 5
 .IR size ", Optical Size"
 This feature stores information about the range of optical sizes for which
@@ -1314,6 +1318,15 @@ in that a Stylistic Set is uniform: an
 .I ssXX
 feature should never involve selection from a set of possible alternate
 characters.  Supported.
+.TP 5
+.IR subs ", Subscript"
+Replaces characters with smaller, lowered forms intended for subscripts.
+Supported.  Compare
+.IR sinf ;
+some fonts support
+.I sinf
+but not
+.IR subs .
 .TP 5
 .IR sups ", Superscript"
 Replaces digits, some punctuation marks, and some lower-case letters with
