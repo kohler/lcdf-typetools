@@ -357,7 +357,7 @@ option acts like
 .B \-\-clear\-subs
 followed by
 .BI \-\-include\-subs " pattern\fR. "
-For pattern syntax, see CHARACTER PATTERNS, below.
+For pattern syntax, see GLYPH PATTERNS, below.
 .Sp
 In the command line below, the \&'<Number>' pattern will force the "onum"
 feature to substitute only numbers (and not, for example, punctuation).
@@ -484,8 +484,7 @@ character to be your alternate selector -- say "*".  Then give
 the \&'\-\-altselector\-char="*"'
 option.  In TeX, "A" will produce the normal version, "A*" will produce the
 first alternate, and "A**" will produce the second alternate.  Furthermore,
-"s*t" will activate any discretionary "s_t" ligature in the font.  The
-default alternate-selector character is taken from the encoding.
+"s*t" will activate any discretionary "s_t" ligature in the font.
 .Sp
 The
 .B \-\-altselector\-char
@@ -494,8 +493,9 @@ mechanism uses the features specified by
 options.  You don't need to turn on those features if you use
 .BR \-\-altselector .
 .Sp
-See Sivan Toledo's article cited in the SEE ALSO section for more
-information.
+The alternate-selector character may also be specified in the encoding; see
+ENCODINGS, below.  See Sivan Toledo's article cited in the SEE ALSO section
+for more information.
 '
 .Sp
 .TP 5
@@ -538,7 +538,7 @@ option acts like
 .B \-\-clear\-alternates
 followed by
 .BI \-\-include\-alternates " pattern\fR. "
-For pattern syntax, see CHARACTER PATTERNS, below.
+For pattern syntax, see GLYPH PATTERNS, below.
 .Sp
 OpenType fonts can have many alternates per character, most of which aren't
 interesting.  For example, the character "a" in WarnockPro-Regular has five
@@ -861,7 +861,7 @@ glyph to \&'emptyslot' if you don't want
 to use the slot for a ligature character.  For example, this will leave the
 \&'ff' slot unused if the font has no \&'ff' glyph:
 .nf
-   % UNICODING ff =: ff emptyslot ;
+    % UNICODING ff =: ff emptyslot ;
 .fi
 (Note that most OpenType fonts provide a visible representation for unused
 encoding slots, namely a box with an X inside.)
@@ -1098,6 +1098,8 @@ and
 .BR \-\-include\-alternates
 options, and their
 .B \-\-exclude
+and
+.B \-\-*\-filter
 variants, accept the following types of pattern.
 .BUP
 Glyph names.  Example: "Aacute".  Use

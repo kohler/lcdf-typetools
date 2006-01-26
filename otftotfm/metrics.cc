@@ -1,6 +1,6 @@
 /* metrics.{cc,hh} -- an encoding during and after OpenType features
  *
- * Copyright (c) 2003-2005 Eddie Kohler
+ * Copyright (c) 2003-2006 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -1131,11 +1131,8 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 		&& dvipsenc.encoded(c) == (bool) want_encoded)
 		empty_codes.push_back(c);
 
-    /* Then, loop over the unencoded characters, assigning them codes. */
+    /* Then, assign codes to the unencoded characters. */
     int nunencoded = 0;
-    Code *holes[4], *end_hole;
-    holes[1] = holes[2] = holes[3] = empty_codes.begin();
-    end_hole = empty_codes.end();
 
     for (Slot *slot = slots.begin(); slot != slots.end(); slot++) {
 	if (slot->new_code >= 0)
@@ -1144,29 +1141,28 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	int needs = (_encoding[slot->old_code].visible_base() ? 1 : 0)
 	    + (_encoding[slot->old_code].flag(Char::LIVE) ? 2 : 0);
 	assert(needs > 0);
-	Code **hole;
-
-	for (hole = &holes[needs]; *hole < end_hole; (*hole)++) {
-	    int haves = (!_encoding[**hole].base_code >= 0 ? 1 : 0)
-		+ (!_encoding[**hole].visible() ? 2 : 0);
+	
+	Code dest = -1;
+	for (Code *h = empty_codes.begin(); h < empty_codes.end() && dest < 0; h++) {
+	    int haves = (_encoding[*h].base_code < 0 ? 1 : 0)
+		+ (!_encoding[*h].visible() ? 2 : 0);
 	    if ((needs & haves) == needs)
-		break;
+		dest = *h;
 	}
 
-	if (*hole < end_hole) {
+	if (dest >= 0) {
 	    if (needs & 2) {
-		assert(!_encoding[**hole].visible());
-		_encoding[**hole].swap(_encoding[slot->old_code]);
-		slot->new_code = **hole;
+		assert(!_encoding[dest].visible());
+		_encoding[dest].swap(_encoding[slot->old_code]);
+		slot->new_code = dest;
 	    } else {
-		_encoding[slot->old_code].base_code = **hole;
+		_encoding[slot->old_code].base_code = dest;
 		slot->new_code = slot->old_code;
 	    }
 	    if (needs & 1) {
-		assert(_encoding[**hole].base_code < 0 || _encoding[**hole].base_code == slot->old_code);
-		_encoding[**hole].base_code = slot->old_code;
+		assert(_encoding[dest].base_code < 0 || _encoding[dest].base_code == slot->old_code);
+		_encoding[dest].base_code = slot->old_code;
 	    }
-	    (*hole)++;
 	} else
 	    nunencoded++;
     }

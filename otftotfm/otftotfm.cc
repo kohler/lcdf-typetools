@@ -1,6 +1,6 @@
 /* otftotfm.cc -- driver for translating OpenType fonts to TeX metrics
  *
- * Copyright (c) 2003-2005 Eddie Kohler
+ * Copyright (c) 2003-2006 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -608,6 +608,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     Vector<int> lig_code2, lig_outcode, lig_context, kern_code2, kern_amt;
     // don't print KRN x after printing LIG x
     uint32_t used[8];
+    bool any_ligs = false;
     for (int i = 0; i <= 256; i++)
 	if (metrics.glyph(i) && minimum_kern < 10000) {
 	    int any_lig = metrics.ligatures(i, lig_code2, lig_outcode, lig_context);
@@ -631,8 +632,12 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 				    << " R " << real_string(this_kern, du)
 				    << ')' << glyph_comments[*k2] << '\n';
 		    }
-		if (kern_sa)
+		if (kern_sa) {
+		    if (any_ligs)
+			fprintf(f, "\n");
 		    fprintf(f, "   (LABEL %s)%s\n%s   (STOP)\n", glyph_ids[i].c_str(), glyph_comments[i].c_str(), kern_sa.c_str());
+		    any_ligs = true;
+		}
 	    }
 	}
     fprintf(f, "   )\n");
@@ -1229,13 +1234,6 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
 
     // apply alternate selectors
     if (metrics.altselectors() && !dvipsenc_literal) {
-	// apply default features
-	if (!altselector_features.size()) {
-	    altselector_features.push_back(OpenType::Tag("dlig"));
-	    altselector_feature_filters.insert(OpenType::Tag("dlig"), &null_filter);
-	    altselector_features.push_back(OpenType::Tag("salt"));
-	    altselector_feature_filters.insert(OpenType::Tag("salt"), &null_filter);
-	}
 	// do lookups
 	altselector_features.swap(interesting_features);
 	altselector_feature_filters.swap(feature_filters);
@@ -1848,7 +1846,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("otftotfm (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2002-2005 Eddie Kohler\n\
+	    printf("Copyright (C) 2002-2006 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -1883,15 +1881,29 @@ particular purpose.\n");
     }
     
   done:
-    try {
-	if (!input_file)
-	    usage_error(errh, "no font filename provided");
-	if (!encoding_file) {
-	    errh->warning("no encoding provided");
-	    errh->message("(Use '-e ENCODING' to choose an encoding. '-e texnansx' often works,\nor say '-e -' to turn off this warning.)");
-	} else if (encoding_file == "-")
-	    encoding_file = "";
+    // set up file names
+    if (!input_file)
+	usage_error(errh, "no font filename provided");
+    if (!encoding_file) {
+	errh->warning("no encoding provided");
+	errh->message("(Use '-e ENCODING' to choose an encoding. '-e texnansx' often works,\nor say '-e -' to turn off this warning.)");
+    } else if (encoding_file == "-")
+	encoding_file = "";
     
+    // set up feature filters
+    if (!altselector_features.size()) {
+	if (!current_filter_ptr)
+	    current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
+	altselector_features.push_back(OpenType::Tag("dlig"));
+	altselector_feature_filters.insert(OpenType::Tag("dlig"), current_filter_ptr);
+	altselector_features.push_back(OpenType::Tag("salt"));
+	altselector_feature_filters.insert(OpenType::Tag("salt"), current_filter_ptr);
+    } else if (!current_filter_ptr) {
+	errh->warning("some filtering options ignored");
+	errh->message("(--include-*, --exclude-*, and --*-filter options must occur\nbefore the feature options to which they should apply.)");
+    }
+
+    try {
 	// read font
 	otf_data = read_file(input_file, errh);
 	if (errh->nerrors())
