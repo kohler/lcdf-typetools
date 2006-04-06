@@ -1433,6 +1433,18 @@ option and run
 .B updmap
 manually when you're done.
 '
+.TP 5
+How can I refer to the different forms of phi?
+'
+\fBOtftotfm\fR follows TeX practice and widely-distributed TeX encoding
+vectors, so "/phi" in an input encoding vector should map to a "straight"
+phi and "/phi1" should map to a "loopy" phi.  Note that TeX practice
+differs from the PostScript standard naming conventions, in which "/phi" is
+"loopy" and "/phi1" is "straight"; this means that \fBotftotfm\fR may map
+"/phi" in an input encoding vector to a font's "/phi1" glyph, and vice
+versa.  Perhaps most unambiguously, you can use "/uni03D5" for the
+"straight" form and "/uni03C6" for the "loopy" form.
+'
 .SH "BUGS"
 .\" .LP
 .\" Presumably some context-sensitive positionings and ligatures could be
