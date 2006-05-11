@@ -1445,6 +1445,14 @@ differs from the PostScript standard naming conventions, in which "/phi" is
 versa.  Perhaps most unambiguously, you can use "/uni03D5" for the
 "straight" form and "/uni03C6" for the "loopy" form.
 '
+.TP 5
+How can I get lining figures (that is, normal line-height digits) with small caps ('\fB\-f\fRsmcp')?
+'
+Many fonts use old-style figures by default with small caps. Since the
+default is not specified, it's wise to explicitly supply \&'\fB\-f\fRlnum' or
+\&'\fB-f\fRonum'.
+
+'
 .SH "BUGS"
 .\" .LP
 .\" Presumably some context-sensitive positionings and ligatures could be
