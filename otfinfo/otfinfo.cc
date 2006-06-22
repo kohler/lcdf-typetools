@@ -53,6 +53,7 @@ using namespace Efont;
 #define QUERY_FVERSION_OPT	325
 #define TABLES_OPT		326
 #define QUERY_FAMILY_OPT	327
+#define INFO_OPT		328
 
 Clp_Option options[] = {
     
@@ -65,18 +66,11 @@ Clp_Option options[] = {
     { "postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
     { "family", 'a', QUERY_FAMILY_OPT, 0, 0 },
     { "font-version", 'v', QUERY_FVERSION_OPT, 0, 0 },
+    { "info", 'i', INFO_OPT, 0, 0 },
     { "glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
     { "tables", 't', TABLES_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
-    // old synonyms
-    { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
-    { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
-    { "query-scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
-    { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
-    { "query-optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
-    { "query-postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
-    { "query-glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 }
     
 };
 
@@ -120,6 +114,7 @@ Query options:\n\
   -p, --postscript-name        Report font's PostScript name.\n\
   -a, --family                 Report font's family name.\n\
   -v, --font-version           Report font's version information.\n\
+  -i, --info                   Report font's names and designer/vendor info.\n\
   -g, --glyphs                 Report font's glyph names.\n\
   -t, --tables                 Report font's OpenType tables.\n\
 \n\
@@ -253,6 +248,14 @@ do_query_features(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *r
     }
 }
 
+static String
+get_name(const OpenType::Name &name, uint32_t nameid)
+{
+    if (!name.ok())
+	return String();
+    return name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(nameid)));
+}
+
 static void
 do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
@@ -286,7 +289,7 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 	    sa << ", size range (" << (size_data.u16(6) / 10.) << " pt, "
 	       << (size_data.u16(8) / 10.) << " pt], "
 	       << "subfamily ID " << size_data.u16(2);
-	    if (String n = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(size_data.u16(4)))))
+	    if (String n = get_name(name, size_data.u16(4)))
 		sa << ", subfamily name " << n;
 	}
 	
@@ -307,7 +310,7 @@ do_query_family_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    family_name = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(OpenType::Name::N_FAMILY)));
+	    family_name = get_name(name, OpenType::Name::N_FAMILY);
     }
 
     if (errh->nerrors() == before_nerrors)
@@ -323,7 +326,7 @@ do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHan
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    postscript_name = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(OpenType::Name::N_POSTSCRIPT)));
+	    postscript_name = get_name(name, OpenType::Name::N_POSTSCRIPT);
     }
 
     if (errh->nerrors() == before_nerrors)
@@ -339,11 +342,57 @@ do_query_font_version(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    version = name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(OpenType::Name::N_VERSION)));
+	    version = get_name(name, OpenType::Name::N_VERSION);
     }
 
     if (errh->nerrors() == before_nerrors)
 	result_errh->message("%s", version.c_str());
+}
+
+static void
+do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    StringAccum sa;
+
+    if (String name_table = otf.table("name")) {
+	OpenType::Name name(name_table, errh);
+	if (name.ok()) {
+	    if (String s = get_name(name, OpenType::Name::N_FAMILY))
+		sa << "Family:              " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_SUBFAMILY))
+		sa << "Subfamily:           " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_FULLNAME))
+		sa << "Full name:           " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_POSTSCRIPT))
+		sa << "PostScript name:     " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_VERSION))
+		sa << "Version:             " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_UNIQUEID))
+		sa << "Unique ID:           " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_DESCRIPTION))
+		sa << "Description:         " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_DESIGNER))
+		sa << "Designer:            " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_DESIGNER_URL))
+		sa << "Designer URL:        " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_MANUFACTURER))
+		sa << "Manufacturer:        " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_VENDOR_URL))
+		sa << "Vendor URL:          " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_TRADEMARK))
+		sa << "Trademark:           " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_COPYRIGHT))
+		sa << "Copyright:           " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_LICENSE_URL))
+		sa << "License URL:         " << s << "\n";
+	    if (String s = get_name(name, OpenType::Name::N_LICENSE_DESCRIPTION))
+		sa << "License Description: " << s << "\n";
+	}
+    }
+
+    if (errh->nerrors() == before_nerrors)
+	result_errh->message("%s", (sa ? sa.c_str() : "no designer information"));
 }
 
 static void
@@ -438,6 +487,7 @@ main(int argc, char *argv[])
 	  case QUERY_FAMILY_OPT:
 	  case QUERY_FVERSION_OPT:
 	  case TABLES_OPT:
+	  case INFO_OPT:
 	    if (query)
 		usage_error(errh, "supply exactly one query type option");
 	    query = opt;
@@ -524,6 +574,8 @@ particular purpose.\n");
 	    do_query_font_version(otf, &cerrh, result_errh);
 	else if (query == TABLES_OPT)
 	    do_tables(otf, &cerrh, result_errh);
+	else if (query == INFO_OPT)
+	    do_info(otf, &cerrh, result_errh);
     }
     
     return (errh->nerrors() == 0 ? 0 : 1);
