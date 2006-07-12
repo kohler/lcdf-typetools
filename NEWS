@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.39   11.Jul.2006
+
+* cfftot1: Unify some subroutines previously missed, for slightly smaller
+  output.  Reported by Michael Zedler.
+
+
 Version 2.38   8.May.2006
 
 * otfinfo: Add '--info' option.  Requested by John Owens.

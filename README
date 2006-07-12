@@ -1,4 +1,4 @@
-LCDF-TYPETOOLS 2.38
+LCDF-TYPETOOLS 2.39
 ===================
 
 USAGE
@@ -123,10 +123,10 @@ COPYRIGHT/LICENSE
 -----------------
    All source code is Copyright (c) 1997-2005 Eddie Kohler.
 
-   This code is distributed under the GNU General Public License, Version
-2, or, at your discretion, any later version. The GNU General Public
-License is available via the Web at <http://www.gnu.org/licenses/gpl.html>,
-or in the COPYING file in this directory.
+   This code is distributed under the GNU General Public License, Version 2
+(and only Version 2). The GNU General Public License is available via the
+Web at <http://www.gnu.org/licenses/gpl.html>, or in the COPYING file in
+this directory.
 
 
 AUTHOR
