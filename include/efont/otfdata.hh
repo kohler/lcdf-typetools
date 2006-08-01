@@ -56,6 +56,7 @@ class Data { public:
 
     operator const String&() const	{ return _str; }
 
+    operator bool() const		{ return _str; }
     int length() const			{ return _str.length(); }
 
     inline uint8_t operator[](unsigned offset) const throw (Bounds);
@@ -66,6 +67,8 @@ class Data { public:
 
     Data subtable(unsigned offset) const throw (Bounds);
     Data offset_subtable(unsigned offset_offset) const throw (Bounds);
+
+    void align_long()			{ _str.align(4); }
 
   private:
 

@@ -52,6 +52,7 @@ Type1CharstringGen::Type1CharstringGen(int precision)
     else
 	_precision = 5;
     _f_precision = _precision;
+    clear();
 }
 
 void
