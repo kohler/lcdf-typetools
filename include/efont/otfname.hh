@@ -34,6 +34,7 @@ class Name { public:
     inline const_iterator begin() const;
     inline const_iterator end() const;
     String name(const_iterator) const;
+    String english_name(int nameid) const;
     
     struct PlatformPred {
 	inline PlatformPred(int nameid, int platform = -1, int encoding = -1, int language = -1);

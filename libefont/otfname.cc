@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 
 #define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
 
@@ -62,6 +63,12 @@ Name::name(const_iterator i) const
 	    return _str.substring(stringOffset + offset, length);
     }
     return String();
+}
+
+String
+Name::english_name(int nameid) const
+{
+    return name(std::find_if(begin(), end(), EnglishPlatformPred(nameid)));
 }
 
 }}

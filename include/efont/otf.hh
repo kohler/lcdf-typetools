@@ -286,6 +286,9 @@ class ClassDef { public:
 
 };
 
+class Post;
+class Name;
+
 extern Vector<PermString> debug_glyph_names;
 
 
