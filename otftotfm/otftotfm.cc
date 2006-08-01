@@ -1313,36 +1313,20 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
 	ErrorHandler *errh)
 {
-    // get font
-    Cff cff(otf.table("CFF"), errh);
-    if (!cff.ok())
+    FontInfo finfo(&otf);
+    if (!finfo.ok())
 	return;
-
-    Cff::FontParent *fp = cff.font(PermString(), errh);
-    if (!fp || !fp->ok())
-	return;
-    Cff::Font *font = dynamic_cast<Cff::Font *>(fp);
-    if (!font) {
-	errh->error("CID-keyed fonts not supported");
-	return;
-    }
-
-    OpenType::Cmap cmap(otf.table("cmap"), errh);
-    assert(cmap.ok());
-
-    FontInfo finfo;
-    finfo.otf = &otf;
-    finfo.cff = font;
-    finfo.cmap = &cmap;
+    if (!finfo.cff)
+	errh->warning("TrueType-flavored OpenType fonts are not well supported\nby otftotfm yet.  Expect a crash.");
     
     // save glyph names
     Vector<PermString> glyph_names;
-    font->glyph_names(glyph_names);
+    finfo.glyph_names(glyph_names);
     OpenType::debug_glyph_names = glyph_names;
 
     // set typeface name from font family name
     {
-	String typeface = font->dict_string(Cff::oFamilyName);
+	String typeface = finfo.family_name();
 
 	// make it reasonable for the shell
 	StringAccum sa;
@@ -1359,10 +1343,10 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // encode boundary glyph at 256; pretend its Unicode value is '\n'
     metrics.encode(256, '\n', metrics.boundary_glyph());
     if (dvipsenc_literal)
-	dvipsenc.make_metrics(metrics, cmap, font, 0, true, errh);
+	dvipsenc.make_metrics(metrics, *finfo.cmap, font, 0, true, errh);
     else {
 	T1Secondary secondary(finfo, font_name, otf_filename);
-	dvipsenc.make_metrics(metrics, cmap, font, &secondary, false, errh);
+	dvipsenc.make_metrics(metrics, *finfo.cmap, font, &secondary, false, errh);
     }
 
     // maintain statistics about features
@@ -1434,7 +1418,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     // figure out our FONTNAME
     if (!font_name) {
 	// derive font name from OpenType font name
-	font_name = font->font_name();
+	font_name = finfo.postscript_name();
 	if (encoding_file) {
 	    int slash = encoding_file.find_right('/') + 1;
 	    int dot = encoding_file.find_right('.');
@@ -1468,13 +1452,10 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 
     // output
     ::otf_filename = otf_filename;
-    output_metrics(metrics, font->font_name(), dvipsenc.boundary_char(),
+    output_metrics(metrics, finfo.postscript_name(), dvipsenc.boundary_char(),
 		   finfo,
 		   out_encoding_name, out_encoding_file,
 		   font_name, main_dvips_map, errh);
-    
-    // done
-    delete font;
 }
 
 

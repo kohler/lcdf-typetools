@@ -1,5 +1,10 @@
 #ifndef OTFTOTFM_OTFTOTFM_HH
 #define OTFTOTFM_OTFTOTFM_HH
+#include <lcdf/string.hh>
+class Metrics;
+class FontInfo;
+class StringAccum;
+class ErrorHandler;
 
 String suffix_font_name(const String &font_name, const String &suffix);
 

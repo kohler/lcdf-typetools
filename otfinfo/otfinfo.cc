@@ -248,14 +248,6 @@ do_query_features(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *r
     }
 }
 
-static String
-get_name(const OpenType::Name &name, uint32_t nameid)
-{
-    if (!name.ok())
-	return String();
-    return name.name(std::find_if(name.begin(), name.end(), OpenType::Name::EnglishPlatformPred(nameid)));
-}
-
 static void
 do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
@@ -289,7 +281,7 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 	    sa << ", size range (" << (size_data.u16(6) / 10.) << " pt, "
 	       << (size_data.u16(8) / 10.) << " pt], "
 	       << "subfamily ID " << size_data.u16(2);
-	    if (String n = get_name(name, size_data.u16(4)))
+	    if (String n = name.english_name(size_data.u16(4)))
 		sa << ", subfamily name " << n;
 	}
 	
@@ -310,7 +302,7 @@ do_query_family_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    family_name = get_name(name, OpenType::Name::N_FAMILY);
+	    family_name = name.english_name(OpenType::Name::N_FAMILY);
     }
 
     if (errh->nerrors() == before_nerrors)
@@ -326,7 +318,7 @@ do_query_postscript_name(const OpenType::Font &otf, ErrorHandler *errh, ErrorHan
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    postscript_name = get_name(name, OpenType::Name::N_POSTSCRIPT);
+	    postscript_name = name.english_name(OpenType::Name::N_POSTSCRIPT);
     }
 
     if (errh->nerrors() == before_nerrors)
@@ -342,7 +334,7 @@ do_query_font_version(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok())
-	    version = get_name(name, OpenType::Name::N_VERSION);
+	    version = name.english_name(OpenType::Name::N_VERSION);
     }
 
     if (errh->nerrors() == before_nerrors)
@@ -358,35 +350,35 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
     if (String name_table = otf.table("name")) {
 	OpenType::Name name(name_table, errh);
 	if (name.ok()) {
-	    if (String s = get_name(name, OpenType::Name::N_FAMILY))
+	    if (String s = name.english_name(OpenType::Name::N_FAMILY))
 		sa << "Family:              " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_SUBFAMILY))
+	    if (String s = name.english_name(OpenType::Name::N_SUBFAMILY))
 		sa << "Subfamily:           " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_FULLNAME))
+	    if (String s = name.english_name(OpenType::Name::N_FULLNAME))
 		sa << "Full name:           " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_POSTSCRIPT))
+	    if (String s = name.english_name(OpenType::Name::N_POSTSCRIPT))
 		sa << "PostScript name:     " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_VERSION))
+	    if (String s = name.english_name(OpenType::Name::N_VERSION))
 		sa << "Version:             " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_UNIQUEID))
+	    if (String s = name.english_name(OpenType::Name::N_UNIQUEID))
 		sa << "Unique ID:           " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_DESCRIPTION))
+	    if (String s = name.english_name(OpenType::Name::N_DESCRIPTION))
 		sa << "Description:         " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_DESIGNER))
+	    if (String s = name.english_name(OpenType::Name::N_DESIGNER))
 		sa << "Designer:            " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_DESIGNER_URL))
+	    if (String s = name.english_name(OpenType::Name::N_DESIGNER_URL))
 		sa << "Designer URL:        " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_MANUFACTURER))
+	    if (String s = name.english_name(OpenType::Name::N_MANUFACTURER))
 		sa << "Manufacturer:        " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_VENDOR_URL))
+	    if (String s = name.english_name(OpenType::Name::N_VENDOR_URL))
 		sa << "Vendor URL:          " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_TRADEMARK))
+	    if (String s = name.english_name(OpenType::Name::N_TRADEMARK))
 		sa << "Trademark:           " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_COPYRIGHT))
+	    if (String s = name.english_name(OpenType::Name::N_COPYRIGHT))
 		sa << "Copyright:           " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_LICENSE_URL))
+	    if (String s = name.english_name(OpenType::Name::N_LICENSE_URL))
 		sa << "License URL:         " << s << "\n";
-	    if (String s = get_name(name, OpenType::Name::N_LICENSE_DESCRIPTION))
+	    if (String s = name.english_name(OpenType::Name::N_LICENSE_DESCRIPTION))
 		sa << "License Description: " << s << "\n";
 	}
     }

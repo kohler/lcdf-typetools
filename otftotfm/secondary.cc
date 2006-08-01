@@ -73,6 +73,78 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
        U_MATHDOTLESSJ = 0x1D6A5
 };
 
+
+FontInfo::FontInfo(const Efont::OpenType::Font *otf_, ErrorHandler *errh)
+    : otf(otf_), cmap(0), cff_file(0), cff(0), post(0), name(0)
+{
+    cmap = new Efont::OpenType::Cmap(otf->table("cmap"), errh);
+    assert(cmap->ok());
+
+    if (String cff_string = otf.table("CFF")) {
+	cff_file = new Efont::Cff(cff_string, errh);
+	if (!cff_file->ok())
+	    return;
+	Efont::Cff::FontParent *fp = cff_file->font(PermString(), errh);
+	if (!fp || !fp->ok())
+	    return;
+	if (!(cff = dynamic_cast<Efont::Cff::Font *>(fp))) {
+	    errh->error("CID-keyed fonts not supported");
+	    return;
+	}
+    }
+
+    if (!cff)
+	post = new Efont::OpenType::Post(otf.table("post"), errh);
+    name = new Efont::OpenType::Name(otf.table("name"), errh);
+}
+
+FontInfo::~FontInfo()
+{
+    delete cmap;
+    delete cff_file;
+    delete cff;
+    delete post;
+    delete name;
+}
+
+bool
+FontInfo::ok() const
+{
+    if (cff)
+	return cmap->ok() && cff->ok();
+    else
+	return post && post->ok() && name && name->ok();
+}
+
+bool
+FontInfo::glyph_names(Vector<PermString> &glyph_names) const
+{
+    if (cff) {
+	cff->glyph_names(glyph_names);
+	return true;
+    } else
+	return post->glyph_names(glyph_names);
+}
+
+String
+FontInfo::family_name() const
+{
+    if (cff)
+	return cff->dict_string(Efont::Cff::oFamilyName);
+    else
+	return name->english_name(Efont::OpenType::Name::N_FAMILY);
+}
+
+String
+FontInfo::postscript_name() const
+{
+    if (cff)
+	return cff->font_name();
+    else
+	return name->english_name(Efont::OpenType::Name::N_POSTSCRIPT);
+}
+
+
 Secondary::~Secondary()
 {
 }

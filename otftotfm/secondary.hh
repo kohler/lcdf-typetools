@@ -8,8 +8,21 @@ struct Setting;
 
 struct FontInfo {
     const Efont::OpenType::Font *otf;
-    const Efont::Cff::Font *cff;
     const Efont::OpenType::Cmap *cmap;
+    
+    const Efont::Cff *cff_file;
+    const Efont::Cff::Font *cff;
+    
+    const Efont::OpenType::Post *post;
+    const Efont::OpenType::Name *name;
+    
+    FontInfo(const Efont::OpenType::Font *otf) throw (Efont::OpenType::Error);
+    ~FontInfo();
+
+    bool ok() const;
+    bool glyph_names(Vector<PermString> &) const;
+    String family_name() const;
+    String postscript_name() const;
 };
 
 class Secondary { public:
