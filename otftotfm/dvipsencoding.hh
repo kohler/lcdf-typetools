@@ -5,6 +5,7 @@
 #include <lcdf/hashmap.hh>
 class Metrics;
 class Secondary;
+class FontInfo;
 
 class DvipsEncoding { public:
 
@@ -36,7 +37,7 @@ class DvipsEncoding { public:
     bool file_had_ligkern() const		{ return _file_had_ligkern; }
     
     // also modifies 'this':
-    void make_metrics(Metrics &, const Efont::OpenType::Cmap &, Efont::Cff::Font *, Secondary *, bool literal, ErrorHandler *);
+    void make_metrics(Metrics &, const FontInfo &, Secondary *, bool literal, ErrorHandler *);
     
     void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
     void apply_ligkern_kern(Metrics &, ErrorHandler *) const;

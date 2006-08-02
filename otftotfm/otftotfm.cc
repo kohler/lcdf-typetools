@@ -486,8 +486,7 @@ real_string(double value, double du)
 double
 font_slant(const FontInfo &finfo)
 {
-    double val;
-    (void) finfo.cff->dict_value(Efont::Cff::oItalicAngle, &val);
+    double val = finfo.italic_angle();
     return -tan(val * M_PI / 180.0) + slant;
 }
 
@@ -530,12 +529,11 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     if (actual_slant)
 	fprintf(f, "   (SLANT R %g)\n", actual_slant);
 
-    double val;
     if (char_bounds(bounds, width, finfo, font_xform, ' ')) {
 	// advance space width by letterspacing, scale by space_factor
 	double space_width = (width + letterspace) * space_factor;
 	fprint_real(f, "   (SPACE", space_width, du);
-	if (finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &val) && val) {
+	if (finfo.is_fixed_pitch()) {
 	    // fixed-pitch: no space stretch or shrink
 	    fprint_real(f, "   (STRETCH", 0, du);
 	    fprint_real(f, "   (SHRINK", 0, du);
@@ -655,7 +653,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	    sa.clear();
 	    push_stack.clear();
 	    CharstringBounds boundser(font_xform);
-	    const CharstringProgram *program = finfo.cff;
+	    const CharstringProgram *program = finfo.program();
 	    for (const Setting *s = settings.begin(); s < settings.end(); s++)
 		switch (s->op) {
 		    
@@ -663,7 +661,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		    boundser.char_bounds(program->glyph_context(s->y));
 		    // 3.Aug.2004 -- reported by Marco Kuhlmann: Don't use
 		    // glyph_ids[] array when looking at a different font.
-		    if (program == finfo.cff)
+		    if (program == finfo.program())
 			sa << "      (SETCHAR " << glyph_ids[s->x] << ')' << glyph_base_comments[s->x] << "\n";
 		    else
 			sa << "      (SETCHAR D " << s->x << ")\n";
@@ -1187,7 +1185,7 @@ main_dvips_map(const String &ps_name, StringAccum &sa, ErrorHandler *errh)
     if (String fn = installed_type1(otf_filename, ps_name, (output_flags & G_TYPE1) != 0, errh))
 	sa << "<" << pathname_filename(fn);
     else
-	sa << "<<" << pathname_filename(otf_filename);
+	sa << "<" << pathname_filename(otf_filename);
 }
 
 static void
@@ -1263,7 +1261,7 @@ do_gpos(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& fea
 	if (lookups[i].used) {
 	    OpenType::GposLookup l = gpos.lookup(i);
 	    poss.clear();
-	    bool understood = l.unparse_automatics(poss);
+	    bool understood = l.unparse_automatics(poss, errh);
 	    int nunderstood = metrics.apply(poss);
 
 	    // mark as used
@@ -1313,11 +1311,11 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	const DvipsEncoding &dvipsenc_in, bool dvipsenc_literal,
 	ErrorHandler *errh)
 {
-    FontInfo finfo(&otf);
+    FontInfo finfo(&otf, errh);
     if (!finfo.ok())
 	return;
     if (!finfo.cff)
-	errh->warning("TrueType-flavored OpenType fonts are not well supported\nby otftotfm yet.  Expect a crash.");
+	errh->warning("TrueType-flavored font support is experimental");
     
     // save glyph names
     Vector<PermString> glyph_names;
@@ -1339,14 +1337,14 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 
     // initialize encoding
     DvipsEncoding dvipsenc(dvipsenc_in); // make copy
-    Metrics metrics(font, font->nglyphs());
+    Metrics metrics(finfo.program(), finfo.nglyphs());
     // encode boundary glyph at 256; pretend its Unicode value is '\n'
     metrics.encode(256, '\n', metrics.boundary_glyph());
     if (dvipsenc_literal)
-	dvipsenc.make_metrics(metrics, *finfo.cmap, font, 0, true, errh);
+	dvipsenc.make_metrics(metrics, finfo, 0, true, errh);
     else {
 	T1Secondary secondary(finfo, font_name, otf_filename);
-	dvipsenc.make_metrics(metrics, *finfo.cmap, font, &secondary, false, errh);
+	dvipsenc.make_metrics(metrics, finfo, &secondary, false, errh);
     }
 
     // maintain statistics about features
@@ -1450,6 +1448,12 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     else
 	metrics.set_coding_scheme(out_encoding_name);
 
+    // force no type 1
+    if (!finfo.cff && (output_flags & G_TYPE1)) {
+	errh->warning("assuming --no-type1 since this font is TrueType-flavored");
+	output_flags &= ~G_TYPE1;
+    }
+    
     // output
     ::otf_filename = otf_filename;
     output_metrics(metrics, finfo.postscript_name(), dvipsenc.boundary_char(),

@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <lcdf/straccum.hh>
 
-Metrics::Metrics(Efont::CharstringProgram *font, int nglyphs)
+Metrics::Metrics(const Efont::CharstringProgram *font, int nglyphs)
     : _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1),
       _design_units(1000), _liveness_marked(false)
 {
@@ -38,7 +38,7 @@ Metrics::~Metrics()
 }
 
 int
-Metrics::add_mapped_font(Efont::CharstringProgram *font, const String &name)
+Metrics::add_mapped_font(const Efont::CharstringProgram *font, const String &name)
 {
     _mapped_fonts.push_back(font);
     _mapped_font_names.push_back(name);

@@ -730,7 +730,7 @@ DvipsEncoding::x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const
 
 
 void
-DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap, Efont::Cff::Font *font, Secondary *secondary, bool literal, ErrorHandler *errh)
+DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *secondary, bool literal, ErrorHandler *errh)
 {
     // first pass: without secondaries
     for (int code = 0; code < _e.size(); code++) {
@@ -752,13 +752,11 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	Efont::OpenType::Glyph glyph = 0;
 	uint32_t glyph_uni = (unicodes.size() ? unicodes[0] : 0);
 	for (uint32_t *u = unicodes.begin(); u < unicodes.end() && !glyph; u++)
-	    if ((glyph = map_uni(*u, cmap, metrics)) > 0)
+	    if ((glyph = map_uni(*u, *finfo.cmap, metrics)) > 0)
 		glyph_uni = *u;
 
 	// find named glyph, if any
-	Efont::OpenType::Glyph named_glyph = 0;
-	if (font)
-	    named_glyph = font->glyphid(chname);
+	Efont::OpenType::Glyph named_glyph = finfo.glyphid(chname);
 
 	// do not use a Unicode-mapped glyph if literal
 	if (literal)
@@ -791,9 +789,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const Efont::OpenType::Cmap &cmap,
 	bool unicodes_explicit = x_unicodes(chname, unicodes);
 
 	// find named glyph, if any
-	Efont::OpenType::Glyph named_glyph = 0;
-	if (font)
-	    named_glyph = font->glyphid(chname);
+	Efont::OpenType::Glyph named_glyph = finfo.glyphid(chname);
 
 	// 1. We were not able to find the glyph using Unicode.
 	// 2. There might be a named_glyph.

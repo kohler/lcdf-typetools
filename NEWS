@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.40   1.Aug.2006
+
+* otftotfm: Initial support for TrueType-flavored OpenType fonts.  Inspired
+  because John Owens is working with Microsoft's Calibri et al.
+
+
 Version 2.39   11.Jul.2006
 
 * cfftot1: Unify some subroutines previously missed, for slightly smaller

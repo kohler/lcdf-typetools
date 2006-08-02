@@ -20,7 +20,11 @@
 #include <efont/t1bounds.hh>
 #include <efont/t1font.hh>
 #include <efont/t1rw.hh>
+#include <efont/otfname.hh>
 #include <efont/otfos2.hh>
+#include <efont/otfpost.hh>
+#include <efont/t1csgen.hh>
+#include <efont/t1unparser.hh>
 #include <lcdf/straccum.hh>
 #include <stdarg.h>
 #include <errno.h>
@@ -74,13 +78,43 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
 };
 
 
+class TrueTypeBoundsCharstringProgram : public Efont::CharstringProgram { public:
+
+    TrueTypeBoundsCharstringProgram(const Efont::OpenType::Font *);
+    ~TrueTypeBoundsCharstringProgram();
+
+    int nglyphs() const;
+    Efont::Charstring *glyph(int gi) const;
+    PermString glyph_name(int gi) const;
+    void glyph_names(Vector<PermString> &) const;
+    
+  private:
+
+    const Efont::OpenType::Font *_otf;
+    int _nglyphs;
+    int _nhmtx;
+    bool _loca_long;
+    double _em_xform;
+    Efont::OpenType::Data _loca;
+    Efont::OpenType::Data _glyf;
+    Efont::OpenType::Data _hmtx;
+    mutable Vector<Efont::Charstring *> _charstrings;
+    mutable Vector<PermString> _glyph_names;
+    mutable bool _got_glyph_names;
+    mutable Vector<uint32_t> _unicodes;
+    mutable bool _got_unicodes;
+    
+};
+
+
 FontInfo::FontInfo(const Efont::OpenType::Font *otf_, ErrorHandler *errh)
-    : otf(otf_), cmap(0), cff_file(0), cff(0), post(0), name(0)
+    : otf(otf_), cmap(0), cff_file(0), cff(0), post(0), name(0), _nglyphs(-1),
+      _got_glyph_names(false), _ttb_program(0)
 {
     cmap = new Efont::OpenType::Cmap(otf->table("cmap"), errh);
     assert(cmap->ok());
 
-    if (String cff_string = otf.table("CFF")) {
+    if (String cff_string = otf->table("CFF")) {
 	cff_file = new Efont::Cff(cff_string, errh);
 	if (!cff_file->ok())
 	    return;
@@ -91,11 +125,20 @@ FontInfo::FontInfo(const Efont::OpenType::Font *otf_, ErrorHandler *errh)
 	    errh->error("CID-keyed fonts not supported");
 	    return;
 	}
+	_nglyphs = cff->nglyphs();
     }
 
-    if (!cff)
-	post = new Efont::OpenType::Post(otf.table("post"), errh);
-    name = new Efont::OpenType::Name(otf.table("name"), errh);
+    if (!cff) {
+	post = new Efont::OpenType::Post(otf->table("post"), errh);
+	// read number of glyphs from 'maxp' -- should probably be elsewhere
+	if (Efont::OpenType::Data maxp = otf->table("maxp"))
+	    if (maxp.length() >= 6)
+		_nglyphs = maxp.u16(4);
+	if (_nglyphs < 0 && post->ok())
+	    _nglyphs = post->nglyphs();
+    }
+    
+    name = new Efont::OpenType::Name(otf->table("name"), errh);
 }
 
 FontInfo::~FontInfo()
@@ -105,6 +148,7 @@ FontInfo::~FontInfo()
     delete cff;
     delete post;
     delete name;
+    delete _ttb_program;
 }
 
 bool
@@ -119,11 +163,25 @@ FontInfo::ok() const
 bool
 FontInfo::glyph_names(Vector<PermString> &glyph_names) const
 {
-    if (cff) {
-	cff->glyph_names(glyph_names);
-	return true;
-    } else
-	return post->glyph_names(glyph_names);
+    program()->glyph_names(glyph_names);
+    return true;
+}
+
+int
+FontInfo::glyphid(PermString name) const
+{
+    if (cff)
+	return cff->glyphid(name);
+    else {
+	if (!_got_glyph_names) {
+	    glyph_names(_glyph_names);
+	    _got_glyph_names = true;
+	}
+	PermString *found = std::find(_glyph_names.begin(), _glyph_names.end(), name);
+	if (found == _glyph_names.end())
+	    return 0;
+	return found - _glyph_names.begin();
+    }
 }
 
 String
@@ -144,6 +202,241 @@ FontInfo::postscript_name() const
 	return name->english_name(Efont::OpenType::Name::N_POSTSCRIPT);
 }
 
+const Efont::CharstringProgram *
+FontInfo::program() const
+{
+    if (cff)
+	return cff;
+    else {
+	if (!_ttb_program)
+	    _ttb_program = new TrueTypeBoundsCharstringProgram(otf);
+	return _ttb_program;
+    }
+}
+
+bool
+FontInfo::is_fixed_pitch() const
+{
+    if (cff) {
+	double d;
+	return (cff->dict_value(Efont::Cff::oIsFixedPitch, &d) && d);
+    } else
+	return post->is_fixed_pitch();
+}
+
+double
+FontInfo::italic_angle() const
+{
+    if (cff) {
+	double d;
+	(void) cff->dict_value(Efont::Cff::oItalicAngle, &d);
+	return d;
+    } else
+	return post->italic_angle();
+}
+
+
+TrueTypeBoundsCharstringProgram::TrueTypeBoundsCharstringProgram(const Efont::OpenType::Font *otf)
+    : _otf(otf), _nglyphs(-1), _loca_long(false), _em_xform(1000. / 1024),
+      _loca(otf->table("loca")), _glyf(otf->table("glyf")),
+      _hmtx(otf->table("hmtx")), _got_glyph_names(false), _got_unicodes(false)
+{
+    Efont::OpenType::Data maxp(otf->table("maxp"));
+    if (maxp.length() >= 6)
+	_nglyphs = maxp.u16(4);
+    
+    Efont::OpenType::Data head(otf->table("head"));
+    // HEAD format:
+    // 0	Fixed  		Table version number  	0x00010000 (ver. 1.0)
+    // 4	Fixed 		fontRevision
+    // 8	ULONG 		checkSumAdjustment
+    // 12	ULONG 		magicNumber 		Set to 0x5F0F3CF5
+    // 16	USHORT 		flags
+    // 18	USHORT 		unitsPerEm
+    // 20	LONGDATETIME 	created
+    // 28	LONGDATETIME 	modified
+    // 36	USHORT	 	xMin
+    // 38	SHORT	 	yMin
+    // 40	SHORT	 	xMax
+    // 42	SHORT	 	yMax
+    // 44	USHORT	 	macStyle
+    // 46	USHORT	 	lowestRecPPEM
+    // 48	SHORT	 	fontDirectionHint
+    // 50	SHORT	 	indexToLocFormat
+    // 52	SHORT	 	glyphDataFormat
+    if (head.length() >= 54
+	&& head.u32(0) == 0x10000
+	&& head.u32(12) == 0x5F0F3CF5) {
+	_loca_long = head.u16(50) != 0;
+	_em_xform = 1000. / (double) head.u16(18);
+    }
+    if (_loca_long)
+	_loca.align_long();
+    int loca_onesize = (_loca_long ? 4 : 2);
+    if (_nglyphs >= _loca.length() / loca_onesize)
+	_nglyphs = (_loca.length() / loca_onesize) - 1;
+
+    // horizontal metrics
+    Efont::OpenType::Data hhea(_otf->table("hhea"));
+    // HHEA format:
+    // 0	Fixed  	Table version number  	0x00010000 for version 1.0.
+    // 4	FWORD 	Ascender
+    // 6	FWORD 	Descender
+    // 8	FWORD 	LineGap
+    // 10	UFWORD 	advanceWidthMax
+    // 12	FWORD 	minLeftSideBearing
+    // 14	FWORD 	minRightSideBearing
+    // 16	FWORD 	xMaxExtent
+    // 18	SHORT 	caretSlopeRise
+    // 20	SHORT 	caretSlopeRun
+    // 22	SHORT 	caretOffset
+    // 24	SHORT 	(reserved)
+    // 26	SHORT 	(reserved)
+    // 28	SHORT 	(reserved)
+    // 30	SHORT 	(reserved)
+    // 32	SHORT 	metricDataFormat
+    // 34	USHORT 	numberOfHMetrics
+    if (hhea.length() >= 36
+	&& hhea.u32(0) == 0x10000)
+	_nhmtx = hhea.u16(34);
+    if (_nhmtx * 4 > _hmtx.length())
+	_nhmtx = _hmtx.length() / 4;
+}
+
+TrueTypeBoundsCharstringProgram::~TrueTypeBoundsCharstringProgram()
+{
+    for (Efont::Charstring **cs = _charstrings.begin(); cs < _charstrings.end(); cs++)
+	delete *cs;
+}
+
+int
+TrueTypeBoundsCharstringProgram::nglyphs() const
+{
+    return _nglyphs;
+}
+
+PermString
+TrueTypeBoundsCharstringProgram::glyph_name(int gi) const
+{
+    // generate glyph names based on what pdftex can understand
+    if (gi == 0)
+	return PermString(".notdef");
+    
+    // try 'post' table glyph names
+    if (!_got_glyph_names) {
+	Efont::OpenType::Post post(_otf->table("post"));
+	if (post.ok())
+	    post.glyph_names(_glyph_names);
+	_got_glyph_names = true;
+    }
+    if (gi >= 0 && gi < _glyph_names.size())
+	return _glyph_names[gi];
+
+    // try 'uniXXXX' names
+    if (!_got_unicodes) {
+	Efont::OpenType::Cmap cmap(_otf->table("cmap"));
+	if (cmap.ok())
+	    cmap.unmap_all(_unicodes);
+	// make sure we only use uniquely identified glyphs
+	HashMap<uint32_t, int> unicode_usage(-1);
+	for (int g = 0; g < _unicodes.size(); g++)
+	    if (_unicodes[g]) {
+		int i = unicode_usage.find_force(_unicodes[g], g);
+		if (i != g)
+		    _unicodes[i] = _unicodes[g] = 0;
+	    }
+	_got_unicodes = true;
+    }
+
+    if (gi >= 0 && gi < _unicodes.size() && _unicodes[gi] > 0 && _unicodes[gi] <= 0xFFFF) {
+	char buf[10];
+	sprintf(buf, "uni%04X", _unicodes[gi]);
+	return PermString(buf);
+    } else
+	return permprintf("index%d", gi);
+}
+
+void
+TrueTypeBoundsCharstringProgram::glyph_names(Vector<PermString> &gn) const
+{
+    gn.clear();
+    for (int gi = 0; gi < _nglyphs; gi++)
+	gn.push_back(glyph_name(gi));
+}
+
+Efont::Charstring *
+TrueTypeBoundsCharstringProgram::glyph(int gi) const
+{
+    if (gi < 0 || gi >= _nglyphs)
+	return 0;
+    if (_charstrings.size() <= gi)
+	_charstrings.resize(gi + 1, (Efont::Charstring *) 0);
+    if (!_charstrings[gi]) {
+	// calculate glyf offsets
+	uint32_t offset, end_offset;
+	if (_loca_long) {
+	    offset = _loca.u32(gi * 4);
+	    end_offset = _loca.u32(gi * 4 + 4);
+	} else {
+	    offset = _loca.u16(gi * 2) * 2;
+	    end_offset = _loca.u16(gi * 2 + 2) * 2;
+	}
+
+	// fetch bounding box from glyf
+	int ncontours, xmin, ymin, xmax, ymax;
+	if (offset != end_offset) {
+	    if (offset > end_offset || offset + 10 > end_offset
+		|| end_offset > (uint32_t) _glyf.length())
+		return 0;
+
+	    ncontours = _glyf.s16(offset);
+	    xmin = _glyf.s16(offset + 2);
+	    ymin = _glyf.s16(offset + 4);
+	    xmax = _glyf.s16(offset + 6);
+	    ymax = _glyf.s16(offset + 8);
+	} else
+	    ncontours = xmin = ymin = xmax = ymax = 0;
+
+	// fetch horizontal metrics
+	int advance_width, lsb;
+	if (gi >= _nhmtx) {
+	    advance_width = (_nhmtx ? _hmtx.u16((_nhmtx - 1) * 4) : 0);
+	    int hmtx_offset = _nhmtx * 4 + (gi - _nhmtx) * 2;
+	    lsb = (hmtx_offset + 2 <= _hmtx.length() ? _hmtx.s16(hmtx_offset) : 0);
+	} else {
+	    advance_width = _hmtx.u16(gi * 4);
+	    lsb = _hmtx.s16(gi * 4 + 2);
+	}
+
+	// make charstring
+	Efont::Type1CharstringGen gen;
+	if (ncontours == 0) {
+	    gen.gen_number(0, 'X');
+	    gen.gen_number(advance_width * _em_xform);
+	    gen.gen_command(Efont::Charstring::cHsbw);
+	} else {
+	    gen.gen_number(lsb * _em_xform, 'X');
+	    gen.gen_number(advance_width * _em_xform);
+	    gen.gen_command(Efont::Charstring::cHsbw);
+	    gen.gen_moveto(Point(xmin * _em_xform, ymin * _em_xform), false);
+	    if (xmax != xmin || ymax == ymin)
+		gen.gen_number((xmax - xmin) * _em_xform, 'x');
+	    if (ymax != ymin)
+		gen.gen_number((ymax - ymin) * _em_xform, 'y');
+	    gen.gen_command(ymax == ymin ? Efont::Charstring::cHlineto
+			    : (xmax == xmin ? Efont::Charstring::cVlineto
+			       : Efont::Charstring::cRlineto));
+	    gen.gen_command(Efont::Charstring::cClosepath);
+	}
+	gen.gen_command(Efont::Charstring::cEndchar);
+
+	_charstrings[gi] = gen.output();
+    }
+    return _charstrings[gi];
+}
+
+
+/* */
 
 Secondary::~Secondary()
 {
@@ -235,7 +528,7 @@ dotlessj_dvips_include(const String &, StringAccum &sa, ErrorHandler *)
 int
 T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph)
 {
-    if (!_font_name || !_finfo.otf)
+    if (!_font_name || !_finfo.otf || !_finfo.cff)
 	return -1;
     
     String dj_name = suffix_font_name(_font_name, "--lcdfj");
@@ -399,9 +692,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 
       case U_DBLBRACKETLEFT:
 	if (char_setting(v, metrics, '[', 0)) {
-	    double d;
-	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, xform, 4, true, 0, '[', 0);
+	    if (!_finfo.is_fixed_pitch()) {
+		double d = char_one_bound(_finfo, xform, 4, true, 0, '[', 0);
 		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
 	    }
 	    char_setting(v, metrics, '[', 0);
@@ -411,9 +703,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 
       case U_DBLBRACKETRIGHT:
 	if (char_setting(v, metrics, ']', 0)) {
-	    double d;
-	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, xform, 4, true, 0, ']', 0);
+	    if (!_finfo.is_fixed_pitch()) {
+		double d = char_one_bound(_finfo, xform, 4, true, 0, ']', 0);
 		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
 	    }
 	    char_setting(v, metrics, ']', 0);
@@ -423,9 +714,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	
       case U_BARDBL:
 	if (char_setting(v, metrics, '|', 0)) {
-	    double d;
-	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, Transform(), 4, true, 0, '|', 0);
+	    if (!_finfo.is_fixed_pitch()) {
+		double d = char_one_bound(_finfo, Transform(), 4, true, 0, '|', 0);
 		v.push_back(Setting(Setting::MOVE, (int) (-0.333 * d), 0));
 	    }
 	    char_setting(v, metrics, '|', 0);
@@ -448,9 +738,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 
       case U_TWELVEUDASH:
 	if (char_setting(v, metrics, U_ENDASH, 0)) {
-	    double d;
-	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
+	    if (!_finfo.is_fixed_pitch()) {
+		double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
 		v.push_back(Setting(Setting::MOVE, (int) (667 - 2 * d), 0));
 	    }
 	    char_setting(v, metrics, U_ENDASH, 0);
@@ -460,9 +749,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	
       case U_THREEQUARTERSEMDASH:
 	if (char_setting(v, metrics, U_ENDASH, 0)) {
-	    double d;
-	    if (!_finfo.cff->dict_value(Efont::Cff::oIsFixedPitch, &d) || !d) {
-		d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
+	    if (!_finfo.is_fixed_pitch()) {
+		double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
 		v.push_back(Setting(Setting::MOVE, (int) (750 - 2 * d), 0));
 	    }
 	    char_setting(v, metrics, U_ENDASH, 0);
@@ -548,7 +836,7 @@ char_bounds(int bounds[4], int &width, const FontInfo &finfo,
 	    const Transform &transform, uint32_t uni)
 {
     if (Efont::OpenType::Glyph g = finfo.cmap->map_uni(uni))
-	return Efont::CharstringBounds::bounds(transform, finfo.cff->glyph_context(g), bounds, width);
+	return Efont::CharstringBounds::bounds(transform, finfo.program()->glyph_context(g), bounds, width);
     else
 	return false;
 }
@@ -590,7 +878,7 @@ font_cap_height(const FontInfo &finfo, const Transform &font_xform)
 	Efont::OpenType::Os2 os2(finfo.otf->table("OS/2"));
 	return os2.cap_height();
     } catch (Efont::OpenType::Bounds) {
-	// XXX what if 'x', 'm', 'z' were subject to substitution?
+	// XXX what if 'H', 'O', 'B' were subject to substitution?
 	return char_one_bound(finfo, font_xform, 3, false, 1000,
 			      'H', 'O', 'B', 0);
     }
@@ -603,7 +891,7 @@ font_ascender(const FontInfo &finfo, const Transform &font_xform)
 	Efont::OpenType::Os2 os2(finfo.otf->table("OS/2"));
 	return os2.typo_ascender();
     } catch (Efont::OpenType::Bounds) {
-	// XXX what if 'x', 'm', 'z' were subject to substitution?
+	// XXX what if 'd', 'l' were subject to substitution?
 	return char_one_bound(finfo, font_xform, 3, true,
 			      font_x_height(finfo, font_xform),
 			      'd', 'l', 0);

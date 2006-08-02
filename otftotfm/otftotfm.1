@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.39
+.ds V 2.40
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -12,7 +12,7 @@
 ..
 .TH OTFTOTFM 1 "LCDF Typetools" "Version \*V"
 .SH NAME
-otftotfm \- create TeX font metrics from PostScript OpenType fonts
+otftotfm \- create TeX font metrics from OpenType fonts
 .SH SYNOPSIS
 .B otftotfm
 \%[\fB\-a\fR]
@@ -26,9 +26,10 @@ with TeX.  You supply an OpenType ".otf" font file, a base ".enc" encoding,
 and a TeX name "\fItexname\fR" for the resulting font, and say which
 OpenType features should be turned on.  Then
 .B otftotfm
-generates and installs the corresponding TeX-related metric files
-(".tfm" TeX font metrics, ".vf" virtual fonts, and ".enc"
-encoding files).  It only works on PostScript-flavored OpenType fonts.
+generates and installs the corresponding TeX-related metric files (".tfm"
+TeX font metrics, ".vf" virtual fonts, and ".enc" encoding files).  It
+works on both PostScript-flavored and TrueType-flavored OpenType fonts,
+although TrueType-flavor support will only work easily with pdftex.
 .LP
 The easiest way to use
 .B otftotfm
@@ -1102,7 +1103,7 @@ and
 .B \-\-*\-filter
 variants, accept the following types of pattern.
 .BUP
-Glyph names.  Example: "Aacute".  Use
+Glyph names.  Example: "Aacute".  For PostScript-flavored fonts, use
 .M otfinfo 1 's
 .B \-g
 option to see a font's glyph names, and "\fBcfftot1\fR \fIfont\fR.otf |

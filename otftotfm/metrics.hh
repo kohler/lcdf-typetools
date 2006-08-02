@@ -27,7 +27,7 @@ class Metrics { public:
     typedef Efont::OpenType::Substitution Substitution;
     typedef Efont::OpenType::Positioning Positioning;
 
-    Metrics(Efont::CharstringProgram *, int nglyphs);
+    Metrics(const Efont::CharstringProgram *, int nglyphs);
     ~Metrics();
 
     void check() const;
@@ -42,9 +42,9 @@ class Metrics { public:
     void set_design_units(int du)		{ _design_units = du; }
 
     int n_mapped_fonts() const			{ return _mapped_fonts.size();}
-    Efont::CharstringProgram *mapped_font(int i) const { return _mapped_fonts[i]; }
+    const Efont::CharstringProgram *mapped_font(int i) const { return _mapped_fonts[i]; }
     const String &mapped_font_name(int i) const { return _mapped_font_names[i]; }
-    int add_mapped_font(Efont::CharstringProgram *, const String &);
+    int add_mapped_font(const Efont::CharstringProgram *, const String &);
 
     inline int encoding_size() const		{ return _encoding.size(); }
     inline bool valid_code(Code) const;
@@ -158,7 +158,7 @@ class Metrics { public:
 
     bool _liveness_marked : 1;
 
-    Vector<Efont::CharstringProgram *> _mapped_fonts;
+    Vector<const Efont::CharstringProgram *> _mapped_fonts;
     Vector<String> _mapped_font_names;
     
     Metrics(const Metrics &);	// does not exist
