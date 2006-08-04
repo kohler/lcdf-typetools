@@ -102,7 +102,7 @@ static const char * const mac_names[] = {
 Post::Post(const String &s, ErrorHandler *errh)
     : _str(s), _version(0)
 {
-    _str.align(4);
+    _str.align_long();
     _error = parse_header(errh ? errh : ErrorHandler::ignore_handler());
 }
 
@@ -110,27 +110,29 @@ int
 Post::parse_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
-    // FIXED	version
-    // FIXED	italicAngle
-    // FWORD	underlinePosition
-    // FWORD	underlineThickness
-    // ULONG	isFixedPitch
-    // ULONG	minMemType42
-    // ULONG	maxMemType42
-    // ULONG	minMemType1
-    // ULONG	maxMemType1
+    // 0	FIXED	version
+    // 4	FIXED	italicAngle
+    // 8	FWORD	underlinePosition
+    // 10	FWORD	underlineThickness
+    // 12	ULONG	isFixedPitch
+    // 16	ULONG	minMemType42
+    // 20	ULONG	maxMemType42
+    // 24	ULONG	minMemType1
+    // 28	ULONG	maxMemType1
     int len = _str.length();
     const uint8_t *data = _str.udata();
     if (HEADER_SIZE > len)
 	return errh->error("OTF post too small for header"), -EFAULT;
-    _version = ULONG_AT(data);
-    if (_version != 0x10000 && _version != 0x20000 && _version != 0x30000)
+    _version = USHORT_AT(data);	// ignore minor version number
+    				// except that version 2.5 isn't compatible
+    if (_version < 1 || _version > 3
+	|| (_version == 2 && USHORT_AT(data + 2) == 0x5000))
 	return errh->error("bad post version number"), -ERANGE;
-    if (_version == 0x20000) {
+    if (_version == 2) {
 	// VERSION 2.0 GLYPH NAMES FORMAT:
-	// USHORT	numberOfGlyphs
-	// USHORT	glyphNameIndex[mumberOfGlyphs]
-	// CHAR		names[...]
+	// 32	USHORT	numberOfGlyphs
+	// 34	USHORT	glyphNameIndex[mumberOfGlyphs]
+	//	CHAR	names[...]
 	if (HEADER_SIZE + 2 > len
 	    || ((_nglyphs = USHORT_AT(HEADER_SIZE)),
 		HEADER_SIZE + 2 + 2 * _nglyphs > len))
@@ -150,7 +152,7 @@ Post::parse_header(ErrorHandler *errh)
 		    names += 1 + names[0];
 		    next_name++;
 		}
-    } else if (_version == 0x10000)
+    } else if (_version == 1)
 	_nglyphs = N_MAC_GLYPHS;
     else
 	_nglyphs = -1;
@@ -180,11 +182,11 @@ Post::glyph_names(Vector<PermString> &gnames) const
     gnames.clear();
     if (error() < 0)
 	return false;
-    if (_version == 0x10000) {
+    if (_version == 1) {
 	for (int i = 0; i < N_MAC_GLYPHS; i++)
 	    gnames.push_back(mac_names[i]);
 	return true;
-    } else if (_version == 0x20000) {
+    } else if (_version == 2) {
 	const uint8_t *gni = _str.udata() + HEADER_SIZE + 2;
 	const uint8_t *names = gni + 2 * _nglyphs; 
 	for (int i = 0; i < _nglyphs; i++, gni += 2) {

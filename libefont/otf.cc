@@ -87,6 +87,15 @@ Font::parse_header(ErrorHandler *errh)
     return 0;
 }
 
+int
+Font::ntables() const
+{
+    if (error() < 0)
+	return 0;
+    else
+	return USHORT_AT(data() + 4);
+}
+
 String
 Font::table(Tag tag) const
 {
@@ -99,13 +108,16 @@ Font::table(Tag tag) const
 	return String();
 }
 
-int
-Font::ntables() const
+uint32_t
+Font::table_checksum(Tag tag) const
 {
     if (error() < 0)
-	return 0;
+	return String();
+    const uint8_t *entry = tag.table_entry(data() + HEADER_SIZE, USHORT_AT(data() + 4), TABLE_DIR_ENTRY_SIZE);
+    if (entry)
+	return ULONG_AT(entry + 4);
     else
-	return USHORT_AT(data() + 4);
+	return 0;
 }
 
 Tag

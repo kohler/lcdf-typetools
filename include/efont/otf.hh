@@ -48,8 +48,9 @@ class Font { public:
     const uint8_t* data() const		{ return _str.udata(); }
     int length() const			{ return _str.length(); }
 
-    String table(Tag) const;
     int ntables() const;
+    String table(Tag) const;
+    uint32_t table_checksum(Tag) const;
     Tag table_tag(int) const;
 
   private:
