@@ -57,6 +57,7 @@ class Data { public:
     operator const String&() const	{ return _str; }
 
     operator bool() const		{ return _str; }
+    const uint8_t *udata() const	{ return _str.udata(); }
     int length() const			{ return _str.length(); }
 
     inline uint8_t operator[](unsigned offset) const throw (Bounds);
