@@ -519,10 +519,10 @@ T1Secondary::encode_uni(int code, PermString name, uint32_t uni, Metrics &metric
 
 static String dotlessj_file_name;
 
-static void
-dotlessj_dvips_include(const String &, StringAccum &sa, ErrorHandler *)
+static String
+dotlessj_dvips_include(const String &, const FontInfo &, ErrorHandler *)
 {
-    sa << '<' << pathname_filename(dotlessj_file_name);
+    return "<" + pathname_filename(dotlessj_file_name);
 }
 
 int

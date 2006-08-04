@@ -126,6 +126,7 @@ using namespace Efont;
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 #define NO_DOTLESSJ_OPT		(NO_OUTPUT_OPTS + G_DOTLESSJ)
 #define NO_UPDMAP_OPT		(NO_OUTPUT_OPTS + G_UPDMAP)
+#define NO_TRUETYPE_OPT		(NO_OUTPUT_OPTS + G_TRUETYPE)
 
 #define CHAR_OPTTYPE		(Clp_FirstUserType)
 
@@ -244,7 +245,7 @@ static int skew_char = -1;
 static String out_encoding_file;
 static String out_encoding_name;
 
-int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_DOTLESSJ | G_UPDMAP | G_BINARY;
+int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_DOTLESSJ | G_UPDMAP | G_BINARY | G_TRUETYPE;
 
 bool automatic = false;
 bool verbose = false;
@@ -325,6 +326,7 @@ Automatic mode options:\n\
       --no-type1               Do not generate Type 1 fonts.\n\
       --no-dotlessj            Do not generate dotless-j fonts.\n\
       --no-updmap              Do not run updmap.\n\
+      --no-truetype            Do not install TrueType-flavored input fonts.\n\
 \n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
@@ -1034,7 +1036,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	       const FontInfo &finfo,
 	       const String &encoding_name, const String &encoding_file,
 	       const String &font_name,
-	       void (*dvips_include)(const String &ps_name, StringAccum &, ErrorHandler *),
+	       String (*dvips_include)(const String &ps_name, const FontInfo &, ErrorHandler *),
 	       ErrorHandler *errh)
 {
     String base_font_name = font_name;
@@ -1103,9 +1105,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	    sa << encoding_name << " ReEncodeFont\" <[" << pathname_filename(encoding_file);
 	else
 	    sa << "\"";
-	sa << ' ';
-	dvips_include(ps_name, sa, errh);
-	sa << '\n';
+	sa << ' ' << dvips_include(ps_name, finfo, errh) << '\n';
 	update_autofont_map(base_font_name, sa.take_string(), errh);
 	// if virtual font, remove any map line for base font name
 	if (base_font_name != font_name)
@@ -1179,13 +1179,15 @@ report_underused_features(const HashMap<uint32_t, int> &feature_usage, ErrorHand
 
 static String otf_filename;
 
-static void
-main_dvips_map(const String &ps_name, StringAccum &sa, ErrorHandler *errh)
+static String
+main_dvips_map(const String &ps_name, const FontInfo &finfo, ErrorHandler *errh)
 {
     if (String fn = installed_type1(otf_filename, ps_name, (output_flags & G_TYPE1) != 0, errh))
-	sa << "<" << pathname_filename(fn);
-    else
-	sa << "<" << pathname_filename(otf_filename);
+	return "<" + pathname_filename(fn);
+    if (!finfo.cff)
+	if (String fn = installed_truetype(otf_filename, (output_flags & G_TRUETYPE) != 0, errh))
+	    return "<" + pathname_filename(fn);
+    return "<" + pathname_filename(otf_filename);
 }
 
 static void
@@ -1735,10 +1737,11 @@ main(int argc, char *argv[])
 		output_flags |= G_VMETRICS;
 	    break;
 
-	  case NO_ENCODING_OPT:
-	  case NO_TYPE1_OPT:
-	  case NO_DOTLESSJ_OPT:
-	  case NO_UPDMAP_OPT:
+	case NO_ENCODING_OPT:
+	case NO_TYPE1_OPT:
+	case NO_DOTLESSJ_OPT:
+	case NO_UPDMAP_OPT:
+	case NO_TRUETYPE_OPT:
 	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
 	    break;
 

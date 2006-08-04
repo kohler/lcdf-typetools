@@ -134,7 +134,7 @@ PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[\-\-base].pl
 VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vpl
 encoding	TEXMF/fonts/enc/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
 	or TEXMF/dvips/\fIvendor\fR/
-PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPStexname\fR.pfb
+PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPSname\fR.pfb
 font map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
 	or TEXMF/dvips/\fIvendor\fR/
 .TE
@@ -142,7 +142,7 @@ font map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
 "TEXMF" stands for the writable TEXMF directory.  \fITexname\fR is the
 font name supplied as 
 .BR otftotfm 's
-second argument, and \fIPStexname\fR is the PostScript name of the input
+second argument, and \fIPSname\fR is the PostScript name of the input
 font.  The \fIvendor\fR and \fItypeface\fR strings are required by TDS;
 they default to "lcdftools" and the font's family name, respectively, but
 see the
@@ -673,6 +673,11 @@ program.  This can be useful if you're installing a bunch of fonts; it is
 much faster to run
 .B updmap
 once, at the end, than to run it once per font.
+'
+.Sp
+.TP 5
+.BI \-\-no\-truetype
+Do not install TrueType-flavored OpenType fonts.
 .PD
 '
 '

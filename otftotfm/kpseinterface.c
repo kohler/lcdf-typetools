@@ -56,6 +56,12 @@ kpsei_find_file(const char* name, int format)
 	return kpse_find_file(name, kpse_tex_ps_header_format, true);
       case KPSEI_FMT_TYPE1:
 	return kpse_find_file(name, kpse_type1_format, false);
+      case KPSEI_FMT_TYPE42:
+	return kpse_find_file(name, kpse_type42_format, false);
+      case KPSEI_FMT_TRUETYPE:
+	return kpse_find_file(name, kpse_truetype_format, false);
+      case KPSEI_FMT_OPENTYPE:
+	return kpse_find_file(name, kpse_opentype_format, false);
       case KPSEI_FMT_OTHER_TEXT:
 	return kpse_find_file(name, kpse_program_text_format, true);
       case KPSEI_FMT_MAP:
