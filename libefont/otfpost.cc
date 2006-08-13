@@ -134,7 +134,7 @@ Post::parse_header(ErrorHandler *errh)
 	// 34	USHORT	glyphNameIndex[mumberOfGlyphs]
 	//	CHAR	names[...]
 	if (HEADER_SIZE + 2 > len
-	    || ((_nglyphs = USHORT_AT(HEADER_SIZE)),
+	    || ((_nglyphs = USHORT_AT(data + HEADER_SIZE)),
 		HEADER_SIZE + 2 + 2 * _nglyphs > len))
 	    return errh->error("OTF post too small for glyph map"), -EFAULT;
 	const uint8_t *gni = data + HEADER_SIZE + 2;
@@ -187,14 +187,14 @@ Post::glyph_names(Vector<PermString> &gnames) const
 	    gnames.push_back(mac_names[i]);
 	return true;
     } else if (_version == 2) {
-	const uint8_t *gni = _str.udata() + HEADER_SIZE + 2;
-	const uint8_t *names = gni + 2 * _nglyphs; 
+	const uint8_t *data = _str.udata();
+	const uint8_t *gni = data + HEADER_SIZE + 2;
 	for (int i = 0; i < _nglyphs; i++, gni += 2) {
 	    int g = USHORT_AT(gni);
 	    if (g < N_MAC_GLYPHS)
 		gnames.push_back(mac_names[g]);
 	    else {
-		const uint8_t *n = names + _extend_glyph_names[g - N_MAC_GLYPHS];
+		const uint8_t *n = data + _extend_glyph_names[g - N_MAC_GLYPHS];
 		gnames.push_back(PermString((const char *) n + 1, *n));
 	    }
 	}

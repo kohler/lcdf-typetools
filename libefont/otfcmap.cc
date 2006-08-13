@@ -60,26 +60,26 @@ Cmap::parse_header(ErrorHandler *errh)
     // ULONG	offset
     int last_platform = -1;
     int last_encoding = -1;
-    int last_version = -1;
+    int last_language = -1;
     _first_unicode_table = -1;
-     for (int i = 0; i < _ntables; i++) {
+    for (int i = 0; i < _ntables; i++) {
 	int loc = HEADER_SIZE + ENCODING_SIZE * i;
 	int platform = USHORT_AT(data + loc);
 	int encoding = USHORT_AT(data + loc + 2);
 	uint32_t offset = ULONG_AT(data + loc + 4);
-	if (offset + 2 > (uint32_t) len)
+	if (offset + 6 > (uint32_t) len || USHORT_AT(data + offset + 2) < 6)
 	    return errh->error("encoding data for entry %d out of range", i);
-	int version = USHORT_AT(data + offset);
+	int language = USHORT_AT(data + offset + 4);
 	if (!(platform > last_platform
 	      || (platform == last_platform
 		  && (encoding > last_encoding
 		      || (encoding == last_encoding
-			  && version > last_version)))))
+			  && language > last_language)))))
 	    return errh->error("subtables out of order at entry %d", i);
 	if ((platform == 0 || (platform == 3 && encoding == 1))
 	    && _first_unicode_table < 0)
 	    _first_unicode_table = i;
-	last_platform = platform, last_encoding = encoding, last_version = version;
+	last_platform = platform, last_encoding = encoding, last_language = language;
     }
 
     _table_error.assign(_ntables, -2);
