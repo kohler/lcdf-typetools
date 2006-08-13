@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.40
+.ds V 2.41
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -17,12 +17,13 @@ otftotfm \- create TeX font metrics from OpenType fonts
 .B otftotfm
 \%[\fB\-a\fR]
 \%[\fBoptions\fR]
-\%\fIfontfile\fR.otf [\fItexname\fR]
+\%\fIfontfile\fR [\fItexname\fR]
 '
 .SH DESCRIPTION
 .BR Otftotfm
 creates the font metric and encoding files required to use an OpenType font
-with TeX.  You supply an OpenType ".otf" font file, a base ".enc" encoding,
+with TeX.  You supply an OpenType ".otf" or ".ttf" font file, 
+a base ".enc" encoding,
 and a TeX name "\fItexname\fR" for the resulting font, and say which
 OpenType features should be turned on.  Then
 .B otftotfm
@@ -40,7 +41,7 @@ option; see Automatic Mode below.  Without
 .B otftotfm
 writes all its output files to the current directory.
 .LP
-After running "\fBotftotfm\fR \fIfontfile\fR.otf \fItexname\fR" and
+After running "\fBotftotfm\fR \fIfontfile\fR \fItexname\fR" and
 installing the results (manually or with
 .BR \-a ),
 you can use the OpenType font in plain TeX with a command like this:
@@ -75,7 +76,7 @@ capitals; "\fB\-f\fRswsh", for swash variants; and "\fB\-f\fRcswh", for
 contextual swash.  See the FEATURE DIRECTORY section below for more.  The
 .M otfinfo 1
 program will report which features a font supports; run "\fBotfinfo\fR
-\fB\-f\fR \fIfontfile\fR.otf".
+\fB\-f\fR \fIfontfile\fR".
 '
 .PP
 Feature options can also apply a feature to a subset of characters in the
@@ -111,7 +112,7 @@ and run
 .M mktexlsr 1 .)
 You can then run "\fBotftotfm\fR
 .B \-a
-.IR file .otf
+.IR fontfile
 .IR texname \&"
 and immediately refer to the font in TeX using the
 .I texname
@@ -134,7 +135,6 @@ PL	TEXMF/fonts/pl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR[\-\-base].pl
 VPL	TEXMF/fonts/vpl/\fIvendor\fR/\fItypeface\fR/	\fItexname\fR.vpl
 encoding	TEXMF/fonts/enc/dvips/\fIvendor\fR/	a_\fIsignature\fR.enc
 	or TEXMF/dvips/\fIvendor\fR/
-PFB font	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPSname\fR.pfb
 font map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
 	or TEXMF/dvips/\fIvendor\fR/
 .TE
@@ -142,14 +142,25 @@ font map	TEXMF/fonts/map/dvips/\fIvendor\fR/	\fIvendor\fR.map
 "TEXMF" stands for the writable TEXMF directory.  \fITexname\fR is the
 font name supplied as 
 .BR otftotfm 's
-second argument, and \fIPSname\fR is the PostScript name of the input
-font.  The \fIvendor\fR and \fItypeface\fR strings are required by TDS;
-they default to "lcdftools" and the font's family name, respectively, but
-see the
+second argument.  The \fIvendor\fR and \fItypeface\fR strings are required
+by TDS; they default to "lcdftools" and the font's family name,
+respectively, but see the
 .B \-\-vendor
 and
 .B \-\-typeface
 options.  \fISignature\fR is an opaque 6-character encoding signature.
+.PP
+.B Otftotfm
+also installs a version of the font suitable for printing.
+PostScript-flavored OpenType fonts are translated to Type 1 format and
+installed as PFB fonts; TrueType-flavored fonts are installed as is (pdftex
+and pdflatex can read TrueType directly).  The installation paths are as
+follows; \fIPSname\fR is the font's PostScript name.
+.TS
+l	l	l	.
+PFB	TEXMF/fonts/type1/\fIvendor\fR/\fItypeface\fR/	\fIPSname\fR.pfb
+TrueType	TEXMF/fonts/truetype/\fIvendor\fR/\fItypeface\fR/	\fIfontfile\fR
+.TE
 .PP
 You can override these directories with environment variables and options
 as follows.  Options take precedence over environment variables.
@@ -162,7 +173,8 @@ VF	VFDESTDIR	\-\-vf\-directory
 PL	PLDESTDIR	\-\-pl\-directory
 VPL	VPLDESTDIR	\-\-vpl\-directory
 encoding	ENCODINGDESTDIR	\-\-encoding\-directory
-PFB font	T1DESTDIR	\-\-type1\-directory
+PFB	T1DESTDIR	\-\-type1\-directory
+TrueType	TRUETYPEDESTDIR	\-\-truetype\-directory
 font map	\-	\-\-map\-file
 .TE
 .PP

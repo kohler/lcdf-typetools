@@ -120,6 +120,7 @@ using namespace Efont;
 #define VF_DIR_OPT		(DIR_OPTS + O_VF)
 #define VPL_DIR_OPT		(DIR_OPTS + O_VPL)
 #define TYPE1_DIR_OPT		(DIR_OPTS + O_TYPE1)
+#define TRUETYPE_DIR_OPT	(DIR_OPTS + O_TRUETYPE)
 
 #define NO_OUTPUT_OPTS		380
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
@@ -173,6 +174,7 @@ static Clp_Option options[] = {
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
     { "no-encoding", 0, NO_ENCODING_OPT, 0, Clp_OnlyNegated },
     { "no-type1", 0, NO_TYPE1_OPT, 0, Clp_OnlyNegated },
+    { "no-truetype", 0, NO_TRUETYPE_OPT, 0, Clp_OnlyNegated },
     { "no-dotlessj", 0, NO_DOTLESSJ_OPT, 0, Clp_OnlyNegated },
     { "no-updmap", 0, NO_UPDMAP_OPT, 0, Clp_OnlyNegated },
     { "map-file", 0, MAP_FILE_OPT, Clp_ArgString, Clp_Negate },
@@ -189,6 +191,7 @@ static Clp_Option options[] = {
     { "vpl-directory", 0, VPL_DIR_OPT, Clp_ArgString, 0 },
     { "vf-directory", 0, VF_DIR_OPT, Clp_ArgString, 0 },
     { "type1-directory", 0, TYPE1_DIR_OPT, Clp_ArgString, 0 },
+    { "truetype-directory", 0, TRUETYPE_DIR_OPT, Clp_ArgString, 0 },
 
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "glyphlist", 0, GLYPHLIST_OPT, Clp_ArgString, 0 },
@@ -344,6 +347,7 @@ File location options:\n\
       --vpl-directory=DIR      Put VPL files in DIR [.|automatic].\n\
       --encoding-directory=DIR Put encoding files in DIR [.|automatic].\n\
       --type1-directory=DIR    Put Type 1 fonts in DIR [automatic].\n\
+      --truetype-directory=DIR Put TrueType fonts in DIR [automatic].\n\
       --map-file=FILE          Update FILE with psfonts.map information [-].\n\
 \n\
 Other options:\n\
@@ -1780,6 +1784,7 @@ main(int argc, char *argv[])
 	  case VF_DIR_OPT:
 	  case VPL_DIR_OPT:
 	  case TYPE1_DIR_OPT:
+	  case TRUETYPE_DIR_OPT:
 	    if (!setodir(opt - DIR_OPTS, clp->arg))
 		usage_error(errh, "%s directory specified twice", odirname(opt - DIR_OPTS));
 	    break;

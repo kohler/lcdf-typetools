@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.41   12.Aug.2006
+
+* otftotfm: Some TrueType fixes.  Problems reported by Michael Zedler.
+
+
 Version 2.40   1.Aug.2006
 
 * otftotfm: Initial support for TrueType-flavored OpenType fonts.  Inspired
