@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.42   22.Aug.2006
+
+* otftotfm: Any --altselector-char is actually encoded, so you can use it
+  as a regular character as well as an altselector.  Suggested by Carsten
+  Luckmann.
+
+
 Version 2.41   12.Aug.2006
 
 * otftotfm: Some TrueType fixes.  Problems reported by Michael Zedler.
