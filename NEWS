@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.43   22.Aug.2006
+
+* otftotfm: Check for availability of kpse_opentype_format.  Bug reported
+  by Carsten Luckmann.
+
+
 Version 2.42   22.Aug.2006
 
 * otftotfm: Any --altselector-char is actually encoded, so you can use it
