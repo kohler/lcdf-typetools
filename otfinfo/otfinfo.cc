@@ -269,9 +269,9 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 	if (size_fid < 0)
 	    throw OpenType::Error();
 
-	// it looks like Adobe fonts implement an old, incorrect idea
+	// old Adobe fonts implement an old, incorrect idea
 	// of what the FeatureParams offset means.
-	OpenType::Data size_data = gpos.feature_list().params(size_fid, 10, errh, true);
+	OpenType::Data size_data = gpos.feature_list().params(size_fid, 10, errh, name.version_size_bad_offset());
 	if (!size_data.length())
 	    throw OpenType::Error();
 

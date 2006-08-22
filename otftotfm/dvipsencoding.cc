@@ -27,7 +27,8 @@
 #include "util.hh"
 
 static String::Initializer initializer;
-enum { GLYPHLIST_MORE = 0x40000000, U_EMPTYSLOT = 0xD801 };
+enum { GLYPHLIST_MORE = 0x40000000,
+       U_EMPTYSLOT = 0xD801, U_ALTSELECTOR = 0xD802 };
 static HashMap<String, int> glyphlist(-1);
 static PermString::Initializer perm_initializer;
 PermString DvipsEncoding::dot_notdef(".notdef");
@@ -736,10 +737,6 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
     for (int code = 0; code < _e.size(); code++) {
 	PermString chname = _e[code];
 
-	// the altselector character has its own glyph name
-	if (code == _altselector_char && !literal)
-	    chname = "altselector";
-
 	// common case: skip .notdef
 	if (chname == dot_notdef)
 	    continue;
@@ -780,10 +777,6 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
 	
 	PermString chname = _e[code];
 
-	// the altselector character has its own glyph name
-	if (code == _altselector_char && !literal)
-	    chname = "altselector";
-
 	// find all Unicodes
 	Vector<uint32_t> unicodes;
 	bool unicodes_explicit = x_unicodes(chname, unicodes);
@@ -812,6 +805,13 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
 
       encoded:
 	/* all set */;
+    }
+
+    // add altselector
+    if (_altselector_char >= 0 && _altselector_char < _e.size()) {
+	metrics.add_altselector_code(_altselector_char, 0);
+	if (metrics.glyph(_altselector_char) <= 0 && !literal)
+	    (void) secondary->encode_uni(_altselector_char, "altselector", U_ALTSELECTOR, metrics, errh);
     }
 
     // final pass: complain

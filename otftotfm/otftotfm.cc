@@ -23,6 +23,7 @@
 #include <efont/t1item.hh>
 #include <efont/t1bounds.hh>
 #include <efont/otfcmap.hh>
+#include <efont/otfname.hh>
 #include <efont/otfgsub.hh>
 #include "glyphfilter.hh"
 #include "metrics.hh"
@@ -439,9 +440,10 @@ get_design_size(const FontInfo &finfo)
 	if (size_fid < 0)
 	    throw OpenType::Error();
 
-	// it looks like Adobe fonts implement an old, incorrect idea
+	// old Adobe fonts implement an old, incorrect idea
 	// of what the FeatureParams offset means.
-	OpenType::Data size_data = gpos.feature_list().params(size_fid, 10, errh, true);
+	OpenType::Name name(finfo.otf->table("name"), errh);
+	OpenType::Data size_data = gpos.feature_list().params(size_fid, 10, errh, name.version_size_bad_offset());
 	if (!size_data.length())
 	    throw OpenType::Error();
 
