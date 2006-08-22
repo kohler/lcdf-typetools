@@ -588,35 +588,7 @@ Gsub::Gsub(const Data &d, const Font *otf, ErrorHandler *errh) throw (Error)
     // OpenType FDK
     try {
 	Name nametable(otf->table("name"), ErrorHandler::ignore_handler());
-	String vstr = nametable.name(std::find_if(nametable.begin(), nametable.end(), Name::PlatformPred(Name::N_VERSION, 1, 0, 0)));
-	const char *v = vstr.begin(), *endv = vstr.end();
-	if (v + 20 <= endv) {
-	    if (v[0] != 'O' || v[1] != 'T' || v[2] != 'F' || v[3] == ';')
-		goto try_core;
-	    for (v += 4; v < endv && *v != ';'; v++)
-		/* do nothing */;
-	    if (v + 3 >= endv || v[1] != 'P' || v[2] != 'S' || v[3] == ';')
-		goto try_core;
-	    for (v += 4; v < endv && *v != ';'; v++)
-		/* do nothing */;
-	    if (v + 11 >= endv || memcmp(v + 1, "Core 1.0.", 9) != 0
-		|| (v[10] != '2' && v[10] != '3')
-		|| (v[11] < '0' || v[11] > '9'))
-		goto try_core;
-	    _chaincontext_reverse_backtrack = true;
-	}
-      try_core:
-	v = vstr.begin();
-	if (v + 16 <= endv) {
-	    if (v[0] != 'C' || v[1] != 'o' || v[2] != 'r' || v[3] != 'e')
-		goto done;
-	    for (v += 4; v < endv && *v != ';'; v++)
-		/* do nothing */;
-	    if (v + 12 > endv || memcmp(v, ";makeotf.lib", 12) != 0)
-		goto done;
-	    _chaincontext_reverse_backtrack = true;
-	}
-      done: ;
+	_chaincontext_reverse_backtrack = nametable.version_chaincontext_reverse_backtrack();
     } catch (Error) {
     }
 }

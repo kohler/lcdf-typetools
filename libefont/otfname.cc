@@ -71,4 +71,50 @@ Name::english_name(int nameid) const
     return name(std::find_if(begin(), end(), EnglishPlatformPred(nameid)));
 }
 
+bool
+Name::version_chaincontext_reverse_backtrack() const
+{
+    String vstr = name(std::find_if(begin(), end(), PlatformPred(N_VERSION, 1, 0, 0)));
+    const char *v = vstr.begin(), *endv = vstr.end();
+    if (v + 20 <= endv) {
+	if (v[0] != 'O' || v[1] != 'T' || v[2] != 'F' || v[3] == ';')
+	    goto try_core;
+	for (v += 4; v < endv && *v != ';'; v++)
+	    /* do nothing */;
+	if (v + 3 >= endv || v[1] != 'P' || v[2] != 'S' || v[3] == ';')
+	    goto try_core;
+	for (v += 4; v < endv && *v != ';'; v++)
+	    /* do nothing */;
+	if (v + 11 >= endv || memcmp(v + 1, "Core 1.0.", 9) != 0
+	    || (v[10] != '2' && v[10] != '3')
+	    || (v[11] < '0' || v[11] > '9'))
+	    goto try_core;
+	return true;
+    }
+ try_core:
+    v = vstr.begin();
+    if (v + 16 > endv
+	|| v[0] != 'C' || v[1] != 'o' || v[2] != 'r' || v[3] != 'e')
+	return false;
+    for (v += 4; v < endv && *v != ';'; v++)
+	/* do nothing */;
+    if (v + 12 > endv || memcmp(v, ";makeotf.lib", 12) != 0)
+	return false;
+    return true;
+}
+
+bool
+Name::version_size_bad_offset() const
+{
+    String vstr = name(std::find_if(begin(), end(), PlatformPred(N_VERSION, 1, 0, 0)));
+    const char *v = vstr.begin(), *endv = vstr.end();
+    for (; v + 11 <= endv; v++)
+	if (v[0] == 'm' && v[1] == 'a' && v[2] == 'k' && v[3] == 'e'
+	    && memcmp(v + 4, "otf.lib", 7) == 0
+	    && (v + 11 == endv || v[11] == '0'
+		|| (v[11] == '1' && (v + 12 == endv || !isdigit(v[12])))))
+	    return true;
+    return false;
+}
+
 }}

@@ -35,6 +35,10 @@ class Name { public:
     inline const_iterator end() const;
     String name(const_iterator) const;
     String english_name(int nameid) const;
+
+    // check version string for backwards compatibility
+    bool version_chaincontext_reverse_backtrack() const;
+    bool version_size_bad_offset() const;
     
     struct PlatformPred {
 	inline PlatformPred(int nameid, int platform = -1, int encoding = -1, int language = -1);

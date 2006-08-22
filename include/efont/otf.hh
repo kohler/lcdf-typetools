@@ -4,6 +4,8 @@
 #include <efont/otfdata.hh>
 class ErrorHandler;
 namespace Efont { namespace OpenType {
+class Post;
+class Name;
 
 typedef int Glyph;			// 16-bit integer
 
@@ -112,7 +114,7 @@ class FeatureList { public:
     int lookups(const Vector<int>& required_fids, const Vector<int>& fids, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
     int lookups(int required_fid, const Vector<int>& fids, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
     int lookups(const ScriptList&, Tag script, Tag langsys, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
-    
+
   private:
 
     enum { FEATURELIST_HEADERSIZE = 2, FEATURE_RECSIZE = 6,
@@ -286,9 +288,6 @@ class ClassDef { public:
     int check(ErrorHandler*);
 
 };
-
-class Post;
-class Name;
 
 extern Vector<PermString> debug_glyph_names;
 
