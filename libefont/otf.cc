@@ -24,6 +24,7 @@
 #include <string.h>
 #include <algorithm>
 #include <efont/otfdata.hh>	// for ntohl()
+#include <efont/otfname.hh>
 
 #ifndef static_assert
 #define static_assert(c) switch (c) case 0: case (c):
@@ -435,6 +436,33 @@ FeatureList::params(int fid, int length, ErrorHandler *errh, bool old_style_offs
 	return errh->error("OTF feature parameters for feature ID '%d' out of range", fid), String();
     else
 	return _str.substring(poff, length);
+}
+
+String
+FeatureList::size_params(int fid, const Name &name, ErrorHandler *errh) const
+{
+    // implement 'size' checks from Read Roberts
+    for (int i = 0; i < 2; i++) {
+	String s = params(fid, 10, errh, i != 0);
+	const uint8_t *data = s.udata();
+	if (USHORT_AT(data) == 0)		// design size == 0
+	    continue;
+	if (USHORT_AT(data + 2) == 0		// subfamily ID == 0
+	    && USHORT_AT(data + 6) == 0		// range start == 0
+	    && USHORT_AT(data + 8) == 0		// range end == 0
+	    && USHORT_AT(data + 4) == 0)	// menu name ID == 0
+	    return s;
+	if (USHORT_AT(data) >= USHORT_AT(data + 6) // design size >= range start
+	    && USHORT_AT(data) <= USHORT_AT(data + 8) // design size <= range end
+	    && USHORT_AT(data + 6) < USHORT_AT(data + 8) // range start < range end
+	    && USHORT_AT(data + 4) >= 256	// menu name ID >= 256
+	    && USHORT_AT(data + 4) <= 32767	// menu name ID <= 32767
+	    && name.english_name(USHORT_AT(data + 4))) // menu name ID is a name ID defined by the font
+	    return s;
+    }
+    if (errh)
+	errh->error("no valid 'size' feature data in the 'size' feature");
+    return String();
 }
 
 int

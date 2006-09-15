@@ -103,18 +103,4 @@ Name::version_chaincontext_reverse_backtrack() const
     return true;
 }
 
-bool
-Name::version_size_bad_offset() const
-{
-    String vstr = name(std::find_if(begin(), end(), PlatformPred(N_VERSION, 1, 0, 0)));
-    const char *v = vstr.begin(), *endv = vstr.end();
-    for (; v + 11 <= endv; v++)
-	if (v[0] == 'm' && v[1] == 'a' && v[2] == 'k' && v[3] == 'e'
-	    && memcmp(v + 4, "otf.lib", 7) == 0
-	    && (v + 11 == endv || v[11] == '0'
-		|| (v[11] == '1' && (v + 12 == endv || !isdigit(v[12])))))
-	    return true;
-    return false;
-}
-
 }}

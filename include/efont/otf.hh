@@ -104,6 +104,7 @@ class FeatureList { public:
 
     Tag tag(int fid) const;
     String params(int fid, int length, ErrorHandler* = 0, bool old_style_offset = false) const;
+    String size_params(int fid, const Name& name, ErrorHandler* = 0) const;
     int lookups(int fid, Vector<int>& results, ErrorHandler* = 0, bool clear_results = true) const;
 
     int find(Tag, const Vector<int>& fids) const;

@@ -38,7 +38,6 @@ class Name { public:
 
     // check version string for backwards compatibility
     bool version_chaincontext_reverse_backtrack() const;
-    bool version_size_bad_offset() const;
     
     struct PlatformPred {
 	inline PlatformPred(int nameid, int platform = -1, int encoding = -1, int language = -1);
