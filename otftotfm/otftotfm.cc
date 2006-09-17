@@ -443,7 +443,7 @@ get_design_size(const FontInfo &finfo)
 	// old Adobe fonts implement an old, incorrect idea
 	// of what the FeatureParams offset means.
 	OpenType::Name name(finfo.otf->table("name"), errh);
-	OpenType::Data size_data = gpos.feature_list().params(size_fid, 10, errh, name.version_size_bad_offset());
+	OpenType::Data size_data = gpos.feature_list().size_params(size_fid, name, errh);
 	if (!size_data.length())
 	    throw OpenType::Error();
 
