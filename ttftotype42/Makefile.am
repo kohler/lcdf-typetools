@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = ttftotype42
-# man_MANS = cfftot1.1
+man_MANS = ttftotype42.1
 
 ttftotype42_SOURCES = ttftotype42.cc
 
@@ -11,4 +11,4 @@ ttftotype42_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 INCLUDES = -I$(top_srcdir)/include
 CLEANFILES = @TEMPLATE_OBJS@
 
-# EXTRA_DIST = cfftot1.1
+EXTRA_DIST = ttftotype42.1

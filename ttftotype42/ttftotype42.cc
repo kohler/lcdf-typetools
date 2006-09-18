@@ -57,7 +57,6 @@ Clp_Option options[] = {
 
 
 static const char *program_name;
-static bool binary = true;
 
 
 void
@@ -77,10 +76,9 @@ void
 usage()
 {
     printf("\
-'Cfftot1' translates a PostScript font from the Compact Font Format (CFF) to\n\
-the usual Type 1 format. The input file should be either a raw CFF font or a\n\
-PostScript-flavored OpenType font. The result, which is usually written to the\n\
-standard output, is written in PFB or PFA format.\n\
+'Ttftotype42' translates a TrueType or TrueType-flavored OpenType font into\n\
+PostScript Type 42 format, which is suitable for inclusion in PostScript\n\
+files. The result, is usually written to the standard output.\n\
 \n\
 Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]\n\
 \n\
@@ -211,7 +209,7 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 	_setmode(_fileno(f), _O_BINARY);
 #endif
 
-    fprintf(f, "%%!\n");
+    // fprintf(f, "%%!\n");
     
     // get glyph names
     TrueTypeBoundsCharstringProgram ttbprog(&otf);
@@ -229,13 +227,11 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
     fprintf(f, "/FontName /%s def\n", name.english_name(OpenType::Name::N_POSTSCRIPT).c_str());
     fprintf(f, "/FontType 42 def\n");
     fprintf(f, "/FontMatrix [1 0 0 1 0 0] def\n");
-    fprintf(f, "/FontBBox {%d %d %d %d} readonly def\n",
+    fprintf(f, "/FontBBox [%g %g %g %g] readonly def\n",
 	    /* head_data.s16(36), head_data.s16(38),
 	       head_data.s16(40), head_data.s16(42)); */
-	    (int) floor(head_data.s16(36) / emunits),
-	    (int) floor(head_data.s16(38) / emunits),
-	    (int) ceil(head_data.s16(40) / emunits),
-	    (int) ceil(head_data.s16(42) / emunits));
+	    head_data.s16(36) / emunits, head_data.s16(38) / emunits,
+	    head_data.s16(40) / emunits, head_data.s16(42) / emunits);
     fprintf(f, "/PaintType 0 def\n");
 
     // XUID (MD5 sum of font data)
@@ -304,83 +300,10 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
     // complete font
     fprintf(f, "FontName currentdict end definefont pop\n");
 
-    fprintf(f, "/%s 100 selectfont 30 30 moveto (Hello! 9) show showpage\n", name.english_name(OpenType::Name::N_POSTSCRIPT).c_str());
+    // fprintf(f, "/%s 100 selectfont 30 30 moveto (Hello! 9) show showpage\n", name.english_name(OpenType::Name::N_POSTSCRIPT).c_str());
+    
     if (f != stdout)
 	fclose(f);
-    
-#if 0
-
-    // collect TT tables
-    OpenType::Cmap cmap(otf.table("cmap"));
-    OpenType::Post post(otf.table("post"));
-
-    // collect glyph names
-    Vector<PermString> glyph_names;
-    if (post.ok())
-	post.glyph_names(glyph_names);
-    int nglyphs = (post.ok() ? post.nglyphs() : 0);
-    if (OpenType::Data maxp = otf.table("maxp"))
-	if (maxp.length() >= 6)
-	    nglyphs = maxp.u16(4);
-    
-    // write header
-    fprintf(f, "%!PS-TrueTypeFont-65536-%u-1\n", ntohl(head_begin[1]));
-    if (post.ok())
-	fprintf(f, "%%VMusage: %u %u\n", post.mem_type42(false), post.mem_type42(true));
-    fprintf(f, "11 dict begin\n");
-    fprintf(f, "/FontName /%s def\n", name.english_name(OpenType::Name::N_POSTSCRIPT));
-    fprintf(f, "/Encoding 256 array\n\
-0 1 255{1 index exch/.notdef put}for\n");
-    for (int i = 0; i < 256; i++)
-	if (OpenType::Glyph g = cmap.map_uni(i))
-	    fprintf(f, "dup %d /index%d put\n", 
-    if (String n = name.english_name(OpenType::Name::N_VERSION)) {
-	
-	if (n.find_left('\n') < 0 && n.find_left('\r') < 0 && n.find_left('\v'
-	Type1PFBWriter t1w(f);
-	font1->write(t1w);
-    } else {
-	Type1PFAWriter t1w(f);
-	font1->write(t1w);
-    }
-
-    if (f != stdout)
-	fclose(f);
-    
-    if (c == 'O')
-	data = OpenType::Font(data, &cerrh).table("CFF");
-
-    Cff *cff = new Cff(data, &cerrh);
-    Cff::FontParent *fp = cff->font(name, &cerrh);
-    if (errh->nerrors() == 0
-	&& !(font = dynamic_cast<Cff::Font *>(fp)))
-	errh->fatal("%s: CID-keyed fonts not supported", infn);
-
-    if (errh->nerrors() > 0)
-	return;
-    
-    Type1Font *font1 = create_type1_font(font, errh);
-
-    if (!outfn || strcmp(outfn, "-") == 0) {
-	f = stdout;
-	outfn = "<stdout>";
-    } else if (!(f = fopen(outfn, "wb")))
-	errh->fatal("%s: %s", outfn, strerror(errno));
-
-    if (binary) {
-#if defined(_MSDOS) || defined(_WIN32)
-	_setmode(_fileno(f), _O_BINARY);
-#endif
-	Type1PFBWriter t1w(f);
-	font1->write(t1w);
-    } else {
-	Type1PFAWriter t1w(f);
-	font1->write(t1w);
-    }
-
-    if (f != stdout)
-	fclose(f);
-#endif
 }
 
 int
@@ -406,8 +329,8 @@ main(int argc, char *argv[])
 	    break;
       
 	  case VERSION_OPT:
-	    printf("cfftot1 (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2002-2006 Eddie Kohler\n\
+	    printf("ttftotype42 (LCDF typetools) %s\n", VERSION);
+	    printf("Copyright (C) 2006 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

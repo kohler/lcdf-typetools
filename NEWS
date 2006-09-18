@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.45   17.Sep.2006
+
+* Include new ttftotype42 program.
+
+
 Version 2.44   16.Sep.2006
 
 * otfinfo/otftotfm: Support new fonts whose 'size' features are defined
