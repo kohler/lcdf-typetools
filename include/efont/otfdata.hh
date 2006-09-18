@@ -68,6 +68,7 @@ class Data { public:
 
     Data subtable(unsigned offset) const throw (Bounds);
     Data offset_subtable(unsigned offset_offset) const throw (Bounds);
+    inline Data substring(int left, int len = -1) const throw ();
 
     void align_long()			{ _str.align(4); }
 
@@ -117,6 +118,12 @@ inline int32_t Data::s32(unsigned offset) const throw (Bounds)
     else
 	return (ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset)) << 16)
 	    | ntohs(*reinterpret_cast<const uint16_t *>(_str.data() + offset + 2));
+}
+
+inline Data
+Data::substring(int left, int len) const throw ()
+{
+    return Data(_str.substring(left, len));
 }
 
 }}

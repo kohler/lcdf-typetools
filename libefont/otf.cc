@@ -88,6 +88,29 @@ Font::parse_header(ErrorHandler *errh)
     return 0;
 }
 
+bool
+Font::check_checksums(ErrorHandler *errh) const
+{
+    if (error() < 0)
+	return false;
+    int nt = ntables();
+    bool ok = true;
+    for (int i = 0; i < nt; i++) {
+	const uint8_t *entry = data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
+	String tbl = _str.substring(ULONG_AT(entry + 8), ULONG_AT(entry + 12));
+	uint32_t sum = checksum(tbl);
+	if (ULONG_AT(entry) == 0x68656164	// 'head'
+	    && tbl.length() >= 12)
+	    sum -= ULONG_AT(tbl.data() + 8);
+	if (sum != ULONG_AT(entry + 4)) {
+	    if (errh)
+		errh->error("table '%s' checksum error: %x vs. %x", Tag(ULONG_AT(entry)).text().c_str(), sum, ULONG_AT(entry + 4));
+	    ok = false;
+	}
+    }
+    return ok;
+}
+
 int
 Font::ntables() const
 {
@@ -128,6 +151,111 @@ Font::table_tag(int i) const
 	return Tag();
     else
 	return Tag(ULONG_AT(data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i));
+}
+
+uint32_t
+Font::checksum(const uint8_t *begin, const uint8_t *end)
+{
+    uint32_t sum = 0;
+    if (reinterpret_cast<uintptr_t>(begin) % 4)
+	for (; begin + 3 < end; begin += 4)
+	    sum += (begin[0] << 24) + (begin[1] << 16) + (begin[2] << 8) + begin[3];
+    else
+	for (; begin + 3 < end; begin += 4)
+	    sum += ULONG_AT(begin);
+    uint32_t leftover = 0;
+    for (int i = 0; i < 4; i++)
+	leftover = (leftover << 8) + (begin < end ? *begin++ : 0);
+    return sum + leftover;
+}
+	    
+uint32_t
+Font::checksum(const String &s)
+{
+    return checksum(reinterpret_cast<const uint8_t *>(s.begin()), reinterpret_cast<const uint8_t *>(s.end()));
+}
+
+namespace {
+class TagCompar { public:
+    TagCompar(const Vector<Tag> &tags) : _tags(tags) { }
+    bool operator()(int a, int b) { return _tags[a] < _tags[b]; }
+    const Vector<Tag> &_tags;
+};
+}
+
+Font
+Font::make(bool truetype, const Vector<Tag>& tags, const Vector<String>& data)
+{
+    StringAccum sa;
+
+    // create offset table
+    {
+	union {
+	    uint8_t c[HEADER_SIZE];
+	    uint16_t s[HEADER_SIZE / 2];
+	    uint32_t l[HEADER_SIZE / 4];
+	} hdr;
+	hdr.l[0] = (truetype ? htonl(0x00010000) : htonl(0x4F54544F));
+	hdr.s[2] = htons(tags.size());
+	int entrySelector;
+	for (entrySelector = 0; (2 << entrySelector) <= tags.size(); entrySelector++)
+	    /* nada */;
+	hdr.s[3] = htons((1 << entrySelector) * 16);
+	hdr.s[4] = htons(entrySelector);
+	hdr.s[5] = htons((tags.size() - (1 << entrySelector)) * 16);
+	sa.append(&hdr.c[0], HEADER_SIZE);
+    }
+
+    // sort tags
+    Vector<int> permut;
+    for (int i = 0; i < tags.size(); i++)
+	permut.push_back(i);
+    std::sort(permut.begin(), permut.end(), TagCompar(tags));
+
+    // table listing
+    uint32_t offset = HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * tags.size();
+    for (int *tp = permut.begin(); tp < permut.end(); tp++) {
+	union {
+	    uint8_t c[TABLE_DIR_ENTRY_SIZE];
+	    uint32_t l[TABLE_DIR_ENTRY_SIZE / 4];
+	} tdir;
+	tdir.l[0] = htonl(tags[*tp].value());
+	
+	// discount current checksum adjustment in head table
+	uint32_t sum = checksum(data[*tp]);
+	if (tags[*tp] == Tag("head") && data[*tp].length() >= 12) {
+	    const uint8_t *x = data[*tp].udata() + 8;
+	    sum -= (x[0] << 24) + (x[1] << 16) + (x[2] << 8) + x[3];
+	}
+	tdir.l[1] = htonl(sum);
+	
+	tdir.l[2] = htonl(offset);
+	tdir.l[3] = htonl(data[*tp].length());
+	sa.append(&tdir.c[0], TABLE_DIR_ENTRY_SIZE);
+	offset += (data[*tp].length() + 3) & ~3;
+    }
+
+    // actual tables
+    for (int *tp = permut.begin(); tp < permut.end(); tp++) {
+	sa << data[*tp];
+	while (sa.length() % 4)
+	    sa << '\0';
+    }
+
+    // fix 'head' table
+    for (int i = 0; i < tags.size(); i++) {
+	char *thdr = sa.data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
+	if (ULONG_AT(thdr) == 0x68656164 && ULONG_AT(thdr + 12) >= 12) {
+	    uint32_t offset = ULONG_AT(thdr + 8);
+	    char *head = sa.data() + offset;
+	    memset(head + 8, '\0', 4);
+	    uint32_t allsum = checksum(reinterpret_cast<uint8_t *>(sa.data()), reinterpret_cast<uint8_t *>(sa.data() + sa.length()));
+	    uint32_t *adj = reinterpret_cast<uint32_t *>(head + 8);
+	    *adj = htonl(0xB1B0AFBA - allsum);
+	}
+    }
+
+    return Font(sa.take_string());
 }
 
 

@@ -44,6 +44,7 @@ class Font { public:
     // default destructor
 
     bool ok() const			{ return _error >= 0; }
+    bool check_checksums(ErrorHandler * = 0) const;
     int error() const			{ return _error; }
 
     const String& data_string() const	{ return _str; }
@@ -55,12 +56,16 @@ class Font { public:
     uint32_t table_checksum(Tag) const;
     Tag table_tag(int) const;
 
+    static uint32_t checksum(const uint8_t *, const uint8_t *);
+    static uint32_t checksum(const String &);
+    static Font make(bool truetype, const Vector<Tag>& tags, const Vector<String>& data);
+    
+    enum { HEADER_SIZE = 12, TABLE_DIR_ENTRY_SIZE = 16 };
+
   private:
 
     String _str;
     int _error;
-
-    enum { HEADER_SIZE = 12, TABLE_DIR_ENTRY_SIZE = 16 };
 
     int parse_header(ErrorHandler*);
     

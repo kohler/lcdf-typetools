@@ -37,6 +37,12 @@ class Post { public:
 inline int
 Post::underline_position() const
 {
+    // NB: "This is the suggested distance of the top of the underline from
+    // the baseline (negative values indicate below baseline).  The PostScript
+    // definition of this FontInfo dictionary key (the y coordinate of the
+    // center of the stroke) is not used for historical reasons. The value of
+    // the PostScript key may be calculated by subtracting half the
+    // underlineThickness from the value of this field." -- OpenType spec
     return ok() ? _str.s16(8) : 0;
 }
 
