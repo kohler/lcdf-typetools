@@ -42,13 +42,15 @@ Name::parse_header(ErrorHandler *errh)
     // USHORT	numTables
     int len = _str.length();
     const uint8_t *data = _str.udata();
+    if (len == 0)
+	return errh->error("font has no 'name' table"), -EFAULT;
     if (HEADER_SIZE > len)
-	return errh->error("OTF name too small for header"), -EFAULT;
+	return errh->error("'name' table too small"), -EFAULT;
     if (!(data[0] == '\000' && data[1] == '\000'))
-	return errh->error("bad name version number"), -ERANGE;
+	return errh->error("bad 'name' version number"), -ERANGE;
     int count = USHORT_AT(data + 2);
     if (HEADER_SIZE + count*NAMEREC_SIZE > len)
-	return errh->error("OTF name too small for header"), -EFAULT;
+	return errh->error("'name' table too small"), -EFAULT;
     return 0;
 }
 
