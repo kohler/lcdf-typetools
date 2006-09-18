@@ -33,7 +33,7 @@
 #include "kpseinterface.h"
 #include "util.hh"
 #include "otftotfm.hh"
-#include "md5.h"
+#include <lcdf/md5.h>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
 #include <lcdf/hashmap.hh>

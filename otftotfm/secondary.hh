@@ -5,7 +5,7 @@
 class Metrics;
 class Transform;
 struct Setting;
-class TrueTypeBoundsCharstringProgram;
+namespace Efont { class TrueTypeBoundsCharstringProgram; }
 
 struct FontInfo {
     
@@ -40,7 +40,7 @@ struct FontInfo {
     mutable Vector<PermString> _glyph_names;
     mutable bool _got_glyph_names;
     mutable Vector<uint32_t> _unicodes;
-    mutable TrueTypeBoundsCharstringProgram *_ttb_program;
+    mutable Efont::TrueTypeBoundsCharstringProgram *_ttb_program;
 
 };
 

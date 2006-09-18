@@ -46,19 +46,11 @@ using namespace Efont;
 #define VERSION_OPT	301
 #define HELP_OPT	302
 #define QUIET_OPT	303
-#define PFB_OPT		304
-#define PFA_OPT		305
 #define OUTPUT_OPT	306
-#define NAME_OPT	307
 
 Clp_Option options[] = {
-    { "ascii", 'a', PFA_OPT, 0, 0 },
-    { "binary", 'b', PFB_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
-    { "name", 'n', NAME_OPT, Clp_ArgString, 0 },
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
-    { "pfa", 'a', PFA_OPT, 0, 0 },
-    { "pfb", 'b', PFB_OPT, 0, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "version", 'v', VERSION_OPT, 0, 0 },
 };
@@ -93,9 +85,6 @@ standard output, is written in PFB or PFA format.\n\
 Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]\n\
 \n\
 Options:\n\
-  -a, --pfa                    Output PFA font.\n\
-  -b, --pfb                    Output PFB font. This is the default.\n\
-  -n, --name=NAME              Select font NAME from CFF.\n\
   -o, --output=FILE            Write output to FILE.\n\
   -q, --quiet                  Do not generate any error messages.\n\
   -h, --help                   Print this message and exit.\n\
@@ -162,7 +151,7 @@ fprint_sfnts(FILE *f, const String &data, bool glyf, const OpenType::Font &font)
 }
 
 static void
-do_file(const char *infn, const char *outfn, PermString font_name, ErrorHandler *errh)
+do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 {
     FILE *f;
     if (!infn || strcmp(infn, "-") == 0) {
@@ -404,26 +393,11 @@ main(int argc, char *argv[])
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     const char *output_file = 0;
-    const char *font_name = 0;
   
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
 
-	  case PFA_OPT:
-	    binary = false;
-	    break;
-      
-	  case PFB_OPT:
-	    binary = true;
-	    break;
-
-	  case NAME_OPT:
-	    if (font_name)
-		usage_error(errh, "font name specified twice");
-	    font_name = clp->arg;
-	    break;
-	    
 	  case QUIET_OPT:
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
@@ -475,7 +449,7 @@ particular purpose.\n");
     }
   
   done:
-    do_file(input_file, output_file, font_name, errh);
+    do_file(input_file, output_file, errh);
     
     return (errh->nerrors() == 0 ? 0 : 1);
 }
