@@ -94,8 +94,10 @@ Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 
 // MAIN
 
+// This is the list of tables Adobe recommends be included from the source TTF,
+// plus the 'cmap' table, which helps to make PDF results searchable.
 static const char * const t42_tables[] = {
-    "cvt ", "fpgm", "glyf", "head", "hhea", "hmtx",
+    "cmap", "cvt ", "fpgm", "glyf", "head", "hhea", "hmtx",
     "loca", "maxp", "prep", "vhea", "vmtx", 0
 };
 
