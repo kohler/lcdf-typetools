@@ -353,6 +353,8 @@ particular purpose.\n");
 	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a 'dotlessj' glyph", font->font_name().c_str());
     else if (font->glyph("uni0237"))
 	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at 'uni0237'", font->font_name().c_str());
+    else if (font->glyph("u0237"))
+	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at 'u0237'", font->font_name().c_str());
     else if (private_use_dotlessj && font->glyph(private_use_dotlessj))
 	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at '%s'", font->font_name().c_str(), private_use_dotlessj);
 
