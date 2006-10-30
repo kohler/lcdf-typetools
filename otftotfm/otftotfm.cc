@@ -539,7 +539,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 
     if (char_bounds(bounds, width, finfo, font_xform, ' ')) {
 	// advance space width by letterspacing, scale by space_factor
-	double space_width = (width + letterspace) * space_factor;
+	double space_width = (width + (vpl ? letterspace : 0)) * space_factor;
 	fprint_real(f, "   (SPACE", space_width, du);
 	if (finfo.is_fixed_pitch()) {
 	    // fixed-pitch: no space stretch or shrink
@@ -666,7 +666,8 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		switch (s->op) {
 		    
 		  case Setting::SHOW:
-		    boundser.char_bounds(program->glyph_context(s->y));
+		    if (vpl || program == finfo.program())
+			boundser.char_bounds(program->glyph_context(s->y));
 		    // 3.Aug.2004 -- reported by Marco Kuhlmann: Don't use
 		    // glyph_ids[] array when looking at a different font.
 		    if (program == finfo.program())
@@ -676,7 +677,8 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		    break;
 
 		  case Setting::MOVE:
-		    boundser.translate(s->x, s->y);
+		    if (vpl)
+			boundser.translate(s->x, s->y);
 		    if (s->x)
 			sa << "      (MOVERIGHT R " << real_string(s->x, du) << ")\n";
 		    if (s->y)
@@ -684,9 +686,11 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		    break;
 
 		  case Setting::RULE:
-		    boundser.mark(Point(0, 0));
-		    boundser.mark(Point(s->x, s->y));
-		    boundser.translate(s->x, 0);
+		    if (vpl) {
+			boundser.mark(Point(0, 0));
+			boundser.mark(Point(s->x, s->y));
+			boundser.translate(s->x, 0);
+		    }
 		    sa << "      (SETRULE R " << real_string(s->y, du) << " R " << real_string(s->x, du) << ")\n";
 		    break;
 
@@ -703,7 +707,8 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		  case Setting::POP: {
 		      assert(push_stack.size());
 		      Point p = push_stack.back() - boundser.transform(Point(0, 0));
-		      boundser.translate(p.x, p.y);
+		      if (vpl)
+			  boundser.translate(p.x, p.y);
 		      push_stack.pop_back();
 		      sa << "      (POP)\n";
 		      break;

@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.45
+.ds V 2.46
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -741,6 +741,20 @@ argument is supplied.
 .TP 5
 .BI \-\-no\-map
 Do not generate a font map line for the font.
+'
+.\" .Sp
+.\" .TP 5
+.\" .BI \-\-base\-name name
+.\" Experts only: Set the TeX name of the "base" output font.  When
+.\" .B otftotfm
+.\" needs to make a virtual font (because of font features and/or
+.\" letterspacing), it must generate at least two TFM metrics files, one for
+.\" the base font and one for the virtual font.  In some cases, multiple
+.\" virtual fonts can share the same base metrics, reducing the number of
+.\" installed metrics files.  This option lets you explicitly set the name of
+.\" the base output font independently from the main output font, and thus
+.\" force fonts to share base metrics.  The default base name is derived from
+.\" the TeX name, with "\f(CW\-\-base\fR" appended.
 .PD
 '
 '

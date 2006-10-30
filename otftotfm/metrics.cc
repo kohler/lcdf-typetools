@@ -1240,7 +1240,8 @@ Metrics::need_virtual(int size) const
     if (size > _encoding.size())
 	size = _encoding.size();
     for (const Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
-	if (ch->pdx || ch->pdy || ch->adx || ch->virtual_char)
+	if (ch->glyph /* actually encoded */
+	    && (ch->pdx || ch->pdy || ch->adx || ch->virtual_char))
 	    return true;
     return false;
 }
