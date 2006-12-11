@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.46)
+AM_INIT_AUTOMAKE(lcdf-typetools, 2.48)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 
@@ -144,6 +144,7 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
 	fi
 	CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/../../texk -I\$(top_srcdir)/../../texk"
 	LDFLAGS="$LDFLAGS -L\$(top_builddir)/../../texk/kpathsea/.libs"
+        AC_MSG_NOTICE([tetex build of lcdf-typetools, CPPFLAGS now: $CPPFLAGS])
     elif test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
 	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
 	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
@@ -197,7 +198,11 @@ using --without-kpathsea.
     fi
 
     dnl does it have opentype support?
-    AC_CHECK_DECLS(kpse_opentype_format, :, :, [#include <kpathsea/kpathsea.h>])
+    if test "x$enable_tetex_build" = xyes; then
+	AC_DEFINE(HAVE_DECL_KPSE_OPENTYPE_FORMAT)
+    else
+	AC_CHECK_DECLS(kpse_opentype_format, :, :, [#include <kpathsea/kpathsea.h>])
+    fi
 fi
 AC_SUBST([KPSEINTERFACE_O])
 AC_SUBST([LIBKPATHSEA])
