@@ -586,15 +586,18 @@ FeatureList::size_params(int fid, const Name &name, ErrorHandler *errh) const
 	    || USHORT_AT(data + 4) > 32767	// menu name ID > 32767
 	    || !name.english_name(USHORT_AT(data + 4))) // menu name ID is a name ID defined by the font
 	    continue;
-	if (USHORT_AT(data) >= USHORT_AT(data + 6) // design size >= range start
-	    && USHORT_AT(data) <= USHORT_AT(data + 8)) // design size <= range end
+	if (USHORT_AT(data) + 1 >= USHORT_AT(data + 6) // design size >= range start (with 1 dp grace)
+	    && USHORT_AT(data) <= USHORT_AT(data + 8) + 1) // design size <= range end (with 1 dp grace)
 	    return s;
-	else if (i == 1				// second feature type
+	else if (i == 1				// old-style feature
 		 && USHORT_AT(data + 8) <= 1440	// range end <= 144 point
-		 && USHORT_AT(data) <= 1440)	// design size <= 144 point
-	    // just in case the font defines a bogus feature with design size
-	    // not in range: assume this only happens with old-style features
+		 && USHORT_AT(data) <= 1440) {	// design size <= 144 point
+	    // some old fonts define a bogus feature with design size
+	    // not in range (John Owens, Read Roberts)
+	    if (errh)
+		errh->warning("invalid 'size' feature: design size not in range");
 	    return s;
+	}
     }
     if (errh)
 	errh->error("no valid 'size' feature data in the 'size' feature");
