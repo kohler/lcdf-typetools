@@ -573,6 +573,7 @@ FeatureList::size_params(int fid, const Name &name, ErrorHandler *errh) const
     for (int i = 0; i < 2; i++) {
 	String s = params(fid, 10, errh, i != 0);
 	const uint8_t *data = s.udata();
+	// errh->message("trying %d %d %d %d %d\n", USHORT_AT(data), USHORT_AT(data + 2), USHORT_AT(data + 4), USHORT_AT(data + 6), USHORT_AT(data + 8));
 	if (USHORT_AT(data) == 0)		// design size == 0
 	    continue;
 	if (USHORT_AT(data + 2) == 0		// subfamily ID == 0
@@ -580,12 +581,19 @@ FeatureList::size_params(int fid, const Name &name, ErrorHandler *errh) const
 	    && USHORT_AT(data + 8) == 0		// range end == 0
 	    && USHORT_AT(data + 4) == 0)	// menu name ID == 0
 	    return s;
+	if (USHORT_AT(data + 6) >= USHORT_AT(data + 8) // range start >= range end
+	    || USHORT_AT(data + 4) < 256	// menu name ID < 256
+	    || USHORT_AT(data + 4) > 32767	// menu name ID > 32767
+	    || !name.english_name(USHORT_AT(data + 4))) // menu name ID is a name ID defined by the font
+	    continue;
 	if (USHORT_AT(data) >= USHORT_AT(data + 6) // design size >= range start
-	    && USHORT_AT(data) <= USHORT_AT(data + 8) // design size <= range end
-	    && USHORT_AT(data + 6) < USHORT_AT(data + 8) // range start < range end
-	    && USHORT_AT(data + 4) >= 256	// menu name ID >= 256
-	    && USHORT_AT(data + 4) <= 32767	// menu name ID <= 32767
-	    && name.english_name(USHORT_AT(data + 4))) // menu name ID is a name ID defined by the font
+	    && USHORT_AT(data) <= USHORT_AT(data + 8)) // design size <= range end
+	    return s;
+	else if (i == 1				// second feature type
+		 && USHORT_AT(data + 8) <= 1440	// range end <= 144 point
+		 && USHORT_AT(data) <= 1440)	// design size <= 144 point
+	    // just in case the font defines a bogus feature with design size
+	    // not in range: assume this only happens with old-style features
 	    return s;
     }
     if (errh)
