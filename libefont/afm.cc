@@ -171,11 +171,11 @@ AfmReader::read()
 		break;
 	    if (l.isall("CapHeight %g", &fd( fdCapHeight )))
 		break;
-	    if (l.isall("CharacterSet"))
+	    if (l.isall("CharacterSet %+s", (PermString *) 0))
 		break;
 	    if (l.isall("CharWidth %g %g", (double *)0, (double *)0))
 		break;
-	    if (l.isall("Comment"))
+	    if (l.isall("Comment %+s", (PermString *) 0))
 		break;
 	    goto invalid;
       
