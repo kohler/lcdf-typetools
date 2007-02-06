@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.52   6.Feb.2007
+
+* otftotfm: '--base-encodings' fixes for dotless-J fonts.
+
+
 Version 2.51   6.Feb.2007
 
 * otftotfm: Some '--base-encodings' fixes.

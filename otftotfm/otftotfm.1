@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.51
+.ds V 2.52
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -658,8 +658,8 @@ Each line in the
 .I file
 argument contains a TeX font name (as for
 .BR \-\-name )
-and a corresponding encoding file (as for
-.BR \-e );
+and a corresponding literal encoding file (as for
+.BR \-\-literal\-encoding );
 for example:
 .nf
     WarnoProReg\-\-eka eka
@@ -675,7 +675,12 @@ options as the current run.  The current output font will refer to glyphs
 from the named base fonts when possible.  If the base fonts cover all
 glyphs required by the output font,
 .B otftotfm
-won't generate any new base fonts at all.
+won't generate any new base fonts at all.  The
+.I file
+can also refer to dotless-J fonts using the following syntax:
+.nf
+    WarnoProReg\-\-lcdfj \- dotlessj
+.fi
 '
 .PD
 '
