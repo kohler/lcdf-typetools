@@ -349,20 +349,21 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	    return -1;
 	}
 
+	// find dotless-J character
+	Vector<PermString> glyph_names;
+	font->glyph_names(glyph_names);
+	Vector<PermString>::iterator g = std::find(glyph_names.begin(), glyph_names.end(), "uni0237");
+	if (g == glyph_names.end()) {
+	    errh->error("%s: dotless-J font has no 'uni0237' glyph", filename.c_str());
+	    delete font;
+	    return -1;
+	}
+	dj_glyph = g - glyph_names.begin();
+	
 	// create metrics for dotless-J
 	if (install_metrics) {
 	    Metrics dj_metrics(font, 256);
-	    Vector<PermString> glyph_names;
-	    font->glyph_names(glyph_names);
-	    Vector<PermString>::iterator g = std::find(glyph_names.begin(), glyph_names.end(), "uni0237");
-	    if (g != glyph_names.end()) {
-		dj_glyph = g - glyph_names.begin();
-		dj_metrics.encode('j', U_DOTLESSJ, dj_glyph);
-	    } else {
-		errh->error("%s: dotless-J font has no 'uni0237' glyph", filename.c_str());
-		delete font;
-		return -1;
-	    }
+	    dj_metrics.encode('j', U_DOTLESSJ, dj_glyph);
 	    ::dotlessj_file_name = filename;
 	    output_metrics(dj_metrics, font->font_name(), -1, _finfo, String(), String(), dj_name, dotlessj_dvips_include, errh);
 	} else if (verbose)
