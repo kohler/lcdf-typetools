@@ -838,6 +838,27 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
     metrics.set_coding_scheme(_coding_scheme);
 }
 
+void
+DvipsEncoding::make_base_mappings(Vector<int> &mappings, const FontInfo &finfo)
+{
+    mappings.clear();
+    for (int code = 0; code < _e.size(); code++) {
+	PermString chname = _e[code];
+
+	// common case: skip .notdef
+	if (chname == dot_notdef)
+	    continue;
+
+	// find named glyph
+	Efont::OpenType::Glyph named_glyph = finfo.glyphid(chname);
+	if (named_glyph > 0) {
+	    if (mappings.size() <= named_glyph)
+		mappings.resize(named_glyph + 1, -1);
+	    mappings[named_glyph] = code;
+	}
+    }
+}
+
 
 void
 DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const

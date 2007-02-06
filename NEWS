@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.50   6.Feb.2007
+
+* otftotfm: Add '--base-encodings' option.  Requested by Michael Zedler.
+
+
 Version 2.49   11.Jan.2007
 
 * Report certain types of invalid 'size' features that occasionally occur

@@ -65,7 +65,7 @@ class Metrics { public:
     
     inline Code base_code(Code) const;
     inline Glyph base_glyph(Code) const;
-    void base_glyphs(Vector<Glyph> &) const;
+    bool base_glyphs(Vector<Glyph> &, int size) const;
 
     void add_ligature(Code in1, Code in2, Code out);
     Code pair_code(Code, Code, int lookup_source = -1);
@@ -81,11 +81,14 @@ class Metrics { public:
     void apply_alternates(const Vector<Substitution>&, int lookup, const GlyphFilter&, const Vector<PermString>& glyph_names);
     int apply(const Vector<Positioning>&);
 
+    void apply_base_encoding(const String &font_name, const DvipsEncoding &, const Vector<int> &mapping);
+
     void cut_encoding(int size);
     void shrink_encoding(int size, const DvipsEncoding &, ErrorHandler *);
     void make_base(int size);
 
     bool need_virtual(int size) const;
+    bool need_base(int size) const;
     enum SettingMode { SET_NONE = 0, SET_KEEP = 1, SET_INTERMEDIATE = 3 };
     bool setting(Code, Vector<Setting> &, SettingMode = SET_NONE) const;
     int ligatures(Code in1, Vector<Code> &in2, Vector<Code> &out, Vector<int> &context) const;

@@ -189,6 +189,24 @@ Metrics::encode_virtual(Code code, PermString name, uint32_t uni, const Vector<S
 }
 
 void
+Metrics::apply_base_encoding(const String &font_name, const DvipsEncoding &dvipsenc, const Vector<int> &mapping)
+{
+    int font_number = -1;
+    for (Char *c = _encoding.begin(); c != _encoding.end(); c++)
+	if (c->glyph > 0 && !c->virtual_char && c->glyph < mapping.size()
+	    && mapping[c->glyph] >= 0) {
+	    if (font_number < 0)
+		font_number = add_mapped_font(mapped_font(0), font_name);
+	    VirtualChar *vc = c->virtual_char = new VirtualChar;
+	    vc->name = dvipsenc.encoding(mapping[c->glyph]);
+	    vc->setting.push_back(Setting(Setting::FONT, font_number));
+	    vc->setting.push_back(Setting(Setting::SHOW, mapping[c->glyph], c->glyph));
+	    c->glyph = VIRTUAL_GLYPH;
+	    c->base_code = -1;
+	}
+}
+
+void
 Metrics::add_altselector_code(Code code, int altselector_type)
 {
     for (Kern *k = _altselectors.begin(); k != _altselectors.end(); k++)
@@ -199,13 +217,17 @@ Metrics::add_altselector_code(Code code, int altselector_type)
     _altselectors.push_back(Kern(code, altselector_type));
 }
 
-void
-Metrics::base_glyphs(Vector<Glyph> &v) const
+bool
+Metrics::base_glyphs(Vector<Glyph> &v, int size) const
 {
+    bool any = false;
     v.assign(_encoding.size(), 0);
-    for (Code c = 0; c < _encoding.size(); c++)
-	if (_encoding[c].base_code >= 0)
-	    v[_encoding[c].base_code] = _encoding[c].glyph;
+    for (const Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
+	if (ch->base_code >= 0 && ch->base_code < size) {
+	    v[ch->base_code] = ch->glyph;
+	    any = true;
+	}
+    return any;
 }
 
 
@@ -1202,28 +1224,21 @@ font, so I've ignored these:\n%s.)", sa.c_str());
 void
 Metrics::make_base(int size)
 {
-    if (_encoding.size() <= size)
-	/* If the encoding has not grown, there cannot be any base characters
-	   left to swap in. */
-	return;
-    
-    assert(_encoding.size() > size);
-    bool reencoded = false;
     Vector<Code> reencoding;
-    for (Code c = 0; c < _encoding.size(); c++)
-	reencoding.push_back(c);
     for (Code c = 0; c < size; c++) {
 	Char &ch = _encoding[c];
 	if (ch.base_code >= 0 && ch.base_code != c) {
+	    if (!reencoding.size())
+		for (Code cc = 0; cc < _encoding.size(); cc++)
+		    reencoding.push_back(cc);
 	    reencoding[ch.base_code] = c;
 	    reencoding[c] = ch.base_code;
 	    _encoding[c].swap(_encoding[ch.base_code]);
-	    reencoded = true;
 	}
 	if (ch.virtual_char)	// remove it
 	    ch.clear();
     }
-    if (reencoded) {
+    if (reencoding.size()) {
 	reencode(reencoding);
 	cut_encoding(size);
     }
@@ -1242,6 +1257,17 @@ Metrics::need_virtual(int size) const
     for (const Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
 	if (ch->glyph /* actually encoded */
 	    && (ch->pdx || ch->pdy || ch->adx || ch->virtual_char))
+	    return true;
+    return false;
+}
+
+bool
+Metrics::need_base(int size) const
+{
+    if (size > _encoding.size())
+	size = _encoding.size();
+    for (const Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
+	if (ch->base_code >= 0)
 	    return true;
     return false;
 }

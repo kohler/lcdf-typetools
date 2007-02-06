@@ -27,6 +27,7 @@ class DvipsEncoding { public:
     inline int encoding_of(PermString) const;
     int encoding_of(PermString, bool encode);
     inline bool encoded(int e) const;
+    inline PermString encoding(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
     int parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *);
@@ -38,6 +39,7 @@ class DvipsEncoding { public:
     
     // also modifies 'this':
     void make_metrics(Metrics &, const FontInfo &, Secondary *, bool literal, ErrorHandler *);
+    void make_base_mappings(Vector<int> &mappings, const FontInfo &);
     
     void apply_ligkern_lig(Metrics &, ErrorHandler *) const;
     void apply_ligkern_kern(Metrics &, ErrorHandler *) const;
@@ -104,6 +106,15 @@ inline bool
 DvipsEncoding::encoded(int e) const
 {
     return e >= 0 && e < _e.size() && _e[e] != dot_notdef;
+}
+
+inline PermString
+DvipsEncoding::encoding(int e) const
+{
+    if (encoded(e))
+	return _e[e];
+    else
+	return PermString();
 }
 
 inline int

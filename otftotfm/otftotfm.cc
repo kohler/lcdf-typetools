@@ -1,6 +1,6 @@
 /* otftotfm.cc -- driver for translating OpenType fonts to TeX metrics
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -97,16 +97,17 @@ using namespace Efont;
 #define MATH_SPACING_OPT	338
 #define POSITION_OPT		339
 #define WARN_MISSING_OPT	340
+#define BASE_ENCODINGS_OPT	341
 
-#define AUTOMATIC_OPT		341
-#define FONT_NAME_OPT		342
-#define QUIET_OPT		343
-#define GLYPHLIST_OPT		344
-#define VENDOR_OPT		345
-#define TYPEFACE_OPT		346
-#define NOCREATE_OPT		347
-#define VERBOSE_OPT		348
-#define FORCE_OPT		349
+#define AUTOMATIC_OPT		342
+#define FONT_NAME_OPT		343
+#define QUIET_OPT		344
+#define GLYPHLIST_OPT		345
+#define VENDOR_OPT		346
+#define TYPEFACE_OPT		347
+#define NOCREATE_OPT		348
+#define VERBOSE_OPT		349
+#define FORCE_OPT		350
 
 #define VIRTUAL_OPT		351
 #define PL_OPT			352
@@ -145,6 +146,7 @@ static Clp_Option options[] = {
     { "subs-filter", 0, SUBS_FILTER_OPT, Clp_ArgString, 0 },
     { "encoding", 'e', ENCODING_OPT, Clp_ArgString, 0 },
     { "literal-encoding", 0, LITERAL_ENCODING_OPT, Clp_ArgString, 0 },
+    { "base-encodings", 0, BASE_ENCODINGS_OPT, Clp_ArgString, 0 },
     { "extend", 'E', EXTEND_OPT, Clp_ArgDouble, 0 },
     { "slant", 'S', SLANT_OPT, Clp_ArgDouble, 0 },
     { "letterspacing", 'L', LETTERSPACE_OPT, Clp_ArgInt, 0 },
@@ -220,6 +222,11 @@ hyphen hyphen =: endash ; endash hyphen =: emdash ; \
 quoteleft quoteleft =: quotedblleft ; \
 quoteright quoteright =: quotedblright ;";
 
+struct BaseEncoding {
+    String font_name;
+    DvipsEncoding encoding;
+};
+
 static const char *program_name;
 static String::Initializer initializer;
 static String current_time;
@@ -237,6 +244,7 @@ static HashMap<Efont::OpenType::Tag, GlyphFilter*> altselector_feature_filters(0
 
 static String font_name;
 static String encoding_file;
+static Vector<BaseEncoding *> base_encodings;
 static double extend;
 static double slant;
 static int letterspace;
@@ -321,6 +329,7 @@ Encoding options:\n\
       --coding-scheme=SCHEME   Set the output coding scheme to SCHEME.\n\
       --warn-missing           Warn about characters not supported by font.\n\
       --literal-encoding=FILE  Use DVIPS encoding FILE verbatim.\n\
+      --base-encodings=FILE    Output can refer to base fonts named in FILE.\n\
 \n");
     printf("\
 Automatic mode options:\n\
@@ -564,13 +573,16 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	fprintf(f, "(BOUNDARYCHAR D %d)\n", boundary_char);
 
     // write MAPFONT
-    if (vpl)
-	for (int i = 0; i < metrics.n_mapped_fonts(); i++) {
+    int vpl_first_font = 0;
+    if (vpl) {
+	vpl_first_font = (metrics.need_base(256) ? 0 : 1);
+	for (int i = vpl_first_font; i < metrics.n_mapped_fonts(); i++) {
 	    String name = metrics.mapped_font_name(i);
 	    if (!name)
 		name = make_base_font_name(font_name);
-	    fprintf(f, "(MAPFONT D %d\n   (FONTNAME %s)\n   (FONTDSIZE R %.1f)\n   )\n", i, name.c_str(), design_size);
+	    fprintf(f, "(MAPFONT D %d\n   (FONTNAME %s)\n   (FONTDSIZE R %.1f)\n   )\n", i - vpl_first_font, name.c_str(), design_size);
 	}
+    }
     
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
@@ -661,6 +673,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 	    sa.clear();
 	    push_stack.clear();
 	    CharstringBounds boundser(font_xform);
+	    int program_number = vpl_first_font;
 	    const CharstringProgram *program = finfo.program();
 	    for (const Setting *s = settings.begin(); s < settings.end(); s++)
 		switch (s->op) {
@@ -695,8 +708,11 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 		    break;
 
 		  case Setting::FONT:
-		    program = metrics.mapped_font((int) s->x);
-		    sa << "      (SELECTFONT D " << (int) s->x << ")\n";
+		    if ((int) s->x != program_number) {
+			program = metrics.mapped_font((int) s->x);
+			program_number = (int) s->x;
+			sa << "      (SELECTFONT D " << (program_number - vpl_first_font) << ")\n";
+		    }
 		    break;
 
 		  case Setting::PUSH:
@@ -911,7 +927,7 @@ write_encoding_file(String &filename, const String &encoding_name,
     return 0;
 }
 
-static void
+static bool
 output_encoding(const Metrics &metrics,
 		const Vector<PermString> &glyph_names,
 		ErrorHandler *errh)
@@ -920,7 +936,9 @@ output_encoding(const Metrics &metrics,
 
     // collect encoding data
     Vector<Metrics::Glyph> glyphs;
-    metrics.base_glyphs(glyphs);
+    if (!metrics.base_glyphs(glyphs, 256))
+	return false;
+    
     StringAccum sa;
     for (int i = 0; i < 256; i++) {
 	if ((i & 0xF) == 0)
@@ -952,7 +970,7 @@ output_encoding(const Metrics &metrics,
 
     // exit if we're not responsible for generating an encoding
     if (!(output_flags & G_ENCODING))
-	return;
+	return true;
 
     // put encoding block in a StringAccum
     // 3.Jun.2003: stick command line definition at the end of the encoding,
@@ -997,6 +1015,7 @@ output_encoding(const Metrics &metrics,
 	fwrite(contents.data(), 1, contents.length(), stdout);
     else if (write_encoding_file(out_encoding_file, out_encoding_name, contents, errh) == 1)
 	update_odir(O_ENCODING, out_encoding_file, errh);
+    return true;
 }
 
 static void
@@ -1085,9 +1104,13 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	    output_pl(metrics, ps_name, boundary_char, finfo, true, outfile, errh);
 	    update_odir(O_VPL, outfile, errh);
 	}
-	metrics.make_base(257);
     }
 
+    // quit if no base needed
+    metrics.make_base(257);
+    if (!metrics.need_base(256))
+	return;
+    
     // output metrics
     double save_minimum_kern = minimum_kern;
     if (need_virtual)
@@ -1395,6 +1418,13 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     dvipsenc.apply_ligkern_kern(metrics, errh);
     dvipsenc.apply_position(metrics, errh);
 
+    // use prespecified raw fonts
+    for (BaseEncoding **be = base_encodings.begin(); be != base_encodings.end(); be++) {
+	Vector<int> mapp;
+	(*be)->encoding.make_base_mappings(mapp, finfo);
+	metrics.apply_base_encoding((*be)->font_name, (*be)->encoding, mapp);
+    }
+
     // remove extra characters
     metrics.cut_encoding(257);
     //metrics.unparse();
@@ -1495,6 +1525,53 @@ clp_parse_char(Clp_Parser *clp, const char *arg, int complain, void *)
 }
 }
 
+static void
+parse_base_encodings(const String &filename, ErrorHandler *errh)
+{
+    String str = read_file(filename, errh, true);
+    String print_filename = (filename == "-" ? "<stdin>" : filename) + ":";
+    int lineno = 1;
+    str.c_str();
+    const char *s_end = str.end();
+    for (const char *s = str.begin(); s != s_end; ) {
+	while (s != s_end && isspace(*s) && *s != '\n' && *s != '\r')
+	    s++;
+	// skip comments and blank lines
+	if (s != s_end && *s != '%' && *s != '#' && *s != '\n' && *s != '\r') {
+	    const char *w1 = s;
+	    while (s != s_end && !isspace(*s))
+		s++;
+	    BaseEncoding *be = new BaseEncoding;
+	    be->font_name = str.substring(w1, s);
+	    while (s != s_end && isspace(*s) && *s != '\n' && *s != '\r')
+		s++;
+	    const char *w2 = s;
+	    while (s != s_end && !isspace(*s))
+		s++;
+	    String efile = str.substring(w2, s);
+	    LandmarkErrorHandler lerrh(errh, print_filename + String(lineno));
+	    int before = lerrh.nerrors();
+	    if (!efile)
+		lerrh.error("missing encoding name");
+	    else if (String path = locate_encoding(efile, errh))
+		be->encoding.parse(path, true, true, &lerrh);
+	    else
+		lerrh.error("encoding '%s' not found", efile.c_str());
+	    if (lerrh.nerrors() == before)
+		base_encodings.push_back(be);
+	    else
+		delete be;
+	}
+	while (s != s_end && *s != '\n' && *s != '\r')
+	    s++;
+	if (s != s_end && *s == '\r')
+	    s++;
+	if (s != s_end && *s == '\n')
+	    s++;
+	lineno++;
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -1526,6 +1603,7 @@ main(int argc, char *argv[])
     Vector<String> ligkern;
     Vector<String> pos;
     Vector<String> unicoding;
+    Vector<String> base_encoding_files;
     bool no_ecommand = false, default_ligkern = true;
     int warn_missing = -1;
     String codingscheme;
@@ -1615,6 +1693,10 @@ main(int argc, char *argv[])
 	    literal_encoding = true;
 	    break;
 
+	  case BASE_ENCODINGS_OPT:
+	    base_encoding_files.push_back(clp->arg);
+	    break;
+	    
 	  case EXTEND_OPT:
 	    if (extend)
 		usage_error(errh, "extend value specified twice");
@@ -1947,6 +2029,10 @@ particular purpose.\n");
 	for (String *g = glyphlist_files.begin(); g < glyphlist_files.end(); g++)
 	    if (String s = read_file(*g, errh, true))
 		DvipsEncoding::add_glyphlist(s);
+
+	// read base encodings
+	for (String *s = base_encoding_files.begin(); s < base_encoding_files.end(); s++)
+	    parse_base_encodings(*s, errh);
 
 	// read encoding
 	DvipsEncoding dvipsenc;
