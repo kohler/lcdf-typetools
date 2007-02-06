@@ -508,7 +508,7 @@ font_slant(const FontInfo &finfo)
 }
 
 static void
-output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
+output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	  const FontInfo &finfo, bool vpl, FILE *f)
 {
     // XXX check DESIGNSIZE and DESIGNUNITS for correctness
@@ -575,7 +575,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
     // write MAPFONT
     int vpl_first_font = 0;
     if (vpl) {
-	vpl_first_font = (metrics.need_base(256) ? 0 : 1);
+	vpl_first_font = (metrics.need_base() ? 0 : 1);
 	for (int i = vpl_first_font; i < metrics.n_mapped_fonts(); i++) {
 	    String name = metrics.mapped_font_name(i);
 	    if (!name)
@@ -768,7 +768,7 @@ output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
 }
 
 static void
-output_pl(const Metrics &metrics, const String &ps_name, int boundary_char,
+output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	  const FontInfo &finfo, bool vpl, String filename, ErrorHandler *errh)
 {
     if (no_create)
@@ -1019,7 +1019,7 @@ output_encoding(const Metrics &metrics,
 }
 
 static void
-output_tfm(const Metrics &metrics, const String &ps_name, int boundary_char,
+output_tfm(Metrics &metrics, const String &ps_name, int boundary_char,
 	   const FontInfo &finfo, String tfm_filename, String vf_filename,
 	   ErrorHandler *errh)
 {
@@ -1108,7 +1108,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 
     // quit if no base needed
     metrics.make_base(257);
-    if (!metrics.need_base(256))
+    if (!metrics.need_base())
 	return;
     
     // output metrics

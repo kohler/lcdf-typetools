@@ -203,6 +203,7 @@ Metrics::apply_base_encoding(const String &font_name, const DvipsEncoding &dvips
 	    vc->setting.push_back(Setting(Setting::SHOW, mapping[c->glyph], c->glyph));
 	    c->glyph = VIRTUAL_GLYPH;
 	    c->base_code = -1;
+	    c->flags &= ~Char::BASE_LIVE;
 	}
 }
 
@@ -839,10 +840,17 @@ Metrics::all_ligatures(Vector<Ligature3> &all_ligs) const
 }
 
 void
-Metrics::mark_liveness(int size, const Vector<Ligature3> &all_ligs)
+Metrics::mark_liveness(int size, const Vector<Ligature3> *all_ligs)
 {
     _liveness_marked = true;
     bool changed;
+
+    // make sure we have ligatures
+    Vector<Ligature3> my_ligs;
+    if (!all_ligs) {
+	all_ligatures(my_ligs);
+	all_ligs = &my_ligs;
+    }
     
     /* Characters below 'size' are in both virtual and base encodings. */
     for (Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
@@ -851,7 +859,7 @@ Metrics::mark_liveness(int size, const Vector<Ligature3> &all_ligs)
 
     /* Characters reachable from live chars by live ligatures are live. */
   redo_live_reachable:
-    for (const Ligature3 *l = all_ligs.begin(); l != all_ligs.end(); l++)
+    for (const Ligature3 *l = all_ligs->begin(); l != all_ligs->end(); l++)
 	if (_encoding[l->in1].flag(Char::LIVE) && _encoding[l->in2].flag(Char::LIVE)) {
 	    Char &ch = _encoding[l->out];
 	    if (!ch.flag(Char::LIVE))
@@ -949,11 +957,8 @@ Metrics::cut_encoding(int size)
     }
 
     /* Need liveness markings. */
-    if (!_liveness_marked) {
-	Vector<Ligature3> all_ligs;
-	all_ligatures(all_ligs);
-	mark_liveness(size, all_ligs);
-    }
+    if (!_liveness_marked)
+	mark_liveness(size);
     
     /* Characters below 'size' are 'good'.
        Characters above 'size' are not 'good'. */
@@ -1073,7 +1078,7 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 
     /* Need liveness markings. */
     if (!_liveness_marked)
-	mark_liveness(size, all_ligs);
+	mark_liveness(size, &all_ligs);
     
     /* Score characters by importance. Importance relates first to Unicode
        values, and then recursively to the importances of characters that form
@@ -1262,12 +1267,12 @@ Metrics::need_virtual(int size) const
 }
 
 bool
-Metrics::need_base(int size) const
+Metrics::need_base()
 {
-    if (size > _encoding.size())
-	size = _encoding.size();
-    for (const Char *ch = _encoding.begin(); ch < _encoding.begin() + size; ch++)
-	if (ch->base_code >= 0)
+    if (!_liveness_marked)
+	mark_liveness(_encoding.size());
+    for (const Char *ch = _encoding.begin(); ch < _encoding.end(); ch++)
+	if ((ch->flags & Char::BASE_LIVE) && ch->glyph != _boundary_glyph)
 	    return true;
     return false;
 }
@@ -1383,55 +1388,64 @@ Metrics::kerns(Code in1, Vector<Code> &in2, Vector<int> &kern) const
 /* debugging								     */
 
 void
+Metrics::unparse(const Char *ch) const
+{
+    Code c;
+    if (ch >= _encoding.begin() && ch < _encoding.end())
+	c = ch - _encoding.begin();
+    else
+	c = -1;
+    fprintf(stderr, "%4d/%s%s%s%s%s%s\n", c, code_str(c),
+	    (ch->flag(Char::LIVE) ? " [L]" : ""),
+	    (ch->flag(Char::BASE_LIVE) ? " [B]" : ""),
+	    (ch->flag(Char::CONTEXT_ONLY) ? " [C]" : ""),
+	    (ch->flag(Char::BUILT) ? " [!]" : ""),
+	    (ch->base_code >= 0 ? " <BC>" : ""));
+    if (ch->base_code >= 0 && ch->base_code != c)
+	fprintf(stderr, "\tBASE %d/%s\n", ch->base_code, code_str(ch->base_code));
+    if (const VirtualChar *vc = ch->virtual_char) {
+	fprintf(stderr, "\t*");
+	for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
+	    switch (s->op) {
+	      case Setting::FONT:
+		fprintf(stderr, " {F%d}", s->x);
+		break;
+	      case Setting::SHOW:
+		fprintf(stderr, " %d/%s", s->x, code_str(s->x));
+		break;
+	      case Setting::KERN:
+		fprintf(stderr, " <>");
+		break;
+	      case Setting::MOVE:
+		fprintf(stderr, " <%+d,%+d>", s->x, s->y);
+		break;
+	      case Setting::RULE:
+		fprintf(stderr, " [%d,%d]", s->x, s->y);
+		break;
+	      case Setting::PUSH:
+		fprintf(stderr, " (");
+		break;
+	      case Setting::POP:
+		fprintf(stderr, " )");
+		break;
+	      case Setting::SPECIAL:
+		fprintf(stderr, " S{%s}", s->s.c_str());
+		break;
+	    }
+	fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch->built_in1, code_str(ch->built_in1), ch->built_in2, code_str(ch->built_in2));
+    }
+    for (const Ligature *l = ch->ligatures.begin(); l != ch->ligatures.end(); l++)
+	fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2), l->out, code_str(l->out), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
+#if 0
+    for (const Kern *k = ch->kerns.begin(); k != ch->kerns.end(); k++)
+	fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2), k->kern);
+#endif
+}
+
+void
 Metrics::unparse() const
 {
-    for (Code c = 0; c < _encoding.size(); c++)
-	if (_encoding[c].glyph) {
-	    const Char &ch = _encoding[c];
-	    fprintf(stderr, "%4d/%s%s%s%s%s%s\n", c, code_str(c),
-		    (ch.flag(Char::LIVE) ? " [L]" : ""),
-		    (ch.flag(Char::BASE_LIVE) ? " [B]" : ""),
-		    (ch.flag(Char::CONTEXT_ONLY) ? " [C]" : ""),
-		    (ch.flag(Char::BUILT) ? " [!]" : ""),
-		    (ch.base_code >= 0 ? " <BC>" : ""));
-	    if (ch.base_code >= 0 && ch.base_code != c)
-		fprintf(stderr, "\tBASE %d/%s\n", ch.base_code, code_str(ch.base_code));
-	    if (const VirtualChar *vc = ch.virtual_char) {
-		fprintf(stderr, "\t*");
-		for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		    switch (s->op) {
-		      case Setting::FONT:
-			fprintf(stderr, " {F%d}", s->x);
-			break;
-		      case Setting::SHOW:
-			fprintf(stderr, " %d/%s", s->x, code_str(s->x));
-			break;
-		      case Setting::KERN:
-			fprintf(stderr, " <>");
-			break;
-		      case Setting::MOVE:
-			fprintf(stderr, " <%+d,%+d>", s->x, s->y);
-			break;
-		      case Setting::RULE:
-			fprintf(stderr, " [%d,%d]", s->x, s->y);
-			break;
-		      case Setting::PUSH:
-			fprintf(stderr, " (");
-			break;
-		      case Setting::POP:
-			fprintf(stderr, " )");
-			break;
-		      case Setting::SPECIAL:
-			fprintf(stderr, " S{%s}", s->s.c_str());
-			break;
-		    }
-		fprintf(stderr, "  ((%d/%s, %d/%s))\n", ch.built_in1, code_str(ch.built_in1), ch.built_in2, code_str(ch.built_in2));
-	    }
-	    for (const Ligature *l = ch.ligatures.begin(); l != ch.ligatures.end(); l++)
-		fprintf(stderr, "\t[%d/%s => %d/%s]%s\n", l->in2, code_str(l->in2), l->out, code_str(l->out), (_encoding[l->out].context_setting(c, l->in2) ? " [C]" : ""));
-#if 0
-	    for (const Kern *k = ch.kerns.begin(); k != ch.kerns.end(); k++)
-		fprintf(stderr, "\t{%d/%s %+d}\n", k->in2, code_str(k->in2), k->kern);
-#endif
-	}
+    for (const Char *ch = _encoding.begin(); ch < _encoding.end(); ch++)
+	if (ch->glyph)
+	    unparse(ch);
 }

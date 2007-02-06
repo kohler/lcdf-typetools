@@ -88,7 +88,7 @@ class Metrics { public:
     void make_base(int size);
 
     bool need_virtual(int size) const;
-    bool need_base(int size) const;
+    bool need_base();
     enum SettingMode { SET_NONE = 0, SET_KEEP = 1, SET_INTERMEDIATE = 3 };
     bool setting(Code, Vector<Setting> &, SettingMode = SET_NONE) const;
     int ligatures(Code in1, Vector<Code> &in2, Vector<Code> &out, Vector<int> &context) const;
@@ -177,10 +177,12 @@ class Metrics { public:
 
     friend bool operator<(const Ligature3 &, const Ligature3 &);
     void all_ligatures(Vector<Ligature3> &) const;
-    void mark_liveness(int size, const Vector<Ligature3> &);
+    void mark_liveness(int size, const Vector<Ligature3> * = 0);
     void reencode(const Vector<Code> &);
 
     void apply_ligature(const Vector<Code> &, const Substitution *, int lookup);
+
+    void unparse(const Char *) const;
 
 };
 
