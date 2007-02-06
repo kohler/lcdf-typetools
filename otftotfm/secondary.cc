@@ -302,8 +302,18 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 {
     if (!_font_name || !_finfo.otf || !_finfo.cff)
 	return -1;
-    
-    String dj_name = suffix_font_name(_font_name, "--lcdfj");
+
+    String dj_name;
+    bool install_metrics;
+    // XXX make sure dotlessj is for the main font?
+    if ((dj_name = installed_metrics_font_name(_font_name, "dotlessj")))
+	install_metrics = false;
+    else {
+	dj_name = suffix_font_name(_font_name, "--lcdfj");
+	install_metrics = true;
+    }
+
+    // is dotlessj already mapped?
     for (int i = 0; i < metrics.n_mapped_fonts(); i++)
 	if (metrics.mapped_font_name(i) == dj_name)
 	    return i;
@@ -340,20 +350,23 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	}
 
 	// create metrics for dotless-J
-	Metrics dj_metrics(font, 256);
-	Vector<PermString> glyph_names;
-	font->glyph_names(glyph_names);
-	Vector<PermString>::iterator g = std::find(glyph_names.begin(), glyph_names.end(), "uni0237");
-	if (g != glyph_names.end()) {
-	    dj_glyph = g - glyph_names.begin();
-	    dj_metrics.encode('j', U_DOTLESSJ, dj_glyph);
-	} else {
-	    errh->error("%s: dotless-J font has no 'uni0237' glyph", filename.c_str());
-	    delete font;
-	    return -1;
-	}
-	::dotlessj_file_name = filename;
-	output_metrics(dj_metrics, font->font_name(), -1, _finfo, String(), String(), dj_name, dotlessj_dvips_include, errh);
+	if (install_metrics) {
+	    Metrics dj_metrics(font, 256);
+	    Vector<PermString> glyph_names;
+	    font->glyph_names(glyph_names);
+	    Vector<PermString>::iterator g = std::find(glyph_names.begin(), glyph_names.end(), "uni0237");
+	    if (g != glyph_names.end()) {
+		dj_glyph = g - glyph_names.begin();
+		dj_metrics.encode('j', U_DOTLESSJ, dj_glyph);
+	    } else {
+		errh->error("%s: dotless-J font has no 'uni0237' glyph", filename.c_str());
+		delete font;
+		return -1;
+	    }
+	    ::dotlessj_file_name = filename;
+	    output_metrics(dj_metrics, font->font_name(), -1, _finfo, String(), String(), dj_name, dotlessj_dvips_include, errh);
+	} else if (verbose)
+	    errh->message("using '%s' for dotless-J font metrics", dj_name.c_str());
 	
 	// add font to metrics
 	return metrics.add_mapped_font(font, dj_name);

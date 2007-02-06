@@ -224,6 +224,7 @@ quoteright quoteright =: quotedblright ;";
 
 struct BaseEncoding {
     String font_name;
+    String secondary;
     DvipsEncoding encoding;
 };
 
@@ -683,7 +684,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 			boundser.char_bounds(program->glyph_context(s->y));
 		    // 3.Aug.2004 -- reported by Marco Kuhlmann: Don't use
 		    // glyph_ids[] array when looking at a different font.
-		    if (program == finfo.program())
+		    if (program_number == 0)
 			sa << "      (SETCHAR " << glyph_ids[s->x] << ')' << glyph_base_comments[s->x] << "\n";
 		    else
 			sa << "      (SETCHAR D " << s->x << ")\n";
@@ -1419,11 +1420,12 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     dvipsenc.apply_position(metrics, errh);
 
     // use prespecified raw fonts
-    for (BaseEncoding **be = base_encodings.begin(); be != base_encodings.end(); be++) {
-	Vector<int> mapp;
-	(*be)->encoding.make_base_mappings(mapp, finfo);
-	metrics.apply_base_encoding((*be)->font_name, (*be)->encoding, mapp);
-    }
+    for (BaseEncoding **be = base_encodings.begin(); be != base_encodings.end(); be++)
+	if (!(*be)->secondary) {
+	    Vector<int> mapp;
+	    (*be)->encoding.make_base_mappings(mapp, finfo);
+	    metrics.apply_base_encoding((*be)->font_name, (*be)->encoding, mapp);
+	}
 
     // remove extra characters
     metrics.cut_encoding(257);
@@ -1506,6 +1508,16 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 }
 
 
+String
+installed_metrics_font_name(const String &base_font_name, const String &secondary)
+{
+    for (BaseEncoding **be = base_encodings.begin(); be != base_encodings.end(); be++)
+	if ((*be)->secondary == secondary && ::font_name == base_font_name)
+	    return (*be)->font_name;
+    return String();
+}
+
+
 extern "C" {
 static int
 clp_parse_char(Clp_Parser *clp, const char *arg, int complain, void *)
@@ -1549,9 +1561,19 @@ parse_base_encodings(const String &filename, ErrorHandler *errh)
 	    while (s != s_end && !isspace(*s))
 		s++;
 	    String efile = str.substring(w2, s);
+	    while (s != s_end && isspace(*s) && *s != '\n' && *s != '\r')
+		s++;
+	    if (s != s_end && !isspace(*s) && *s != '%' && *s != '#') {
+		const char *w3 = s;
+		while (s != s_end && !isspace(*s))
+		    s++;
+		be->secondary = str.substring(w3, s);
+	    }
 	    LandmarkErrorHandler lerrh(errh, print_filename + String(lineno));
 	    int before = lerrh.nerrors();
-	    if (!efile)
+	    if (be->secondary)
+		/* encoding ignored */;
+	    else if (!efile)
 		lerrh.error("missing encoding name");
 	    else if (String path = locate_encoding(efile, errh))
 		be->encoding.parse(path, true, true, &lerrh);

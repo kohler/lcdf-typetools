@@ -8,6 +8,8 @@ class ErrorHandler;
 
 String suffix_font_name(const String &font_name, const String &suffix);
 
+String installed_metrics_font_name(const String &font_name, const String &secondary);
+
 void output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	const FontInfo &finfo,
 	const String &encoding_name, const String &encoding_file,
