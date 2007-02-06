@@ -330,9 +330,12 @@ static const Cff::Dict &
 default_dict()
 {
     static Cff *cff;
-    if (!cff)
+    static Cff::Font *cfffont;
+    if (!cfffont) {
 	cff = new Cff(String::stable_string((const char *) default_dict_cff_data, sizeof(default_dict_cff_data)), ErrorHandler::default_handler());
-    return ((Cff::Font *) cff->font())->top_dict();
+	cfffont = (Cff::Font *) cff->font();
+    }
+    return cfffont->top_dict();
 }
 
 
