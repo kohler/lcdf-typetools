@@ -1,5 +1,17 @@
 LCDF Typetools NEWS
 
+Version 2.54   12.Feb.2007
+
+* otftotfm: Include letterspacing for simulated characters.  Bug reported
+  by Michael Zedler.
+
+
+Version 2.53   11.Feb.2007
+
+* otftotfm: Positionings and letterspacing apply even with
+  '--base-encodings'.  Bug reported by Michael Zedler.
+
+
 Version 2.52   6.Feb.2007
 
 * otftotfm: '--base-encodings' fixes for dotless-J fonts.

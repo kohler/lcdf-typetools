@@ -176,6 +176,7 @@ Metrics::encode_virtual(Code code, PermString name, uint32_t uni, const Vector<S
 	_encoding.resize(code + 1, Char());
     _encoding[code].unicode = uni;
     _encoding[code].glyph = VIRTUAL_GLYPH;
+    _encoding[code].flags |= Char::BASE_ENCODED;
     assert(!_encoding[code].virtual_char);
     VirtualChar *vc = _encoding[code].virtual_char = new VirtualChar;
     vc->name = name;
@@ -203,7 +204,7 @@ Metrics::apply_base_encoding(const String &font_name, const DvipsEncoding &dvips
 	    vc->setting.push_back(Setting(Setting::SHOW, mapping[c->glyph], c->glyph));
 	    c->glyph = VIRTUAL_GLYPH;
 	    c->base_code = -1;
-	    c->flags &= ~Char::BASE_LIVE;
+	    c->flags = (c->flags & ~Char::BASE_LIVE) | Char::BASE_ENCODED;
 	}
 }
 
@@ -1280,6 +1281,8 @@ Metrics::need_base()
 bool
 Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 {
+    extern int letterspace;
+    
     if (!(sm & SET_KEEP))
 	v.clear();
     
@@ -1291,6 +1294,10 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
     if (const VirtualChar *vc = ch.virtual_char) {
 	bool good = true;
 	int font_number = 0;
+	
+	if (ch.pdx != 0 || ch.pdy != 0)
+	    v.push_back(Setting(Setting::MOVE, ch.pdx, ch.pdy));
+	
 	for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
 	    switch (s->op) {
 	      case Setting::MOVE:
@@ -1317,10 +1324,13 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 			 && s[-1].op == Setting::SHOW
 			 && s[1].op == Setting::SHOW
 			 && font_number == 0)
-		    if (int k = kern(s[-1].x, s[1].x))
+		    if (int k = kern(s[-1].x, s[1].x) + letterspace)
 			v.push_back(Setting(Setting::MOVE, k, 0));
 		break;
 	    }
+
+	if (ch.pdy != 0 || ch.adx - ch.pdx != 0)
+	    v.push_back(Setting(Setting::MOVE, ch.adx - ch.pdx, -ch.pdy));
 	return good;
 	
     } else if (ch.base_code >= 0) {

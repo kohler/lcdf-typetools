@@ -248,7 +248,7 @@ static String encoding_file;
 static Vector<BaseEncoding *> base_encodings;
 static double extend;
 static double slant;
-static int letterspace;
+int letterspace;
 static double design_size;
 static double minimum_kern = 2.0;
 static double space_factor = 1.0;
@@ -1325,22 +1325,19 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
     
     int bounds[4], width;
     
-    for (int code = 0; code < 256; code++) {
-	int g = metrics.glyph(code);
-	if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
-	    if (char_bounds(bounds, width, finfo, font_xform, code)) {
-		int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
-		metrics.add_single_positioning(code, left_sb, 0, left_sb);
-		
-		if (skew_char >= 0) {
-		    double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
-		    int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
-		    int skew = (int)(slant * virtual_height + left_sb - right_sb);
-		    metrics.add_kern(code, skew_char, skew);
-		}
+    for (int code = 0; code < 256; code++)
+	if (metrics.was_base_glyph(code) && code != boundary_char
+	    && char_bounds(bounds, width, finfo, font_xform, code)) {
+	    int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
+	    metrics.add_single_positioning(code, left_sb, 0, left_sb);
+	    
+	    if (skew_char >= 0) {
+		double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
+		int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
+		int skew = (int)(slant * virtual_height + left_sb - right_sb);
+		metrics.add_kern(code, skew_char, skew);
 	    }
 	}
-    }
 }
 
 static void
@@ -1434,14 +1431,12 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 
     // apply letterspacing, if any
     if (letterspace) {
-	for (int code = 0; code < 256; code++) {
-	    int g = metrics.glyph(code);
-	    if (g != 0 && g != Metrics::VIRTUAL_GLYPH && code != boundary_char) {
+	for (int code = 0; code < 256; code++)
+	    if (metrics.was_base_glyph(code) && code != boundary_char) {
 		metrics.add_single_positioning(code, letterspace / 2, 0, letterspace);
 		metrics.add_kern(code, 256, -letterspace / 2);
 		metrics.add_kern(256, code, -letterspace / 2);
 	    }
-	}
     }
 
     // apply math letterspacing, if any

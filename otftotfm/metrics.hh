@@ -63,6 +63,7 @@ class Metrics { public:
     void add_altselector_code(Code, int altselector_type);
     bool altselectors() const		{ return _altselectors.size() > 0; }
     
+    inline bool was_base_glyph(Code) const;
     inline Code base_code(Code) const;
     inline Glyph base_glyph(Code) const;
     bool base_glyphs(Vector<Glyph> &, int size) const;
@@ -136,7 +137,8 @@ class Metrics { public:
 	Code built_in1;
 	Code built_in2;
 	int lookup_source;
-	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8, BASE_LIVE = 16 };
+	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8,
+	       BASE_LIVE = 16, BASE_ENCODED = 32 };
 	int flags;
 	
 	Char()				: virtual_char(0) { clear(); }
@@ -145,6 +147,7 @@ class Metrics { public:
 	bool visible() const		{ return glyph != 0; }
 	bool visible_base() const	{ return glyph != 0 && glyph != VIRTUAL_GLYPH; }
 	bool flag(int f) const		{ return (flags & f) != 0; }
+	inline bool base_glyph() const;
 	bool context_setting(Code in1, Code in2) const;
     };
 
@@ -256,6 +259,21 @@ inline const char *
 Metrics::code_str(Code code) const
 {
     return code_name(code).c_str();
+}
+
+inline bool
+Metrics::Char::base_glyph() const
+{
+    return glyph == VIRTUAL_GLYPH ? flag(BASE_ENCODED) : glyph != 0;
+}
+
+inline bool
+Metrics::was_base_glyph(Code code) const
+{
+    if (code < 0 || code >= _encoding.size())
+	return 0;
+    else
+	return _encoding[code].base_glyph();
 }
 
 #endif
