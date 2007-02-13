@@ -7,7 +7,8 @@ class DvipsEncoding;
 class GlyphFilter;
 
 struct Setting {
-    enum { NONE, FONT, SHOW, KERN, MOVE, RULE, PUSH, POP, SPECIAL, DEAD };
+    enum { NONE, FONT, SHOW, KERN, KERNX, MOVE, RULE, PUSH, POP,
+	   SPECIAL, DEAD };
     int op;
     int x;
     int y;
@@ -264,7 +265,7 @@ Metrics::code_str(Code code) const
 inline bool
 Metrics::Char::base_glyph() const
 {
-    return glyph == VIRTUAL_GLYPH ? flag(BASE_ENCODED) : glyph != 0;
+    return glyph == VIRTUAL_GLYPH ? flags & BASE_ENCODED : glyph != 0;
 }
 
 inline bool

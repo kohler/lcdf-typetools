@@ -65,6 +65,7 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
        U_INTERROBANGDOWN = 0xD80B, // invalid Unicode
        U_TWELVEUDASH = 0xD80C,	// invalid Unicode
        U_RINGFITTED = 0xD80D,	// invalid Unicode
+       U_USE_KERNX = 0xD80E,	// invalid Unicode, not in maps
        U_VS1 = 0xFE00,
        U_VS16 = 0xFE0F,
        U_VS17 = 0xE0100,
@@ -254,6 +255,13 @@ T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
     // collect codes
     va_list val;
     va_start(val, uni);
+
+    int kerntype = Setting::KERN;
+    if (uni == U_USE_KERNX) {
+	kerntype = Setting::KERNX;
+	uni = va_arg(val, int);
+    }
+    
     for (; uni; uni = va_arg(val, int)) {
 	int code = metrics.unicode_encoding(uni);
 	if (code < 0) {
@@ -268,7 +276,7 @@ T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
     // generate setting
     for (int i = 0; i < codes.size(); i++) {
 	if (i)
-	    v.push_back(Setting(Setting::KERN));
+	    v.push_back(Setting(kerntype));
 	v.push_back(Setting(Setting::SHOW, codes[i], metrics.base_glyph(codes[i])));
     }
     return true;
@@ -381,6 +389,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 {
     Transform xform;
     int vsize = v.size();
+    extern int letterspace;
     
     switch (uni) {
 	
@@ -480,7 +489,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, '[', 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, xform, 4, true, 0, '[', 0);
-		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, '[', 0);
 	    return true;
@@ -491,7 +500,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, ']', 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, xform, 4, true, 0, ']', 0);
-		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, ']', 0);
 	    return true;
@@ -502,7 +511,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, '|', 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, Transform(), 4, true, 0, '|', 0);
-		v.push_back(Setting(Setting::MOVE, (int) (-0.333 * d), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (-0.333 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, '|', 0);
 	    return true;
@@ -517,8 +526,10 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	  if (char_bounds(bounds, bounds[4], _finfo, xform, '('))
 	      dropdown -= std::max(bounds[3], 0) + std::min(bounds[1], 0);
 	  v.push_back(Setting(Setting::MOVE, 0, (int) (-dropdown / 2)));
-	  if (char_setting(v, metrics, '*', 0))
+	  if (char_setting(v, metrics, '*', 0)) {
+	      v.push_back(Setting(Setting::MOVE, 0, -(int) (-dropdown / 2)));
 	      return true;
+	  }
 	  break;
       }
 
@@ -526,7 +537,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, U_ENDASH, 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
-		v.push_back(Setting(Setting::MOVE, (int) (667 - 2 * d), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (667 - 2 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, U_ENDASH, 0);
 	    return true;
@@ -537,7 +548,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, U_ENDASH, 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
-		v.push_back(Setting(Setting::MOVE, (int) (750 - 2 * d), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (750 - 2 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, U_ENDASH, 0);
 	    return true;
@@ -546,7 +557,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	
       case U_CENTIGRADE:
         // TODO: set italic correction to that of a 'C'
-	if (char_setting(v, metrics, U_DEGREE, 'C', 0))
+	if (char_setting(v, metrics, U_USE_KERNX, U_DEGREE, 'C', 0))
 	    return true;
 	break;
 	
@@ -579,7 +590,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
       }
 
       case U_PERTENTHOUSAND:
-	if (char_setting(v, metrics, 0xF661, U_FRACTION, 0xF655, 0xF655, 0xF655, 0))
+	if (char_setting(v, metrics, U_USE_KERNX, 0xF661, U_FRACTION, 0xF655, 0xF655, 0xF655, 0))
 	    return true;
 	break;
 

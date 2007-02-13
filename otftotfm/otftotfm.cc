@@ -696,9 +696,9 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 			  x += s->x, y += s->y, s++;
 		      if (vpl)
 			  boundser.translate(s->x + x, s->y + y);
-		      if (s->x)
+		      if (s->x + x)
 			  sa << "      (MOVERIGHT R " << real_string(s->x + x, du) << ")\n";
-		      if (s->y)
+		      if (s->y + y)
 			  sa << "      (MOVEUP R " << real_string(s->y + y, du) << ")\n";
 		      break;
 		  }
@@ -1329,13 +1329,13 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
     
     int bounds[4], width;
     
-    for (int code = 0; code < 256; code++)
+    for (int code = 0; code < metrics.encoding_size(); code++)
 	if (metrics.was_base_glyph(code) && code != boundary_char
 	    && char_bounds(bounds, width, finfo, font_xform, code)) {
 	    int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
 	    metrics.add_single_positioning(code, left_sb, 0, left_sb);
 	    
-	    if (skew_char >= 0) {
+	    if (skew_char >= 0 && code < 256) {
 		double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
 		int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
 		int skew = (int)(slant * virtual_height + left_sb - right_sb);
@@ -1434,14 +1434,15 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     int boundary_char = dvipsenc.boundary_char();
 
     // apply letterspacing, if any
-    if (letterspace) {
-	for (int code = 0; code < 256; code++)
+    if (letterspace)
+	for (int code = 0; code < metrics.encoding_size(); code++)
 	    if (metrics.was_base_glyph(code) && code != boundary_char) {
 		metrics.add_single_positioning(code, letterspace / 2, 0, letterspace);
-		metrics.add_kern(code, 256, -letterspace / 2);
-		metrics.add_kern(256, code, -letterspace / 2);
+		if (code < 256) {
+		    metrics.add_kern(code, 256, -letterspace / 2);
+		    metrics.add_kern(256, code, -letterspace / 2);
+		}
 	    }
-    }
 
     // apply math letterspacing, if any
     if (math_spacing)

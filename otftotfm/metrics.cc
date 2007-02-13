@@ -176,7 +176,6 @@ Metrics::encode_virtual(Code code, PermString name, uint32_t uni, const Vector<S
 	_encoding.resize(code + 1, Char());
     _encoding[code].unicode = uni;
     _encoding[code].glyph = VIRTUAL_GLYPH;
-    _encoding[code].flags |= Char::BASE_ENCODED;
     assert(!_encoding[code].virtual_char);
     VirtualChar *vc = _encoding[code].virtual_char = new VirtualChar;
     vc->name = name;
@@ -1318,14 +1317,19 @@ Metrics::setting(Code code, Vector<Setting> &v, SettingMode sm) const
 		    v.push_back(*s);
 		break;
 	      case Setting::KERN:
+	      case Setting::KERNX:
 		if (sm & SET_INTERMEDIATE)
 		    v.push_back(*s);
-		else if (s > vc->setting.begin() && s + 1 < vc->setting.end()
+		else if (font_number == 0 && s > vc->setting.begin()
+			 && s + 1 < vc->setting.end()
 			 && s[-1].op == Setting::SHOW
-			 && s[1].op == Setting::SHOW
-			 && font_number == 0)
-		    if (int k = kern(s[-1].x, s[1].x) + letterspace)
+			 && s[1].op == Setting::SHOW) {
+		    int k = kern(s[-1].x, s[1].x);
+		    if (s->op == Setting::KERNX)
+			k -= letterspace;
+		    if (k)
 			v.push_back(Setting(Setting::MOVE, k, 0));
+		}
 		break;
 	    }
 
