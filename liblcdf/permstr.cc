@@ -230,8 +230,7 @@ vpermprintf(const char *s, va_list val)
 	
 	      case '1': case '2': case '3': case '4': case '5':
 	      case '6': case '7': case '8': case '9':
-		if (iflag != -1)
-		    assert(0 && "Too many decimal flags in permprintf");
+		assert(iflag == -1 /* Too many decimal flags in permprintf */);
 		iflag = 0;
 		while (*s >= '0' && *s <= '9') {
 		    iflag = iflag * 10 + *s - '0';
@@ -239,12 +238,10 @@ vpermprintf(const char *s, va_list val)
 		}
 		break;
 	
-	      case '*': {
-		  if (iflag != -1)
-		      assert(0 && "iflag given");
-		  iflag = va_arg(val, int);
-		  break;
-	      }
+	      case '*':
+		assert(iflag == -1 /* iflag given */);
+		iflag = va_arg(val, int);
+		break;
        
 	      case 's': {
 		  const char *x = va_arg(val, const char *);
@@ -317,7 +314,7 @@ vpermprintf(const char *s, va_list val)
 	      }
        
 	      default:
-		assert(0 && "Bad % in permprintf");
+		assert(0 /* Bad % in permprintf */);
 		goto pctdone;
 	
 	    }
