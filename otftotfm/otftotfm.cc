@@ -690,14 +690,18 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 			sa << "      (SETCHAR D " << s->x << ")\n";
 		    break;
 
-		  case Setting::MOVE:
-		    if (vpl)
-			boundser.translate(s->x, s->y);
-		    if (s->x)
-			sa << "      (MOVERIGHT R " << real_string(s->x, du) << ")\n";
-		    if (s->y)
-			sa << "      (MOVEUP R " << real_string(s->y, du) << ")\n";
-		    break;
+		  case Setting::MOVE: {
+		      int x = 0, y = 0;
+		      while (s+1 < settings.end() && s[1].op == Setting::MOVE)
+			  x += s->x, y += s->y, s++;
+		      if (vpl)
+			  boundser.translate(s->x + x, s->y + y);
+		      if (s->x)
+			  sa << "      (MOVERIGHT R " << real_string(s->x + x, du) << ")\n";
+		      if (s->y)
+			  sa << "      (MOVEUP R " << real_string(s->y + y, du) << ")\n";
+		      break;
+		  }
 
 		  case Setting::RULE:
 		    if (vpl) {
