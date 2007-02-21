@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.57   21.Feb.2007
+
+* otftotfm: More of the same: "emptyslot" glyphs don't generate spurious
+  base fonts.  Again reported by Michael Zedler.
+
+
 Version 2.56   13.Feb.2007
 
 * otftotfm: Guess what?
