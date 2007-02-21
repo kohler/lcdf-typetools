@@ -947,8 +947,12 @@ Metrics::cut_encoding(int size)
 
     /* Change "emptyslot"s to ".notdef"s. */
     for (Char *ch = _encoding.begin(); ch != _encoding.end(); ch++)
-	if (ch->glyph == emptyslot_glyph())
-	    ch->glyph = 0, ch->base_code = -1;
+	if (ch->glyph == emptyslot_glyph()) {
+	    ch->glyph = 0;
+	    ch->base_code = -1;
+	    // 21.Feb.2007: Character isn't live any more.
+	    ch->flags &= ~(Char::BASE_LIVE | Char::LIVE);
+	}
     
     /* Maybe we don't need to do anything else. */
     if (_encoding.size() <= size) {
@@ -1419,13 +1423,17 @@ Metrics::unparse(const Char *ch) const
 	fprintf(stderr, "\tBASE %d/%s\n", ch->base_code, code_str(ch->base_code));
     if (const VirtualChar *vc = ch->virtual_char) {
 	fprintf(stderr, "\t*");
+	int curfont = 0;
 	for (const Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
 	    switch (s->op) {
 	      case Setting::FONT:
 		fprintf(stderr, " {F%d}", s->x);
+		curfont = s->x;
 		break;
 	      case Setting::SHOW:
-		fprintf(stderr, " %d/%s", s->x, code_str(s->x));
+		fprintf(stderr, " %d", s->x);
+		if (curfont == 0)
+		    fprintf(stderr, "/%s", code_str(s->x));
 		break;
 	      case Setting::KERN:
 		fprintf(stderr, " <>");
