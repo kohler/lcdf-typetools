@@ -1950,7 +1950,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("otftotfm (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2002-2006 Eddie Kohler\n\
+	    printf("Copyright (C) 2002-2007 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

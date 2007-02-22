@@ -1,6 +1,6 @@
 /* metrics.{cc,hh} -- an encoding during and after OpenType features
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -889,7 +889,8 @@ Metrics::mark_liveness(int size, const Vector<Ligature3> *all_ligs)
 	    if (VirtualChar *vc = ch->virtual_char) {
 		int font_number = 0;
 		for (Setting *s = vc->setting.begin(); s != vc->setting.end(); s++)
-		    if (s->op == Setting::SHOW && font_number == 0)
+		    if (s->op == Setting::SHOW && font_number == 0
+			&& _encoding[s->x].base_code >= 0)
 			_encoding[s->x].flags |= Char::BASE_LIVE;
 		    else if (s->op == Setting::FONT)
 			font_number = s->x;
