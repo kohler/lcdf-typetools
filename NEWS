@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.59   23.Feb.2007
+
+* otftotfm: %POSITION commands don't add glyphs to the encoding.  Requested
+  by Achim Blumensath.
+
+
 Version 2.58   22.Feb.2007
 
 * otftotfm: More of the same (with respect to "Germandbls"), again reported

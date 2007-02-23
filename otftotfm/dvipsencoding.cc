@@ -1,6 +1,6 @@
 /* dvipsencoding.{cc,hh} -- store a DVIPS encoding
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -424,7 +424,7 @@ DvipsEncoding::parse_position_words(Vector<String> &v, int override, ErrorHandle
     if (v.size() != 4)
 	return -EPARSE;
 
-    int c = encoding_of(v[0], override > 0);
+    int c = encoding_of(v[0]);
     if (c < 0)
 	return (override > 0 ? errh->warning("'%s' has no encoding, ignoring positioning", v[0].c_str()) : -1);
     
