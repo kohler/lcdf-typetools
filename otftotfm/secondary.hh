@@ -50,7 +50,7 @@ class Secondary { public:
     void set_next(Secondary *s)		{ _next = s; }
     typedef Efont::OpenType::Glyph Glyph;
     virtual bool encode_uni(int code, PermString name, uint32_t uni, Metrics &, ErrorHandler *);
-    virtual bool setting(uint32_t uni, Vector<Setting> &, Metrics &, ErrorHandler *);
+    virtual int setting(uint32_t uni, Vector<Setting> &, Metrics &, ErrorHandler *);
   private:
     Secondary *_next;
 };
@@ -58,7 +58,7 @@ class Secondary { public:
 class T1Secondary : public Secondary { public:
     T1Secondary(const FontInfo &, const String &font_name, const String &otf_file_name);
     bool encode_uni(int code, PermString name, uint32_t uni, Metrics &, ErrorHandler *);
-    bool setting(uint32_t uni, Vector<Setting> &, Metrics &, ErrorHandler *);
+    int setting(uint32_t uni, Vector<Setting> &, Metrics &, ErrorHandler *);
   private:
     const FontInfo &_finfo;
     String _font_name;

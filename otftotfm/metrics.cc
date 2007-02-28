@@ -169,13 +169,15 @@ Metrics::encode(Code code, uint32_t uni, Glyph g)
 }
 
 void
-Metrics::encode_virtual(Code code, PermString name, uint32_t uni, const Vector<Setting> &v)
+Metrics::encode_virtual(Code code, PermString name, uint32_t uni, const Vector<Setting> &v, bool base_char)
 {
     assert(code >= 0 && v.size() > 0);
     if (code >= _encoding.size())
 	_encoding.resize(code + 1, Char());
     _encoding[code].unicode = uni;
     _encoding[code].glyph = VIRTUAL_GLYPH;
+    if (base_char)
+	_encoding[code].flags |= Char::BASE_REP;
     assert(!_encoding[code].virtual_char);
     VirtualChar *vc = _encoding[code].virtual_char = new VirtualChar;
     vc->name = name;
@@ -203,7 +205,7 @@ Metrics::apply_base_encoding(const String &font_name, const DvipsEncoding &dvips
 	    vc->setting.push_back(Setting(Setting::SHOW, mapping[c->glyph], c->glyph));
 	    c->glyph = VIRTUAL_GLYPH;
 	    c->base_code = -1;
-	    c->flags = (c->flags & ~Char::BASE_LIVE) | Char::BASE_ENCODED;
+	    c->flags = (c->flags & ~Char::BASE_LIVE) | Char::BASE_REP;
 	}
 }
 

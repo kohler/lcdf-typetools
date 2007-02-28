@@ -59,7 +59,7 @@ class Metrics { public:
     Code unicode_encoding(uint32_t) const;
     Code force_encoding(Glyph, int lookup_source = -1);
     void encode(Code, uint32_t uni, Glyph);
-    void encode_virtual(Code, PermString, uint32_t uni, const Vector<Setting> &);
+    void encode_virtual(Code, PermString, uint32_t uni, const Vector<Setting> &, bool base_char);
 
     void add_altselector_code(Code, int altselector_type);
     bool altselectors() const		{ return _altselectors.size() > 0; }
@@ -139,7 +139,7 @@ class Metrics { public:
 	Code built_in2;
 	int lookup_source;
 	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8,
-	       BASE_LIVE = 16, BASE_ENCODED = 32 };
+	       BASE_LIVE = 16, BASE_REP = 32 };
 	int flags;
 	
 	Char()				: virtual_char(0) { clear(); }
@@ -265,7 +265,7 @@ Metrics::code_str(Code code) const
 inline bool
 Metrics::Char::base_glyph() const
 {
-    return glyph == VIRTUAL_GLYPH ? flags & BASE_ENCODED : glyph != 0;
+    return glyph == VIRTUAL_GLYPH ? flags & BASE_REP : glyph != 0;
 }
 
 inline bool

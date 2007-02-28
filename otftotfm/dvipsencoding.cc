@@ -690,7 +690,7 @@ DvipsEncoding::bad_codepoint(int code, Metrics &metrics, Vector<String> &unencod
 	    Vector<Setting> v;
 	    v.push_back(Setting(Setting::RULE, 500, 500));
 	    v.push_back(Setting(Setting::SPECIAL, String("Warning: missing glyph '") + _e[code] + "'"));
-	    metrics.encode_virtual(code, _e[code], 0, v);
+	    metrics.encode_virtual(code, _e[code], 0, v, true);
 	    unencoded.push_back(_e[code]);
 	}
     }

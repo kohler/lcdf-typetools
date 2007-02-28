@@ -573,17 +573,43 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     if (boundary_char >= 0)
 	fprintf(f, "(BOUNDARYCHAR D %d)\n", boundary_char);
 
-    // write MAPFONT
-    int vpl_first_font = 0;
+    // figure out font mapping
+    int mapped_font0 = 0;
+    Vector<int> font_mapping;
     if (vpl) {
-	vpl_first_font = (metrics.need_base() ? 0 : 1);
-	for (int i = vpl_first_font; i < metrics.n_mapped_fonts(); i++) {
-	    String name = metrics.mapped_font_name(i);
+	int vpl_first_font = (metrics.need_base() ? 0 : 1);
+	font_mapping.assign(metrics.n_mapped_fonts(), 0);
+	// how many times is each font used?
+	Vector<Setting> settings;
+	for (int i = 0; i < 256; i++)
+	    if (metrics.setting(i, settings)) {
+		int font_number = 0;
+		for (const Setting *s = settings.begin(); s < settings.end(); s++)
+		    if (s->op == Setting::SHOW)
+			font_mapping[font_number]++;
+		    else if (s->op == Setting::FONT)
+			font_number = (int) s->x;
+	    }
+	// make sure the most-used font is number 0
+	mapped_font0 = std::max_element(font_mapping.begin(), font_mapping.end()) - font_mapping.begin();
+	// prepare the mapping
+	for (int i = vpl_first_font; i < font_mapping.size(); i++)
+	    font_mapping[i] = i - vpl_first_font;
+	font_mapping[mapped_font0] = 0;
+	font_mapping[vpl_first_font] = mapped_font0 - vpl_first_font;
+	if (vpl_first_font != 0)
+	    font_mapping[0] = font_mapping.size() - 1;
+	// write MAPFONT
+	for (int i = 0; i < metrics.n_mapped_fonts() - vpl_first_font; i++) {
+	    int j = std::find(font_mapping.begin(), font_mapping.end(), i) - font_mapping.begin();
+	    String name = metrics.mapped_font_name(j);
 	    if (!name)
 		name = make_base_font_name(font_name);
-	    fprintf(f, "(MAPFONT D %d\n   (FONTNAME %s)\n   (FONTDSIZE R %.1f)\n   )\n", i - vpl_first_font, name.c_str(), design_size);
+	    fprintf(f, "(MAPFONT D %d\n   (FONTNAME %s)\n   (FONTDSIZE R %.1f)\n   )\n", i, name.c_str(), design_size);
 	}
-    }
+    } else
+	for (int i = 0; i < metrics.n_mapped_fonts(); i++)
+	    font_mapping.push_back(i);
     
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
@@ -674,7 +700,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	    sa.clear();
 	    push_stack.clear();
 	    CharstringBounds boundser(font_xform);
-	    int program_number = vpl_first_font;
+	    int program_number = mapped_font0;
 	    const CharstringProgram *program = finfo.program();
 	    for (const Setting *s = settings.begin(); s < settings.end(); s++)
 		switch (s->op) {
@@ -716,7 +742,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 		    if ((int) s->x != program_number) {
 			program = metrics.mapped_font((int) s->x);
 			program_number = (int) s->x;
-			sa << "      (SELECTFONT D " << (program_number - vpl_first_font) << ")\n";
+			sa << "      (SELECTFONT D " << font_mapping[program_number] << ")\n";
 		    }
 		    break;
 
