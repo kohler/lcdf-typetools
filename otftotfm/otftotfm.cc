@@ -480,13 +480,18 @@ lig_context_str(int ctx)
     return (ctx == 0 ? "LIG" : (ctx < 0 ? "/LIG" : "LIG/"));
 }
 
+static double max_printed_real;
+
 static void
 fprint_real(FILE *f, const char *prefix, double value, double du, const char *suffix = ")\n")
 {
-    if (du == 1.)
+    if (du == 1.) {
 	fprintf(f, "%s R %g%s", prefix, value, suffix);
-    else
+	max_printed_real = std::max(max_printed_real, fabs(value));
+    } else {
         fprintf(f, "%s R %.4f%s", prefix, value * du, suffix);
+	max_printed_real = std::max(max_printed_real, fabs(value * du));
+    }
 }
 
 static String
@@ -510,8 +515,23 @@ font_slant(const FontInfo &finfo)
 
 static void
 output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
-	  const FontInfo &finfo, bool vpl, FILE *f)
+	  const FontInfo &finfo, bool vpl,
+	  const String &filename, ErrorHandler *errh)
 {
+    // create file
+    if (no_create) {
+	errh->message("would create %s", filename.c_str());
+	return;
+    }
+
+    if (verbose)
+	errh->message("creating %s", filename.c_str());
+    FILE *f = fopen(filename.c_str(), "w");
+    if (!f) {
+	errh->error("%s: %s", filename.c_str(), strerror(errno));
+	return;
+    }
+
     // XXX check DESIGNSIZE and DESIGNUNITS for correctness
 
     fprintf(f, "(COMMENT Created by '%s'%s)\n", invocation.c_str(), current_time.c_str());
@@ -528,6 +548,8 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 
     if (design_size <= 0)
 	design_size = get_design_size(finfo);
+    max_printed_real = 0;
+    
     fprintf(f, "(DESIGNSIZE R %.1f)\n"
 	    "(DESIGNUNITS R %d.0)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
@@ -796,22 +818,18 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 		fprintf(f, "   (MAP\n%s      )\n", sa.c_str());
 	    fprintf(f, "   )\n");
 	}
-}
 
-static void
-output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
-	  const FontInfo &finfo, bool vpl, String filename, ErrorHandler *errh)
-{
-    if (no_create)
-	errh->message("would create %s", filename.c_str());
-    else {
+    // at last, close the file
+    fclose(f);
+    
+    // Did we print a number too big for TeX to handle?  If so, try again.
+    if (max_printed_real >= 2047) {
+	if (metrics.design_units() <= 1)
+	    errh->fatal("This font appears to be broken.  It has characters so big that the PL format\ncannot represent them.");
+	metrics.set_design_units(metrics.design_units() > 200 ? metrics.design_units() - 250 : 1);
 	if (verbose)
-	    errh->message("creating %s", filename.c_str());
-	if (FILE *f = fopen(filename.c_str(), "w")) {
-	    output_pl(metrics, ps_name, boundary_char, finfo, vpl, f);
-	    fclose(f);
-	} else
-	    errh->error("%s: %s", filename.c_str(), strerror(errno));
+	    errh->message("the font's metrics overflow the limits of PL files\n(reducing DESIGNUNITS to %d and trying again)", metrics.design_units());
+	output_pl(metrics, ps_name, boundary_char, finfo, vpl, filename, errh);
     }
 }
 
@@ -1055,21 +1073,17 @@ output_tfm(Metrics &metrics, const String &ps_name, int boundary_char,
 	   ErrorHandler *errh)
 {
     String pl_filename;
-    int pl_fd = temporary_file(pl_filename, errh);
-    if (pl_fd < 0)
-	return;
-
     bool vpl = vf_filename;
 
     if (no_create) {
 	errh->message("would write %s to temporary file", (vpl ? "VPL" : "PL"));
 	pl_filename = "<temporary>";
     } else {
-	if (verbose)
-	    errh->message("writing %s to temporary file", (vpl ? "VPL" : "PL"));
-	FILE *f = fdopen(pl_fd, "w");
-	output_pl(metrics, ps_name, boundary_char, finfo, vpl, f);
-	fclose(f);
+	int pl_fd = temporary_file(pl_filename, errh);
+	if (pl_fd < 0)
+	    return;
+	output_pl(metrics, ps_name, boundary_char, finfo, vpl, pl_filename, errh);
+	close(pl_fd);
     }
 
     StringAccum command;

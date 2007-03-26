@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.61   25.Mar.2007
+
+* otftotfm: Automatically reduce DESIGNUNITS and try again if a font has
+  humungocharacters that overflow PL files' limited range of allowed real
+  numbers.  Reported by John Owens.
+
+
 Version 2.60   27.Feb.2007
 
 * otftotfm: Rearrange order of virtual fonts so most-frequently-used font
