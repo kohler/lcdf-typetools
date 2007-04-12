@@ -89,7 +89,7 @@ class Type1Font : public CharstringProgram { public:
 
     // font skeletons
     static Type1Font *skeleton_make(PermString, const String &version = String());
-    static Type1Font *skeleton_make_copy(const Type1Font *, PermString);
+    static Type1Font *skeleton_make_copy(const Type1Font *, PermString, const Vector<double> *xuid_extension);
     void skeleton_comments_end();
     void skeleton_fontinfo_end();
     void skeleton_fontdict_end();

@@ -1,6 +1,6 @@
-/* t1fontskel.{cc,hh} -- Type 1 font skeleton
+/* t1fontskel.cc -- Type 1 font skeleton
  *
- * Copyright (c) 1998-2006 Eddie Kohler
+ * Copyright (c) 1998-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -333,7 +333,7 @@ font_dict_string(const Type1Font *font, int dict, PermString name)
 }
 
 Type1Font *
-Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name)
+Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name, const Vector<double> *xuid_extension)
 {
     String version = font_dict_string(font, dFI, "version");
     Type1Font *output = skeleton_make(font_name, version);
@@ -380,8 +380,28 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name)
     add_number_def(output, dF, "FontType", font);
     add_copy_def(output, dF, "FontMatrix", font, "readonly def");
     add_number_def(output, dF, "StrokeWidth", font);
-    add_number_def(output, dF, "UniqueID", font);
+    if (!xuid_extension)
+	add_number_def(output, dF, "UniqueID", font);
     add_copy_def(output, dF, "XUID", font, "readonly def");
+    if (xuid_extension) {
+	Vector<double> xuid;
+	if (Type1Definition *xuid_def = output->dict("XUID"))
+	    xuid_def->value_numvec(xuid);
+	if (!xuid.size()) {
+	    Type1Definition *uid_def = font->dict("UniqueID");
+	    int uid;
+	    if (uid_def && uid_def->value_int(uid)) {
+		xuid.push_back(1);
+		xuid.push_back(uid);
+	    }
+	}
+	if (xuid.size()) {
+	    for (int i = 0; i < xuid_extension->size(); i++)
+		xuid.push_back((*xuid_extension)[i]);
+	    Type1Definition *xuid_def = output->ensure(dF, "XUID");
+	    xuid_def->set_numvec(xuid);
+	}
+    }
     add_copy_def(output, dF, "FontBBox", font, "readonly def");
     output->skeleton_fontdict_end();
 
@@ -400,7 +420,8 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name)
     add_copy_def(output, dP, "ForceBold", font);
     add_number_def(output, dP, "LanguageGroup", font);
     add_number_def(output, dP, "ExpansionFactor", font);
-    add_number_def(output, dP, "UniqueID", font);
+    if (!xuid_extension)
+	add_number_def(output, dP, "UniqueID", font);
     output->add_definition(dP, Type1Definition::make_literal("MinFeature", "{16 16}", "|-"));
     output->add_definition(dP, Type1Definition::make_literal("password", "5839", "def"));
     output->add_definition(dP, Type1Definition::make_literal("lenIV", "0", "def"));
