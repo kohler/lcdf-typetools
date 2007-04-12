@@ -20,14 +20,12 @@
 
 using namespace Efont;
 
-/*****
- * main
- **/
-
 Type1Font *
 minimize(Type1Font *font)
 {
-    Type1Font *output = Type1Font::skeleton_make_copy(font, font->font_name());
+    Vector<double> xuid_extension;
+    xuid_extension.push_back(0x000395C1);
+    Type1Font *output = Type1Font::skeleton_make_copy(font, font->font_name(), &xuid_extension);
 
     // Subrs
     for (int i = 0; i < font->nsubrs(); i++)

@@ -452,7 +452,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
     if (v.size() < 2 || (v[1] != "=" && v[1] != "=:" && v[1] != ":="))
 	return -EPARSE;
     else if (v[0] == "||" || (av = encoding_of(v[0])) < 0)
-	return errh->error("target '%s' has no encoding, ignoring UNICODING", v[0].c_str());
+	return errh->warning("'%s' has no encoding, ignoring UNICODING", v[0].c_str());
 
     int original_size = _unicoding.size();
     

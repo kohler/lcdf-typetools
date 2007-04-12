@@ -371,7 +371,10 @@ particular purpose.\n");
 	errh->warning("derived font name '%s' longer than 29 characters", actual_font_name.c_str());
 	errh->message("(Use the '--name' option to supply your own name.)");
     }
-    Type1Font *dotless_font = Type1Font::skeleton_make_copy(font, actual_font_name);
+
+    Vector<double> xuid_extension;
+    xuid_extension.push_back(0x00237237);
+    Type1Font *dotless_font = Type1Font::skeleton_make_copy(font, actual_font_name, &xuid_extension);
     dotless_font->skeleton_common_subrs();
     
     // copy space and .notdef
