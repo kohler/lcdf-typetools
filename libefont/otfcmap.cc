@@ -67,9 +67,24 @@ Cmap::parse_header(ErrorHandler *errh)
 	int platform = USHORT_AT(data + loc);
 	int encoding = USHORT_AT(data + loc + 2);
 	uint32_t offset = ULONG_AT(data + loc + 4);
-	if (offset + 6 > (uint32_t) len || USHORT_AT(data + offset + 2) < 6)
+	if (offset + 8 > (uint32_t) len) {
+	  length_error:
 	    return errh->error("encoding data for entry %d out of range", i);
-	int language = USHORT_AT(data + offset + 4);
+	}
+	int format = USHORT_AT(data + offset);
+	int language;
+	if (format == F_BYTE || format == F_HIBYTE || format == F_SEGMENTED
+	    || format == F_TRIMMED) {
+	    if (USHORT_AT(data + offset + 2) < 6)
+		goto length_error;
+	    language = USHORT_AT(data + offset + 4);
+	} else if (format == F_HIBYTE32 || format == F_TRIMMED32
+		   || format == F_SEGMENTED32) {
+	    if (offset + 12 > (uint32_t) len || ULONG_AT(data + offset + 4) < 12)
+		goto length_error;
+	    language = ULONG_AT(data + offset + 8);
+	} else
+	    continue;
 	if (!(platform > last_platform
 	      || (platform == last_platform
 		  && (encoding > last_encoding
