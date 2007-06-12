@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.63   12.Jun.2007
+
+* Correctly handle fonts with 4-byte character code cmap tables.  Reported
+  by Alexey Vikhlinin.
+
+
 Version 2.62   11.Apr.2007
 
 * t1dotlessj: Do not use the same UniqueID as the input font.  Inspired by
