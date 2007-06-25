@@ -1,5 +1,17 @@
 LCDF Typetools NEWS
 
+Version 2.64   25.Jun.2007
+
+* Handle Extension format GPOS and GSUB lookup tables, used for very large
+  fonts.  Reported by Marc Penninga.
+
+* cfftot1, t1lint: Correct misunderstanding of the Flex spec: there MUST be
+  an rmoveto in between any two Flex subroutines, even if that rmoveto
+  doesn't move anywhere.  (Question: Are hmoveto/vmoveto acceptable?  Adobe
+  Reader seems to think so.)  Reported by John Owens with respect to
+  Caslon-Antique.
+
+
 Version 2.63   12.Jun.2007
 
 * Correctly handle fonts with 4-byte character code cmap tables.  Reported
