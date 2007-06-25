@@ -241,14 +241,12 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 	MD5_CONTEXT md5;
 	md5_init(&md5);
 	md5_update(&md5, (const unsigned char *) reduced_font.data(), reduced_font.length());
-	union {
-	    unsigned char c[MD5_DIGEST_SIZE];
-	    uint32_t u[MD5_DIGEST_SIZE / 4];
-	} result;
-	md5_final(&result.c[0], &md5);
+	unsigned char result[MD5_DIGEST_SIZE + 3];
+	memset(result, 0, sizeof(result));
+	md5_final(result, &md5);
 	fprintf(f, "/XUID [42");
-	for (int i = 0; i < MD5_DIGEST_SIZE / 4; i++)
-	    fprintf(f, " 16#%X", result.u[i]);
+	for (int i = 0; i < MD5_DIGEST_SIZE; i += 3)
+	    fprintf(f, " 16#%X", result[i] + result[i+1]*256 + result[i+2]*256*256);
 	fprintf(f, "] def\n");
     }
 
