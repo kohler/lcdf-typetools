@@ -146,7 +146,7 @@ check_blue_array(Vector<double> &blues, const char *name, double BlueScale,
     if (blues[i] > blues[i+1])
       errh->error("%s zone %d in the wrong order", name, i/2);
     else if (blues[i+1] - blues[i] >= max_diff)
-      errh->error("%s zone %d too large in relation to BlueScale", name, i/2);
+	errh->error("%s zone %d too large in relation to BlueScale (size %g, max %g [%g])", name, i/2, blues[i+1] - blues[i], max_diff, BlueScale);
   }
 }
 
@@ -332,21 +332,21 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     int UniqueID = -1, UniqueID2 = -1;
     if (get_integer(font, Type1Font::dF, "UniqueID", UniqueID, errh)
 	&& (UniqueID < 0 || UniqueID > 0xFFFFFF))
-	errh->error("UniqueID not in the range 0-16777215");
+	cerrh.error("UniqueID not in the range 0-16777215");
     if (get_integer(font, Type1Font::dP, "UniqueID", UniqueID2, errh)
 	&& (UniqueID2 < 0 || UniqueID2 > 0xFFFFFF))
-	errh->error("Private UniqueID not in the range 0-16777215");
+	cerrh.error("Private UniqueID not in the range 0-16777215");
     if (UniqueID >= 0 && UniqueID2 >= 0 && UniqueID != UniqueID2)
-	errh->error("Private UniqueID does not equal font UniqueID");
+	cerrh.error("Private UniqueID does not equal font UniqueID");
 
     // check XUID values
     Vector<double> XUID;
     if (get_num_array(font, Type1Font::dF, "XUID", XUID, errh)) {
 	if (XUID.size() == 0)
-	    errh->error("empty XUID");
+	    cerrh.error("empty XUID");
 	for (int i = 0; i < XUID.size(); i++) {
 	    if (floor(XUID[i]) != XUID[i] || XUID[i] < 0 || XUID[i] > 0xFFFFFF) {
-		errh->error("element of XUID not an integer in the range 0-16777215");
+		cerrh.error("element of XUID not an integer in the range 0-16777215");
 		break;
 	    }
 	}

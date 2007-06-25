@@ -112,6 +112,7 @@ void
 CharstringChecker::rmoveto(double, double)
 {
     _cp_exists = true;
+    _just_flexed = false;
 }
 
 void
@@ -183,6 +184,7 @@ CharstringChecker::callothersubr()
     ps_push(_cp.x);
     ps_push(_cp.y);
     _flex = true;
+    _just_flexed = true;
     //_flex_connect = _connect;
     break;
     
@@ -193,8 +195,11 @@ CharstringChecker::callothersubr()
     }
     if (!_flex)
       return error(errFlex, 0);
+    if (_just_flexed)
+	_errh->error("Flex control points must be separated by a moveto");
     ps_push(_cp.x);
     ps_push(_cp.y);
+    _just_flexed = true;
     break;
     
    case 3:			// hint replacement
@@ -445,7 +450,7 @@ CharstringChecker::check(const CharstringContext &g, ErrorHandler *errh)
 
     _started = false;
     _flex = false;
-    _hstem = _hstem3 = _vstem = _vstem3 = false;
+    _hstem = _hstem3 = _vstem = _vstem3 = _just_flexed = false;
     _h_hstem.clear();
     _h_vstem.clear();
     _h_hstem3.clear();
