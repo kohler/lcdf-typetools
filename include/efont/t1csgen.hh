@@ -23,7 +23,7 @@ class Type1CharstringGen { public:
     void append_charstring(const String &);
 
     const Point &current_point(bool real) const { return (real ? _true : _false); }
-    void gen_moveto(const Point &, bool closepath);
+    void gen_moveto(const Point &, bool closepath, bool always);
 
     inline String take_string();
     Type1Charstring *output();

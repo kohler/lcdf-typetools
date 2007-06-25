@@ -2,7 +2,7 @@
 
 /* t1csgen.{cc,hh} -- Type 1 charstring generation
  *
- * Copyright (c) 1998-2006 Eddie Kohler
+ * Copyright (c) 1998-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -163,7 +163,7 @@ Type1CharstringGen::gen_stack(CharstringInterp &interp, int for_cmd)
 }
 
 void
-Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
+Type1CharstringGen::gen_moveto(const Point &p, bool closepath, bool always)
 {
     // make sure we generate some moveto on the first command
     
@@ -172,7 +172,7 @@ Type1CharstringGen::gen_moveto(const Point &p, bool closepath)
     int big_dx = (int)floor(dx * _f_precision + 0.50001);
     int big_dy = (int)floor(dy * _f_precision + 0.50001);
 
-    if (big_dx == 0 && big_dy == 0 && _state != S_INITIAL)
+    if (big_dx == 0 && big_dy == 0 && _state != S_INITIAL && !always)
 	/* do nothing */;
     else {
 	if (closepath)
@@ -391,7 +391,7 @@ Type1CharstringGenInterp::act_line(int cmd, const Point &a, const Point &b)
 	gen_sbw(false);
     else if (_in_hr)
 	act_hintmask(cmd, 0, nhints());
-    _csgen.gen_moveto(a, _state == S_OPEN);
+    _csgen.gen_moveto(a, _state == S_OPEN, false);
     _state = S_OPEN;
     if (a.x == b.x) {
 	gen_number(b.y - a.y, 'y');
@@ -413,7 +413,7 @@ Type1CharstringGenInterp::act_curve(int cmd, const Point &a, const Point &b, con
 	gen_sbw(false);
     else if (_in_hr)
 	act_hintmask(cmd, 0, nhints());
-    _csgen.gen_moveto(a, _state == S_OPEN);
+    _csgen.gen_moveto(a, _state == S_OPEN, false);
     _state = S_OPEN;
     if (b.y == a.y && d.x == c.x) {
 	gen_number(b.x - a.x, 'x');
@@ -445,7 +445,7 @@ Type1CharstringGenInterp::act_flex(int cmd, const Point &p0, const Point &p1, co
 	gen_sbw(false);
     else if (_in_hr)
 	act_hintmask(cmd, 0, nhints());
-    _csgen.gen_moveto(p0, _state == S_OPEN);
+    _csgen.gen_moveto(p0, _state == S_OPEN, false);
     _state = S_OPEN;
 
     // 1. Outer endpoints must have same x (or y) coordinate
@@ -484,31 +484,31 @@ Type1CharstringGenInterp::act_flex(int cmd, const Point &p0, const Point &p1, co
 	_csgen.gen_number(1);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p_reference, false);
+	_csgen.gen_moveto(p_reference, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p1, false);
+	_csgen.gen_moveto(p1, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p2, false);
+	_csgen.gen_moveto(p2, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p3_4, false);
+	_csgen.gen_moveto(p3_4, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p5, false);
+	_csgen.gen_moveto(p5, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p6, false);
+	_csgen.gen_moveto(p6, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 
-	_csgen.gen_moveto(p7, false);
+	_csgen.gen_moveto(p7, false, true);
 	_csgen.gen_number(2);
 	_csgen.gen_command(Cs::cCallsubr);
 

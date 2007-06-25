@@ -2,7 +2,7 @@
 
 /* ttfcs.{cc,hh} -- TrueType "charstring" emulation
  *
- * Copyright (c) 2006 Eddie Kohler
+ * Copyright (c) 2006-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -205,7 +205,7 @@ TrueTypeBoundsCharstringProgram::glyph(int gi) const
 	    gen.gen_number(lsb * _em_xform, 'X');
 	    gen.gen_number(advance_width * _em_xform);
 	    gen.gen_command(Charstring::cHsbw);
-	    gen.gen_moveto(Point(xmin * _em_xform, ymin * _em_xform), false);
+	    gen.gen_moveto(Point(xmin * _em_xform, ymin * _em_xform), false, false);
 	    if (xmax != xmin || ymax == ymin)
 		gen.gen_number((xmax - xmin) * _em_xform, 'x');
 	    if (ymax != ymin)
