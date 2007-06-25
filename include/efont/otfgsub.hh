@@ -32,17 +32,19 @@ class Gsub { public:
 
 class GsubLookup { public:
     GsubLookup(const Data &) throw (Error);
-    int type() const			{ return _d.u16(0); }
+    int type() const			{ return _type; }
     uint16_t flags() const		{ return _d.u16(2); }
     bool unparse_automatics(const Gsub &, Vector<Substitution> &) const;
     bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum {
 	HEADERSIZE = 6, RECSIZE = 2,
 	L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
-	L_CONTEXT = 5, L_CHAIN = 6, L_REVCHAIN = 8
+	L_CONTEXT = 5, L_CHAIN = 6, L_EXTENSION = 7, L_REVCHAIN = 8
     };
   private:
     Data _d;
+    int _type;
+    Data subtable(int i) const;
 };
 
 class GsubSingle { public:

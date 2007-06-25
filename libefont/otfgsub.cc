@@ -2,7 +2,7 @@
 
 /* otfgsub.{cc,hh} -- OpenType GSUB table
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -619,39 +619,58 @@ GsubLookup::GsubLookup(const Data &d) throw (Error)
 {
     if (_d.length() < 6)
 	throw Format("GSUB Lookup table");
+    _type = _d.u16(0);
+    if (_type == L_EXTENSION && _d.u16(4) != 0) {
+	Data first_subtable = _d.offset_subtable(HEADERSIZE);
+	if (first_subtable.length() < 8 || first_subtable.u16(0) != 1)
+	    throw Format("GSUB Extension Lookup table");
+	_type = first_subtable.u16(2);
+    }
+}
+
+Data
+GsubLookup::subtable(int i) const
+{
+    Data subd = _d.offset_subtable(HEADERSIZE + i*RECSIZE);
+    if (_d.u16(0) != L_EXTENSION)
+	return subd;
+    else if (subd.length() >= 8 && subd.u16(0) == 1 && subd.u16(2) == _type)
+	return subd.subtable(subd.u32(4));
+    else
+	return Data();
 }
 
 bool
 GsubLookup::unparse_automatics(const Gsub &gsub, Vector<Substitution> &v) const
 {
     int nlookup = _d.u16(4);
-    switch (_d.u16(0)) {
+    switch (_type) {
       case L_SINGLE:
 	for (int i = 0; i < nlookup; i++)
-	    GsubSingle(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	    GsubSingle(subtable(i)).unparse(v);
 	return true;
       case L_MULTIPLE:
 	for (int i = 0; i < nlookup; i++)
-	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	    GsubMultiple(subtable(i)).unparse(v);
 	return true;
       case L_ALTERNATE:
 	for (int i = 0; i < nlookup; i++)
-	    GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v, true);
+	    GsubMultiple(subtable(i)).unparse(v, true);
 	return true;
       case L_LIGATURE:
 	for (int i = 0; i < nlookup; i++)
-	    GsubLigature(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(v);
+	    GsubLigature(subtable(i)).unparse(v);
 	return true;
       case L_CONTEXT: {
 	  bool understood = true;
 	  for (int i = 0; i < nlookup; i++)
-	      understood &= GsubContext(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(gsub, v);
+	      understood &= GsubContext(subtable(i)).unparse(gsub, v);
 	  return understood;
       }
       case L_CHAIN: {
 	  bool understood = true;
 	  for (int i = 0; i < nlookup; i++)
-	      understood &= GsubChainContext(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).unparse(gsub, v);
+	      understood &= GsubChainContext(subtable(i)).unparse(gsub, v);
 	  return understood;
       }
       default:
@@ -663,25 +682,25 @@ bool
 GsubLookup::apply(const Glyph *g, int pos, int n, Substitution &s) const
 {
     int nlookup = _d.u16(4);
-    switch (_d.u16(0)) {
+    switch (_type) {
       case L_SINGLE:
 	for (int i = 0; i < nlookup; i++)
-	    if (GsubSingle(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).apply(g, pos, n, s))
+	    if (GsubSingle(subtable(i)).apply(g, pos, n, s))
 		return true;
 	return false;
       case L_MULTIPLE:
 	for (int i = 0; i < nlookup; i++)
-	    if (GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).apply(g, pos, n, s))
+	    if (GsubMultiple(subtable(i)).apply(g, pos, n, s))
 		return true;
 	return false;
       case L_ALTERNATE:
 	for (int i = 0; i < nlookup; i++)
-	    if (GsubMultiple(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).apply(g, pos, n, s, true))
+	    if (GsubMultiple(subtable(i)).apply(g, pos, n, s, true))
 		return true;
 	return false;
       case L_LIGATURE:
 	for (int i = 0; i < nlookup; i++)
-	    if (GsubLigature(_d.offset_subtable(HEADERSIZE + i*RECSIZE)).apply(g, pos, n, s))
+	    if (GsubLigature(subtable(i)).apply(g, pos, n, s))
 		return true;
 	return false;
       default:			// XXX

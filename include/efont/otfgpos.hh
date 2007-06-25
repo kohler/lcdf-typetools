@@ -30,17 +30,19 @@ class Gpos { public:
 
 class GposLookup { public:
     GposLookup(const Data &) throw (Error);
-    int type() const			{ return _d.u16(0); }
+    int type() const			{ return _type; }
     uint16_t flags() const		{ return _d.u16(2); }
     bool unparse_automatics(Vector<Positioning> &, ErrorHandler * = 0) const;
     enum {
 	HEADERSIZE = 6, RECSIZE = 2,
 	L_SINGLE = 1, L_PAIR = 2, L_CURSIVE = 3, L_MARKTOBASE = 4,
 	L_MARKTOLIGATURE = 5, L_MARKTOMARK = 6, L_CONTEXT = 7,
-	L_CHAIN = 8
+	L_CHAIN = 8, L_EXTENSION = 9
     };
   private:
     Data _d;
+    int _type;
+    Data subtable(int i) const;
 };
 
 class GposValue { public:

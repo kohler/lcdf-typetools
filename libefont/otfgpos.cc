@@ -2,7 +2,7 @@
 
 /* otfgpos.{cc,hh} -- OpenType GPOS table
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -84,17 +84,36 @@ GposLookup::GposLookup(const Data &d) throw (Error)
 {
     if (_d.length() < 6)
 	throw Format("GPOS Lookup table");
+    _type = _d.u16(0);
+    if (_type == L_EXTENSION && _d.u16(4) != 0) {
+	Data first_subtable = _d.offset_subtable(HEADERSIZE);
+	if (first_subtable.length() < 8 || first_subtable.u16(0) != 1)
+	    throw Format("GPOS Extension Lookup table");
+	_type = first_subtable.u16(2);
+    }
+}
+
+Data
+GposLookup::subtable(int i) const
+{
+    Data subd = _d.offset_subtable(HEADERSIZE + i*RECSIZE);
+    if (_d.u16(0) != L_EXTENSION)
+	return subd;
+    else if (subd.length() >= 8 && subd.u16(0) == 1 && subd.u16(2) == _type)
+	return subd.subtable(subd.u32(4));
+    else
+	return Data();
 }
 
 bool
 GposLookup::unparse_automatics(Vector<Positioning> &v, ErrorHandler *errh) const
 {
-    int n = _d.u16(4), success = 0;
-    switch (_d.u16(0)) {
+    int nlookup = _d.u16(4), success = 0;
+    switch (_type) {
       case L_SINGLE:
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < nlookup; i++)
 	    try {
-		GposSingle s(_d.offset_subtable(HEADERSIZE + i*RECSIZE));
+		GposSingle s(subtable(i));
 		s.unparse(v);
 		success++;
 	    } catch (Error e) {
@@ -103,9 +122,9 @@ GposLookup::unparse_automatics(Vector<Positioning> &v, ErrorHandler *errh) const
 	    }
 	return success > 0;
       case L_PAIR:
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < nlookup; i++)
 	    try {
-		GposPair p(_d.offset_subtable(HEADERSIZE + i*RECSIZE));
+		GposPair p(subtable(i));
 		p.unparse(v);
 		success++;
 	    } catch (Error e) {
