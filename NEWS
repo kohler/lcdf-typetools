@@ -24,7 +24,7 @@ Version 2.62   11.Apr.2007
   Reinhard Kotucha.
 
 * otftotfm: Generate a map line even if there was a missing character in
-  some UNICODING.  Reported by Andreas Bühmann.
+  some UNICODING.  Reported by Andreas BÃ¼hmann.
 
 
 Version 2.61   25.Mar.2007
