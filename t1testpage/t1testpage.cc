@@ -1,6 +1,6 @@
 /* t1testpage.cc -- driver for generating Type 1 fonts' test pages
  *
- * Copyright (c) 1999-2006 Eddie Kohler
+ * Copyright (c) 1999-2007 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -166,7 +166,8 @@ output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_nam
     HashMap<PermString, int> encodings(-1);
     if (Type1Encoding *encoding = font->type1_encoding())
 	for (int i = 255; i >= 0; i--)
-	    encodings.insert(encoding->elt(i), i);
+	    if (encoding->elt(i))
+		encodings.insert(encoding->elt(i), i);
     
     int per_row = 10;
     int nrows = 13;
