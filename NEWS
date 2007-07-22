@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.65   22.Jul.2007
+
+* t1testpage: Fix bug triggered by fonts with empty encoding slots.
+  Reported by Michael Zedler.
+
+
 Version 2.64   25.Jun.2007
 
 * Handle Extension format GPOS and GSUB lookup tables, used for very large
