@@ -1,10 +1,10 @@
-// -*- related-file-name: "../include/lcdf/straccum.hh" -*-
+// -*- c-basic-offset: 2 -*-
 /*
  * straccum.{cc,hh} -- build up strings with operator<<
  * Eddie Kohler
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
- * Copyright (c) 2001-2006 Eddie Kohler
+ * Copyright (c) 2001-2007 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,38 +20,20 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <lcdf/straccum.hh>
-#include <lcdf/vector.hh>
-#include <stdarg.h>
-#include <stdio.h>
-#include <ctype.h>
-
-StringAccum::StringAccum(const char *s)
-    : _s(0), _len(0), _cap(0)
-{
-    *this << s;
-}
-
-StringAccum::StringAccum(const String &s)
-    : _s(0), _len(0), _cap(0)
-{
-    *this << s;
-}
-
-#ifdef HAVE_PERMSTRING
-StringAccum::StringAccum(PermString s)
-    : _s(0), _len(0), _cap(0)
-{
-    *this << s;
-}
-#endif
+#include "straccum.hh"
+#include <cstdarg>
+#include <cstdio>
 
 void
 StringAccum::make_out_of_memory()
 {
   assert(_cap >= 0);
   delete[] _s;
-  _s = reinterpret_cast<unsigned char *>(const_cast<char *>(String::out_of_memory_data()));
+#ifdef HAVE_STRING
+  _s = reinterpret_cast<unsigned char *>(const_cast<char *>(String::out_of_memory_string().data()));
+#else
+  _s = 0;
+#endif
   _cap = -1;
   _len = 0;
 }
@@ -81,56 +63,37 @@ StringAccum::grow(int want)
   return true;
 }
 
-void
-StringAccum::append_utf8_hard(uint32_t ch)
-{
-    if (ch < 0x80)
-	append((unsigned char) ch);
-    else if (ch < 0x800) {
-	append((unsigned char) (0xC0 + ((ch >> 6) & 0x1F)));
-	append((unsigned char) (0x80 + (ch & 0x3F)));
-    } else if (ch < 0x10000) {
-	append((unsigned char) (0xE0 + ((ch >> 12) & 0x0F)));
-	append((unsigned char) (0x80 + ((ch >> 6) & 0x3F)));
-	append((unsigned char) (0x80 + (ch & 0x3F)));
-    } else if (ch < 0x110000) {
-	append((unsigned char) (0xF0 + ((ch >> 18) & 0x07)));
-	append((unsigned char) (0x80 + ((ch >> 12) & 0x3F)));
-	append((unsigned char) (0x80 + ((ch >> 6) & 0x3F)));
-	append((unsigned char) (0x80 + (ch & 0x3F)));
-    } else
-	append((unsigned char) '?');
-}
-
 const char *
 StringAccum::c_str()
 {
-    if (_len < _cap || grow(_len))
-	_s[_len] = '\0';
-    return reinterpret_cast<char *>(_s);
+  if (_len < _cap || grow(_len))
+    _s[_len] = '\0';
+  return reinterpret_cast<char *>(_s);
 }
 
+#ifdef HAVE_STRING
 String
 StringAccum::take_string()
 {
-    int len = length();
-    if (len) {
-	int capacity = _cap;
-	return String::claim_string(reinterpret_cast<char *>(take_bytes()), len, capacity);
-    } else if (out_of_memory())
-	return String::out_of_memory_string();
-    else
-	return String();
+  int len = length();
+  if (len) {
+    int capacity = _cap;
+    return String::claim_string(take(), len, capacity);
+  } else if (out_of_memory())
+    return String::out_of_memory_string();
+  else
+    return String();
 }
+#endif
 
 StringAccum &
 operator<<(StringAccum &sa, long i)
 {
-    if (char *x = sa.reserve(24)) {
-	int len = sprintf(x, "%ld", i);
-	sa.forward(len);
-    }
-    return sa;
+  if (char *x = sa.reserve(24)) {
+    int len = sprintf(x, "%ld", i);
+    sa.forward(len);
+  }
+  return sa;
 }
 
 StringAccum &
@@ -147,7 +110,7 @@ StringAccum &
 operator<<(StringAccum &sa, double d)
 {
   if (char *x = sa.reserve(256)) {
-    int len = sprintf(x, "%.12g", d);
+    int len = sprintf(x, "%g", d);
     sa.forward(len);
   }
   return sa;
@@ -169,33 +132,4 @@ StringAccum::snprintf(int n, const char *format, ...)
   }
   va_end(val);
   return *this;
-}
-
-void
-StringAccum::append_break_lines(const String& text, int linelen, const String &leftmargin)
-{
-    if (text.length() == 0)
-	return;
-    const char* line = text.begin();
-    const char* ends = text.end();
-    linelen -= leftmargin.length();
-    for (const char* s = line; s < ends; s++) {
-	const char* start = s;
-	while (s < ends && isspace(*s))
-	    s++;
-	const char* word = s;
-	while (s < ends && !isspace(*s))
-	    s++;
-	if (s - line > linelen && start > line) {
-	    *this << leftmargin;
-	    append(line, start - line);
-	    *this << '\n';
-	    line = word;
-	}
-    }
-    if (line < text.end()) {
-	*this << leftmargin;
-	append(line, text.end() - line);
-	*this << '\n';
-    }
 }
