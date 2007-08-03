@@ -25,7 +25,8 @@
 
 Metrics::Metrics(const Efont::CharstringProgram *font, int nglyphs)
     : _boundary_glyph(nglyphs), _emptyslot_glyph(nglyphs + 1),
-      _design_units(1000), _liveness_marked(false)
+      _design_units(1000), _units_per_em(font->units_per_em()),
+      _liveness_marked(false)
 {
     _encoding.assign(256, Char());
     add_mapped_font(font, String());

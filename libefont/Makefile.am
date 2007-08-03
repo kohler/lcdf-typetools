@@ -33,7 +33,8 @@ libefont_a_SOURCES = \
 	t1mm.cc \
 	t1rw.cc \
 	t1unparser.cc \
-	ttfcs.cc
+	ttfcs.cc \
+	ttfhead.cc
 
 libefont_a_LIBADD = @TEMPLATE_OBJS@
 CLEANFILES = @TEMPLATE_OBJS@

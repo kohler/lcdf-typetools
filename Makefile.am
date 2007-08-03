@@ -54,6 +54,7 @@ EXTRA_DIST = \
 	include/efont/t1rw.hh \
 	include/efont/t1unparser.hh \
 	include/efont/ttfcs.hh \
+	include/efont/ttfhead.hh \
 	glyphlist.txt \
 	texglyphlist.txt \
 	7t.enc

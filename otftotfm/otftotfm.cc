@@ -563,7 +563,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     if (slant)
 	font_xform.shear(slant);
     int bounds[4], width;
-    double du = (design_units == 1000 ? 1. : design_units / 1000.);
+    double du = (design_units == metrics.units_per_em() ? 1. : design_units / (double) metrics.units_per_em());
     
     double actual_slant = font_slant(finfo);
     if (actual_slant)

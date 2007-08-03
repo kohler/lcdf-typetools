@@ -197,8 +197,9 @@ class CharstringProgram { public:
     CharstringProgram()				: _parent_program(false) { }
     virtual ~CharstringProgram()		{ }
 
-    virtual PermString font_name() const	{ return PermString();}
+    virtual PermString font_name() const	{ return PermString(); }
     virtual void font_matrix(double[6]) const;
+    virtual int units_per_em() const;
 
     inline const CharstringProgram *program(int) const;
     virtual const CharstringProgram *child_program(int) const;

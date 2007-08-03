@@ -17,6 +17,7 @@
 # include <config.h>
 #endif
 #include <efont/ttfcs.hh>
+#include <efont/ttfhead.hh>
 #include <efont/t1csgen.hh>
 #include <efont/otfpost.hh>
 #include <efont/otfcmap.hh>
@@ -24,7 +25,7 @@
 namespace Efont {
 
 TrueTypeBoundsCharstringProgram::TrueTypeBoundsCharstringProgram(const OpenType::Font *otf)
-    : _otf(otf), _nglyphs(-1), _loca_long(false), _em_xform(1000. / 1024),
+    : _otf(otf), _nglyphs(-1), _loca_long(false), _units_per_em(1024),
       _loca(otf->table("loca")), _glyf(otf->table("glyf")),
       _hmtx(otf->table("hmtx")), _got_glyph_names(false), _got_unicodes(false)
 {
@@ -32,30 +33,10 @@ TrueTypeBoundsCharstringProgram::TrueTypeBoundsCharstringProgram(const OpenType:
     if (maxp.length() >= 6)
 	_nglyphs = maxp.u16(4);
     
-    OpenType::Data head(otf->table("head"));
-    // HEAD format:
-    // 0	Fixed  		Table version number  	0x00010000 (ver. 1.0)
-    // 4	Fixed 		fontRevision
-    // 8	ULONG 		checkSumAdjustment
-    // 12	ULONG 		magicNumber 		Set to 0x5F0F3CF5
-    // 16	USHORT 		flags
-    // 18	USHORT 		unitsPerEm
-    // 20	LONGDATETIME 	created
-    // 28	LONGDATETIME 	modified
-    // 36	USHORT	 	xMin
-    // 38	SHORT	 	yMin
-    // 40	SHORT	 	xMax
-    // 42	SHORT	 	yMax
-    // 44	USHORT	 	macStyle
-    // 46	USHORT	 	lowestRecPPEM
-    // 48	SHORT	 	fontDirectionHint
-    // 50	SHORT	 	indexToLocFormat
-    // 52	SHORT	 	glyphDataFormat
-    if (head.length() >= 54
-	&& head.u32(0) == 0x10000
-	&& head.u32(12) == 0x5F0F3CF5) {
-	_loca_long = head.u16(50) != 0;
-	_em_xform = 1000. / (double) head.u16(18);
+    OpenType::Head head(otf->table("head"), 0);
+    if (head.ok()) {
+	_loca_long = head.index_to_loc_format() != 0;
+	_units_per_em = head.units_per_em();
     }
     if (_loca_long)
 	_loca.align_long();
@@ -94,6 +75,12 @@ TrueTypeBoundsCharstringProgram::~TrueTypeBoundsCharstringProgram()
 {
     for (Charstring **cs = _charstrings.begin(); cs < _charstrings.end(); cs++)
 	delete *cs;
+}
+
+int
+TrueTypeBoundsCharstringProgram::units_per_em() const
+{
+    return _units_per_em;
 }
 
 int
@@ -199,17 +186,17 @@ TrueTypeBoundsCharstringProgram::glyph(int gi) const
 	Type1CharstringGen gen;
 	if (ncontours == 0) {
 	    gen.gen_number(0, 'X');
-	    gen.gen_number(advance_width * _em_xform);
+	    gen.gen_number(advance_width);
 	    gen.gen_command(Charstring::cHsbw);
 	} else {
-	    gen.gen_number(lsb * _em_xform, 'X');
-	    gen.gen_number(advance_width * _em_xform);
+	    gen.gen_number(lsb, 'X');
+	    gen.gen_number(advance_width);
 	    gen.gen_command(Charstring::cHsbw);
-	    gen.gen_moveto(Point(xmin * _em_xform, ymin * _em_xform), false, false);
+	    gen.gen_moveto(Point(xmin, ymin), false, false);
 	    if (xmax != xmin || ymax == ymin)
-		gen.gen_number((xmax - xmin) * _em_xform, 'x');
+		gen.gen_number(xmax - xmin, 'x');
 	    if (ymax != ymin)
-		gen.gen_number((ymax - ymin) * _em_xform, 'y');
+		gen.gen_number(ymax - ymin, 'y');
 	    gen.gen_command(ymax == ymin ? Charstring::cHlineto
 			    : (xmax == xmin ? Charstring::cVlineto
 			       : Charstring::cRlineto));

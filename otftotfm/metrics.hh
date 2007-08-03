@@ -40,6 +40,7 @@ class Metrics { public:
     void set_coding_scheme(const String &s)	{ _coding_scheme = s; }
 
     int design_units() const			{ return _design_units; }
+    int units_per_em() const			{ return _units_per_em; }
     void set_design_units(int du)		{ _design_units = du; }
 
     int n_mapped_fonts() const			{ return _mapped_fonts.size();}
@@ -162,6 +163,7 @@ class Metrics { public:
 
     String _coding_scheme;
     int _design_units;
+    int _units_per_em;
 
     bool _liveness_marked : 1;
 

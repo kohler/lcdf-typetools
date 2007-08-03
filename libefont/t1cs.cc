@@ -339,6 +339,12 @@ CharstringProgram::font_matrix(double matrix[6]) const
     matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
 }
 
+int
+CharstringProgram::units_per_em() const
+{
+    return 1000;
+}
+
 void
 CharstringProgram::glyph_names(Vector<PermString> &gnames) const
 {
