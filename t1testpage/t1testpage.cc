@@ -52,11 +52,11 @@ using namespace Efont;
 #define GLYPH_OPT	304
 #define SMOKE_OPT	305
 
-Clp_Option options[] = {
+const Clp_Option options[] = {
     { "help", 'h', HELP_OPT, 0, 0 },
-    { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "output", 'o', OUTPUT_OPT, Clp_ValString, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
-    { "glyph", 'g', GLYPH_OPT, Clp_ArgString, 0 },
+    { "glyph", 'g', GLYPH_OPT, Clp_ValString, 0 },
     { "smoke", 's', SMOKE_OPT, 0, Clp_Negate }
 };
 
@@ -535,7 +535,7 @@ main(int argc, char *argv[])
 	switch (opt) {
 
 	  case GLYPH_OPT: {
-	      const char* s = clp->arg, *end = s + strlen(s);
+	      const char* s = clp->vstr, *end = s + strlen(s);
 	      while (s < end) {
 		  while (s < end && isspace(*s))
 		      s++;
@@ -555,7 +555,7 @@ main(int argc, char *argv[])
 	  case OUTPUT_OPT:
 	    if (output_file)
 		errh->fatal("output file already specified");
-	    output_file = clp->arg;
+	    output_file = clp->vstr;
 	    break;
       
 	  case VERSION_OPT:
@@ -575,7 +575,7 @@ particular purpose.\n");
 	  case Clp_NotOption:
 	    if (font)
 		errh->fatal("font already specified");
-	    do_file(clp->arg, psres, errh);
+	    do_file(clp->vstr, psres, errh);
 	    break;
       
 	  case Clp_Done:

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ALL_OPTS='--no-updmap'
-OPTS='-aeeka'
+OPTS='-ae '"$HOME"'/src/lcdf-typetools/t1.enc -V'
 
 call_nopts () {
     echo "$@" 1>&2
@@ -13,7 +13,7 @@ call () {
 }
 
 dir=$HOME/Fonts
-if test -f $dir; then :; else dir=$HOME/fonts; fi
+if test -d $dir; then :; else dir=$HOME/fonts; fi
 
 Frac () {
 call_nopts -ae7t -fliga -fkern $dir/Warnock/WarnockPro-Regular.otf WarnoProReg--7t--Ffrac--Fordn -ffrac -fordn
@@ -69,6 +69,19 @@ M () {
     call -fliga -fkern $dir/+OTF/MinionPro/MinionPro-It.otf MinioProIt--eka--Fswsh--Faalt -fswsh -faalt
 
     call -fliga -fkern $dir/+OTF/MinionPro/MinionPro-Bold.otf MinioProBol--eka
+}
+
+Mx () {
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-Regular.otf MinioProReg--eka--Fcpsp -fcpsp
+
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-Regular.otf MinioProReg--eka
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-Regular.otf MinioProReg--eka--Fsmcp -fsmcp
+    
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-It.otf MinioProIt--eka
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-It.otf MinioProIt--eka--Fswsh -fswsh
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-It.otf MinioProIt--eka--Fswsh--Faalt -fswsh -faalt
+
+    call -fkern -fliga -flnum -ftnum $dir/+OTF/MinionPro/MinionPro-Bold.otf MinioProBol--eka
 }
 
 WW () {
@@ -166,7 +179,8 @@ Mz () {
     call -fliga -fkern --design-size=9 $dir/+OTF/MinionProOpticals/MinionPro-Regular.otf MinioProReg--eka--D9
 }
 
-rm -rf /tmp/pk/Warno*; W; updmap; exit
+#rm -rf /tmp/pk/Warno*; W; updmap; exit
+rm -rf /tmp/pk/Minio*; Mx; updmap; exit
 #W; updmap; exit
 #M; updmap; exit
 WW; WWW; MM; MMM
