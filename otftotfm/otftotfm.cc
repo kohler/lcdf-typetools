@@ -415,12 +415,17 @@ handle_sigchld()
 String
 suffix_font_name(const String &font_name, const String &suffix)
 {
-    int pos = font_name.length();
-    while (pos > 0 && (isdigit(font_name[pos-1]) || font_name[pos-1] == '-' || font_name[pos-1] == '+'))
-	pos--;
-    if (pos == 0)
-	pos = font_name.length();
-    return font_name.substring(0, pos) + suffix + font_name.substring(pos);
+    const char *begin = font_name.begin(), *end = font_name.end();
+    while (end > begin && isdigit((unsigned char) end[-1]))
+	--end;
+    if (end < font_name.end() && end > begin && end[-1] != '-' && end[-1] != '+')
+	end = font_name.end();
+    else
+	while (end > begin && (end[-1] == '-' || end[-1] == '+'))
+	    --end;
+    if (end == begin)
+	end = font_name.end();
+    return font_name.substring(begin, end) + suffix + font_name.substring(end, font_name.end());
 }
 
 static inline String
@@ -1407,7 +1412,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	// make it reasonable for the shell
 	StringAccum sa;
 	for (int i = 0; i < typeface.length(); i++)
-	    if (isalnum(typeface[i]) || typeface[i] == '_' || typeface[i] == '-' || typeface[i] == '.' || typeface[i] == ',' || typeface[i] == '+')
+	    if (isalnum((unsigned char) typeface[i]) || typeface[i] == '_' || typeface[i] == '-' || typeface[i] == '.' || typeface[i] == ',' || typeface[i] == '+')
 		sa << typeface[i];
 
 	set_typeface(sa.length() ? sa.take_string() : font_name, false);
@@ -1562,10 +1567,10 @@ extern "C" {
 static int
 clp_parse_char(Clp_Parser *clp, const char *arg, int complain, void *)
 {
-    if (arg[0] && !arg[1] && !isdigit(arg[0])) {
+    if (arg[0] && !arg[1] && !isdigit((unsigned char) arg[0])) {
 	clp->val.i = (unsigned char)arg[0];
 	return 1;
-    } else if (arg[0] == '-' || isdigit(arg[0])) {
+    } else if (arg[0] == '-' || isdigit((unsigned char) arg[0])) {
 	char *end;
 	clp->val.i = strtol(arg, &end, 10);
 	if (clp->val.i <= 255 && !*end)
@@ -1586,26 +1591,26 @@ parse_base_encodings(const String &filename, ErrorHandler *errh)
     str.c_str();
     const char *s_end = str.end();
     for (const char *s = str.begin(); s != s_end; ) {
-	while (s != s_end && isspace(*s) && *s != '\n' && *s != '\r')
+	while (s != s_end && isspace((unsigned char) *s) && *s != '\n' && *s != '\r')
 	    s++;
 	// skip comments and blank lines
 	if (s != s_end && *s != '%' && *s != '#' && *s != '\n' && *s != '\r') {
 	    const char *w1 = s;
-	    while (s != s_end && !isspace(*s))
+	    while (s != s_end && !isspace((unsigned char) *s))
 		s++;
 	    BaseEncoding *be = new BaseEncoding;
 	    be->font_name = str.substring(w1, s);
-	    while (s != s_end && isspace(*s) && *s != '\n' && *s != '\r')
+	    while (s != s_end && isspace((unsigned char) *s) && *s != '\n' && *s != '\r')
 		s++;
 	    const char *w2 = s;
-	    while (s != s_end && !isspace(*s))
+	    while (s != s_end && !isspace((unsigned char) *s))
 		s++;
 	    String efile = str.substring(w2, s);
-	    while (s != s_end && isspace(*s) && *s != '\n' && *s != '\r')
+	    while (s != s_end && isspace((unsigned char) *s) && *s != '\n' && *s != '\r')
 		s++;
-	    if (s != s_end && !isspace(*s) && *s != '%' && *s != '#') {
+	    if (s != s_end && !isspace((unsigned char) *s) && *s != '%' && *s != '#') {
 		const char *w3 = s;
-		while (s != s_end && !isspace(*s))
+		while (s != s_end && !isspace((unsigned char) *s))
 		    s++;
 		be->secondary = str.substring(w3, s);
 	    }

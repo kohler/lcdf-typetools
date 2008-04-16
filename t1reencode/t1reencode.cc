@@ -785,7 +785,7 @@ tokenize(const String &s, int &pos_in, int &line)
     int pos = pos_in;
     while (1) {
 	// skip whitespace
-	while (pos < len && isspace(data[pos])) {
+	while (pos < len && isspace((unsigned char) data[pos])) {
 	    if (data[pos] == '\n')
 		line++;
 	    else if (data[pos] == '\r' && (pos + 1 == len || data[pos+1] != '\n'))
@@ -824,7 +824,7 @@ tokenize(const String &s, int &pos_in, int &line)
 	    int first = pos;
 	    while (pos < len && data[pos] == '/')
 		pos++;
-	    while (pos < len && data[pos] != '/' && !isspace(data[pos]) && data[pos] != '[' && data[pos] != ']' && data[pos] != '%' && data[pos] != '(' && data[pos] != '{' && data[pos] != '}')
+	    while (pos < len && data[pos] != '/' && !isspace((unsigned char) data[pos]) && data[pos] != '[' && data[pos] != ']' && data[pos] != '%' && data[pos] != '(' && data[pos] != '{' && data[pos] != '}')
 		pos++;
 	    pos_in = pos;
 	    return s.substring(first, pos - first);

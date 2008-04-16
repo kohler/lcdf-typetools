@@ -422,7 +422,7 @@ click_strcmp(PermString a, PermString b)
     const char *bd = b.c_str(), *be = b.c_str() + b.length();
     
     while (ad < ae && bd < be) {
-	if (isdigit(*ad) && isdigit(*bd)) {
+	if (isdigit((unsigned char) *ad) && isdigit((unsigned char) *bd)) {
 	    // compare the two numbers, but don't treat them as numbers in
 	    // case of overflow
 	    // first, skip initial '0's
@@ -434,9 +434,9 @@ click_strcmp(PermString a, PermString b)
 	    int longer_zeros = (ad - iad) - (bd - ibd);
 	    // skip to end of number
 	    const char *nad = ad, *nbd = bd;
-	    while (ad < ae && isdigit(*ad))
+	    while (ad < ae && isdigit((unsigned char) *ad))
 		ad++;
-	    while (bd < be && isdigit(*bd))
+	    while (bd < be && isdigit((unsigned char) *bd))
 		bd++;
 	    // longer number must be larger
 	    if ((ad - nad) != (bd - nbd))
@@ -448,12 +448,12 @@ click_strcmp(PermString a, PermString b)
 	    // finally, longer string of initial '0's wins
 	    if (longer_zeros != 0)
 		return longer_zeros;
-	} else if (isdigit(*ad))
-	    return (isalpha(*bd) ? -1 : 1);
-	else if (isdigit(*bd))
-	    return (isalpha(*ad) ? 1 : -1);
+	} else if (isdigit((unsigned char) *ad))
+	    return (isalpha((unsigned char) *bd) ? -1 : 1);
+	else if (isdigit((unsigned char) *bd))
+	    return (isalpha((unsigned char) *ad) ? 1 : -1);
 	else {
-	    int d = tolower(*ad) - tolower(*bd);
+	    int d = tolower((unsigned char) *ad) - tolower((unsigned char) *bd);
 	    if (d != 0)
 		return d;
 	    ad++;
@@ -537,10 +537,10 @@ main(int argc, char *argv[])
 	  case GLYPH_OPT: {
 	      const char* s = clp->vstr, *end = s + strlen(s);
 	      while (s < end) {
-		  while (s < end && isspace(*s))
+		  while (s < end && isspace((unsigned char) *s))
 		      s++;
 		  const char* word = s;
-		  while (s < end && !isspace(*s))
+		  while (s < end && !isspace((unsigned char) *s))
 		      s++;
 		  if (word < s)
 		      glyph_patterns.push_back(String(word, s - word));
