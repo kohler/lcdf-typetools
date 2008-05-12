@@ -1420,7 +1420,7 @@ cieucparenkorean;3208
 cieucuparenkorean;321C
 circle;25CB
 circlemultiply;2297
-circleot;2299
+circledot;2299
 circleplus;2295
 circlepostalmark;3036
 circlewithlefthalfblack;25D0
