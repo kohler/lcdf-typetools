@@ -919,28 +919,32 @@ semicolons.  For example,
 .nf
     % UNICODING pi1 =: uni03D6 ;
 .fi
-tells otftotfm that the character "/pi1" encodes as U+03D6 GREEK PI SYMBOL,
+encodes the character "/pi1" as U+03D6 GREEK PI SYMBOL,
 and
 .nf
     % UNICODING Delta =: uni0394 uni2206 ;
 .fi
-tells it that U+0394 GREEK CAPITAL LETTER DELTA should be preferred to
+makes U+0394 GREEK CAPITAL LETTER DELTA preferred to
 U+2206 INCREMENT as an encoding for "/Delta".  You can also supply
 glyph names:
 .nf
     % UNICODING Delta =: Deltagreek Delta ;
 .fi
-Supply zero choices to remove a glyph from the input encoding.  For
-instance:
+A mapping with no Unicode values removes that glyph from the input
+encoding.  For instance, this erases any f-ligature characters from the
+encoding:
 .nf
     % UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
 .fi
-The f-ligatures will be added back to the encoding, preferably at their
-original locations, if some font feature requires them.  Finally, map a
-glyph to \&'emptyslot' if you don't want
+The slots are available for
+.BR otftfm 's
+own use, for example for other characters required by the font.  (If the
+f-ligatures themselves are required by the font, for instance by a \&'liga'
+feature, then they will be added into their old slots when possible.)  Map
+a glyph to \&'emptyslot' if you don't want
 .B otftotfm
-to use the slot for a ligature character.  For example, this will leave the
-\&'ff' slot unused if the font has no \&'ff' glyph:
+to use the slot.  For example, this will leave the \&'ff' slot unused if
+the font has no \&'ff' glyph:
 .nf
     % UNICODING ff =: ff emptyslot ;
 .fi
