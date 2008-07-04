@@ -13,7 +13,8 @@ class Type1CharstringGen { public:
     int precision() const		{ return _precision; }
 
     void clear();
-    char *data() const			{ return _ncs.data(); }
+    char *data()			{ return _ncs.data(); }
+    const char *data() const		{ return _ncs.data(); }
     int length() const			{ return _ncs.length(); }
 
     void gen_number(double, int kind = 0);
