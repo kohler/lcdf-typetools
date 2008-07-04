@@ -438,7 +438,7 @@ AfmReader::read_char_metrics() const
 	switch (_l.first()) {
       
 	  case 'C':
-	    if (isspace(_l[1]) || _l[1] == 'H' && isspace(_l[2])) {
+	    if (isspace(_l[1]) || (_l[1] == 'H' && isspace(_l[2]))) {
 		read_char_metric_data();
 		break;
 	    }

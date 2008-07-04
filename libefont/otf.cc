@@ -136,7 +136,7 @@ uint32_t
 Font::table_checksum(Tag tag) const
 {
     if (error() < 0)
-	return String();
+	return 0;
     const uint8_t *entry = tag.table_entry(data() + HEADER_SIZE, USHORT_AT(data() + 4), TABLE_DIR_ENTRY_SIZE);
     if (entry)
 	return ULONG_AT(entry + 4);

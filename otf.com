@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ALL_OPTS='--no-updmap'
-OPTS='-ae '"$HOME"'/src/lcdf-typetools/t1.enc -V'
+OPTS='-ae '"$HOME"'/lcdfsrc/lcdf-typetools/t1.enc -V'
 
 call_nopts () {
     echo "$@" 1>&2

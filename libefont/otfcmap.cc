@@ -385,7 +385,7 @@ Cmap::dump_table(int t, Vector<uint32_t> &g2c, ErrorHandler *errh) const
 		    if (g >= g2c.size())
 			g2c.resize(g + 1, 0);
 		    if (!g2c[g])
-			g2c[g] = (hi_byte << 8 + firstCode + i);
+			g2c[g] = (hi_byte << 8) + firstCode + i;
 		}
 	}
 	break;
