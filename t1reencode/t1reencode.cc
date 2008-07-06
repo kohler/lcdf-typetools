@@ -1026,7 +1026,7 @@ particular purpose.\n");
     if (!encoding_file && !encoding_text)
 	errh->fatal("missing '-e ENCODING' argument");
     Type1Encoding *t1e = 0;
-    if (encoding_file == "StandardEncoding") {
+    if (strcmp(encoding_file, "StandardEncoding") == 0) {
 	t1e = Type1Encoding::standard_encoding();
 	encoding_name = encoding_file;
     } else {
