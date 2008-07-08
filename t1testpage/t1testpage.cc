@@ -148,10 +148,13 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 static void
 output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_names)
 {
-    fprintf(outf, "%%!PS-Adobe-3.0\n%%%%LanguageLevel: 2\n%%%%BeginProlog\n");
+    fprintf(outf, "%%!PS-Adobe-3.0\n\
+%%%%LanguageLevel: 2\n\
+%%%%DocumentMedia: Plain 612 792 white ( )\n\
+%%%%BeginProlog\n");
     fprintf(outf, "/magicstr 1 string def\n\
 /magicbox { %% row col char name encoding  magicbox  -\n\
-  5 3 roll 54 mul 36 add exch 54 mul neg 702 add moveto currentpoint\n\
+  5 3 roll 54 mul 36 add exch 54 mul neg 682 add moveto currentpoint\n\
   .8 setgray 54 0 rlineto 0 54 rlineto -54 0 rlineto closepath stroke\n\
   0 setgray moveto\n\
   gsave /Helvetica 7 selectfont 3 1.5 rmoveto show grestore\n\
@@ -187,10 +190,12 @@ output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_nam
 		    font->font_name().c_str());
 	    for (int i = gi; i < gi + per_page && i < glyph_names.size(); i++) {
 		fprintf(outf, " /%s", glyph_names[i].c_str());
-		if (i % 10 == 9) fprintf(outf, "\n");
+		if (i % 10 == 9)
+		    fprintf(outf, "\n");
 	    }
 	    fprintf(outf, " ] def\n currentdict end /X exch definefont pop\n\
-/X 24 selectfont\n");
+/Helvetica-Bold 16 selectfont 36 742 moveto (%s) show\n\
+/X 24 selectfont\n", font->font_name().c_str());
 	}
 	
 	int row = (gi % per_page) / per_row;
