@@ -2,7 +2,7 @@
 
 /* t1font.{cc,hh} -- Type 1 font
  *
- * Copyright (c) 1998-2006 Eddie Kohler
+ * Copyright (c) 1998-2008 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -311,6 +311,18 @@ Type1Font::ok() const
     return font_name() && _glyphs.size() > 0;
 }
 
+static char *skip_comment_space(char *s)
+{
+    while (1) {
+	if (isspace((unsigned char) *s))
+	    ++s;
+	else if (*s == '%') {
+	    for (++s; *s != '\r' && *s != '\n' && *s != '\0'; ++s)
+		/* nada */;
+	} else
+	    return s;
+    }
+}
 
 void
 Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
@@ -347,23 +359,31 @@ Type1Font::read_encoding(Type1Reader &reader, const char *first_line)
 	while (1) {
 	    // skip spaces, look for `dup '
 	    while (isspace((unsigned char) pos[0]))
-		pos++;
+		++pos;
+	    if (pos[0] == '%')
+		pos = skip_comment_space(pos);
 	    if (pos[0] != 'd' || pos[1] != 'u' || pos[2] != 'p' || !isspace((unsigned char) pos[3]))
 		break;
-      
+
 	    // look for `INDEX */'
 	    char *scan;
 	    int char_value = strtol(pos + 4, &scan, 10);
-	    while (scan[0] == ' ') scan++;
+	    if (scan[0] == '#' && char_value > 0 && char_value < 37
+		&& isalnum((unsigned char) scan[1]))
+		char_value = strtol(scan + 1, &scan, char_value);
+	    while (isspace((unsigned char) scan[0]))
+		scan++;
 	    if (char_value < 0 || char_value >= 256 || scan[0] != '/')
 		break;
       
 	    // look for `CHARNAME put'
 	    scan++;
 	    char *name_pos = scan;
-	    while (scan[0] != ' ' && scan[0]) scan++;
+	    while (!isspace((unsigned char) scan[0]) && scan[0] != '\0')
+		++scan;
 	    char *name_end = scan;
-	    while (scan[0] == ' ') scan++;
+	    while (isspace((unsigned char) scan[0]))
+		++scan;
 	    if (scan[0] != 'p' || scan[1] != 'u' || scan[2] != 't')
 		break;
       
