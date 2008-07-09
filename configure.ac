@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.69)
+AM_INIT_AUTOMAKE(lcdf-typetools, 2.70)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 
@@ -106,14 +106,15 @@ AC_ARG_ENABLE(mmafm, [  --disable-mmafm         do not build the mmafm program],
 AC_ARG_ENABLE(mmpfb, [  --disable-mmpfb         do not build the mmpfb program], :, enable_mmpfb=yes)
 AC_ARG_ENABLE(otfinfo, [  --disable-otfinfo       do not build the otfinfo program], :, enable_otfinfo=yes)
 AC_ARG_ENABLE(otftotfm, [  --disable-otftotfm      do not build the otftotfm program], :, enable_otftotfm=yes)
-AC_ARG_ENABLE(t1lint, [  --disable-t1dotlessj    do not build the t1dotlessj program], :, enable_t1dotlessj=yes)
+AC_ARG_ENABLE(t1dotlessj, [  --disable-t1dotlessj    do not build the t1dotlessj program], :, enable_t1dotlessj=yes)
 AC_ARG_ENABLE(t1lint, [  --disable-t1lint        do not build the t1lint program], :, enable_t1lint=yes)
+AC_ARG_ENABLE(t1rawafm, [  --disable-t1rawafm      do not build the t1rawafm program], :, enable_t1dotlessj=yes)
 AC_ARG_ENABLE(t1reencode, [  --disable-t1reencode    do not build the t1reencode program], :, enable_t1reencode=yes)
 AC_ARG_ENABLE(t1testpage, [  --disable-t1testpage    do not build the t1testpage program], :, enable_t1testpage=yes)
 AC_ARG_ENABLE(ttftotype42, [  --disable-ttftotype42   do not build the ttftotype42 program], :, enable_ttftotype42=yes)
 
 SELECTED_SUBDIRS=''
-for i in cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage ttftotype42; do
+for i in cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42; do
     y=`eval 'echo $enable_'"$i"`
     if test "x$y" != xno; then SELECTED_SUBDIRS="$SELECTED_SUBDIRS $i"; fi
 done
@@ -481,4 +482,4 @@ dnl
 dnl Output
 dnl
 
-AC_OUTPUT(Makefile liblcdf/Makefile libefont/Makefile cfftot1/Makefile mmafm/Makefile mmpfb/Makefile otfinfo/Makefile otftotfm/Makefile t1dotlessj/Makefile t1lint/Makefile t1reencode/Makefile t1testpage/Makefile ttftotype42/Makefile)
+AC_OUTPUT(Makefile liblcdf/Makefile libefont/Makefile cfftot1/Makefile mmafm/Makefile mmpfb/Makefile otfinfo/Makefile otftotfm/Makefile t1dotlessj/Makefile t1lint/Makefile t1rawafm/Makefile t1reencode/Makefile t1testpage/Makefile ttftotype42/Makefile)

@@ -1,0 +1,6 @@
+*.d
+.deps
+Makefile
+Makefile.in
+t1rawafm
+

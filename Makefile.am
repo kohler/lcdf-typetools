@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = foreign check-news
 
 SUBDIRS = liblcdf libefont @SELECTED_SUBDIRS@
-DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage ttftotype42
+DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42
 
 pkgdata_DATA = glyphlist.txt texglyphlist.txt 7t.enc
 
@@ -62,7 +62,7 @@ EXTRA_DIST = \
 liblcdf libefont:
 	cd $@ && $(MAKE)
 libefont: liblcdf
-cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage ttftotype42: liblcdf libefont
+cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42: liblcdf libefont
 	cd $@ && $(MAKE)
 
 srclinks:
@@ -74,4 +74,4 @@ versionize:
 	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(top_srcdir)/README
 	perl -pi -e 's/^Version: [\d.ab]+$$/Version: $(VERSION)/;' $(top_srcdir)/lcdf-typetools.spec
 
-.PHONY: srclinks rpm liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1reencode t1testpage ttftotype42
+.PHONY: srclinks rpm liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42
