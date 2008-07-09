@@ -125,7 +125,7 @@ Other options:\n\
   -q, --quiet                  Do not generate any error messages.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@cs.ucla.edu>.\n");
+Report bugs to <ekohler@gmail.com>.\n");
 }
 
 String

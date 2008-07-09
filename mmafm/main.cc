@@ -245,7 +245,7 @@ Interpolation settings:\n\
   -p, --precision=N             Allow N digits of fraction (default 3).\n\
   -k, --min-kern=N              Remove kerns smaller than N (default 2).\n\
 \n\
-Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
+Report bugs to <ekohler@gmail.com>.\n", program_name);
 }
 
 

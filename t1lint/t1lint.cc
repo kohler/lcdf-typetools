@@ -83,7 +83,7 @@ Options:\n\
   -q, --quiet                  Do not report errors to standard error.\n\
       --version                Print version number and exit.\n\
 \n\
-Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
+Report bugs to <ekohler@gmail.com>.\n", program_name);
 }
 
 
