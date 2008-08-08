@@ -448,22 +448,23 @@ String
 installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler *errh)
 {
     String file = pathname_filename(otf_filename);
-    
+
 #if HAVE_KPATHSEA
-    if (String path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TRUETYPE))) {
-	if (path == "./" + file || path == file) {
-	    if (verbose)
-		errh->message("ignoring TrueType file %s found with kpathsea in '.'", path.c_str());
-	} else {
-	    if (verbose)
-		errh->message("TrueType file %s found with kpathsea at %s", file.c_str(), path.c_str());
-	    return path;
+    if (!(force && allow_generate && otf_filename && otf_filename != "-" && getodir(O_TRUETYPE, errh))) {
+	if (String path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TRUETYPE))) {
+	    if (path == "./" + file || path == file) {
+		if (verbose)
+		    errh->message("ignoring TrueType file %s found with kpathsea in '.'", path.c_str());
+	    } else {
+		if (verbose)
+		    errh->message("TrueType file %s found with kpathsea at %s", file.c_str(), path.c_str());
+		return path;
+	    }
 	}
     }
 #endif
 
-#if HAVE_AUTO_CFFTOT1
-    // if not found, and can generate on the fly, run cfftot1
+    // perhaps generate type 42 in the future, for now just copy
     if (allow_generate && otf_filename && otf_filename != "-" && getodir(O_TRUETYPE, errh)) {
 	String ttf_filename = odir[O_TRUETYPE] + "/" + file;
 	if (ttf_filename.find_left('\'') >= 0 || ttf_filename.find_left('\"') >= 0)
@@ -490,7 +491,6 @@ installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler
 	    return ttf_filename;
 	}
     }
-#endif
     
     return String();
 }
