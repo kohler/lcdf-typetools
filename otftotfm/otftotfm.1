@@ -1490,6 +1490,17 @@ features, or by using an encoding with more empty slots, such as the 7t.enc
 encoding distributed with 
 .BR otftotfm .
 '
+.TP 5
+The \&'\fB\-a\fR' option did not install my font correctly.
+'
+Try again with the \&'\fB\-\-verbose\fR' option, which causes
+.BR otftotfm
+to explain its behavior.  Note that by default,
+.BR otftotfm
+will not re-install files already present in your system's TeX search paths
+(in the current directory, for instance).  Use \&'\fB\-\-force\fR' to
+override this behavior.
+'
 .SH "FREQUENTLY ASKED QUESTIONS"
 .TP 5
 How can I get a small-caps "SS" in place of the German sharp-S?
@@ -1536,7 +1547,6 @@ How can I get lining figures (that is, normal line-height digits) with small cap
 Many fonts use old-style figures by default with small caps. Since the
 default is not specified, it's wise to explicitly supply \&'\fB\-f\fRlnum' or
 \&'\fB-f\fRonum'.
-
 '
 .SH "BUGS"
 .\" .LP

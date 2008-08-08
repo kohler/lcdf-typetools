@@ -82,6 +82,23 @@ pathname_filename(const String &path)
 	return path;
 }
 
+static String
+simplify_filename(String x)
+{
+    while (x.substring(0, 2) == "./")
+	x = x.substring(2);
+    int pos;
+    while ((pos = x.find_left("/./")) >= 0)
+	x = x.substring(0, pos) + x.substring(pos + 2);
+    return x;
+}
+
+bool
+same_filename(const String &a, const String &b)
+{
+    return simplify_filename(a) == simplify_filename(b);
+}
+
 String
 shell_quote(const String &str)
 {

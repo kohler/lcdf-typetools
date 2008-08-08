@@ -344,9 +344,14 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	String file, path;
 	if ((file = ps_fontname + ".pfb", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))
 	    || (file = ps_fontname + ".pfa", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))) {
-	    if (verbose)
-		errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
-	    return path;
+	    if (path == "./" + file || path == file) {
+		if (verbose)
+		    errh->message("ignoring Type 1 file %s found with kpathsea in '.'", path.c_str());
+	    } else {
+		if (verbose)
+		    errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
+		return path;
+	    }
 	}
 # if HAVE_AUTO_CFFTOT1
     }
@@ -395,9 +400,15 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
 	String file, path;
 	if ((file = j_ps_fontname + ".pfb", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))
 	    || (file = j_ps_fontname + ".pfa", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))) {
-	    if (verbose)
-		errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
-	    return path;
+	    // ignore versions in the current directory
+	    if (path == "./" + file || path == file) {
+		if (verbose)
+		    errh->message("ignoring Type 1 file %s found with kpathsea in '.'", path.c_str());
+	    } else {
+		if (verbose)
+		    errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
+		return path;
+	    }
 	}
 # if HAVE_AUTO_T1DOTLESSJ
     }
@@ -440,9 +451,14 @@ installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler
     
 #if HAVE_KPATHSEA
     if (String path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TRUETYPE))) {
-	if (verbose)
-	    errh->message("TrueType file %s found with kpathsea at %s", file.c_str(), path.c_str());
-	return path;
+	if (path == "./" + file || path == file) {
+	    if (verbose)
+		errh->message("ignoring TrueType file %s found with kpathsea in '.'", path.c_str());
+	} else {
+	    if (verbose)
+		errh->message("TrueType file %s found with kpathsea at %s", file.c_str(), path.c_str());
+	    return path;
+	}
     }
 #endif
 
@@ -450,16 +466,25 @@ installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler
     // if not found, and can generate on the fly, run cfftot1
     if (allow_generate && otf_filename && otf_filename != "-" && getodir(O_TRUETYPE, errh)) {
 	String ttf_filename = odir[O_TRUETYPE] + "/" + file;
-	if (ttf_filename.find_left('\'') >= 0 || ttf_filename.find_left('\'') >= 0)
+	if (ttf_filename.find_left('\'') >= 0 || ttf_filename.find_left('\"') >= 0)
 	    return String();
-	String command = "cp " + shell_quote(otf_filename) + " " + shell_quote(ttf_filename);
-	int retval = mysystem(command.c_str(), errh);
-	if (retval == 127)
-	    errh->error("could not run '%s'", command.c_str());
-	else if (retval < 0)
-	    errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
-	else if (retval != 0)
-	    errh->error("'%s' failed", command.c_str());
+
+	int retval;
+	if (!same_filename(otf_filename, ttf_filename)) {
+	    String command = "cp " + shell_quote(otf_filename) + " " + shell_quote(ttf_filename);
+	    retval = mysystem(command.c_str(), errh);
+	    if (retval == 127)
+		errh->error("could not run '%s'", command.c_str());
+	    else if (retval < 0)
+		errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+	    else if (retval != 0)
+		errh->error("'%s' failed", command.c_str());
+	} else {
+	    if (verbose)
+		errh->message("TrueType file %s already located in output directory", otf_filename.c_str());
+	    retval = 0;
+	}
+
 	if (retval == 0) {
 	    update_odir(O_TRUETYPE, ttf_filename, errh);
 	    return ttf_filename;
