@@ -64,7 +64,6 @@ const Clp_Option options[] = {
 
 static const char *program_name;
 static PermString::Initializer initializer;
-static String::Initializer initializer2;
 static HashMap<PermString, int> glyph_order(-1);
 static String encoding_name;
 

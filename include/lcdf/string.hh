@@ -9,38 +9,12 @@ class StringAccum;
 
 class String { public:
   
-    /** @brief Initialize the String implementation.
-     *
-     * This function must be called before any String functionality is
-     * used.  It is safe to call multiple times.
-     *
-     * @sa String::Initializer */
-    static void static_initialize();
-
-    /** @brief Clean up the String implementation.
-     *
-     * Call this function to release any memory allocated by the String
-     * implementation. */
-    static void static_cleanup();
-
-    /** @class String::Initializer
-     * @brief Initializes the String implementation.
-     *
-     * This class's constructor initializes the String implementation by
-     * calling String::static_initialize().  You should declare a
-     * String::Initializer object at global scope in any file that declares a
-     * global String object.  For example:
-     * @code
-     *    static String::Initializer initializer;
-     *    String global_string = "100";
-     * @endcode */
-    struct Initializer { Initializer(); };
-
-
     /** @brief Construct an empty String (with length 0). */
-    inline String()
-	: _data(null_memo->_real_data), _length(0), _memo(null_memo) {
-	++_memo->_refcount;
+    inline String() {
+	_r.data = null_memo.real_data;
+	_r.length = 0;
+	_r.memo = &null_memo;
+	++_r.memo->refcount;
     }
 
     /** @brief Construct a copy of the String @a x. */
@@ -86,10 +60,11 @@ class String { public:
 
     /** @brief Construct a String equal to "true" or "false" depending on the
      * value of @a b. */
-    explicit inline String(bool b)
-	: _data(bool_data + (b ? 0 : 5)), _length(b ? 4 : 5),
-	  _memo(permanent_memo) {
-	++_memo->_refcount;
+    explicit inline String(bool b) {
+	_r.data = bool_data + (b ? 0 : 5);
+	_r.length = (b ? 4 : 5);
+	_r.memo = &permanent_memo;
+	++_r.memo->refcount;
     }
 
     /** @brief Construct a String containing the single character @a c. */
@@ -128,7 +103,7 @@ class String { public:
      *
      * Returns a global constant, so it's quicker than String::String(). */
     static inline const String &empty_string() {
-	return *null_string_p;
+	return reinterpret_cast<const String &>(null_string_rep);
     }
 
     /** @brief Return a String containing @a len unknown characters. */
@@ -161,7 +136,7 @@ class String { public:
 
     /** @brief Return the string's length. */
     inline int length() const {
-	return _length;
+	return _r.length;
     }
 
     /** @brief Return a pointer to the string's data.
@@ -169,7 +144,7 @@ class String { public:
      * Only the first length() characters are valid, and the string data
      * might not be null-terminated. */
     inline const char *data() const {
-	return _data;
+	return _r.data;
     }
 
     /** @brief Return a pointer to the string's data as unsigned chars.
@@ -177,7 +152,7 @@ class String { public:
      * Only the first length() characters are valid, and the string data
      * might not be null-terminated.  @sa data() */
     inline const unsigned char *udata() const {
-	return reinterpret_cast<const unsigned char *>(_data);
+	return reinterpret_cast<const unsigned char *>(_r.data);
     }
 
   
@@ -189,7 +164,7 @@ class String { public:
      * String iterators are simply pointers into string data, so they are
      * quite efficient.  @sa String::data */
     inline const_iterator begin() const {
-	return _data;
+	return _r.data;
     }
 
     /** @brief Return an iterator for the end of the string.
@@ -197,19 +172,19 @@ class String { public:
      * The return value points one character beyond the last character in the
      * string. */
     inline const_iterator end() const {
-	return _data + _length;
+	return _r.data + _r.length;
     }
 
 
     typedef int (String::*unspecified_bool_type)() const;
     /** @brief Return true iff the string is nonempty. */
     inline operator unspecified_bool_type() const {
-	return _length != 0 ? &String::length : 0;
+	return _r.length != 0 ? &String::length : 0;
     }
 
     /** @brief Return true iff the string is empty. */
     inline bool operator!() const {
-	return _length == 0;
+	return _r.length == 0;
     }
 
   
@@ -217,7 +192,7 @@ class String { public:
      *
      * Does not check bounds.  @sa String::at */
     inline char operator[](int i) const {
-	return _data[i];
+	return _r.data[i];
     }
 
     /** @brief Return the @a i th character in the string.
@@ -225,22 +200,22 @@ class String { public:
      * Checks bounds: an assertion will fail if @a i is less than 0 or not
      * less than length().  @sa String::operator[] */
     inline char at(int i) const {
-	assert(i >= 0 && i < _length);
-	return _data[i];
+	assert((unsigned) i < (unsigned) _r.length);
+	return _r.data[i];
     }
 
     /** @brief Return the first character in the string.
      *
      * Does not check bounds.  Same as (*this)[0]. */
     inline char front() const {
-	return _data[0];
+	return _r.data[0];
     }
 
     /** @brief Return the last character in the string.
      *
      * Does not check bounds.  Same as (*this)[length() - 1]. */
     inline char back() const {
-	return _data[_length - 1];
+	return _r.data[_r.length - 1];
     }
 
 
@@ -254,12 +229,12 @@ class String { public:
 
 #if HAVE_PERMSTRING
     operator PermString() const	{
-	return PermString(_data, _length);
+	return PermString(_r.data, _r.length);
     }
 #endif
 
 
-    /* @brief Returns a 32-bit hash function of the characters in [begin, end).
+    /** @brief Return a 32-bit hash function of the characters in [begin, end).
      *
      * Uses Paul Hsieh's "SuperFastHash" algorithm, described at
      * http://www.azillionmonkeys.com/qed/hash.html
@@ -322,7 +297,7 @@ class String { public:
      * Same as String::compare(*this, @a x).
      * @sa String::compare(const String &a, const String &b) */
     inline int compare(const String &x) const {
-	return compare(x._data, x._length);
+	return compare(x._r.data, x._r.length);
     }
 
     /** @brief Compare this string with the data in @a s.
@@ -352,8 +327,8 @@ class String { public:
      * considered a programming error; a future version may generate a warning
      * for this case. */
     inline String substring(const char *begin, const char *end) const {
-	if (begin < end && begin >= _data && end <= _data + _length)
-	    return String(begin, end - begin, _memo);
+	if (begin < end && begin >= _r.data && end <= _r.data + _r.length)
+	    return String(begin, end - begin, _r.memo);
 	else
 	    return String();
     }
@@ -385,7 +360,7 @@ class String { public:
      *
      * @note String::substring() is intended to behave like Perl's substr(). */
     inline String substring(int pos) const {
-	return substring((pos <= -_length ? 0 : pos), _length);
+	return substring((pos <= -_r.length ? 0 : pos), _r.length);
     }
   
 
@@ -399,13 +374,13 @@ class String { public:
     int find_left(char c, int start = 0) const;
 
     /** @brief Search for a substring in a string.
-     * @param str substring to search for
+     * @param x substring to search for
      * @param start initial search position
      *
      * Return the index of the leftmost occurence of the substring @a str,
      * starting at index @a start and working up to the end of the string.
      * Returns -1 if @a str is not found. */
-    int find_left(const String &s, int start = 0) const;
+    int find_left(const String &x, int start = 0) const;
 
     /** @brief Search for a character in a string.
      * @param c character to search for
@@ -421,7 +396,7 @@ class String { public:
      * 
      * Same as String::starts_with(@a x.data(), @a x.length()). */
     inline bool starts_with(const String &x) const {
-	return starts_with(x._data, x._length);
+	return starts_with(x._r.data, x._r.length);
     }
 
     /** @brief Return true iff this string begins with the data in @a s.
@@ -508,7 +483,7 @@ class String { public:
      *
      * Returns the result. */
     inline String &operator+=(const String &x) {
-	append(x._data, x._length);
+	append(x._r.data, x._r.length);
 	return *this;
     }
 
@@ -549,7 +524,7 @@ class String { public:
 
     /** @brief Return true iff the String's data is shared or immutable. */
     inline bool data_shared() const {
-	return !_memo->_capacity || _memo->_refcount != 1;
+	return !_r.memo->capacity || _r.memo->refcount != 1;
     }
 
     /** @brief Ensure the string's data is unshared and return a mutable
@@ -570,12 +545,12 @@ class String { public:
 
     /** @brief Return true iff this is an out-of-memory string. */
     inline bool out_of_memory() const {
-	return _data == &oom_string_data;
+	return _r.data == &oom_string_data;
     }
 
     /** @brief Return a reference to an out-of-memory String. */
     static inline const String &out_of_memory_string() {
-	return *oom_string_p;
+	return reinterpret_cast<const String &>(oom_string_rep);
     }
 
     /** @brief Return the data pointer used for out-of-memory strings.
@@ -589,62 +564,66 @@ class String { public:
   private:
 
     /** @cond never */
-    struct Memo {
-	unsigned _refcount;
-	unsigned _capacity;
-	unsigned _dirty;
-	char *_real_data;
-    
-	Memo();
-	Memo(char *, int, int);
-	Memo(int, int);
-	~Memo();
+    struct memo_t {
+	volatile uint32_t refcount;
+	uint32_t capacity;
+	volatile uint32_t dirty;
+	char *real_data;
+    };
+
+    struct rep_t {
+	const char *data;
+	int length;
+	memo_t *memo;
     };
     /** @endcond never */
-    
-    mutable const char *_data;	// mutable for c_str()
-    mutable int _length;
-    mutable Memo *_memo;
+
+    mutable rep_t _r;		// mutable for c_str()
   
-    inline String(const char *data, int length, Memo *memo)
-	: _data(data), _length(length), _memo(memo) {
-	++_memo->_refcount;
+    inline String(const char *data, int length, memo_t *memo) {
+	_r.data = data;
+	_r.length = length;
+	_r.memo = memo;
+	++memo->refcount;
     }
   
     inline void assign(const String &x) const {
-	_data = x._data;
-	_length = x._length;
-	_memo = x._memo;
-	++_memo->_refcount;
+	_r.data = x._r.data;
+	_r.length = x._r.length;
+	_r.memo = x._r.memo;
+	++_r.memo->refcount;
     }
 
     inline void deref() const {
-	if (--_memo->_refcount == 0)
-	    delete _memo;
+	if (--_r.memo->refcount == 0)
+	    delete_memo(_r.memo);
     }
-	
+
     void assign(const char *cstr, int len, bool need_deref);
 #if HAVE_PERMSTRING
     inline void assign(PermString p) const {
-	_data = p.c_str();
-	_length = p.length();
-	_memo = permanent_memo;
-	++_memo->_refcount;
+	_r.data = p.c_str();
+	_r.length = p.length();
+	_r.memo = &permanent_memo;
+	++_r.memo->refcount;
     }
 #endif
     void make_out_of_memory();
-  
-    static Memo *null_memo;
-    static Memo *permanent_memo;
-    static Memo *oom_memo;
-    static String *null_string_p;
-    static String *oom_string_p;
+    static memo_t *create_memo(char *data, int dirty, int capacity);
+    static void delete_memo(memo_t *memo);
+
+    static const char null_string_data;
     static const char oom_string_data;
     static const char bool_data[11];
+    static memo_t null_memo;
+    static memo_t permanent_memo;
+    static memo_t oom_memo;
+    static const rep_t null_string_rep;
+    static const rep_t oom_string_rep;
   
     static String claim_string(char *, int, int); // claim memory
     
-    friend class String::Initializer;
+    friend class rep_t;
     friend class StringAccum;
   
 };

@@ -229,7 +229,6 @@ struct BaseEncoding {
 };
 
 static const char *program_name;
-static String::Initializer initializer;
 static String current_time;
 static StringAccum invocation;
 
@@ -1645,7 +1644,6 @@ main(int argc, char *argv[])
 #ifndef WIN32
     handle_sigchld();
 #endif
-    String::static_initialize();
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     Clp_AddType(clp, CHAR_OPTTYPE, 0, clp_parse_char, 0);

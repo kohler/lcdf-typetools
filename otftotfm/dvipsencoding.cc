@@ -26,7 +26,6 @@
 #include <algorithm>
 #include "util.hh"
 
-static String::Initializer initializer;
 enum { GLYPHLIST_MORE = 0x40000000,
        U_EMPTYSLOT = 0xD801, U_ALTSELECTOR = 0xD802 };
 static HashMap<String, int> glyphlist(-1);

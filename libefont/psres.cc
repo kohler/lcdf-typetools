@@ -38,9 +38,6 @@
 #include <string.h>
 namespace Efont {
 
-static String::Initializer initializer;
-static String empty_string;
-
 PsresDatabase::PsresDatabase()
   : _section_map(0)
 {
@@ -392,21 +389,21 @@ PsresDatabaseSection::filename_value(PermString key)
 const String &
 PsresDatabase::value(PermString sec, PermString key) const
 {
-  PsresDatabaseSection *s = section(sec);
-  if (s)
-    return s->value(key);
-  else
-    return empty_string;
+    PsresDatabaseSection *s = section(sec);
+    if (s)
+	return s->value(key);
+    else
+	return String::empty_string();
 }
 
 const String &
 PsresDatabase::unescaped_value(PermString sec, PermString key) const
 {
-  PsresDatabaseSection *s = section(sec);
-  if (s)
-    return s->unescaped_value(key);
-  else
-    return empty_string;
+    PsresDatabaseSection *s = section(sec);
+    if (s)
+	return s->unescaped_value(key);
+    else
+	return String::empty_string();
 }
 
 Filename

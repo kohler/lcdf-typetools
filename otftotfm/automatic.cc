@@ -46,7 +46,6 @@
 enum { T1DOTLESSJ_EXIT_J_NODOT = 2 };
 #endif
 
-static String::Initializer initializer;
 static String odir[NUMODIR];
 static String typeface;
 static String vendor;

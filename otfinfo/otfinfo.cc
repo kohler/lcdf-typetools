@@ -76,7 +76,6 @@ const Clp_Option options[] = {
 
 
 static const char *program_name;
-static String::Initializer initializer;
 
 static Efont::OpenType::Tag script, langsys;
 
@@ -448,7 +447,6 @@ do_tables(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_er
 int
 main(int argc, char *argv[])
 {
-    String::static_initialize();
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
