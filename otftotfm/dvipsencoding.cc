@@ -109,7 +109,10 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
 		*more = true;
 	} else if (component.length() >= 7
 		   && (component.length() % 4) == 3
-		   && memcmp(component.data(), "uni", 3) == 0) {
+		   && (memcmp(component.data(), "uni", 3) == 0
+		       // 16.Aug.2008: Some texnansx.enc have incorrect "Uni"
+		       // prefix, but we might as well understand it.
+		       || memcmp(component.data(), "Uni", 3) == 0)) {
 	    int old_size = unis.size();
 	    for (const char* s = component.begin() + 3; s < component.end(); s += 4)
 		if (parse_unicode_number(s, s + 4, -1, uval))
