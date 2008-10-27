@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.71)
+AM_INIT_AUTOMAKE(lcdf-typetools, 2.72)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 
@@ -234,7 +234,7 @@ fi
 
 AC_ARG_ENABLE(auto-cfftot1, [  --disable-auto-cfftot1  disable running cfftot1 from otftotfm], :, enable_auto_cfftot1=yes)
 AC_ARG_ENABLE(auto-t1dotlessj, [  --disable-auto-t1dotlessj disable running t1dotlessj from otftotfm], :, enable_auto_t1dotlessj=yes)
-AC_ARG_ENABLE(auto-updmap, [  --disable-auto-updmap     disable running updmap from otftotfm], :, enable_auto_updmap=yes)
+AC_ARG_ENABLE(auto-updmap, [  --disable-auto-updmap   disable running updmap from otftotfm], :, enable_auto_updmap=yes)
 
 if test "x$enable_auto_cfftot1" = xyes; then
     AC_DEFINE(HAVE_AUTO_CFFTOT1, 1, [Define to run cfftot1 automatically from otftotfm.])
