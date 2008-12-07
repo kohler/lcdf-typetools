@@ -208,7 +208,7 @@ String::assign(const char *str, int len, bool need_deref)
 	len = 0;
     } else if (len < 0)
 	len = strlen(str);
-  
+
     // need to start with dereference
     if (need_deref) {
 	if (str >= _r.memo->real_data
@@ -220,11 +220,11 @@ String::assign(const char *str, int len, bool need_deref)
 	} else
 	    deref();
     }
-  
+
     if (len == 0) {
 	_r.memo = (str == &oom_string_data ? &oom_memo : &null_memo);
 	++_r.memo->refcount;
-    
+
     } else {
 	// Make 'capacity' a multiple of 16 characters and bigger than 'len'.
 	int capacity = (len + 16) & ~15;
@@ -235,7 +235,7 @@ String::assign(const char *str, int len, bool need_deref)
 	}
 	memcpy(_r.memo->real_data, str, len);
     }
-  
+
     _r.data = _r.memo->real_data;
     _r.length = len;
 }
@@ -246,7 +246,7 @@ String::append_garbage(int len)
     // Appending anything to "out of memory" leaves it as "out of memory"
     if (len <= 0 || _r.memo == &oom_memo)
 	return 0;
-  
+
     // If we can, append into unused space. First, we check that there's
     // enough unused space for 'len' characters to fit; then, we check
     // that the unused space immediately follows the data in '*this'.
@@ -260,7 +260,7 @@ String::append_garbage(int len)
 	    return real_dirty;
 	}
     }
-  
+
     // Now we have to make new space. Make sure the new capacity is a
     // multiple of 16 characters and that it is at least 16. But for large
     // strings, allocate a power of 2, since power-of-2 sizes minimize waste
@@ -268,7 +268,7 @@ String::append_garbage(int len)
     int new_capacity = (_r.length + len < 1024 ? (_r.length + 16) & ~15 : 1024);
     while (new_capacity < _r.length + len)
 	new_capacity *= 2;
-    
+
     memo_t *new_memo = create_memo(0, _r.length + len, new_capacity);
     if (!new_memo) {
 	make_out_of_memory();
@@ -277,7 +277,7 @@ String::append_garbage(int len)
 
     char *new_data = new_memo->real_data;
     memcpy(new_data, _r.data, _r.length);
-  
+
     deref();
     _r.data = new_data;
     new_data += _r.length;	// now new_data points to the garbage
@@ -327,7 +327,7 @@ String::mutable_data()
     // uniquely referenced, return _data right away.
     if (_r.memo->capacity && _r.memo->refcount == 1)
 	return const_cast<char *>(_r.data);
-  
+
     // Otherwise, make a copy of it. Rely on: deref() doesn't change _data or
     // _length; and if _capacity == 0, then deref() doesn't free _real_data.
     assert(!_r.memo->capacity || _r.memo->refcount > 1);
@@ -353,12 +353,12 @@ String::c_str() const
     // '\0' in the right place.
     if (!_r.memo->capacity && _r.data[_r.length] == '\0')
 	return _r.data;
-  
+
     // Otherwise, this invariant must hold (there's more real data in _memo
     // than in our substring).
     assert(!_r.memo->capacity
 	   || _r.memo->real_data + _r.memo->dirty >= _r.data + _r.length);
-  
+
     // Has the character after our substring been set?
     uint32_t dirty = _r.memo->dirty;
     if (_r.memo->real_data + dirty == _r.data + _r.length) {
@@ -370,21 +370,21 @@ String::c_str() const
 	    real_data[_r.length] = '\0';
 	    return _r.data;
 	}
-    
+
     } else {
 	// Character after our substring has been set. OK to return _data if
 	// it is already '\0'.
 	if (_r.data[_r.length] == '\0')
 	    return _r.data;
     }
-  
+
     // If we get here, we must make a copy of our portion of the string.
     {
 	String s(_r.data, _r.length);
 	deref();
 	assign(s);
     }
-  
+
     char *real_data = const_cast<char *>(_r.data);
     real_data[_r.length] = '\0';
     ++_r.memo->dirty;		// include '\0' in used portion of _memo

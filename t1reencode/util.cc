@@ -41,7 +41,7 @@ read_file(String filename, ErrorHandler *errh, bool warning)
 	errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, strerror(errno));
 	return String();
     }
-    
+
     StringAccum sa;
     while (!feof(f)) {
 	if (char *x = sa.reserve(8192)) {

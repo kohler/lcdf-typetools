@@ -47,7 +47,7 @@ read_file(String filename, ErrorHandler *errh, bool warning)
 	errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, strerror(errno));
 	return String();
     }
-    
+
     StringAccum sa;
     while (!feof(f)) {
 	if (char *x = sa.reserve(8192)) {
@@ -147,7 +147,7 @@ temporary_file(String &filename, ErrorHandler *errh)
 {
     if (no_create)
 	return 0;		// random number suffices
-    
+
 #ifdef HAVE_MKSTEMP
     const char *tmpdir = getenv("TMPDIR");
     if (tmpdir)
@@ -223,7 +223,7 @@ shell_command_output(String cmdline, const String &input, ErrorHandler *errh, bo
     fwrite(input.data(), 1, input.length(), f);
     fflush(f);
     rewind(f);
-  
+
     String new_cmdline = cmdline + " 0<&" + String(fileno(f));
     FILE *p = popen(new_cmdline.c_str(), "r");
     if (!p)

@@ -114,12 +114,12 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 #endif
     } else if (!(f = fopen(infn, "rb")))
 	errh->fatal("%s: %s", infn, strerror(errno));
-  
+
     int c = getc(f);
     ungetc(c, f);
 
     Cff::Font *font = 0;
-    
+
     if (c == EOF)
 	errh->fatal("%s: empty file", infn);
     if (c == 1 || c == 'O') {
@@ -146,7 +146,7 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 
     if (errh->nerrors() > 0)
 	return;
-    
+
     Type1Font *font1 = create_type1_font(font, errh);
 
     if (!outfn || strcmp(outfn, "-") == 0) {
@@ -176,12 +176,12 @@ main(int argc, char *argv[])
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-  
+
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     const char *output_file = 0;
     const char *font_name = 0;
-  
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -189,7 +189,7 @@ main(int argc, char *argv[])
 	  case PFA_OPT:
 	    binary = false;
 	    break;
-      
+
 	  case PFB_OPT:
 	    binary = true;
 	    break;
@@ -199,14 +199,14 @@ main(int argc, char *argv[])
 		usage_error(errh, "font name specified twice");
 	    font_name = clp->vstr;
 	    break;
-	    
+
 	  case QUIET_OPT:
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
 	    else
 		errh = new SilentErrorHandler;
 	    break;
-      
+
 	  case VERSION_OPT:
 	    printf("cfftot1 (LCDF typetools) %s\n", VERSION);
 	    printf("Copyright (C) 2002-2006 Eddie Kohler\n\
@@ -215,7 +215,7 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
 	    exit(0);
 	    break;
-      
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
@@ -236,22 +236,22 @@ particular purpose.\n");
 	    else
 		input_file = clp->vstr;
 	    break;
-      
+
 	  case Clp_Done:
 	    goto done;
-      
+
 	  case Clp_BadOption:
 	    usage_error(errh, 0);
 	    break;
-      
+
 	  default:
 	    break;
-      
+
 	}
     }
-  
+
   done:
     do_file(input_file, output_file, font_name, errh);
-    
+
     return (errh->nerrors() == 0 ? 0 : 1);
 }

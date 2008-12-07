@@ -50,7 +50,7 @@
  *
  * Out-of-memory StringAccum objects nominally have zero characters.
  */
-    
+
 void
 StringAccum::make_out_of_memory()
 {
@@ -67,17 +67,17 @@ StringAccum::grow(int want)
     // can't append to out-of-memory strings
     if (_cap < 0)
 	return false;
-  
+
     int ncap = (_cap ? _cap * 2 : 128);
     while (ncap <= want)
 	ncap *= 2;
-  
+
     unsigned char *n = new unsigned char[ncap];
     if (!n) {
 	make_out_of_memory();
 	return false;
     }
-  
+
     if (_s)
 	memcpy(n, _s, _cap);
     delete[] _s;

@@ -199,7 +199,7 @@ do_number_flags(char *pos, char *after_last, int base, int flags,
   // remove ALTERNATE_FORM for zero results in base 16
   if ((flags & ErrH::ALTERNATE_FORM) && base == 16 && *pos == '0')
     flags &= ~ErrH::ALTERNATE_FORM;
-  
+
   // account for zero padding
   if (precision >= 0)
     while (after_last - pos < precision)
@@ -213,7 +213,7 @@ do_number_flags(char *pos, char *after_last, int base, int flags,
     while (after_last - pos < field_width)
       *--pos = '0';
   }
-  
+
   // alternate forms
   if ((flags & ErrH::ALTERNATE_FORM) && base == 8 && pos[1] != '0')
     *--pos = '0';
@@ -221,7 +221,7 @@ do_number_flags(char *pos, char *after_last, int base, int flags,
     *--pos = ((flags & ErrH::UPPERCASE) ? 'X' : 'x');
     *--pos = '0';
   }
-  
+
   // sign
   if (flags & ErrH::NEGATIVE)
     *--pos = '-';
@@ -229,7 +229,7 @@ do_number_flags(char *pos, char *after_last, int base, int flags,
     *--pos = '+';
   else if (flags & ErrH::SPACE_POSITIVE)
     *--pos = ' ';
-  
+
   return pos;
 }
 
@@ -249,8 +249,8 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
     begin_lines = String::stable_string("warning: ", 9);
     msg << begin_lines;
   }
-  
-  // declare and initialize these here to make gcc shut up about possible 
+
+  // declare and initialize these here to make gcc shut up about possible
   // use before initialization
   int flags = 0;
   int field_width = -1;
@@ -258,7 +258,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
   int width_flag = 0;
   int base = 10;
   while (1) {
-    
+
     const char *pct = strchr(s, '%');
 
     // handle begin_lines
@@ -269,7 +269,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 	msg.append(begin_lines.data(), begin_lines.length());
       s = nl + 1;
     }
-    
+
     if (!pct) {
       if (*s)
 	msg << s;
@@ -279,7 +279,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
       msg.append(s, pct - s);
       s = pct;
     }
-    
+
     // parse flags
     flags = 0;
    flags:
@@ -290,7 +290,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
      case ' ': flags |= SPACE_POSITIVE; goto flags;
      case '+': flags |= PLUS_POSITIVE; goto flags;
     }
-    
+
     // parse field width
     field_width = -1;
     if (*s == '*') {
@@ -303,7 +303,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
     } else if (*s >= '0' && *s <= '9')
       for (field_width = 0; *s >= '0' && *s <= '9'; s++)
 	field_width = 10*field_width + *s - '0';
-    
+
     // parse precision
     precision = -1;
     if (*s == '.') {
@@ -316,7 +316,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 	for (; *s >= '0' && *s <= '9'; s++)
 	  precision = 10*precision + *s - '0';
     }
-    
+
     // parse width flags
     width_flag = 0;
    width_flags:
@@ -328,13 +328,13 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
      case 'L': case 'q':
       width_flag = 'q'; s++; goto width_flags;
     }
-    
+
     // conversion character
     // after switch, data lies between `s1' and `s2'
     const char *s1 = 0, *s2 = 0;
     base = 10;
     switch (*s++) {
-      
+
      case 's': {
        s1 = va_arg(val, const char *);
        if (!s1)
@@ -373,7 +373,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
        s2 = strchr(numbuf, 0);
        break;
      }
-     
+
      case '%': {
        numbuf[0] = '%';
        s1 = numbuf;
@@ -391,9 +391,9 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 	 field_width = NUMBUF_SIZE;
        if (precision > NUMBUF_SIZE-4)
 	 precision = NUMBUF_SIZE-4;
-       
+
        s2 = numbuf + NUMBUF_SIZE;
-       
+
        unsigned long num;
 #ifdef HAVE_INT64_TYPES
        if (width_flag == 'q') {
@@ -428,17 +428,17 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
 			    precision, field_width);
        break;
      }
-     
+
      case 'o':
       base = 8;
       goto number;
-      
+
      case 'X':
       flags |= UPPERCASE;
      case 'x':
       base = 16;
       goto number;
-      
+
      case 'p': {
        void *v = va_arg(val, void *);
        s2 = numbuf + NUMBUF_SIZE;
@@ -469,7 +469,7 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
        break;
      }
 #endif
-     
+
      case '{': {
        const char *rbrace = strchr(s, '}');
        if (!rbrace || rbrace == s)
@@ -486,11 +486,11 @@ ErrorHandler::make_text(Seriousness seriousness, const char *s, va_list val)
        assert(0 /* Bad %{ in error */);
        break;
      }
-     
+
      default:
       assert(0 /* Bad % in error */);
       break;
-      
+
     }
 
     // add result of conversion
@@ -514,7 +514,7 @@ String
 ErrorHandler::decorate_text(Seriousness, const String &landmark, const String &text)
 {
   String new_text = text;
-  
+
   // handle landmark
   if (landmark
       && !(landmark.length() > 2 && landmark[0] == '\\'
@@ -566,7 +566,7 @@ ErrorHandler::prepend_lines(const String &prepend, const String &text)
 {
   if (!prepend)
     return text;
-  
+
   StringAccum sa;
   const char *begin = text.begin();
   const char *end = text.end();
@@ -577,7 +577,7 @@ ErrorHandler::prepend_lines(const String &prepend, const String &text)
     sa << prepend << text.substring(begin, nl);
     begin = nl;
   }
-  
+
   return sa.take_string();
 }
 
@@ -616,7 +616,7 @@ FileErrorHandler::handle_text(Seriousness seriousness, const String &message)
   if (text && text.back() != '\n')
     text += '\n';
   fwrite(text.data(), 1, text.length(), _f);
-  
+
   if (seriousness >= ERR_MIN_FATAL) {
     int exit_status = (seriousness - ERR_MIN_FATAL) >> ERRVERBOSITY_SHIFT;
     exit(exit_status);

@@ -134,7 +134,7 @@ using namespace Efont;
 #define CHAR_OPTTYPE		(Clp_ValFirstUser)
 
 static Clp_Option options[] = {
-    
+
     { "script", 's', SCRIPT_OPT, Clp_ValString, 0 },
     { "feature", 'f', FEATURE_OPT, Clp_ValString, 0 },
     { "letter-feature", 0, LETTER_FEATURE_OPT, Clp_ValString, 0 },
@@ -182,12 +182,12 @@ static Clp_Option options[] = {
     { "no-updmap", 0, NO_UPDMAP_OPT, 0, 0 },
     { "map-file", 0, MAP_FILE_OPT, Clp_ValString, Clp_Negate },
     { "output-encoding", 0, OUTPUT_ENCODING_OPT, Clp_ValString, Clp_Optional },
-    
+
     { "automatic", 'a', AUTOMATIC_OPT, 0, Clp_Negate },
     { "name", 'n', FONT_NAME_OPT, Clp_ValString, 0 },
     { "vendor", 'v', VENDOR_OPT, Clp_ValString, 0 },
     { "typeface", 0, TYPEFACE_OPT, Clp_ValString, 0 },
-    
+
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ValString, 0 },
     { "pl-directory", 0, PL_DIR_OPT, Clp_ValString, 0 },
     { "tfm-directory", 0, TFM_DIR_OPT, Clp_ValString, 0 },
@@ -211,7 +211,7 @@ static Clp_Option options[] = {
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
     { "qs", 0, QUERY_SCRIPTS_OPT, 0, 0 },
-    
+
 };
 
 static const char * const default_ligkerns = "\
@@ -468,7 +468,7 @@ get_design_size(const FontInfo &finfo)
 
 	// return a number in 'pt', not 'bp'
 	return result * 72.27 / 72.;
-	
+
     } catch (OpenType::Error) {
 	return 10.0;
     }
@@ -553,7 +553,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     if (design_size <= 0)
 	design_size = get_design_size(finfo);
     max_printed_real = 0;
-    
+
     fprintf(f, "(DESIGNSIZE R %.1f)\n"
 	    "(DESIGNUNITS R %d.0)\n"
 	    "(COMMENT DESIGNSIZE (1 em) IS IN POINTS)\n"
@@ -568,7 +568,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	font_xform.shear(slant);
     int bounds[4], width;
     double du = (design_units == metrics.units_per_em() ? 1. : design_units / (double) metrics.units_per_em());
-    
+
     double actual_slant = font_slant(finfo);
     if (actual_slant)
 	fprintf(f, "   (SLANT R %g)\n", actual_slant);
@@ -592,7 +592,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     int xheight = font_x_height(finfo, font_xform);
     if (xheight < 1000)
 	fprint_real(f, "   (XHEIGHT", xheight, du);
-    
+
     fprint_real(f, "   (QUAD", 1000, du);
     fprintf(f, "   )\n");
 
@@ -636,7 +636,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     } else
 	for (int i = 0; i < metrics.n_mapped_fonts(); i++)
 	    font_mapping.push_back(i);
-    
+
     // figure out the proper names and numbers for glyphs
     Vector<String> glyph_ids;
     Vector<String> glyph_comments(257, String());
@@ -667,7 +667,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 		glyph_ids.push_back("D " + String(i));
 
 	    glyph_comments[i] = glyph_base_comments[i] = glyph_comment;
-	    
+
 	} else if (i < 256)
 	    glyph_ids.push_back("D " + String(i));
     }
@@ -712,12 +712,12 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	    }
 	}
     fprintf(f, "   )\n");
-    
+
     // CHARACTERs
     Vector<Setting> settings;
     StringAccum sa;
     Vector<Point> push_stack;
-    
+
     for (int i = 0; i < 256; i++)
 	if (metrics.setting(i, settings)) {
 	    fprintf(f, "(CHARACTER %s%s\n", glyph_ids[i].c_str(), glyph_comments[i].c_str());
@@ -730,7 +730,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	    const CharstringProgram *program = finfo.program();
 	    for (const Setting *s = settings.begin(); s < settings.end(); s++)
 		switch (s->op) {
-		    
+
 		  case Setting::SHOW:
 		    if (vpl || program == finfo.program())
 			boundser.char_bounds(program->glyph_context(s->y));
@@ -804,9 +804,9 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 			  sa << "      (SPECIAL " << s->s << ")\n";
 		      break;
 		  }
-		    
+
 		}
-	    
+
 	    assert(push_stack.size() == 0);
 
 	    // output information
@@ -825,7 +825,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 
     // at last, close the file
     fclose(f);
-    
+
     // Did we print a number too big for TeX to handle?  If so, try again.
     if (max_printed_real >= 2047) {
 	if (metrics.design_units() <= 1)
@@ -855,7 +855,7 @@ find_lookups(const OpenType::ScriptList& scripts, const OpenType::FeatureList& f
     for (int i = 0; i < interesting_scripts.size(); i += 2) {
 	OpenType::Tag script = interesting_scripts[i];
 	OpenType::Tag langsys = interesting_scripts[i+1];
-	
+
 	// collect features applying to this script
 	scripts.features(script, langsys, required, fids, errh);
 
@@ -906,7 +906,7 @@ write_encoding_file(String &filename, const String &encoding_name,
 	return ok_retval;
     } else if (verbose)
 	errh->message((ok_retval ? "creating encoding file %s" : "updating encoding file %s"), filename.c_str());
-    
+
     int fd = open(filename.c_str(), O_RDWR | O_CREAT, 0666);
     if (fd < 0)
 	return errh->error("%s: %s", filename.c_str(), strerror(errno));
@@ -960,7 +960,7 @@ write_encoding_file(String &filename, const String &encoding_name,
 	    contents << old_encodings.substring(pos1, pos2 - pos1);
 	pos1 = pos2;
     }
-    
+
     // rewind file
 #ifdef HAVE_FTRUNCATE
     rewind(f);
@@ -991,7 +991,7 @@ output_encoding(const Metrics &metrics,
     Vector<Metrics::Glyph> glyphs;
     if (!metrics.base_glyphs(glyphs, 256))
 	return false;
-    
+
     StringAccum sa;
     for (int i = 0; i < 256; i++) {
 	if ((i & 0xF) == 0)
@@ -1034,10 +1034,10 @@ output_encoding(const Metrics &metrics,
 %%" << out_encoding_name << "\n";
     contents << "% Encoding created by otftotfm" << current_time << "\n\
 % Command line follows encoding\n";
-    
+
     // the encoding itself
     contents << '/' << out_encoding_name << " [\n" << sa << "] def\n";
-    
+
     // write banner -- unfortunately this takes some doing
     String banner = String("Command line: '") + String(invocation.data(), invocation.length()) + String("'");
     char *buf = banner.mutable_data();
@@ -1062,7 +1062,7 @@ output_encoding(const Metrics &metrics,
 	contents << "% " << banner.substring(0, last_pos) << '\n';
 	banner = banner.substring(last_pos + 1);
     }
-    
+
     // open encoding file
     if (out_encoding_file == "-")
 	fwrite(contents.data(), 1, contents.length(), stdout);
@@ -1095,12 +1095,12 @@ output_tfm(Metrics &metrics, const String &ps_name, int boundary_char,
 	command << "vptovf " << shell_quote(pl_filename) << ' ' << shell_quote(vf_filename) << ' ' << shell_quote(tfm_filename) << " >&2";
     else
 	command << "pltotf " << shell_quote(pl_filename) << ' ' << shell_quote(tfm_filename) << " >&2";
-    
+
     int status = mysystem(command.c_str(), errh);
 
     if (!no_create)
 	unlink(pl_filename.c_str());
-    
+
     if (status != 0)
 	errh->fatal("%s execution failed", (vpl ? "vptovf" : "pltotf"));
     else {
@@ -1126,7 +1126,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	else if (output_flags & G_METRICS)
 	    errh->warning("features require virtual fonts");
     }
-    
+
     // output virtual metrics
     if (!(output_flags & G_VMETRICS))
 	/* do nothing */;
@@ -1159,7 +1159,7 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
     metrics.make_base(257);
     if (!metrics.need_base())
 	return;
-    
+
     // output metrics
     double save_minimum_kern = minimum_kern;
     if (need_virtual)
@@ -1370,15 +1370,15 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
     int x_height = font_x_height(finfo, font_xform);
     double slant = font_slant(finfo);
     int boundary_char = dvipsenc.boundary_char();
-    
+
     int bounds[4], width;
-    
+
     for (int code = 0; code < metrics.encoding_size(); code++)
 	if (metrics.was_base_glyph(code) && code != boundary_char
 	    && char_bounds(bounds, width, finfo, font_xform, code)) {
 	    int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
 	    metrics.add_single_positioning(code, left_sb, 0, left_sb);
-	    
+
 	    if (skew_char >= 0 && code < 256) {
 		double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
 		int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
@@ -1398,7 +1398,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	return;
     if (!finfo.cff)
 	errh->warning("TrueType-flavored font support is experimental");
-    
+
     // save glyph names
     Vector<PermString> glyph_names;
     finfo.glyph_names(glyph_names);
@@ -1440,17 +1440,17 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     } catch (OpenType::Error e) {
 	errh->warning("GSUB '%s' error, continuing", e.description.c_str());
     }
-    
+
     // apply LIGKERN ligature commands to the result
     dvipsenc.apply_ligkern_lig(metrics, errh);
 
     // test fake ligature mechanism
     //metrics.add_threeligature('T', 'h', 'e', '0');
-    
+
     // reencode characters to fit within 8 bytes (+ 1 for the boundary)
     if (!dvipsenc_literal)
 	metrics.shrink_encoding(257, dvipsenc_in, errh);
-    
+
     // apply activated GPOS features
     try {
 	do_gpos(metrics, otf, feature_usage, errh);
@@ -1523,7 +1523,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	    if (feature_usage[interesting_features[i].value()])
 		font_name += String("--F") + interesting_features[i].text();
     }
-    
+
     // output encoding
     if (dvipsenc_literal) {
 	out_encoding_name = dvipsenc_in.name();
@@ -1542,7 +1542,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	errh->warning("assuming --no-type1 since this font is TrueType-flavored");
 	output_flags &= ~G_TYPE1;
     }
-    
+
     // output
     ::otf_filename = otf_filename;
     output_metrics(metrics, finfo.postscript_name(), dvipsenc.boundary_char(),
@@ -1660,7 +1660,7 @@ main(int argc, char *argv[])
 #endif
     for (int i = 0; i < argc; i++)
 	invocation << (i ? " " : "") << argv[i];
-    
+
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     Vector<String> glyphlist_files;
@@ -1676,7 +1676,7 @@ main(int argc, char *argv[])
     GlyphFilter current_substitution_filter;
     GlyphFilter current_alternate_filter;
     GlyphFilter* current_filter_ptr = &null_filter;
-    
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -1714,7 +1714,7 @@ main(int argc, char *argv[])
 	      }
 	      break;
 	  }
-      
+
 	  case LETTER_FEATURE_OPT: {
 	      OpenType::Tag t(clp->vstr);
 	      if (!t.valid())
@@ -1726,7 +1726,7 @@ main(int argc, char *argv[])
 		  GlyphFilter* gf = new GlyphFilter;
 		  gf->add_substitution_filter("<Letter>", false, errh);
 		  *gf += current_alternate_filter;
-		  feature_filters.insert(t, gf); 
+		  feature_filters.insert(t, gf);
 	      }
 	      break;
 	  }
@@ -1744,7 +1744,7 @@ main(int argc, char *argv[])
 	    current_substitution_filter = null_filter;
 	    current_filter_ptr = 0;
 	    break;
-	    
+
 	  case ENCODING_OPT:
 	    if (encoding_file)
 		usage_error(errh, "encoding specified twice");
@@ -1761,7 +1761,7 @@ main(int argc, char *argv[])
 	  case BASE_ENCODINGS_OPT:
 	    base_encoding_files.push_back(clp->vstr);
 	    break;
-	    
+
 	  case EXTEND_OPT:
 	    if (extend)
 		usage_error(errh, "extend value specified twice");
@@ -1794,7 +1794,7 @@ main(int argc, char *argv[])
 		skew_char = clp->val.i;
 	    }
 	    break;
-	    
+
 	  case DESIGN_SIZE_OPT:
 	    if (design_size > 0)
 		usage_error(errh, "design size value specified twice");
@@ -1859,11 +1859,11 @@ main(int argc, char *argv[])
 	    current_alternate_filter = null_filter;
 	    current_filter_ptr = 0;
 	    break;
-	    
+
 	  case UNICODING_OPT:
 	    unicoding.push_back(clp->vstr);
 	    break;
-	    
+
 	  case CODINGSCHEME_OPT:
 	    if (codingscheme)
 		usage_error(errh, "coding scheme specified twice");
@@ -1913,7 +1913,7 @@ main(int argc, char *argv[])
 	  case MINIMUM_KERN_OPT:
 	    minimum_kern = clp->val.d;
 	    break;
-	    
+
 	  case MAP_FILE_OPT:
 	    if (clp->negated)
 		output_flags &= ~G_PSFONTSMAP;
@@ -1923,7 +1923,7 @@ main(int argc, char *argv[])
 		    usage_error(errh, "map file specified twice");
 	    }
 	    break;
-	    
+
 	  case PL_OPT:
 	    output_flags = (output_flags & ~G_BINARY) | G_ASCII;
 	    break;
@@ -1931,7 +1931,7 @@ main(int argc, char *argv[])
 	  case TFM_OPT:
 	    output_flags = (output_flags & ~G_ASCII) | G_BINARY;
 	    break;
-	    
+
 	  case ENCODING_DIR_OPT:
 	  case TFM_DIR_OPT:
 	  case PL_DIR_OPT:
@@ -1942,7 +1942,7 @@ main(int argc, char *argv[])
 	    if (!setodir(opt - DIR_OPTS, clp->vstr))
 		usage_error(errh, "%s directory specified twice", odirname(opt - DIR_OPTS));
 	    break;
-	    
+
 	  case FONT_NAME_OPT:
 	  font_name:
 	    if (font_name)
@@ -1953,7 +1953,7 @@ main(int argc, char *argv[])
 	  case GLYPHLIST_OPT:
 	    glyphlist_files.push_back(clp->vstr);
 	    break;
-	    
+
 	  case QUERY_FEATURES_OPT:
 	    usage_error(errh, "run 'otfinfo --query-features' instead");
 	    break;
@@ -1961,7 +1961,7 @@ main(int argc, char *argv[])
 	  case QUERY_SCRIPTS_OPT:
 	    usage_error(errh, "run 'otfinfo --query-scripts' instead");
 	    break;
-	    
+
 	  case QUIET_OPT:
 	    if (clp->negated)
 		errh = ErrorHandler::default_handler();
@@ -1999,7 +1999,7 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
 	    exit(0);
 	    break;
-      
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
@@ -2016,17 +2016,17 @@ particular purpose.\n");
 
 	  case Clp_Done:
 	    goto done;
-      
+
 	  case Clp_BadOption:
 	    usage_error(errh, 0);
 	    break;
 
 	  default:
 	    break;
-      
+
 	}
     }
-    
+
   done:
     // set up file names
     if (!input_file)
@@ -2036,7 +2036,7 @@ particular purpose.\n");
 	errh->message("(Use '-e ENCODING' to choose an encoding. '-e texnansx' often works,\nor say '-e -' to turn off this warning.)");
     } else if (encoding_file == "-")
 	encoding_file = "";
-    
+
     // set up feature filters
     if (!altselector_features.size()) {
 	if (!current_filter_ptr)
@@ -2089,7 +2089,7 @@ particular purpose.\n");
 #endif
 		glyphlist_files.push_back(SHAREDIR "/texglyphlist.txt");
 	}
-	
+
 	// read glyphlist
 	for (String *g = glyphlist_files.begin(); g < glyphlist_files.end(); g++)
 	    if (String s = read_file(*g, errh, true))
@@ -2122,7 +2122,7 @@ particular purpose.\n");
 	// apply default ligkern commands
 	if (default_ligkern)
 	    dvipsenc.parse_ligkern(default_ligkerns, 0, ErrorHandler::ignore_handler());
-    
+
 	// apply command-line ligkern commands and coding scheme
 	cerrh.set_landmark("--ligkern command");
 	for (int i = 0; i < ligkern.size(); i++)
@@ -2139,10 +2139,10 @@ particular purpose.\n");
 	    dvipsenc.set_warn_missing(warn_missing);
 
 	do_file(input_file, otf, dvipsenc, literal_encoding, errh);
-	
+
     } catch (OpenType::Error e) {
 	errh->error("unhandled exception '%s'", e.description.c_str());
     }
-    
+
     return (errh->nerrors() == 0 ? 0 : 1);
 }

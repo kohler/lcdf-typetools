@@ -1,9 +1,8 @@
 /*
- * vectorv.cc -- template specialization for Vector<void *>
+ * vectorv.cc -- template specialization for Vector<void*>
  * Eddie Kohler
  *
- * Copyright (c) 1999-2000 Massachusetts Institute of Technology
- * Copyright (c) 2001-2007 Eddie Kohler
+ * Copyright (c) 1999-2006 Massachusetts Institute of Technology
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -19,22 +18,22 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "vector.hh"
-#include <cstring>
+#include <lcdf/vector.hh>
+#include <string.h>
 
-Vector<void *>::Vector(const Vector<void *> &o)
-    : _l(0), _n(0), _cap(0)
+Vector<void*>::Vector(const Vector<void*> &o)
+    : _l(0), _n(0), _capacity(0)
 {
     *this = o;
 }
 
-Vector<void *>::~Vector()
+Vector<void*>::~Vector()
 {
     delete[] _l;
 }
 
-Vector<void *> &
-Vector<void *>::operator=(const Vector<void *> &o)
+Vector<void*> &
+Vector<void*>::operator=(const Vector<void*> &o)
 {
     if (&o != this) {
 	_n = 0;
@@ -46,42 +45,50 @@ Vector<void *>::operator=(const Vector<void *> &o)
     return *this;
 }
 
-Vector<void *> &
-Vector<void *>::assign(int n, void *e)
+Vector<void*> &
+Vector<void*>::assign(int n, void *e)
 {
     _n = 0;
-    if (reserve(n)) {
-	_n = n;
-	for (int i = 0; i < _n; i++)
-	    _l[i] = e;
-    }
+    resize(n, e);
     return *this;
 }
 
 bool
-Vector<void *>::reserve(int want)
+Vector<void*>::reserve(int want)
 {
     if (want < 0)
-	want = _cap > 0 ? _cap * 2 : 4;
-    if (want <= _cap)
+	want = (_capacity > 0 ? _capacity * 2 : 4);
+    if (want <= _capacity)
 	return true;
-  
-    void **new_l = new void *[want];
+
+    void **new_l = new void*[want];
     if (!new_l)
 	return false;
-  
-    memcpy(new_l, _l, sizeof(void *) * _n);
+
+    memcpy(new_l, _l, sizeof(void*) * _n);
     delete[] _l;
-  
+
     _l = new_l;
-    _cap = want;
+    _capacity = want;
     return true;
 }
 
-void
-Vector<void *>::resize(int nn, void *e)
+Vector<void*>::iterator
+Vector<void*>::erase(iterator a, iterator b)
 {
-    if (nn <= _cap || reserve(nn)) {
+    if (b > a) {
+	assert(a >= begin() && b <= end());
+	memmove(a, b, (end() - b) * sizeof(void*));
+	_n -= b - a;
+	return a;
+    } else
+	return b;
+}
+
+void
+Vector<void*>::resize(int nn, void *e)
+{
+    if (nn <= _capacity || reserve(nn)) {
 	for (int i = _n; i < nn; i++)
 	    _l[i] = e;
 	_n = nn;
@@ -89,15 +96,15 @@ Vector<void *>::resize(int nn, void *e)
 }
 
 void
-Vector<void *>::swap(Vector<void *> &o)
+Vector<void*>::swap(Vector<void*>& o)
 {
     void **l = _l;
     int n = _n;
-    int cap = _cap;
+    int cap = _capacity;
     _l = o._l;
     _n = o._n;
-    _cap = o._cap;
+    _capacity = o._capacity;
     o._l = l;
     o._n = n;
-    o._cap = cap;
+    o._capacity = cap;
 }

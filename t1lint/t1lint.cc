@@ -134,13 +134,13 @@ check_blue_array(Vector<double> &blues, const char *name, double BlueScale,
     errh->error("%s has an odd number of entries", name);
     blues.push_back(blues.back());
   }
-  
+
   for (int i = 0; i < blues.size(); i++)
     if (blues[i] != (double)((int)blues[i])) {
       errh->warning("some %s entries are not integers", name);
       break;
     }
-  
+
   double max_diff = 1 / BlueScale;
   for (int i = 0; i < blues.size(); i += 2) {
     if (blues[i] > blues[i+1])
@@ -175,7 +175,7 @@ static void
 check_blues(Type1Font *font, ErrorHandler *errh)
 {
   Type1Definition *d;
-  
+
   // BlueScale
   double BlueScale;
   bool ok = false;
@@ -191,7 +191,7 @@ check_blues(Type1Font *font, ErrorHandler *errh)
     }
   }
   if (!ok) BlueScale = 0.039625;
-  
+
   // BlueShift
   int BlueShift = -1;
   if (get_integer(font, Type1Font::dP, "BlueShift", BlueShift, errh)
@@ -199,7 +199,7 @@ check_blues(Type1Font *font, ErrorHandler *errh)
     errh->error("BlueShift less than 0");
   if (BlueShift < 0)
     BlueShift = 7;
-  
+
   // BlueFuzz
   int BlueFuzz = -1;
   if (get_integer(font, Type1Font::dP, "BlueFuzz", BlueFuzz, errh)
@@ -209,35 +209,35 @@ check_blues(Type1Font *font, ErrorHandler *errh)
     BlueFuzz = 1;
   else if (BlueFuzz > 10)
     errh->warning("suspiciously large BlueFuzz (%d)", BlueFuzz);
-  
+
   // BlueValues
   Vector<double> BlueValues, OtherBlues;
   get_num_array(font, Type1Font::dP, "BlueValues", BlueValues, errh, true);
   get_num_array(font, Type1Font::dP, "OtherBlues", OtherBlues, errh);
-  
+
   check_blue_array(BlueValues, "BlueValues", BlueScale, errh);
   if (BlueValues.size() > 14)
     errh->error("too many zones in BlueValues (max 7)");
   check_blue_array(OtherBlues, "OtherBlues", BlueScale, errh);
   if (OtherBlues.size() > 10)
     errh->error("too many zones in OtherBlues (max 5)");
-  
+
   check_blue_overlap(BlueValues, "BlueValues", BlueValues, "BlueValues", BlueFuzz, errh);
   check_blue_overlap(OtherBlues, "OtherBlues", OtherBlues, "OtherBlues", BlueFuzz, errh);
   check_blue_overlap(BlueValues, "BlueValues", OtherBlues, "OtherBlues", BlueFuzz, errh);
-  
+
   // FamilyBlues
   Vector<double> FamilyBlues, FamilyOtherBlues;
   get_num_array(font, Type1Font::dP, "FamilyBlues", FamilyBlues, errh);
   get_num_array(font, Type1Font::dP, "FamilyOtherBlues", FamilyOtherBlues, errh);
-  
+
   check_blue_array(FamilyBlues, "FamilyBlues", BlueScale, errh);
   if (FamilyBlues.size() > 14)
     errh->error("too many zones in FamilyBlues (max 7)");
   check_blue_array(FamilyOtherBlues, "FamilyOtherBlues", BlueScale, errh);
   if (FamilyOtherBlues.size() > 10)
     errh->error("too many zones in FamilyOtherBlues (max 5)");
-  
+
   check_blue_overlap(FamilyBlues, "FamilyBlues", FamilyBlues, "FamilyBlues", BlueFuzz, errh);
   check_blue_overlap(FamilyOtherBlues, "FamilyOtherBlues", FamilyOtherBlues, "FamilyOtherBlues", BlueFuzz, errh);
   check_blue_overlap(FamilyBlues, "FamilyBlues", FamilyOtherBlues, "FamilyOtherBlues", BlueFuzz, errh);
@@ -281,7 +281,7 @@ check_stems(Type1Font *font, ErrorHandler *errh)
     if (StdVW.size() > 0 && StdVW[0] <= 0)
       errh->error("StdVW entry less than or equal to 0");
   }
-  
+
   if (get_num_array(font, Type1Font::dP, "StemSnapH", StemSnapH, errh))
     check_stem_snap(StemSnapH, StdHW.size() ? StdHW[0] : -1000, false, errh);
   if (get_num_array(font, Type1Font::dP, "StemSnapV", StemSnapV, errh))
@@ -303,16 +303,16 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 #endif
   } else
     f = fopen(filename, "rb");
-  
+
   if (!f) {
     // check for PostScript name
     Filename fn = psres->filename_value("FontOutline", filename);
     f = fn.open_read();
   }
-  
+
   if (!f)
     errh->fatal("%s: %s", filename, strerror(errno));
-  
+
   Type1Reader *reader;
   int c = getc(f);
   ungetc(c, f);
@@ -322,9 +322,9 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     reader = new Type1PFBReader(f);
   else
     reader = new Type1PFAReader(f);
-  
+
   Type1Font *font = new Type1Font(*reader);
-  
+
   if (font) {
     LandmarkErrorHandler cerrh(errh, filename);
 
@@ -351,24 +351,24 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 	    }
 	}
     }
-    
+
     check_blues(font, &cerrh);
     check_stems(font, &cerrh);
-    
+
     MultipleMasterSpace *mmspace = font->create_mmspace(&cerrh);
     Vector<double> weight_vector;
     if (mmspace)
 	weight_vector = mmspace->default_weight_vector();
     int gc = font->nglyphs();
     CharstringChecker cc(weight_vector);
-    
+
     for (int i = 0; i < gc; i++) {
       ContextErrorHandler derrh
 	(&cerrh, String("While interpreting `") + font->glyph_name(i) + "':");
       cc.check(font->glyph_context(i), &derrh);
     }
   }
-    
+
   delete font;
   delete reader;
 }
@@ -378,25 +378,25 @@ main(int argc, char *argv[])
 {
   PsresDatabase *psres = new PsresDatabase;
   psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
-  
+
   Clp_Parser *clp =
     Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
   program_name = Clp_ProgramName(clp);
-  
+
   ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
   int nfiles = 0;
-  
+
   while (1) {
     int opt = Clp_Next(clp);
     switch (opt) {
-      
+
      case QUIET_OPT:
        if (clp->negated)
 	   errh = ErrorHandler::default_handler();
        else
 	   errh = new SilentErrorHandler;
        break;
-      
+
      case VERSION_OPT:
       printf("t1lint (LCDF typetools) %s\n", VERSION);
       printf("Copyright (C) 1999-2006 Eddie Kohler\n\
@@ -405,33 +405,33 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
       exit(0);
       break;
-      
+
      case HELP_OPT:
       usage();
       exit(0);
       break;
-      
+
      case Clp_NotOption:
       do_file(clp->vstr, psres, errh);
       nfiles++;
       break;
-      
+
      case Clp_Done:
       goto done;
-      
+
      case Clp_BadOption:
       usage_error(errh, 0);
       break;
-      
+
      default:
       break;
-      
+
     }
   }
-  
+
  done:
   if (nfiles == 0)
       do_file("-", psres, errh);
-  
+
   return (errh->nerrors() == 0 ? 0 : 1);
 }

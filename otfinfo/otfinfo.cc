@@ -56,7 +56,7 @@ using namespace Efont;
 #define INFO_OPT		328
 
 const Clp_Option options[] = {
-    
+
     { "script", 0, SCRIPT_OPT, Clp_ValString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
@@ -71,7 +71,7 @@ const Clp_Option options[] = {
     { "tables", 't', TABLES_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
-    
+
 };
 
 
@@ -142,7 +142,7 @@ read_file(String filename, ErrorHandler *errh, bool warning = false)
 	errh->verror_text((warning ? errh->ERR_WARNING : errh->ERR_ERROR), filename, strerror(errno));
 	return String();
     }
-    
+
     StringAccum sa;
     while (!feof(f)) {
 	if (char *x = sa.reserve(8192)) {
@@ -283,9 +283,9 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 	    if (String n = name.english_name(size_data.u16(4)))
 		sa << ", subfamily name " << n;
 	}
-	
+
 	result_errh->message("%s", sa.c_str());
-	
+
     } catch (OpenType::Error) {
 	if (errh->nerrors() == before_nerrors)
 	    result_errh->message("no optical size information");
@@ -392,7 +392,7 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
 	}
     }
 
-    if (errh->nerrors() == before_nerrors) 
+    if (errh->nerrors() == before_nerrors)
 	result_errh->message("%s", (sa ? sa.c_str() : "no name information"));
 }
 
@@ -450,11 +450,11 @@ main(int argc, char *argv[])
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-    
+
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     Vector<const char *> input_files;
     int query = 0;
-  
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -478,7 +478,7 @@ main(int argc, char *argv[])
 		  usage_error(errh, "bad script tag");
 	      break;
 	  }
-	    
+
 	  case QUERY_SCRIPTS_OPT:
 	  case QUERY_FEATURES_OPT:
 	  case QUERY_OPTICAL_SIZE_OPT:
@@ -512,7 +512,7 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
 	    exit(0);
 	    break;
-      
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
@@ -524,17 +524,17 @@ particular purpose.\n");
 
 	  case Clp_Done:
 	    goto done;
-      
+
 	  case Clp_BadOption:
 	    usage_error(errh, 0);
 	    break;
 
 	  default:
 	    break;
-      
+
 	}
     }
-    
+
   done:
     if (!query)
 	usage_error(errh, "supply exactly one query option");
@@ -577,6 +577,6 @@ particular purpose.\n");
 	else if (query == INFO_OPT)
 	    do_info(otf, &cerrh, result_errh);
     }
-    
+
     return (errh->nerrors() == 0 ? 0 : 1);
 }

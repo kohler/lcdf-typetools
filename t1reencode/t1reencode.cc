@@ -671,7 +671,7 @@ kill_def(Type1Font* font, Type1Definition *t1d, int whichd)
 {
     if (!t1d || font->dict(whichd, t1d->name()) != t1d)
 	return;
-  
+
     int icount = font->nitems();
     for (int i = font->first_dict_item(whichd); i < icount; i++)
 	if (font->item(i) == t1d) {
@@ -684,7 +684,7 @@ kill_def(Type1Font* font, Type1Definition *t1d, int whichd)
 	    font->set_dict(whichd, name, 0);
 	    return;
 	}
-  
+
     assert(0);
 }
 
@@ -698,14 +698,14 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
     MD5_CONTEXT md5;
     md5_init(&md5);
     md5_update(&md5, (const unsigned char*) etext.data(), etext.length() - 1);
-    
+
     // save UniqueID, then kill its definition
     int uniqueid;
     Type1Definition *t1d = font->dict("UniqueID");
     bool have_uniqueid = (t1d && t1d->value_int(uniqueid));
     kill_def(font, t1d, Type1Font::dFont);
     kill_def(font, font->p_dict("UniqueID"), Type1Font::dPrivate);
-    
+
     // prepare XUID
     t1d = font->dict("XUID");
     Vector<double> xuid;
@@ -724,7 +724,7 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
 	uint8_t digest[MD5_DIGEST_SIZE + 2]; // leave 2 bytes of space
 	md5_final((unsigned char *) digest, &md5);
 	digest[MD5_DIGEST_SIZE] = digest[MD5_DIGEST_SIZE + 1] = 0;
-	
+
 	// append digest to XUID; each element must be less than 2^24
 	for (int i = 0; i < MD5_DIGEST_SIZE; i += 3)
 	    xuid.push_back((digest[i] << 16) | (digest[i+1] << 8) | digest[i+2]);
@@ -737,7 +737,7 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
 	md5_final_text(text_digest, &md5);
 	encoding_name = "AutoEnc_" + String(text_digest);
     }
-    
+
     t1d = font->dict("FontName");
     PermString name;
     if (t1d && t1d->value_name(name)) {
@@ -765,7 +765,7 @@ adjust_font_definitions(Type1Font* font, Type1Encoding* encoding, String new_nam
 	sa << "%% Created by t1reencode-" VERSION " on " << time_str;
 	sa.pop_back();
 #else
-	sa << "%% Created by t1reencode-" VERSION "."; 
+	sa << "%% Created by t1reencode-" VERSION ".";
 #endif
 
 	font->add_header_comment(sa.take_string().c_str());
@@ -791,7 +791,7 @@ tokenize(const String &s, int &pos_in, int &line)
 		line++;
 	    pos++;
 	}
-	
+
 	if (pos >= len) {
 	    pos_in = len;
 	    return String();
@@ -889,16 +889,16 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 #endif
     } else
 	f = fopen(filename, "rb");
-    
+
     if (!f) {
 	// check for PostScript name
 	Filename fn = psres->filename_value("FontOutline", filename);
 	f = fn.open_read();
     }
-  
+
     if (!f)
 	errh->fatal("%s: %s", filename, strerror(errno));
-  
+
     Type1Reader *reader;
     int c = getc(f);
     ungetc(c, f);
@@ -908,7 +908,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 	reader = new Type1PFBReader(f);
     else
 	reader = new Type1PFAReader(f);
-  
+
     Type1Font *font = new Type1Font(*reader);
     if (!font->ok())
 	errh->fatal("%s: no glyphs in font", filename);
@@ -922,11 +922,11 @@ main(int argc, char *argv[])
 {
     PsresDatabase *psres = new PsresDatabase;
     psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
-  
+
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-  
+
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
     const char *input_file = 0;
     const char *output_file = 0;
@@ -936,7 +936,7 @@ main(int argc, char *argv[])
     const char *new_full_name = 0;
     bool binary = true;
     Vector<String> glyph_patterns;
-  
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -964,7 +964,7 @@ main(int argc, char *argv[])
 		errh->fatal("full name already specified");
 	    new_full_name = clp->vstr;
 	    break;
-	    
+
 	  case OUTPUT_OPT:
 	    if (output_file)
 		errh->fatal("output file already specified");
@@ -978,7 +978,7 @@ main(int argc, char *argv[])
 	  case PFB_OPT:
 	    binary = true;
 	    break;
-      
+
 	  case VERSION_OPT:
 	    printf("t1reencode (LCDF typetools) %s\n", VERSION);
 	    printf("Copyright (C) 1999-2006 Eddie Kohler\n\
@@ -987,12 +987,12 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
 	    exit(0);
 	    break;
-      
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
 	    break;
-      
+
 	  case Clp_NotOption:
 	    if (input_file && output_file)
 		errh->fatal("too many arguments");
@@ -1001,20 +1001,20 @@ particular purpose.\n");
 	    else
 		input_file = clp->vstr;
 	    break;
-      
+
 	  case Clp_Done:
 	    goto done;
-      
+
 	  case Clp_BadOption:
 	    usage_error(errh, 0);
 	    break;
-      
+
 	  default:
 	    break;
-      
+
 	}
     }
-  
+
   done:
     // read the font
     Type1Font *font = do_file(input_file, psres, errh);
@@ -1107,6 +1107,6 @@ particular purpose.\n");
 	Type1PFAWriter w(outf);
 	font->write(w);
     }
-    
+
     return (errh->nerrors() == 0 ? 0 : 1);
 }

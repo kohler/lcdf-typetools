@@ -162,7 +162,7 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 #endif
     } else if (!(f = fopen(infn, "rb")))
 	errh->fatal("%s: %s", infn, strerror(errno));
-  
+
     int c = getc(f);
     ungetc(c, f);
 
@@ -198,7 +198,7 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 	    tables.push_back(s);
 	}
     OpenType::Font reduced_font = OpenType::Font::make(true, tags, tables);
-    
+
     // output file
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;
@@ -212,7 +212,7 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 #endif
 
     // fprintf(f, "%%!\n");
-    
+
     // get glyph names
     TrueTypeBoundsCharstringProgram ttbprog(&otf);
     Vector<PermString> gn;
@@ -271,7 +271,7 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 	fprintf(f, "/UnderlineThickness %g def\n", post.underline_thickness() / emunits);
     }
     fprintf(f, "end readonly def\n");
-    
+
     // encoding
     fprintf(f, "/Encoding 256 array\n0 1 255{1 index exch/.notdef put}for\n");
     for (int i = 0; i < 256; i++)
@@ -301,7 +301,7 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
     fprintf(f, "FontName currentdict end definefont pop\n");
 
     // fprintf(f, "/%s 100 selectfont 30 30 moveto (Hello! 9) show showpage\n", name.english_name(OpenType::Name::N_POSTSCRIPT).c_str());
-    
+
     if (f != stdout)
 	fclose(f);
 }
@@ -312,11 +312,11 @@ main(int argc, char *argv[])
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-  
+
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr, String(program_name) + ": "));
     const char *input_file = 0;
     const char *output_file = 0;
-  
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -327,7 +327,7 @@ main(int argc, char *argv[])
 	    else
 		errh = new SilentErrorHandler;
 	    break;
-      
+
 	  case VERSION_OPT:
 	    printf("ttftotype42 (LCDF typetools) %s\n", VERSION);
 	    printf("Copyright (C) 2006 Eddie Kohler\n\
@@ -336,7 +336,7 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
 	    exit(0);
 	    break;
-      
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
@@ -357,22 +357,22 @@ particular purpose.\n");
 	    else
 		input_file = clp->vstr;
 	    break;
-      
+
 	  case Clp_Done:
 	    goto done;
-      
+
 	  case Clp_BadOption:
 	    usage_error(errh, 0);
 	    break;
-      
+
 	  default:
 	    break;
-      
+
 	}
     }
-  
+
   done:
     do_file(input_file, output_file, errh);
-    
+
     return (errh->nerrors() == 0 ? 0 : 1);
 }

@@ -8,7 +8,7 @@
 class StringAccum;
 
 class String { public:
-  
+
     /** @brief Construct an empty String (with length 0). */
     inline String() {
 	_r.data = null_memo.real_data;
@@ -39,7 +39,7 @@ class String { public:
      * @param len number of characters to take from @a s.  If @a len @< 0,
      * then takes @c strlen(@a s) characters.
      * @return A String containing @a len characters of @a s.
-     *	
+     *
      * If @a s equals String::out_of_memory_data(), returns an out-of-memory
      * string. */
     inline String(const char *s, int len) {
@@ -98,7 +98,7 @@ class String { public:
 	deref();
     }
 
-    
+
     /** @brief Return an empty String.
      *
      * Returns a global constant, so it's quicker than String::String(). */
@@ -155,7 +155,7 @@ class String { public:
 	return reinterpret_cast<const unsigned char *>(_r.data);
     }
 
-  
+
     typedef const char *const_iterator;
     typedef const_iterator iterator;
 
@@ -187,7 +187,7 @@ class String { public:
 	return _r.length == 0;
     }
 
-  
+
     /** @brief Return the @a i th character in the string.
      *
      * Does not check bounds.  @sa String::at */
@@ -262,11 +262,11 @@ class String { public:
 	return length() ? hashcode(begin(), end()) : 0;
     }
 
-  
+
     /** @brief Return true iff this string is equal to the data in @a s.
      * @param s string data to compare to
      * @param len length of @a s
-     * 
+     *
      * Same as String::compare(*this, String(s, len)) == 0.  If @a len @< 0,
      * then treats @a s as a null-terminated C string.
      *
@@ -303,13 +303,13 @@ class String { public:
     /** @brief Compare this string with the data in @a s.
      * @param s string data to compare to
      * @param len length of @a s
-     * 
+     *
      * Same as String::compare(*this, String(s, len)).  If @a len @< 0, then
      * treats @a s as a null-terminated C string.
      *
      * @sa String::compare(const String &a, const String &b) */
     int compare(const char *s, int len) const;
-    
+
     // bool operator<(const String &, const String &);
     // bool operator<=(const String &, const String &);
     // bool operator>(const String &, const String &);
@@ -362,7 +362,7 @@ class String { public:
     inline String substring(int pos) const {
 	return substring((pos <= -_r.length ? 0 : pos), _r.length);
     }
-  
+
 
     /** @brief Search for a character in a string.
      * @param c character to search for
@@ -393,7 +393,7 @@ class String { public:
     int find_right(char c, int start = 0x7FFFFFFF) const;
 
     /** @brief Return true iff this string begins with prefix @a x.
-     * 
+     *
      * Same as String::starts_with(@a x.data(), @a x.length()). */
     inline bool starts_with(const String &x) const {
 	return starts_with(x._r.data, x._r.length);
@@ -402,7 +402,7 @@ class String { public:
     /** @brief Return true iff this string begins with the data in @a s.
      * @param s string data to compare to
      * @param len length of @a s
-     * 
+     *
      * If @a len @< 0, then treats @a s as a null-terminated C string.
      *
      * @sa String::compare(const String &a, const String &b) */
@@ -428,7 +428,7 @@ class String { public:
      * sequences, such as "\377" for 255. */
     String printable() const;
 
-  
+
     /** @brief Assign this string to @a x. */
     inline String &operator=(const String &x) {
 	if (&x != this) {
@@ -456,9 +456,9 @@ class String { public:
      * @param s data to append
      * @param len length of data
      *
-     * If @a len @< 0, treats @a s as a null-terminated C string. */ 
+     * If @a len @< 0, treats @a s as a null-terminated C string. */
     void append(const char *s, int len);
-    
+
     /** @brief Appends the data from @a begin to @a end to the end of this
      * string.
      *
@@ -473,7 +473,7 @@ class String { public:
 
     /** @brief Append @a len unknown characters to this string.
      * @return Modifiable pointer to the appended characters.
-     * 
+     *
      * The caller may safely modify the returned memory.  Null is returned if
      * the string becomes out-of-memory. */
     char *append_garbage(int len);
@@ -560,7 +560,7 @@ class String { public:
     static inline const char *out_of_memory_data() {
 	return &oom_string_data;
     }
-    
+
   private:
 
     /** @cond never */
@@ -579,14 +579,14 @@ class String { public:
     /** @endcond never */
 
     mutable rep_t _r;		// mutable for c_str()
-  
+
     inline String(const char *data, int length, memo_t *memo) {
 	_r.data = data;
 	_r.length = length;
 	_r.memo = memo;
 	++memo->refcount;
     }
-  
+
     inline void assign(const String &x) const {
 	_r.data = x._r.data;
 	_r.length = x._r.length;
@@ -620,12 +620,12 @@ class String { public:
     static memo_t oom_memo;
     static const rep_t null_string_rep;
     static const rep_t oom_string_rep;
-  
+
     static String claim_string(char *, int, int); // claim memory
-    
+
     friend class rep_t;
     friend class StringAccum;
-  
+
 };
 
 
@@ -740,7 +740,7 @@ inline String operator+(const char *a, const String &b) {
 inline String operator+(String a, char b) {
     a.append(&b, 1);
     return a;
-} 
+}
 
 #if HAVE_PERMSTRING
 
@@ -763,19 +763,19 @@ inline bool operator!=(const String &a, PermString b) {
 inline String operator+(String a, PermString b) {
     a.append(b.c_str(), b.length());
     return a;
-} 
+}
 
 inline String operator+(PermString a, String b) {
     return String(a) + b;
-} 
+}
 
 inline String operator+(PermString a, const char *b) {
     return String(a) + b;
-} 
+}
 
 inline String operator+(const char *a, PermString b) {
     return String(a) + b;
-} 
+}
 
 inline String operator+(PermString a, PermString b) {
     return String(a) + b;

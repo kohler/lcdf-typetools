@@ -265,7 +265,7 @@ Type1Font::skeleton_private_end()
     // Subrs
     add_item(new Type1SubrGroupItem(this, true, "/Subrs 0 array"));
     add_item(new Type1CopyItem("|-"));
-    
+
     // CharStrings
     add_item(new Type1SubrGroupItem(this, false, "2 index /CharStrings 0 dict dup begin"));
 
@@ -373,7 +373,7 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name, const
     add_number_def(output, dFI, "UnderlinePosition", font);
     add_number_def(output, dFI, "UnderlineThickness", font);
     output->skeleton_fontinfo_end();
-    
+
     // Encoding, other font dictionary entries
     output->add_type1_encoding(new Type1Encoding(*font->type1_encoding()));
     add_number_def(output, dF, "PaintType", font);

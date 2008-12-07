@@ -85,10 +85,10 @@ DvipsEncoding::add_glyphlist(String text)
 
 void
 DvipsEncoding::glyphname_unicode(String gn, Vector<int> &unis, bool *more)
-{    
+{
     if (more)
 	*more = false;
-    
+
     // first, drop all characters to the right of the first dot
     String::iterator dot = std::find(gn.begin(), gn.end(), '.');
     if (dot < gn.end())
@@ -191,7 +191,7 @@ tokenize(const String &s, int &pos_in, int &line)
 		line++;
 	    pos++;
 	}
-	
+
 	if (pos >= len) {
 	    pos_in = len;
 	    return String();
@@ -246,7 +246,7 @@ comment_tokenize(const String &s, int &pos_in, int &line)
 		line++;
 	    pos++;
 	}
-	
+
 	if (pos >= len) {
 	    pos_in = len;
 	    return String();
@@ -376,7 +376,7 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	    } else
 		return errh->error("encoding value '%d' out of range", l);
 	}
-	
+
 	// kern operation
 	if (v[1].length() >= 3 && v[1][0] == '{' && v[1].back() == '}') {
 	    String middle = v[1].substring(1, v[1].length() - 2);
@@ -415,7 +415,7 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	Ligature lig = { av, bv, op, 0, cv };
 	add_ligkern(lig, override);
 	return 0;
-	
+
     } else
 	return -EPARSE;
 }
@@ -429,7 +429,7 @@ DvipsEncoding::parse_position_words(Vector<String> &v, int override, ErrorHandle
     int c = encoding_of(v[0]);
     if (c < 0)
 	return (override > 0 ? errh->warning("'%s' has no encoding, ignoring positioning", v[0].c_str()) : -1);
-    
+
     char *endptr;
     int pdx, pdy, adx;
     if (!v[1] || !v[2] || !v[3]
@@ -457,7 +457,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
 	return errh->warning("'%s' has no encoding, ignoring UNICODING", v[0].c_str());
 
     int original_size = _unicoding.size();
-    
+
     if (v.size() == 2 || (v.size() == 3 && v[2] == dot_notdef))
 	/* no warnings to delete a glyph */;
     else {
@@ -478,7 +478,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
 	    }
 	}
     }
-    
+
     _unicoding.push_back(-1);
     if (override > 0 || _unicoding_map[v[0]] < 0)
 	_unicoding_map.insert(v[0], original_size);
@@ -517,7 +517,7 @@ DvipsEncoding::parse_word_group(Vector<String> &words, int override, int wt, Err
 	    }
 	    if ((this->*method)(rewords, override, errh) == -EPARSE)
 		errh->error("parse error in %s", word_types[wt].name);
-		
+
 	}
 	words.clear();
     }
@@ -605,28 +605,28 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	    && !ignore_ligkern) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(8), 1, WT_LIGKERN, &lerrh);
-	    
+
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
 		   && isspace((unsigned char) token[8])
 		   && !ignore_ligkern) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(9), 1, WT_LIGKERN, &lerrh);
-	    
+
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace((unsigned char) token[9])
 		   && !ignore_other) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(10), 1, WT_UNICODING, &lerrh);
-	    
+
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "POSITION", 8) == 0
 		   && isspace((unsigned char) token[8])
 		   && !ignore_other) {
 	    lerrh.set_landmark(landmark(filename, line));
 	    parse_words(token.substring(9), 1, WT_POSITION, &lerrh);
-	    
+
 	} else if (token.length() >= 13
 		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
 		   && isspace((unsigned char) token[12])
@@ -776,7 +776,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
 	// do not use a Unicode-mapped glyph if literal
 	if (literal)
 	    glyph = named_glyph;
-	
+
 	// If we found a glyph, maybe use its named_glyph variant.
 	if (glyph > 0 && named_glyph > 0
 	    && std::find(chname.begin(), chname.end(), '.') < chname.end())
@@ -792,7 +792,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
 	// skip already-encoded characters and .notdef
 	if (literal || metrics.glyph(code) > 0 || _e[code] == dot_notdef)
 	    continue;
-	
+
 	PermString chname = _e[code];
 
 	// find all Unicodes

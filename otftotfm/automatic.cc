@@ -102,7 +102,7 @@ look_for_writable_texdir(const char *path_variable, bool create)
 	else if (create && errno != EACCES && mkdir(texdir.c_str(), 0777) >= 0)
 	    // create file if it doesn't exist already
 	    writable_texdir = texdir;
-    }   
+    }
     if (writable_texdir && writable_texdir.back() != '/')
 	writable_texdir += "/";
 }
@@ -158,18 +158,18 @@ String
 getodir(int o, ErrorHandler *errh)
 {
     assert(o >= 0 && o < NUMODIR);
-    
+
     if (!odir[o] && automatic && odir_info[o].envvar)
 	odir[o] = getenv(odir_info[o].envvar);
-    
+
 #ifdef HAVE_KPATHSEA
     if (!odir[o] && automatic && !writable_texdir_tried)
 	find_writable_texdir(errh, odir_info[o].name);
 
     if (!odir[o] && automatic && writable_texdir) {
 	String suffix = odir_info[o].texdir;
-	
-	// May need to behave differently on TDS 1.1 rather than TDS 1.0. 
+
+	// May need to behave differently on TDS 1.1 rather than TDS 1.0.
 	if (suffix[0] == '#') {
 	    // check type of TDS
 	    if (tds_1_1 < 0) {
@@ -184,14 +184,14 @@ getodir(int o, ErrorHandler *errh)
 	    else
 		suffix = suffix.substring(suffix.begin() + 1, std::find(suffix.begin() + 1, suffix.end(), '#'));
 	}
-	
+
 	String dir = writable_texdir + suffix;
 
 	if (dir.back() == '%')
 	    dir = dir.substring(0, -1) + get_vendor() + "/" + get_typeface();
 	else if (dir.back() == '@')
 	    dir = dir.substring(0, -1) + get_vendor();
-	
+
 	// create parent directories as appropriate
 	int slash = writable_texdir.length() - 1;
 	while (access(dir.c_str(), F_OK) < 0 && slash < dir.length()) {
@@ -210,16 +210,16 @@ getodir(int o, ErrorHandler *errh)
     }
   kpathsea_done:
 #endif
-    
+
     if (!odir[o]) {
 	if (automatic)
 	    errh->warning("%s not specified, placing %s files in '.'", odir_info[o].envvar, odir_info[o].name);
 	odir[o] = ".";
     }
-    
+
     while (odir[o].length() && odir[o].back() == '/')
 	odir[o] = odir[o].substring(0, -1);
-    
+
     if (verbose)
 	errh->message("placing %s files in '%s'", odir_info[o].name, odir[o].c_str());
     return odir[o];
@@ -285,7 +285,7 @@ update_odir(int o, String file, ErrorHandler *errh)
 	return;
     } else if (verbose)
 	errh->message("updating %sls-R for %s/%s", writable_texdir.c_str(), directory.c_str(), file.c_str());
-    
+
     // try to update ls-R ourselves, rather than running mktexupd --
     // mktexupd's runtime is painful: a half second to update a file
     String ls_r = writable_texdir + "ls-R";
@@ -378,7 +378,7 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	}
     }
 #endif
-    
+
     return String();
 }
 
@@ -389,9 +389,9 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
 	return String();
     if (verbose)
 	errh->message("searching for dotless-j font for %s", ps_fontname.c_str());
-    
+
     String j_ps_fontname = ps_fontname + "LCDFJ";
-    
+
 #if HAVE_KPATHSEA
 # if HAVE_AUTO_T1DOTLESSJ
     if (!(force && allow_generate && getodir(O_TYPE1, errh))) {
@@ -491,7 +491,7 @@ installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler
 	    return ttf_filename;
 	}
     }
-    
+
     return String();
 }
 
@@ -512,7 +512,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    return 0;
 	} else if (verbose)
 	    errh->message("updating %s for %s", map_file.c_str(), String(fontname).c_str());
-	
+
 	int fd = open(map_file.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
 	    return errh->error("%s: %s", map_file.c_str(), strerror(errno));
@@ -588,7 +588,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		errh->message("%s unchanged", map_file.c_str());
 	    return 0;
 	}
-	
+
 	// add our text
 	text += mapline;
 
@@ -603,7 +603,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 
 	// write data
 	fwrite(text.data(), 1, text.length(), f);
-	
+
 	fclose(f);
 
 	// inform about the new file if necessary
@@ -620,7 +620,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    // want to run 'updmap' from its directory, can't use system()
 	    if (verbose)
 		errh->message("running %s", updmap_file.c_str());
-	    
+
 	    pid_t child = fork();
 	    if (child < 0)
 		errh->fatal("%s during fork", strerror(errno));
@@ -632,7 +632,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		    errh->fatal("%s: %s during exec", updmap_file.c_str(), strerror(errno));
 		exit(1);	// should never get here
 	    }
-	    
+
 # if HAVE_WAITPID
 	    // wait for updmap to finish
 	    int status;
@@ -675,7 +675,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    goto ran_updmap;
 	}
 # endif
-	
+
 	if (verbose)
 	    errh->message("not running updmap");
 
@@ -691,7 +691,7 @@ locate_encoding(String encfile, ErrorHandler *errh, bool literal)
 {
     if (!encfile || encfile == "-")
 	return encfile;
-    
+
     if (!literal) {
 	int slash = encfile.find_right('/');
 	int dot = encfile.find_left('.', slash >= 0 ? slash : 0);
@@ -699,7 +699,7 @@ locate_encoding(String encfile, ErrorHandler *errh, bool literal)
 	    if (String file = locate_encoding(encfile + ".enc", errh, true))
 		return file;
     }
-    
+
 #if HAVE_KPATHSEA
     if (String file = kpsei_string(kpsei_find_file(encfile.c_str(), KPSEI_FMT_ENCODING))) {
 	if (verbose)

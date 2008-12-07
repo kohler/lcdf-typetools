@@ -1,4 +1,4 @@
-/* -*- mode: c; c-basic-offset: 8; related-file-name: "../include/lcdf/md5.h" -*- */
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /* md5.c - MD5 Message-Digest Algorithm
  *	Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
  *
@@ -38,7 +38,8 @@
 #include <string.h>
 #include <assert.h>
 #include <lcdf/inttypes.h>
-#include <lcdf/md5.h>
+
+#include "md5.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -118,7 +119,7 @@ transform(MD5_CONTEXT *ctx, const unsigned char *data)
 
 #define OP(a, b, c, d, s, T)				\
 	do {						\
-		a += FF (b, c, d) + (*cwp++) + T; 	\
+		a += FF (b, c, d) + (*cwp++) + T;	\
 		a = rol(a, s);				\
 		a += b;					\
 	} while (0)
@@ -152,7 +153,7 @@ transform(MD5_CONTEXT *ctx, const unsigned char *data)
 	do {							\
 		a += f (b, c, d) + correct_words[k] + T;	\
 		a = rol(a, s);					\
-		a += b; 					\
+		a += b;					\
 	} while (0)
 
 	/* Round 2.  */

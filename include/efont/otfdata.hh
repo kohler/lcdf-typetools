@@ -63,7 +63,7 @@ class Data { public:
     inline uint8_t operator[](unsigned offset) const throw (Bounds);
     inline uint16_t u16(unsigned offset) const throw (Bounds);
     inline int16_t s16(unsigned offset) const throw (Bounds);
-    inline uint32_t u32(unsigned offset) const throw (Bounds);    
+    inline uint32_t u32(unsigned offset) const throw (Bounds);
     inline int32_t s32(unsigned offset) const throw (Bounds);
 
     Data subtable(unsigned offset) const throw (Bounds);
@@ -75,7 +75,7 @@ class Data { public:
   private:
 
     String _str;
-    
+
 };
 
 inline uint8_t Data::operator[](unsigned offset) const throw (Bounds)

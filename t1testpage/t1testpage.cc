@@ -119,16 +119,16 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 #endif
     } else
 	f = fopen(filename, "rb");
-  
+
     if (!f) {
 	// check for PostScript name
 	Filename fn = psres->filename_value("FontOutline", filename);
 	f = fn.open_read();
     }
-  
+
     if (!f)
 	errh->fatal("%s: %s", filename, strerror(errno));
-  
+
     Type1Reader *reader;
     int c = getc(f);
     ungetc(c, f);
@@ -138,7 +138,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 	reader = new Type1PFBReader(f);
     else
 	reader = new Type1PFAReader(f);
-  
+
     font = new Type1Font(*reader);
 
     delete reader;
@@ -171,14 +171,14 @@ output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_nam
 	for (int i = 255; i >= 0; i--)
 	    if (encoding->elt(i))
 		encodings.insert(encoding->elt(i), i);
-    
+
     int per_row = 10;
     int nrows = 13;
     int per_page = nrows * per_row;
-  
+
     int page = 0;
     for (int gi = 0; gi < glyph_names.size(); gi++) {
-    
+
 	if (gi % per_page == 0) {
 	    if (page)
 		fprintf(outf, "showpage restore\n");
@@ -197,7 +197,7 @@ output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_nam
 /Helvetica-Bold 16 selectfont 36 742 moveto (%s) show\n\
 /X 24 selectfont\n", font->font_name().c_str());
 	}
-	
+
 	int row = (gi % per_page) / per_row;
 	int col = gi % per_row;
 
@@ -223,7 +223,7 @@ output_testpage(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_nam
 	fprintf(outf, "showpage restore\n");
     fprintf(outf, "%%%%EOF\n");
     fclose(outf);
-}    
+}
 
 
 /*****
@@ -239,14 +239,14 @@ operator<<(StringAccum& sa, const Point& p)
 class Smoker : public CharstringInterp { public:
 
     Smoker(const Transform&);
-    
+
     void act_line(int, const Point &, const Point &);
     void act_curve(int, const Point &, const Point &, const Point &, const Point &);
     void act_closepath(int);
 
     String char_postscript()		{ return _char_sa.take_string(); }
     String points_postscript()		{ return _points_sa.take_string(); }
-    
+
     bool run(const CharstringContext&);
 
   private:
@@ -257,7 +257,7 @@ class Smoker : public CharstringInterp { public:
     Point _char_cp;
 
     inline void maybe_move(const Point&);
-    
+
 };
 
 Smoker::Smoker(const Transform& xform)
@@ -330,7 +330,7 @@ bounds2xform(CharstringBounds& bounds, bool expand = false)
     }
     bounds.act_line(0, Point(0, 0), bounds.width());
     bounds.act_line(0, Point(0, 0), Point(1, 1));
-    
+
     double true_width = std::max(bounds.bb_right(), 0.) - std::min(bounds.bb_left(), 0.);
     double true_height = std::max(bounds.bb_top(), 0.) - std::min(bounds.bb_bottom(), 0.);
     double x_scale = (RIGHT_BOUND - LEFT_BOUND) / true_width;
@@ -381,7 +381,7 @@ output_smoke(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_names)
 	for (int gi = 0; gi < glyph_names.size(); gi++)
 	    bounds.char_bounds(font->glyph_context(glyph_names[gi]), false);
     Transform font_xform = bounds2xform(bounds, true);
-    
+
     for (int gi = 0; gi < glyph_names.size(); gi++) {
 	fprintf(outf, "%%%%Page: %d %d\nsave\n", gi + 1, gi + 1);
 
@@ -407,13 +407,13 @@ output_smoke(FILE* outf, Type1Font* font, const Vector<PermString>& glyph_names)
 		(Point(0, 0) * xform).x, BOTTOM_BOUND - 36, TOP_BOUND - BOTTOM_BOUND + 72,
 		(bounds.width() * xform).x, BOTTOM_BOUND - 36, TOP_BOUND - BOTTOM_BOUND + 72,
 		LEFT_BOUND - 36, (Point(0, 0) * xform).y, RIGHT_BOUND - LEFT_BOUND + 72);
-	
+
 	fprintf(outf, "%s\n0.5 setgray fill\n\n1 setlinewidth\n%s\nshowpage\nrestore\n", smoker.char_postscript().c_str(), smoker.points_postscript().c_str());
     }
 
     fprintf(outf, "%%%%EOF\n");
     fclose(outf);
-}    
+}
 
 
 /*****
@@ -425,7 +425,7 @@ click_strcmp(PermString a, PermString b)
 {
     const char *ad = a.c_str(), *ae = a.c_str() + a.length();
     const char *bd = b.c_str(), *be = b.c_str() + b.length();
-    
+
     while (ad < ae && bd < be) {
 	if (isdigit((unsigned char) *ad) && isdigit((unsigned char) *bd)) {
 	    // compare the two numbers, but don't treat them as numbers in
@@ -525,16 +525,16 @@ main(int argc, char *argv[])
 {
     PsresDatabase *psres = new PsresDatabase;
     psres->add_psres_path(getenv("PSRESOURCEPATH"), 0, false);
-  
+
     Clp_Parser *clp =
 	Clp_NewParser(argc, (const char * const *)argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-  
+
     ErrorHandler *errh = ErrorHandler::static_initialize(new FileErrorHandler(stderr));
     const char *output_file = 0;
     Vector<String> glyph_patterns;
     bool smoke = false;
-  
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -556,13 +556,13 @@ main(int argc, char *argv[])
 	  case SMOKE_OPT:
 	    smoke = !clp->negated;
 	    break;
-	    
+
 	  case OUTPUT_OPT:
 	    if (output_file)
 		errh->fatal("output file already specified");
 	    output_file = clp->vstr;
 	    break;
-      
+
 	  case VERSION_OPT:
 	    printf("t1testpage (LCDF typetools) %s\n", VERSION);
 	    printf("Copyright (C) 1999-2006 Eddie Kohler\n\
@@ -571,35 +571,35 @@ There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
 	    exit(0);
 	    break;
-      
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
 	    break;
-      
+
 	  case Clp_NotOption:
 	    if (font)
 		errh->fatal("font already specified");
 	    do_file(clp->vstr, psres, errh);
 	    break;
-      
+
 	  case Clp_Done:
 	    goto done;
-      
+
 	  case Clp_BadOption:
 	    usage_error(errh, 0);
 	    break;
-      
+
 	  default:
 	    break;
-      
+
 	}
     }
-  
+
   done:
     if (!font)
 	do_file(0, psres, errh);
-  
+
     FILE *outf;
     if (!output_file || strcmp(output_file, "-") == 0)
 	outf = stdout;
@@ -665,6 +665,6 @@ particular purpose.\n");
 	output_smoke(outf, font, glyph_names);
     else
 	output_testpage(outf, font, glyph_names);
-  
+
     exit(0);
 }

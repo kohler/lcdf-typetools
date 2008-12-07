@@ -84,7 +84,7 @@ Font::parse_header(ErrorHandler *errh)
 	    return errh->error("OTF data for '%s' out of range", Tag(tag).text().c_str()), -EFAULT;
 	last_tag = tag;
     }
-    
+
     return 0;
 }
 
@@ -168,7 +168,7 @@ Font::checksum(const uint8_t *begin, const uint8_t *end)
 	leftover = (leftover << 8) + (begin < end ? *begin++ : 0);
     return sum + leftover;
 }
-	    
+
 uint32_t
 Font::checksum(const String &s)
 {
@@ -220,7 +220,7 @@ Font::make(bool truetype, const Vector<Tag>& tags, const Vector<String>& data)
 	    uint32_t l[TABLE_DIR_ENTRY_SIZE / 4];
 	} tdir;
 	tdir.l[0] = htonl(tags[*tp].value());
-	
+
 	// discount current checksum adjustment in head table
 	uint32_t sum = checksum(data[*tp]);
 	if (tags[*tp] == Tag("head") && data[*tp].length() >= 12) {
@@ -228,7 +228,7 @@ Font::make(bool truetype, const Vector<Tag>& tags, const Vector<String>& data)
 	    sum -= (x[0] << 24) + (x[1] << 16) + (x[2] << 8) + x[3];
 	}
 	tdir.l[1] = htonl(sum);
-	
+
 	tdir.l[2] = htonl(offset);
 	tdir.l[3] = htonl(data[*tp].length());
 	sa.append(&tdir.c[0], TABLE_DIR_ENTRY_SIZE);
@@ -446,7 +446,7 @@ ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHan
 {
     script.clear();
     langsys.clear();
-    
+
     const uint8_t *data = _str.udata();
     int nscripts = USHORT_AT(data);
     for (int i = 0; i < nscripts; i++) {
@@ -463,7 +463,7 @@ ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHan
 	    script.push_back(script_tag), langsys.push_back(langsys_tag);
 	}
     }
-    
+
     return 0;
 }
 
@@ -473,7 +473,7 @@ ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fi
     required_fid = -1;
     if (clear_fids)
 	fids.clear();
-    
+
     int offset = langsys_offset(script, langsys);
     if (offset <= 0)
 	return offset;
@@ -493,7 +493,7 @@ ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fi
     data += offset + 6;
     for (int i = 0; i < featureCount; i++, data += FEATURE_RECSIZE)
 	fids.push_back(USHORT_AT(data));
-    
+
     return 0;
 }
 
@@ -629,13 +629,13 @@ FeatureList::filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const
 	fids.clear();
     else {
 	std::sort(fids.begin(), fids.end()); // sort fids
-	
+
 	int i = 0, j = 0;
 	while (i < fids.size() && fids[i] < 0)
 	    fids[i++] = 0x7FFFFFFF;
 
 	// XXX check that feature list is in alphabetical order
-	
+
 	const uint8_t *data = _str.udata();
 	int nfeatures = USHORT_AT(data);
 	while (i < fids.size() && j < sorted_ftags.size() && fids[i] < nfeatures) {
@@ -834,7 +834,7 @@ Coverage::coverage_index(Glyph g) const throw ()
 {
     if (_str.length() == 0)
 	return -1;
-    
+
     const uint8_t *data = _str.udata();
     int count = USHORT_AT(data + 2);
     if (data[1] == T_LIST) {
@@ -874,7 +874,7 @@ Coverage::operator[](int cindex) const throw ()
 {
     if (_str.length() == 0 || cindex < 0)
 	return 0;
-    
+
     const uint8_t *data = _str.udata();
     int count = USHORT_AT(data + 2);
     if (data[1] == T_LIST)
@@ -1026,7 +1026,7 @@ bool
 Coverage::iterator::forward_to(Glyph find)
 {
     // XXX really should check that this works
-    
+
     if (find <= _value)
 	return find == _value;
     else if (_pos >= _str.length())
@@ -1042,7 +1042,7 @@ Coverage::iterator::forward_to(Glyph find)
 	    _value = USHORT_AT(data + _pos);
 	    return find == _value;
 	}
-	
+
 	// otherwise, binary search over remaining area
 	int l = ((_pos - HEADERSIZE) / LIST_RECSIZE) + 1;
 	int r = (_str.length() - HEADERSIZE) / LIST_RECSIZE - 1;
@@ -1206,10 +1206,10 @@ ClassDef::lookup(Glyph g) const throw ()
 {
     if (_str.length() == 0)
 	return -1;
-    
+
     const uint8_t *data = _str.udata();
     int coverageFormat = USHORT_AT(data);
-    
+
     if (coverageFormat == T_LIST) {
 	Glyph start = USHORT_AT(data + 2);
 	int count = USHORT_AT(data + 4);
@@ -1331,7 +1331,7 @@ ClassDef::class_iterator::increment_class0()
     const uint8_t *data = _str.udata();
     int len = _str.length();
     bool is_list = (data[1] == T_LIST);
-    
+
     if (_pos != 0)
 	_coviter++;
     else
@@ -1377,7 +1377,7 @@ ClassDef::class_iterator::operator++(int)
 	increment_class0();
 	return;
     }
-    
+
     const uint8_t *data = _str.udata();
     int len = _str.length();
     bool is_list = (data[1] == T_LIST);
