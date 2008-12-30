@@ -332,7 +332,7 @@ default_dict()
     static Cff *cff;
     static Cff::Font *cfffont;
     if (!cfffont) {
-	cff = new Cff(String::stable_string((const char *) default_dict_cff_data, sizeof(default_dict_cff_data)), ErrorHandler::default_handler());
+	cff = new Cff(String::make_stable((const char *) default_dict_cff_data, sizeof(default_dict_cff_data)), ErrorHandler::default_handler());
 	cfffont = (Cff::Font *) cff->font();
     }
     return cfffont->top_dict();
@@ -349,7 +349,7 @@ Cff::Cff(const String &s, ErrorHandler *errh)
     static_assert((sizeof(standard_strings) / sizeof(standard_strings[0])) == NSTANDARD_STRINGS);
     static_assert((sizeof(standard_encoding) / sizeof(standard_encoding[0])) == 256);
     static_assert((sizeof(expert_encoding) / sizeof(expert_encoding[0])) == 256);
-    _error = parse_header(errh ? errh : ErrorHandler::ignore_handler());
+    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
 Cff::~Cff()
@@ -519,7 +519,7 @@ Cff::FontParent *
 Cff::font(PermString font_name, ErrorHandler *errh)
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
 
     if (!ok())
 	return errh->error("invalid CFF"), (FontParent *) 0;
@@ -590,7 +590,7 @@ void
 Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, int max_sid, ErrorHandler *errh)
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
 
     _sids.reserve(nglyphs);
 
@@ -693,7 +693,7 @@ void
 Cff::FDSelect::assign(const Cff *cff, int pos, int nglyphs, ErrorHandler *errh)
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
     if (_my_fds)
 	delete[] _fds;
     _fds = 0;
@@ -760,7 +760,7 @@ Cff::IndexIterator::IndexIterator(const uint8_t *data, int pos, int len, ErrorHa
     : _contents(0), _offset(0), _last_offset(0)
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
 
     // check header
     int nitems = 0;
@@ -848,7 +848,7 @@ Cff::Dict::assign(Cff *cff, int pos, int dict_len, ErrorHandler *errh, const cha
     _operands.clear();
 
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
 
     const uint8_t *data = cff->data() + pos;
     const uint8_t *end_data = data + dict_len;
@@ -989,7 +989,7 @@ int
 Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) const
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
     int before_nerrors = errh->nerrors();
 
     // keep track of operator reuse
@@ -1618,7 +1618,7 @@ Cff::ChildFont::ChildFont(Cff *cff, Cff::CIDFont *parent, int charstring_type, c
     : FontParent(cff), _parent(parent), _top_dict(top_dict)
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
 
     if (!cff->ok() || !_top_dict.ok()) {
 	errh->error("invalid CFF");

@@ -29,12 +29,12 @@ namespace Efont { namespace OpenType {
 
 class Error { public:
     String description;
-    Error()				: description(String::stable_string("unspecified error")) { }
+    Error()				: description(String::make_stable("unspecified error")) { }
     Error(const String &d)		: description(d) { }
 };
 
 class Bounds : public Error { public:
-    Bounds()				: Error(String::stable_string("bounds error")) { }
+    Bounds()				: Error(String::make_stable("bounds error")) { }
 };
 
 class Format : public Error { public:

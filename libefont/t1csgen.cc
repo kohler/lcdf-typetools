@@ -349,7 +349,7 @@ Type1CharstringGenInterp::act_hintmask(int cmd, const unsigned char *data, int n
 
     String data_holder;
     if (!data) {
-	data_holder = String::fill_string('\377', ((nhints - 1) >> 3) + 1);
+	data_holder = String::make_fill('\377', ((nhints - 1) >> 3) + 1);
 	data = data_holder.udata();
     }
 

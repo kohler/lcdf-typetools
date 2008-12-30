@@ -635,7 +635,7 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
     if (!error_message)
 	errh->message("Usage: %s [OPTION]... FONT", program_name);
     else
-	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
+	errh->vxmessage(ErrorHandler::e_error, error_message, val);
     errh->message("Type %s --help for more information.", program_name);
     exit(1);
 }
@@ -834,7 +834,7 @@ tokenize(const String &s, int &pos_in, int &line)
 static String
 landmark(const String &filename, int line)
 {
-    return filename + String::stable_string(":", 1) + String(line);
+    return filename + String::make_stable(":", 1) + String(line);
 }
 
 Type1Encoding *
@@ -1032,50 +1032,50 @@ particular purpose.\n");
 	String text;
 	if (strcmp(encoding_file, "ISOLatin1Encoding") == 0
 	    || strcmp(encoding_file, "ISO_8859_1_Encoding") == 0)
-	    text = String::stable_string(ISOLatin1Encoding);
+	    text = String::make_stable(ISOLatin1Encoding);
 	else if (strcmp(encoding_file, "ISOLatin2Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_2_Encoding") == 0)
-	    text = String::stable_string(ISOLatin2Encoding);
+	    text = String::make_stable(ISOLatin2Encoding);
 	else if (strcmp(encoding_file, "ISOLatin3Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_3_Encoding") == 0)
-	    text = String::stable_string(ISOLatin3Encoding);
+	    text = String::make_stable(ISOLatin3Encoding);
 	else if (strcmp(encoding_file, "ISOLatin4Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_4_Encoding") == 0)
-	    text = String::stable_string(ISOLatin4Encoding);
+	    text = String::make_stable(ISOLatin4Encoding);
 	else if (strcmp(encoding_file, "ISOCyrillicEncoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_5_Encoding") == 0)
-	    text = String::stable_string(ISOCyrillicEncoding);
+	    text = String::make_stable(ISOCyrillicEncoding);
 	else if (strcmp(encoding_file, "ISOGreekEncoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_7_Encoding") == 0)
-	    text = String::stable_string(ISOGreekEncoding);
+	    text = String::make_stable(ISOGreekEncoding);
 	else if (strcmp(encoding_file, "ISO_8859_9_Encoding") == 0
 		 || strcmp(encoding_file, "ISOLatin5Encoding") == 0)
-	    text = String::stable_string(ISOLatin5Encoding);
+	    text = String::make_stable(ISOLatin5Encoding);
 	else if (strcmp(encoding_file, "ISOLatin6Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_10_Encoding") == 0)
-	    text = String::stable_string(ISOLatin6Encoding);
+	    text = String::make_stable(ISOLatin6Encoding);
 	else if (strcmp(encoding_file, "ISOThaiEncoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_11_Encoding") == 0)
-	    text = String::stable_string(ISOThaiEncoding);
+	    text = String::make_stable(ISOThaiEncoding);
 	else if (strcmp(encoding_file, "ISOLatin7Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_13_Encoding") == 0)
-	    text = String::stable_string(ISOLatin7Encoding);
+	    text = String::make_stable(ISOLatin7Encoding);
 	else if (strcmp(encoding_file, "ISOLatin8Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_14_Encoding") == 0)
-	    text = String::stable_string(ISOLatin8Encoding);
+	    text = String::make_stable(ISOLatin8Encoding);
 	else if (strcmp(encoding_file, "ISOLatin9Encoding") == 0
 		 || strcmp(encoding_file, "ISO_8859_15_Encoding") == 0)
-	    text = String::stable_string(ISOLatin9Encoding);
+	    text = String::make_stable(ISOLatin9Encoding);
 	else if (strcmp(encoding_file, "KOI8REncoding") == 0)
-	    text = String::stable_string(KOI8REncoding);
+	    text = String::make_stable(KOI8REncoding);
 	else if (strcmp(encoding_file, "ExpertEncoding") == 0)
-	    text = String::stable_string(ExpertEncoding);
+	    text = String::make_stable(ExpertEncoding);
 	else if (strcmp(encoding_file, "ExpertSubsetEncoding") == 0)
-	    text = String::stable_string(ExpertSubsetEncoding);
+	    text = String::make_stable(ExpertSubsetEncoding);
 	else if (strcmp(encoding_file, "SymbolEncoding") == 0)
-	    text = String::stable_string(SymbolEncoding);
+	    text = String::make_stable(SymbolEncoding);
 	else if (encoding_text)
-	    text = String::stable_string(encoding_text), encoding_file = "<argument>";
+	    text = String::make_stable(encoding_text), encoding_file = "<argument>";
 	else if ((text = read_file(encoding_file, errh)), errh->nerrors() > 0)
 	    exit(1);
 	if (!(t1e = parse_encoding(text, encoding_file, errh)))

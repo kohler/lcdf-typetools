@@ -587,7 +587,7 @@ Gsub::Gsub(const Data &d, const Font *otf, ErrorHandler *errh) throw (Error)
     // Check for "correct" chaining context rules, as suggested by Adobe's
     // OpenType FDK
     try {
-	Name nametable(otf->table("name"), ErrorHandler::ignore_handler());
+	Name nametable(otf->table("name"), ErrorHandler::silent_handler());
 	_chaincontext_reverse_backtrack = nametable.version_chaincontext_reverse_backtrack();
     } catch (Error) {
     }

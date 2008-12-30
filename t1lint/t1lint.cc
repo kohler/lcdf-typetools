@@ -60,7 +60,7 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
   if (!error_message)
     errh->message("Usage: %s [OPTION]... FONT", program_name);
   else
-    errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
+    errh->vxmessage(ErrorHandler::e_error, error_message, val);
   errh->message("Type %s --help for more information.", program_name);
   exit(1);
 }
@@ -364,7 +364,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 
     for (int i = 0; i < gc; i++) {
       ContextErrorHandler derrh
-	(&cerrh, String("While interpreting `") + font->glyph_name(i) + "':");
+	  (&cerrh, "While interpreting %<%s%>:", font->glyph_name(i).c_str());
       cc.check(font->glyph_context(i), &derrh);
     }
   }

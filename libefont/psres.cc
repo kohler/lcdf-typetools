@@ -393,7 +393,7 @@ PsresDatabase::value(PermString sec, PermString key) const
     if (s)
 	return s->value(key);
     else
-	return String::empty_string();
+	return String::make_empty();
 }
 
 const String &
@@ -403,7 +403,7 @@ PsresDatabase::unescaped_value(PermString sec, PermString key) const
     if (s)
 	return s->unescaped_value(key);
     else
-	return String::empty_string();
+	return String::make_empty();
 }
 
 Filename

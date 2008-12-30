@@ -33,7 +33,7 @@ Cmap::Cmap(const String &s, ErrorHandler *errh)
     : _str(s)
 {
     _str.align(4);
-    _error = parse_header(errh ? errh : ErrorHandler::ignore_handler());
+    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
 int
@@ -120,7 +120,7 @@ int
 Cmap::check_table(int t, ErrorHandler *errh) const
 {
     if (!errh)
-	errh = ErrorHandler::ignore_handler();
+	errh = ErrorHandler::silent_handler();
     if (_error < 0 || t < 0 || t >= _ntables)
 	return errh->error("no such table");
     if (_table_error[t] > -2)

@@ -103,7 +103,7 @@ Post::Post(const String &s, ErrorHandler *errh)
     : _str(s), _version(0)
 {
     _str.align_long();
-    _error = parse_header(errh ? errh : ErrorHandler::ignore_handler());
+    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
 int

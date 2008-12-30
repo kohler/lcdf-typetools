@@ -29,7 +29,7 @@ AfmReader::AfmReader(AfmParser &parser, Metrics *afm, AfmMetricsXt *afm_xt,
     : _afm(afm), _afm_xt(afm_xt), _l(parser),
       _composite_warned(false), _metrics_sets_warned(false), _y_width_warned(0)
 {
-    _errh = errh ? errh : ErrorHandler::ignore_handler();
+    _errh = errh ? errh : ErrorHandler::silent_handler();
 }
 
 Metrics *
@@ -64,7 +64,7 @@ AfmReader::lwarning(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->verror(ErrorHandler::ERR_WARNING, _l.landmark(), format, val);
+    _errh->vxmessage(_l.landmark(), ErrorHandler::e_warning, format, val);
     va_end(val);
 }
 
@@ -73,7 +73,7 @@ AfmReader::lerror(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->verror(ErrorHandler::ERR_ERROR, _l.landmark(), format, val);
+    _errh->vxmessage(_l.landmark(), ErrorHandler::e_error, format, val);
     va_end(val);
 }
 

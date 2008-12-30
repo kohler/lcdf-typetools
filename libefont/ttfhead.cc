@@ -29,7 +29,7 @@ namespace Efont { namespace OpenType {
 Head::Head(const String &s, ErrorHandler *errh)
     : _d(s)
 {
-    _error = parse_header(errh ? errh : ErrorHandler::ignore_handler());
+    _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
 int

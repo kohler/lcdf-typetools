@@ -73,6 +73,7 @@ class DvipsEncoding { public:
 
     String _name;
     String _filename;
+    String _printable_filename;
     String _coding_scheme;
     String _initial_comment;
     String _final_text;
@@ -95,6 +96,7 @@ class DvipsEncoding { public:
     int parse_words(const String &, int override, int wt, ErrorHandler *);
     void bad_codepoint(int, Metrics &, Vector<String> &);
     bool x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const;
+    String landmark(int line) const;
 
     static PermString dot_notdef;
 

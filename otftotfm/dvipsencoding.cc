@@ -545,10 +545,12 @@ DvipsEncoding::parse_words(const String &s, int override, int wt, ErrorHandler *
     return 0;
 }
 
-static String
-landmark(const String &filename, int line)
+String
+DvipsEncoding::landmark(int line) const
 {
-    return filename + String::stable_string(":", 1) + String(line);
+    StringAccum sa;
+    sa << _printable_filename << ':' << line;
+    return sa.take_string();
 }
 
 static String
@@ -575,19 +577,19 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
     if (errh->nerrors() != before)
 	return -1;
     _filename = filename;
+    _printable_filename = printable_filename(filename);
     _file_had_ligkern = false;
-    filename = printable_filename(filename);
     int pos = 0, line = 1;
 
     // parse text
     String token = tokenize(s, pos, line);
     if (!token || token[0] != '/')
-	return errh->lerror(landmark(filename, line), "parse error, expected name");
+	return errh->lerror(landmark(line), "parse error, expected name");
     _name = token.substring(1);
     _initial_comment = s.substring(0, pos - token.length());
 
     if (tokenize(s, pos, line) != "[")
-	return errh->lerror(landmark(filename, line), "parse error, expected [");
+	return errh->lerror(landmark(line), "parse error, expected [");
 
     while ((token = tokenize(s, pos, line)) && token[0] == '/')
 	_e.push_back(token.substring(1));
@@ -603,28 +605,28 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	    && memcmp(token.data(), "LIGKERN", 7) == 0
 	    && isspace((unsigned char) token[7])
 	    && !ignore_ligkern) {
-	    lerrh.set_landmark(landmark(filename, line));
+	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(8), 1, WT_LIGKERN, &lerrh);
 
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
 		   && isspace((unsigned char) token[8])
 		   && !ignore_ligkern) {
-	    lerrh.set_landmark(landmark(filename, line));
+	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(9), 1, WT_LIGKERN, &lerrh);
 
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace((unsigned char) token[9])
 		   && !ignore_other) {
-	    lerrh.set_landmark(landmark(filename, line));
+	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(10), 1, WT_UNICODING, &lerrh);
 
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "POSITION", 8) == 0
 		   && isspace((unsigned char) token[8])
 		   && !ignore_other) {
-	    lerrh.set_landmark(landmark(filename, line));
+	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(9), 1, WT_POSITION, &lerrh);
 
 	} else if (token.length() >= 13
@@ -633,10 +635,10 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 		   && !ignore_other) {
 	    _coding_scheme = trim_space(token, 13);
 	    if (_coding_scheme.length() > 39)
-		lerrh.lwarning(landmark(filename, line), "only first 39 chars of CODINGSCHEME are significant");
+		lerrh.lwarning(landmark(line), "only first 39 chars of CODINGSCHEME are significant");
 	    if (std::find(_coding_scheme.begin(), _coding_scheme.end(), '(') < _coding_scheme.end()
 		|| std::find(_coding_scheme.begin(), _coding_scheme.end(), ')') < _coding_scheme.end()) {
-		lerrh.lerror(landmark(filename, line), "CODINGSCHEME cannot contain parentheses");
+		lerrh.lerror(landmark(line), "CODINGSCHEME cannot contain parentheses");
 		_coding_scheme = String();
 	    }
 
@@ -650,7 +652,7 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	    else if (value == "0" || value == "no" || value == "false")
 		_warn_missing = false;
 	    else
-		lerrh.lerror(landmark(filename, line), "WARNMISSING command not understood");
+		lerrh.lerror(landmark(line), "WARNMISSING command not understood");
 	}
 
     return 0;

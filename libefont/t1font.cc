@@ -232,7 +232,7 @@ Type1Font::read(Type1Reader &reader)
 	    int zeros = 0;
 	    while (x[zeros] == 0 && x_length > 0)
 		zeros++, x_length--;
-	    add_item(new Type1CopyItem(String::fill_string('0', zeros * 2 + x_length)));
+	    add_item(new Type1CopyItem(String::make_fill('0', zeros * 2 + x_length)));
 	    eexec_state = 3;
 	    accum.clear();
 	    continue;
@@ -631,7 +631,7 @@ Type1Font::fill_in_subrs()
 	_subrs.pop_back();
     for (int i = 0; i < _subrs.size(); i++)
 	if (!_subrs[i])
-	    set_subr(i, Type1Charstring(String::stable_string("\013", 1)));
+	    set_subr(i, Type1Charstring(String::make_stable("\013", 1)));
 }
 
 void

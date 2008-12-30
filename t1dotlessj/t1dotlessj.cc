@@ -73,9 +73,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
     if (!error_message)
 	errh->message("Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]", program_name);
     else
-	errh->verror(ErrorHandler::ERR_ERROR, String(), error_message, val);
+	errh->vxmessage(ErrorHandler::e_error, error_message, val);
     errh->message("Type %s --help for more information.", program_name);
-    exit(1);
+    exit(EXIT_ERROR);
 }
 
 void
@@ -184,7 +184,7 @@ Sectioner::undot(PermString font_name, ErrorHandler *errh)
     //    fprintf(stderr, "%d  %s\n", s - _sections.begin(), CharstringUnparser::unparse(Type1Charstring(*s)).c_str());
 
     if (_sections.size() < 3)
-	errh->fatal(EXIT_J_NODOT, "%s: 'j' is already dotless", font_name.c_str());
+	errh->fatal("<%d>%s: 'j' is already dotless", -EXIT_J_NODOT, font_name.c_str());
 
     int topmost = -1;
     for (int i = 0; i < _sections.size() - 1; i++)
@@ -195,7 +195,7 @@ Sectioner::undot(PermString font_name, ErrorHandler *errh)
     for (int i = 0; i < _sections.size() - 1; i++)
 	if (_bounds[i*4 + 1] < _bounds[topmost*4 + 1])
 	    goto found_below;
-    errh->fatal(EXIT_J_NODOT, "%s: 'j' is already dotless", font_name.c_str());
+    errh->fatal("<%d>%s: 'j' is already dotless", -EXIT_J_NODOT, font_name.c_str());
 
   found_below:
     _sections[topmost] = String();
@@ -237,13 +237,13 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
     }
 
     if (!f)
-	errh->fatal(EXIT_ERROR, "%s: %s", filename, strerror(errno));
+	errh->fatal("<%d>%s: %s", -EXIT_ERROR, filename, strerror(errno));
 
     Type1Reader *reader;
     int c = getc(f);
     ungetc(c, f);
     if (c == EOF)
-	errh->fatal(EXIT_ERROR, "%s: empty file", filename);
+	errh->fatal("<%d>%s: empty file", -EXIT_ERROR, filename);
     if (c == 128)
 	reader = new Type1PFBReader(f);
     else
@@ -251,7 +251,7 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
 
     Type1Font *font = new Type1Font(*reader);
     if (!font->ok())
-	errh->fatal(EXIT_ERROR, "%s: no glyphs in font", filename);
+	errh->fatal("<%d>%s: no glyphs in font", -EXIT_ERROR, filename);
 
     delete reader;
     return font;
@@ -304,7 +304,7 @@ main(int argc, char *argv[])
 	    if (strcmp(clp->vstr, "-") == 0)
 		outputf = stdout;
 	    else if (!(outputf = fopen(clp->vstr, "wb")))
-		errh->fatal(EXIT_ERROR, "%s: %s", clp->vstr, strerror(errno));
+		errh->fatal("<%d>%s: %s", -EXIT_ERROR, clp->vstr, strerror(errno));
 	    break;
 
 	  case VERSION_OPT:
@@ -350,20 +350,20 @@ particular purpose.\n");
 
     // check for existing dotlessj
     if (font->glyph("dotlessj"))
-	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a 'dotlessj' glyph", font->font_name().c_str());
+	errh->fatal("<%d>%s: already has a 'dotlessj' glyph", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
     else if (font->glyph("uni0237"))
-	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at 'uni0237'", font->font_name().c_str());
+	errh->fatal("<%d>%s: already has a dotlessj glyph at 'uni0237'", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
     else if (font->glyph("u0237"))
-	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at 'u0237'", font->font_name().c_str());
+	errh->fatal("<%d>%s: already has a dotlessj glyph at 'u0237'", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
     else if (private_use_dotlessj && font->glyph(private_use_dotlessj))
-	errh->fatal(EXIT_DOTLESSJ_EXISTS, "%s: already has a dotlessj glyph at '%s'", font->font_name().c_str(), private_use_dotlessj);
+	errh->fatal("<%d>%s: already has a dotlessj glyph at '%s'", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str(), private_use_dotlessj);
 
     // check for j
     Type1Charstring *j_cs = font->glyph("j");
     if (!j_cs)
 	j_cs = font->glyph("uni006A");
     if (!j_cs)
-	errh->fatal(EXIT_NO_J, "%s: has no 'j' glyph to make dotless", font->font_name().c_str());
+	errh->fatal("<%d>%s: has no 'j' glyph to make dotless", -EXIT_NO_J, font->font_name().c_str());
 
     // make new font
     String actual_font_name = (font_name ? String(font_name) : font->font_name() + String("LCDFJ"));
