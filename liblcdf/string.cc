@@ -5,6 +5,7 @@
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
  * Copyright (c) 2001-2008 Eddie Kohler
+ * Copyright (c) 2008 Meraki, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -26,6 +27,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <lcdf/inttypes.h>
+
+/** @file string.hh
+ * @brief The LCDF String class.
+ */
 
 /** @class String
  * @brief A string of characters.
@@ -60,7 +65,7 @@
  *
  * All out-of-memory strings are equal and share the same data(), which is
  * different from the data() of any other string.  See
- * String::out_of_memory_data().  The String::out_of_memory_string() function
+ * String::out_of_memory_data().  The String::make_out_of_memory() function
  * returns an out-of-memory string.
  */
 
@@ -153,7 +158,7 @@ String::String(double d)
 }
 
 String
-String::claim_string(char *str, int len, int capacity)
+String::make_claim(char *str, int len, int capacity)
 {
     assert(str && len > 0 && capacity >= len);
     if (memo_t *new_memo = create_memo(str, len, capacity))
@@ -163,7 +168,7 @@ String::claim_string(char *str, int len, int capacity)
 }
 
 String
-String::stable_string(const char *s, int len)
+String::make_stable(const char *s, int len)
 {
     if (len < 0)
 	len = (s ? strlen(s) : 0);
@@ -174,7 +179,7 @@ String::stable_string(const char *s, int len)
 }
 
 String
-String::garbage_string(int len)
+String::make_garbage(int len)
 {
     String s;
     s.append_garbage(len);
@@ -182,7 +187,7 @@ String::garbage_string(int len)
 }
 
 String
-String::fill_string(int c, int len)
+String::make_fill(int c, int len)
 {
     String s;
     s.append_fill(c, len);
@@ -190,7 +195,7 @@ String::fill_string(int c, int len)
 }
 
 void
-String::make_out_of_memory()
+String::assign_out_of_memory()
 {
     if (_r.memo)
 	deref();
@@ -230,7 +235,7 @@ String::assign(const char *str, int len, bool need_deref)
 	int capacity = (len + 16) & ~15;
 	_r.memo = create_memo(0, len, capacity);
 	if (!_r.memo) {
-	    make_out_of_memory();
+	    assign_out_of_memory();
 	    return;
 	}
 	memcpy(_r.memo->real_data, str, len);
@@ -271,7 +276,7 @@ String::append_garbage(int len)
 
     memo_t *new_memo = create_memo(0, _r.length + len, new_capacity);
     if (!new_memo) {
-	make_out_of_memory();
+	assign_out_of_memory();
 	return 0;
     }
 
@@ -298,7 +303,7 @@ String::append(const char *s, int len)
     if (s == &oom_string_data)
 	// Appending "out of memory" to a regular string makes it "out of
 	// memory"
-	make_out_of_memory();
+	assign_out_of_memory();
     else if (len == 0)
 	/* do nothing */;
     else if (!(s >= _r.memo->real_data

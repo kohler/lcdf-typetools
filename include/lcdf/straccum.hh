@@ -12,7 +12,11 @@
 #else
 # define LCDF_SNPRINTF_ATTR /* nothing */
 #endif
-template<class T> class Vector;
+template<typename T> class Vector;
+
+/** @file <lcdf/straccum.hh>
+    @brief Click's StringAccum class, used to construct Strings efficiently from pieces.
+*/
 
 class StringAccum { public:
 
@@ -302,7 +306,7 @@ class StringAccum { public:
 	if (len < 0)
 	    len = strlen(s);
 	if (len == 0 && s == String::out_of_memory_data())
-	    make_out_of_memory();
+	    assign_out_of_memory();
 	append_data(s, len);
     }
     /** @overload */
@@ -318,7 +322,7 @@ class StringAccum { public:
 	if (begin < end)
 	    append_data(begin, end - begin);
 	else if (begin == String::out_of_memory_data())
-	    make_out_of_memory();
+	    assign_out_of_memory();
     }
 
     // word joining
@@ -377,7 +381,7 @@ class StringAccum { public:
     int _cap;
 
     bool grow(int);
-    void make_out_of_memory();
+    void assign_out_of_memory();
     inline void append_safe_data(const char *s, int len) {
 	if (char *x = extend(len))
 	    memcpy(x, s, len);

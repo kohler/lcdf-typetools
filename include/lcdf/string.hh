@@ -99,15 +99,15 @@ class String { public:
     }
 
 
-    /** @brief Return an empty String.
+    /** @brief Return a const reference to an empty String.
      *
-     * Returns a global constant, so it's quicker than String::String(). */
-    static inline const String &empty_string() {
+     * May be quicker than String::String(). */
+    static inline const String &make_empty() {
 	return reinterpret_cast<const String &>(null_string_rep);
     }
 
     /** @brief Return a String containing @a len unknown characters. */
-    static String garbage_string(int len);
+    static String make_garbage(int len);
 
     /** @brief Return a String that directly references the first @a len
      * characters of @a s.
@@ -115,7 +115,7 @@ class String { public:
      * This function is suitable for static constant strings whose data is
      * known to stay around forever, such as C string constants.  If @a len @<
      * 0, treats @a s as a null-terminated C string. */
-    static String stable_string(const char *s, int len = -1);
+    static String make_stable(const char *s, int len = -1);
 
     /** @brief Return a String that directly references the character data in
      * [@a begin, @a end).
@@ -125,13 +125,13 @@ class String { public:
      * This function is suitable for static constant strings whose data is
      * known to stay around forever, such as C string constants.  Returns an
      * empty string if @a begin @>= @a end. */
-    static inline String stable_string(const char *begin, const char *end) {
+    static inline String make_stable(const char *begin, const char *end) {
 	if (begin < end)
-	    return String::stable_string(begin, end - begin);
+	    return String::make_stable(begin, end - begin);
 	else
 	    return String();
     }
-    static String fill_string(int c, int n); // n copies of c
+    static String make_fill(int c, int n); // n copies of c
 
 
     /** @brief Return the string's length. */
@@ -548,8 +548,8 @@ class String { public:
 	return _r.data == &oom_string_data;
     }
 
-    /** @brief Return a reference to an out-of-memory String. */
-    static inline const String &out_of_memory_string() {
+    /** @brief Return a const reference to an out-of-memory String. */
+    static inline const String &make_out_of_memory() {
 	return reinterpret_cast<const String &>(oom_string_rep);
     }
 
@@ -578,7 +578,7 @@ class String { public:
     };
     /** @endcond never */
 
-    mutable rep_t _r;		// mutable for c_str()
+    mutable rep_t _r;	// mutable for c_str()
 
     inline String(const char *data, int length, memo_t *memo) {
 	_r.data = data;
@@ -601,14 +601,14 @@ class String { public:
 
     void assign(const char *cstr, int len, bool need_deref);
 #if HAVE_PERMSTRING
-    inline void assign(PermString p) const {
-	_r.data = p.c_str();
-	_r.length = p.length();
+    inline void assign(PermString x) const {
+	_r.data = x.c_str();
+	_r.length = x.length();
 	_r.memo = &permanent_memo;
 	++_r.memo->refcount;
     }
 #endif
-    void make_out_of_memory();
+    void assign_out_of_memory();
     static memo_t *create_memo(char *data, int dirty, int capacity);
     static void delete_memo(memo_t *memo);
 
@@ -621,13 +621,12 @@ class String { public:
     static const rep_t null_string_rep;
     static const rep_t oom_string_rep;
 
-    static String claim_string(char *, int, int); // claim memory
+    static String make_claim(char *, int, int); // claim memory
 
     friend class rep_t;
     friend class StringAccum;
 
 };
-
 
 
 /** @relates String
