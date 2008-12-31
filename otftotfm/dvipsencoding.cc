@@ -155,18 +155,34 @@ DvipsEncoding::encode(int e, PermString what)
 int
 DvipsEncoding::encoding_of(PermString what, bool encoding_required)
 {
-    int slot = -1;
-    for (int i = 0; i < _e.size(); i++)
+    Vector<uint32_t> what_unicodes, slot_unicodes;
+    (void) x_unicodes(what, what_unicodes);
+    int slot = -1, empty_slot = -1, unimatch_slot = -1;
+
+    // prefer exact match to Unicode match
+    for (int i = 0; i < _e.size(); ++i)
 	if (_e[i] == what) {
 	    slot = i;
-	    goto use_slot;
+	    break;
 	} else if (!_e[i] || _e[i] == dot_notdef)
-	    slot = i;
-    if (what == "||")
-	return _boundary_char;
-    else if (!encoding_required || slot < 0)
+	    empty_slot = i;
+	else if (unimatch_slot < 0) {
+	    (void) x_unicodes(_e[i], slot_unicodes);
+	    if (slot_unicodes.size() == what_unicodes.size()
+		&& slot_unicodes.size() > 0
+		&& memcmp(slot_unicodes.begin(), what_unicodes.begin(),
+			  slot_unicodes.size() * sizeof(uint32_t)) == 0)
+		unimatch_slot = i;
+	}
+
+    if (slot < 0 && unimatch_slot >= 0)
+    	slot = unimatch_slot;
+    if (slot < 0 && encoding_required && empty_slot >= 0)
+	slot = empty_slot;
+    if (slot < 0)
 	return -1;
-  use_slot:
+
+    // encode character
     if (encoding_required) {
 	if (slot >= _encoding_required.size())
 	    _encoding_required.resize(slot + 1, false);
@@ -570,12 +586,8 @@ trim_space(const String &s, int pos)
 }
 
 int
-DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *errh)
+DvipsEncoding::parse_main(String filename, String s, ErrorHandler *errh)
 {
-    int before = errh->nerrors();
-    String s = read_file(filename, errh);
-    if (errh->nerrors() != before)
-	return -1;
     _filename = filename;
     _printable_filename = printable_filename(filename);
     _file_had_ligkern = false;
@@ -595,44 +607,48 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	_e.push_back(token.substring(1));
 
     _final_text = token + s.substring(pos);
+    return 0;
+}
 
-    // now parse comments
-    pos = 0, line = 1;
+void
+DvipsEncoding::parse_comments(String s, int parsing, ErrorHandler *errh)
+{
+    int pos = 0, line = 1;
     Vector<String> words;
     LandmarkErrorHandler lerrh(errh, "");
-    while ((token = comment_tokenize(s, pos, line)))
+    while (String token = comment_tokenize(s, pos, line))
 	if (token.length() >= 8
 	    && memcmp(token.data(), "LIGKERN", 7) == 0
 	    && isspace((unsigned char) token[7])
-	    && !ignore_ligkern) {
+	    && (parsing & p_ligkern)) {
 	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(8), 1, WT_LIGKERN, &lerrh);
 
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "LIGKERNX", 8) == 0
 		   && isspace((unsigned char) token[8])
-		   && !ignore_ligkern) {
+		   && (parsing & p_ligkern)) {
 	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(9), 1, WT_LIGKERN, &lerrh);
 
 	} else if (token.length() >= 10
 		   && memcmp(token.data(), "UNICODING", 9) == 0
 		   && isspace((unsigned char) token[9])
-		   && !ignore_other) {
+		   && (parsing & p_unicoding)) {
 	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(10), 1, WT_UNICODING, &lerrh);
 
 	} else if (token.length() >= 9
 		   && memcmp(token.data(), "POSITION", 8) == 0
 		   && isspace((unsigned char) token[8])
-		   && !ignore_other) {
+		   && (parsing & p_other)) {
 	    lerrh.set_landmark(landmark(line));
 	    parse_words(token.substring(9), 1, WT_POSITION, &lerrh);
 
 	} else if (token.length() >= 13
 		   && memcmp(token.data(), "CODINGSCHEME", 12) == 0
 		   && isspace((unsigned char) token[12])
-		   && !ignore_other) {
+		   && (parsing & p_other)) {
 	    _coding_scheme = trim_space(token, 13);
 	    if (_coding_scheme.length() > 39)
 		lerrh.lwarning(landmark(line), "only first 39 chars of CODINGSCHEME are significant");
@@ -645,7 +661,7 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	} else if (token.length() >= 11
 		   && memcmp(token.data(), "WARNMISSING", 11) == 0
 		   && (token.length() == 11 || isspace((unsigned char) token[11]))
-		   && !ignore_other) {
+		   && (parsing & p_other)) {
 	    String value = trim_space(token, 11);
 	    if (value == "1" || value == "yes" || value == "true" || !value)
 		_warn_missing = true;
@@ -654,8 +670,6 @@ DvipsEncoding::parse(String filename, bool ignore_ligkern, bool ignore_other, Er
 	    else
 		lerrh.lerror(landmark(line), "WARNMISSING command not understood");
 	}
-
-    return 0;
 }
 
 int
@@ -712,6 +726,7 @@ map_uni(uint32_t uni, const Efont::OpenType::Cmap &cmap, const Metrics &m)
 bool
 DvipsEncoding::x_unicodes(PermString chname, Vector<uint32_t> &unicodes) const
 {
+    unicodes.clear();
     int i = _unicoding_map[chname];
     if (i >= 0) {
 	for (; _unicoding[i] >= 0; i++)

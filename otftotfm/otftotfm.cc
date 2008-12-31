@@ -1619,9 +1619,11 @@ parse_base_encodings(const String &filename, ErrorHandler *errh)
 		/* encoding ignored */;
 	    else if (!efile)
 		lerrh.error("missing encoding name");
-	    else if (String path = locate_encoding(efile, errh))
-		be->encoding.parse(path, true, true, &lerrh);
-	    else
+	    else if (String path = locate_encoding(efile, errh)) {
+		String data = read_file(path, &lerrh);
+		if (data && be->encoding.parse_main(path, data, &lerrh) >= 0)
+		    be->encoding.parse_comments(data, DvipsEncoding::p_all, &lerrh);
+	    } else
 		lerrh.error("encoding '%s' not found", efile.c_str());
 	    if (lerrh.nerrors() == before)
 		base_encodings.push_back(be);
@@ -2101,10 +2103,13 @@ particular purpose.\n");
 
 	// read encoding
 	DvipsEncoding dvipsenc;
+	String dvipsenc_data;
 	if (encoding_file) {
-	    if (String path = locate_encoding(encoding_file, errh))
-		dvipsenc.parse(path, no_ecommand, no_ecommand, errh);
-	    else
+	    if (String path = locate_encoding(encoding_file, errh)) {
+		dvipsenc_data = read_file(path, errh);
+		if (dvipsenc.parse_main(path, dvipsenc_data, errh) < 0)
+		    dvipsenc_data = String();
+	    } else
 		errh->fatal("encoding '%s' not found", encoding_file.c_str());
 	} else {
 	    // use encoding from font
@@ -2119,6 +2124,17 @@ particular purpose.\n");
 	    delete font;
 	}
 
+	// apply unicodings, first from file, then explicit arguments
+	// (unicodings must precede other comments)
+	if (dvipsenc_data && !no_ecommand)
+	    dvipsenc.parse_comments(dvipsenc_data, DvipsEncoding::p_unicoding, errh);
+	cerrh.set_landmark("--unicoding command");
+	for (int i = 0; i < unicoding.size(); i++)
+	    dvipsenc.parse_unicoding(unicoding[i], 1, &cerrh);
+
+	// apply other file commands
+	if (dvipsenc_data && !no_ecommand)
+	    dvipsenc.parse_comments(dvipsenc_data, DvipsEncoding::p_all & ~DvipsEncoding::p_unicoding, errh);
 	// apply default ligkern commands
 	if (default_ligkern)
 	    dvipsenc.parse_ligkern(default_ligkerns, 0, ErrorHandler::silent_handler());
@@ -2130,9 +2146,6 @@ particular purpose.\n");
 	cerrh.set_landmark("--position command");
 	for (int i = 0; i < pos.size(); i++)
 	    dvipsenc.parse_position(pos[i], 1, &cerrh);
-	cerrh.set_landmark("--unicoding command");
-	for (int i = 0; i < unicoding.size(); i++)
-	    dvipsenc.parse_unicoding(unicoding[i], 1, &cerrh);
 	if (codingscheme)
 	    dvipsenc.set_coding_scheme(codingscheme);
 	if (warn_missing >= 0)
