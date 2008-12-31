@@ -30,14 +30,10 @@ class DvipsEncoding { public:
     inline PermString encoding(int e) const;
     int encoding_size() const			{ return _e.size(); }
 
-    enum {
-	p_ligkern = 1, p_unicoding = 2, p_other = 4, p_all = 7
-    };
-    int parse_main(String filename, String data, ErrorHandler *errh);
-    void parse_comments(String data, int parsing, ErrorHandler *errh);
-    int parse_ligkern(const String &ligkern_text, int override, ErrorHandler *errh);
-    int parse_position(const String &ligkern_text, int override, ErrorHandler *errh);
-    int parse_unicoding(const String &unicoding_text, int override, ErrorHandler *errh);
+    int parse(String filename, bool ignore_ligkern, bool ignore_other, ErrorHandler *);
+    int parse_ligkern(const String &ligkern_text, int override, ErrorHandler *);
+    int parse_position(const String &ligkern_text, int override, ErrorHandler *);
+    int parse_unicoding(const String &unicoding_text, int override, ErrorHandler *);
 
     bool file_had_ligkern() const		{ return _file_had_ligkern; }
 
