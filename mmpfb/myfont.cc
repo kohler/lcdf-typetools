@@ -90,7 +90,7 @@ MyFont::set_design_vector(MultipleMasterSpace *mmspace, const Vector<double> &de
     // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
     // components are unknown.
     if (!KNOWN(design[0])) {
-	errh->error("must specify %s's %s coordinate", font_name().c_str(),
+	errh->error("must specify %s%,s %s coordinate", font_name().c_str(),
 		    mmspace->axis_type(0).c_str());
 	return false;
     }
@@ -277,12 +277,12 @@ MyFont::interpolate_dicts(bool force_integer, ErrorHandler *errh)
       PermString name = i.key();
       if (i.value() && name != "Private" && name != "FontInfo"
 	  && name != "ConvertDesignVector" && name != "NormalizeDesignVector")
-	  errh->warning("didn't interpolate %s in Blend", name.c_str());
+	  errh->warning("didn%,t interpolate %s in Blend", name.c_str());
   }
 
   for (DictHashMap::const_iterator i = dict_begin(dBlendPrivate); i; i++)
       if (i.value() && i.key() != "Erode")
-	  errh->warning("didn't interpolate %s in BlendPrivate", i.key().c_str());
+	  errh->warning("didn%,t interpolate %s in BlendPrivate", i.key().c_str());
 
   kill_def(p_dict("NDV"), dPrivate);
   kill_def(p_dict("CDV"), dPrivate);

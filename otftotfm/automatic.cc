@@ -119,7 +119,7 @@ find_writable_texdir(ErrorHandler *errh, const char *)
 	errh->warning("no writable directory found in $TEXMFVAR or $TEXMF");
 	errh->message("(You probably need to set your TEXMF environment variable; see\n\
 the manual for more information. The current TEXMF path is\n\
-'%s'.)", kpsei_string(kpsei_path_expand("$TEXMF")).c_str());
+%<%s%>.)", kpsei_string(kpsei_path_expand("$TEXMF")).c_str());
     }
     writable_texdir_tried = true;
 }
@@ -213,7 +213,7 @@ getodir(int o, ErrorHandler *errh)
 
     if (!odir[o]) {
 	if (automatic)
-	    errh->warning("%s not specified, placing %s files in '.'", odir_info[o].envvar, odir_info[o].name);
+	    errh->warning("%s not specified, placing %s files in %<.%>", odir_info[o].envvar, odir_info[o].name);
 	odir[o] = ".";
     }
 
@@ -221,7 +221,7 @@ getodir(int o, ErrorHandler *errh)
 	odir[o] = odir[o].substring(0, -1);
 
     if (verbose)
-	errh->message("placing %s files in '%s'", odir_info[o].name, odir[o].c_str());
+	errh->message("placing %s files in %<%s%>", odir_info[o].name, odir[o].c_str());
     return odir[o];
 }
 
@@ -310,11 +310,11 @@ update_odir(int o, String file, ErrorHandler *errh)
 	    String command = mktexupd + " " + shell_quote(writable_texdir + directory) + " " + shell_quote(file);
 	    int retval = system(command.c_str());
 	    if (retval == 127)
-		errh->error("could not run '%s'", command.c_str());
+		errh->error("could not run %<%s%>", command.c_str());
 	    else if (retval < 0)
-		errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+		errh->error("could not run %<%s%>: %s", command.c_str(), strerror(errno));
 	    else if (retval != 0)
-		errh->error("'%s' failed", command.c_str());
+		errh->error("%<%s%> failed", command.c_str());
 	}
     }
 #else
@@ -346,7 +346,7 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	    || (file = ps_fontname + ".pfa", path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TYPE1)))) {
 	    if (path == "./" + file || path == file) {
 		if (verbose)
-		    errh->message("ignoring Type 1 file %s found with kpathsea in '.'", path.c_str());
+		    errh->message("ignoring Type 1 file %s found with kpathsea in %<.%>", path.c_str());
 	    } else {
 		if (verbose)
 		    errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
@@ -367,11 +367,11 @@ installed_type1(const String &otf_filename, const String &ps_fontname, bool allo
 	String command = "cfftot1 " + shell_quote(otf_filename) + " -n " + shell_quote(ps_fontname) + " " + shell_quote(pfb_filename);
 	int retval = mysystem(command.c_str(), errh);
 	if (retval == 127)
-	    errh->error("could not run '%s'", command.c_str());
+	    errh->error("could not run %<%s%>", command.c_str());
 	else if (retval < 0)
-	    errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+	    errh->error("could not run %<%s%>: %s", command.c_str(), strerror(errno));
 	else if (retval != 0)
-	    errh->error("'%s' failed", command.c_str());
+	    errh->error("%<%s%> failed", command.c_str());
 	if (retval == 0) {
 	    update_odir(O_TYPE1, pfb_filename, errh);
 	    return pfb_filename;
@@ -403,7 +403,7 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
 	    // ignore versions in the current directory
 	    if (path == "./" + file || path == file) {
 		if (verbose)
-		    errh->message("ignoring Type 1 file %s found with kpathsea in '.'", path.c_str());
+		    errh->message("ignoring Type 1 file %s found with kpathsea in %<.%>", path.c_str());
 	    } else {
 		if (verbose)
 		    errh->message("Type 1 file %s found with kpathsea at %s", file.c_str(), path.c_str());
@@ -425,13 +425,13 @@ installed_type1_dotlessj(const String &otf_filename, const String &ps_fontname, 
 	    String command = "t1dotlessj " + shell_quote(base_filename) + " -n " + shell_quote(j_ps_fontname) + " " + shell_quote(pfb_filename);
 	    int retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
-		errh->warning("could not run '%s'", command.c_str());
+		errh->warning("could not run %<%s%>", command.c_str());
 	    else if (retval < 0)
-		errh->warning("could not run '%s': %s", command.c_str(), strerror(errno));
+		errh->warning("could not run %<%s%>: %s", command.c_str(), strerror(errno));
 	    else if (WEXITSTATUS(retval) == T1DOTLESSJ_EXIT_J_NODOT)
 		return String("\0", 1);
 	    else if (retval != 0)
-		errh->warning("'%s' failed (%d)", command.c_str(), retval);
+		errh->warning("%<%s%> failed (%d)", command.c_str(), retval);
 	    if (retval == 0) {
 		update_odir(O_TYPE1, pfb_filename, errh);
 		return pfb_filename;
@@ -454,7 +454,7 @@ installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler
 	if (String path = kpsei_string(kpsei_find_file(file.c_str(), KPSEI_FMT_TRUETYPE))) {
 	    if (path == "./" + file || path == file) {
 		if (verbose)
-		    errh->message("ignoring TrueType file %s found with kpathsea in '.'", path.c_str());
+		    errh->message("ignoring TrueType file %s found with kpathsea in %<.%>", path.c_str());
 	    } else {
 		if (verbose)
 		    errh->message("TrueType file %s found with kpathsea at %s", file.c_str(), path.c_str());
@@ -475,11 +475,11 @@ installed_truetype(const String &otf_filename, bool allow_generate, ErrorHandler
 	    String command = "cp " + shell_quote(otf_filename) + " " + shell_quote(ttf_filename);
 	    retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
-		errh->error("could not run '%s'", command.c_str());
+		errh->error("could not run %<%s%>", command.c_str());
 	    else if (retval < 0)
-		errh->error("could not run '%s': %s", command.c_str(), strerror(errno));
+		errh->error("could not run %<%s%>: %s", command.c_str(), strerror(errno));
 	    else if (retval != 0)
-		errh->error("'%s' failed", command.c_str());
+		errh->error("%<%s%> failed", command.c_str());
 	} else {
 	    if (verbose)
 		errh->message("TrueType file %s already located in output directory", otf_filename.c_str());
@@ -667,11 +667,11 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 		command += " >/dev/null 2>&1";
 	    int retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
-		errh->warning("could not run '%s'", command.c_str());
+		errh->warning("could not run %<%s%>", command.c_str());
 	    else if (retval < 0)
-		errh->warning("could not run '%s': %s", command.c_str(), strerror(errno));
+		errh->warning("could not run %<%s%>: %s", command.c_str(), strerror(errno));
 	    else if (retval != 0)
-		errh->warning("'%s' exited with status %d;\nrun it manually to check for errors", command.c_str(), WEXITSTATUS(retval));
+		errh->warning("%<%s%> exited with status %d;\nrun it manually to check for errors", command.c_str(), WEXITSTATUS(retval));
 	    goto ran_updmap;
 	}
 # endif

@@ -1,6 +1,6 @@
 /* t1testpage.cc -- driver for generating Type 1 fonts' test pages
  *
- * Copyright (c) 1999-2007 Eddie Kohler
+ * Copyright (c) 1999-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -82,8 +82,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
 void
 usage()
 {
-    printf("\
-'T1testpage' creates a PostScript proof document for the specified Type 1\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<T1testpage%> creates a PostScript proof document for the specified Type 1\n\
 font file and writes it to the standard output. The proof shows every\n\
 glyph in the font, including its glyph name and encoding.\n\
 \n\
@@ -628,7 +629,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("t1testpage (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 1999-2006 Eddie Kohler\n\
+	    printf("Copyright (C) 1999-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

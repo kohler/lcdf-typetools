@@ -374,7 +374,7 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 		    encode(l, v[2]);
 		return 0;
 	    } else
-		return errh->error("encoding value '%d' out of range", l);
+		return errh->error("encoding value %<%d%> out of range", l);
 	}
 
 	// kern operation
@@ -392,12 +392,12 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
       found_kernop:
 	int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
 	if (av < 0)
-	    return errh->warning("'%s' has no encoding, ignoring '%s'", v[0].c_str(), v[1].c_str());
+	    return errh->warning("%<%s%> has no encoding, ignoring %<%s%>", v[0].c_str(), v[1].c_str());
 	int bv = (v[2] == "*" ? J_ALL : encoding_of(v[2]));
 	if (bv < 0)
-	    return errh->warning("'%s' has no encoding, ignoring '%s'", v[2].c_str(), v[1].c_str());
+	    return errh->warning("%<%s%> has no encoding, ignoring %<%s%>", v[2].c_str(), v[1].c_str());
 	if ((op & JT_KERN) && l && (av == J_ALL || bv == J_ALL))
-	    return errh->warning("'%s %s %s' illegal, only {0} works with *", v[0].c_str(), v[1].c_str(), v[2].c_str());
+	    return errh->warning("%<%s %s %s%> illegal, only {0} works with *", v[0].c_str(), v[1].c_str(), v[2].c_str());
 	Ligature lig = { av, bv, op, l, 0 };
 	add_ligkern(lig, override);
 	return 0;
@@ -405,13 +405,13 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
     } else if (v.size() == 4 && ((op = find_ligkern_op(v[2])) & JT_ADDLIG)) {
 	int av = encoding_of(v[0], override > 0);
 	if (av < 0)
-	    return (override > 0 ? errh->warning("'%s' has no encoding, ignoring ligature", v[0].c_str()) : -1);
+	    return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring ligature", v[0].c_str()) : -1);
 	int bv = encoding_of(v[1], override > 0);
 	if (bv < 0)
-	    return (override > 0 ? errh->warning("'%s' has no encoding, ignoring ligature", v[1].c_str()) : -1);
+	    return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring ligature", v[1].c_str()) : -1);
 	int cv = encoding_of(v[3], override > 0);
 	if (cv < 0)
-	    return (override > 0 ? errh->warning("'%s' has no encoding, ignoring ligature", v[3].c_str()) : -1);
+	    return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring ligature", v[3].c_str()) : -1);
 	Ligature lig = { av, bv, op, 0, cv };
 	add_ligkern(lig, override);
 	return 0;
@@ -428,7 +428,7 @@ DvipsEncoding::parse_position_words(Vector<String> &v, int override, ErrorHandle
 
     int c = encoding_of(v[0]);
     if (c < 0)
-	return (override > 0 ? errh->warning("'%s' has no encoding, ignoring positioning", v[0].c_str()) : -1);
+	return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring positioning", v[0].c_str()) : -1);
 
     char *endptr;
     int pdx, pdy, adx;
@@ -454,7 +454,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
     if (v.size() < 2 || (v[1] != "=" && v[1] != "=:" && v[1] != ":="))
 	return -EPARSE;
     else if (v[0] == "||" || (av = encoding_of(v[0])) < 0)
-	return errh->warning("'%s' has no encoding, ignoring UNICODING", v[0].c_str());
+	return errh->warning("%<%s%> has no encoding, ignoring UNICODING", v[0].c_str());
 
     int original_size = _unicoding.size();
 
@@ -465,9 +465,9 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
 	    bool more;		// some care to get all possibilities
 	    int uni = glyphname_unicode(v[i], &more);
 	    if (uni < 0) {
-		errh->warning("can't map '%s' to Unicode", v[i].c_str());
+		errh->warning("can't map %<%s%> to Unicode", v[i].c_str());
 		if (i == 2)
-		    errh->warning("target '%s' will be deleted from encoding", v[0].c_str());
+		    errh->warning("target %<%s%> will be deleted from encoding", v[0].c_str());
 	    } else {
 		_unicoding.push_back(uni);
 		while (more) {
@@ -841,7 +841,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
 	    bad_codepoint(code, metrics, unencoded);
 
     if (unencoded.size() == 1) {
-	errh->warning("'%s' glyph not found in font", unencoded[0].c_str());
+	errh->warning("%<%s%> glyph not found in font", unencoded[0].c_str());
 	errh->message("(This glyph will appear as a blot and cause warnings if used.)");
     } else if (unencoded.size() > 1) {
 	std::sort(unencoded.begin(), unencoded.end());
@@ -899,7 +899,7 @@ DvipsEncoding::apply_ligkern_lig(Metrics &metrics, ErrorHandler *errh) const
 	else {
 	    static int complex_join_warning = 0;
 	    if (!complex_join_warning) {
-		errh->warning("complex LIGKERN ligature removed (I only support '=:', '=:|', and '|=:')");
+		errh->warning("complex LIGKERN ligature removed (I only support %<=:%>, %<=:|%>, and %<|=:%>)");
 		complex_join_warning = 1;
 	    }
 	}

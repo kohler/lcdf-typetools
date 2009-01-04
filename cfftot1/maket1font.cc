@@ -407,7 +407,7 @@ MakeType1CharstringInterp::run(const CharstringContext &g, Type1Charstring &out,
 
     if (Type1CharstringGenInterp::bad_flex() && !_flex_message) {
 	errh->lwarning(landmark(), "complex flex hint replaced with curves");
-	errh->message("(This Type 2 format font contains flex hints prohibited by Type 1.\nI've safely replaced them with ordinary curves.)");
+	errh->message("(This Type 2 format font contains flex hints prohibited by Type 1.\nI%,ve safely replaced them with ordinary curves.)");
 	_flex_message = true;
     }
 }

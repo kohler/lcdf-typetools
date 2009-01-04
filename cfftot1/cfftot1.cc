@@ -1,6 +1,6 @@
 /* cfftot1.cc -- driver for translating CFF fonts to Type 1 fonts
  *
- * Copyright (c) 2002-2006 Eddie Kohler
+ * Copyright (c) 2002-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -79,8 +79,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
 void
 usage()
 {
-    printf("\
-'Cfftot1' translates a PostScript font from the Compact Font Format (CFF) to\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<Cfftot1%> translates a PostScript font from the Compact Font Format (CFF) to\n\
 the usual Type 1 format. The input file should be either a raw CFF font or a\n\
 PostScript-flavored OpenType font. The result, which is usually written to the\n\
 standard output, is written in PFB or PFA format.\n\
@@ -209,7 +210,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("cfftot1 (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2002-2006 Eddie Kohler\n\
+	    printf("Copyright (C) 2002-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

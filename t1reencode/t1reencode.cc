@@ -1,6 +1,6 @@
 /* t1reencode.cc -- driver for reencoding Type 1 fonts
  *
- * Copyright (c) 2005-2006 Eddie Kohler
+ * Copyright (c) 2005-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -643,8 +643,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
 void
 usage()
 {
-    printf("\
-'T1reencode' changes a Type 1 font's embedded encoding and writes the\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<T1reencode%> changes a Type 1 font%,s embedded encoding and writes the\n\
 reencoded font to the standard output.\n\
 \n\
 Usage: %s [OPTION]... [FONTFILE [OUTPUTFILE]]\n\
@@ -652,8 +653,8 @@ Usage: %s [OPTION]... [FONTFILE [OUTPUTFILE]]\n\
 Options:\n\
   -e, --encoding=FILE          Read the encoding from FILE (in DVIPS format).\n\
   -E, --encoding-text=ENC      The ENC argument is the encoding text.\n\
-  -n, --name=NAME              Set output font's PostScript name.\n\
-  -N, --full-name=NAME         Set output font's full name.\n\
+  -n, --name=NAME              Set output font%,s PostScript name.\n\
+  -N, --full-name=NAME         Set output font%,s full name.\n\
   -a, --pfa                    Output PFA font.\n\
   -b, --pfb                    Output PFB font.  This is the default.\n\
   -o, --output=FILE            Write output to FILE instead of standard out.\n\
@@ -981,7 +982,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("t1reencode (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 1999-2006 Eddie Kohler\n\
+	    printf("Copyright (C) 1999-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -1023,7 +1024,7 @@ particular purpose.\n");
 
     // read the encoding
     if (!encoding_file && !encoding_text)
-	errh->fatal("missing '-e ENCODING' argument");
+	errh->fatal("missing %<-e ENCODING%> argument");
     Type1Encoding *t1e = 0;
     if (strcmp(encoding_file, "StandardEncoding") == 0) {
 	t1e = Type1Encoding::standard_encoding();

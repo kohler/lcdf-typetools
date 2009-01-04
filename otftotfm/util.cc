@@ -161,7 +161,7 @@ temporary_file(String &filename, ErrorHandler *errh)
     }
     int fd = mkstemp(filename.mutable_c_str());
     if (fd < 0)
-	errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
+	errh->error("temporary file %<%s%>: %s", filename.c_str(), strerror(errno));
     return fd;
 #else  // !HAVE_MKSTEMP
     for (int tries = 0; tries < 5; tries++) {
@@ -175,7 +175,7 @@ temporary_file(String &filename, ErrorHandler *errh)
 	if (fd >= 0)
 	    return fd;
     }
-    return errh->error("temporary file '%s': %s", filename.c_str(), strerror(errno));
+    return errh->error("temporary file %<%s%>: %s", filename.c_str(), strerror(errno));
 #endif
 }
 
@@ -227,7 +227,7 @@ shell_command_output(String cmdline, const String &input, ErrorHandler *errh, bo
     String new_cmdline = cmdline + " 0<&" + String(fileno(f));
     FILE *p = popen(new_cmdline.c_str(), "r");
     if (!p)
-	errh->fatal("'%s': %s", cmdline.c_str(), strerror(errno));
+	errh->fatal("%<%s%>: %s", cmdline.c_str(), strerror(errno));
 
     StringAccum sa;
     while (!feof(p) && !ferror(p) && sa.length() < 200000) {
@@ -235,10 +235,10 @@ shell_command_output(String cmdline, const String &input, ErrorHandler *errh, bo
 	if (x > 0)
 	    sa.forward(x);
 	else if (x < 0 && errno != EAGAIN)
-	    errh->error("'%s': %s", cmdline.c_str(), strerror(errno));
+	    errh->error("%<%s%>: %s", cmdline.c_str(), strerror(errno));
     }
     if (!feof(p) && !ferror(p))
-	errh->warning("'%s' output too long, truncated", cmdline.c_str());
+	errh->warning("%<%s%> output too long, truncated", cmdline.c_str());
 
     fclose(f);
     pclose(p);

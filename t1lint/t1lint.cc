@@ -1,6 +1,6 @@
 /* t1lint.cc -- driver for checking Type 1 fonts for validity
  *
- * Copyright (c) 1999-2006 Eddie Kohler
+ * Copyright (c) 1999-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -68,8 +68,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
 void
 usage()
 {
-  printf("\
-'T1lint' checks a PostScript Type 1 font for correctness. Any errors or\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<T1lint%> checks a PostScript Type 1 font for correctness. Any errors or\n\
 divergences from the specification are reported to standard error. Nothing is\n\
 printed for correct fonts. The command exits with status 0 if there are no\n\
 errors, and status 1 otherwise.\n\
@@ -399,7 +400,7 @@ main(int argc, char *argv[])
 
      case VERSION_OPT:
       printf("t1lint (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1999-2006 Eddie Kohler\n\
+      printf("Copyright (C) 1999-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

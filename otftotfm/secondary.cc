@@ -362,7 +362,7 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	font->glyph_names(glyph_names);
 	Vector<PermString>::iterator g = std::find(glyph_names.begin(), glyph_names.end(), "uni0237");
 	if (g == glyph_names.end()) {
-	    errh->error("%s: dotless-J font has no 'uni0237' glyph", filename.c_str());
+	    errh->error("%s: dotless-J font has no %<uni0237%> glyph", filename.c_str());
 	    delete font;
 	    return -1;
 	}
@@ -375,7 +375,7 @@ T1Secondary::dotlessj_font(Metrics &metrics, ErrorHandler *errh, Glyph &dj_glyph
 	    ::dotlessj_file_name = filename;
 	    output_metrics(dj_metrics, font->font_name(), -1, _finfo, String(), String(), dj_name, dotlessj_dvips_include, errh);
 	} else if (verbose)
-	    errh->message("using '%s' for dotless-J font metrics", dj_name.c_str());
+	    errh->message("using %<%s%> for dotless-J font metrics", dj_name.c_str());
 
 	// add font to metrics
 	return metrics.add_mapped_font(font, dj_name);

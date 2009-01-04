@@ -122,7 +122,7 @@ GlyphFilter::add_pattern(const String& pattern, int ptype, ErrorHandler* errh)
 	    if (UnicodeProperty::parse_property(pattern.substring(begin + 1, word - 1), p.u.uniprop.value, p.u.uniprop.mask))
 		_patterns.push_back(p);
 	    else if (errh)
-		errh->error("unknown Unicode property '%s'", pattern.c_str());
+		errh->error("unknown Unicode property %<%s%>", pattern.c_str());
 	    goto next_clause;
 	}
 

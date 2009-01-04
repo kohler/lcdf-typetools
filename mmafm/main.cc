@@ -1,6 +1,6 @@
 /* main.cc -- driver for mmafm program
  *
- * Copyright (c) 1997-2006 Eddie Kohler
+ * Copyright (c) 1997-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -221,8 +221,9 @@ usage_error(const char *error_message, ...)
 static void
 usage()
 {
-  printf("\
-'Mmafm' creates an AFM font metrics file for a multiple master font by\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<Mmafm%> creates an AFM font metrics file for a multiple master font by\n\
 interpolating at a point you specify and writes it to the standard output.\n\
 \n\
 Usage: %s [OPTION | FONT]...\n\
@@ -321,7 +322,7 @@ main(int argc, char *argv[])
 
      case VERSION_OPT:
       printf("mmafm (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1997-2006 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -373,14 +374,14 @@ particular purpose.\n");
   Vector<double> weight;
   if (!mmspace->design_to_weight(design, weight, errh)) {
     if (!mmspace->check_intermediate()) {
-      errh->message("(I can't interpolate font programs with intermediate masters on my own.");
+      errh->message("(I can%,t interpolate font programs with intermediate masters on my own.");
 #if MMAFM_RUN_MMPFB
-      errh->message("I tried to run `mmpfb --amcp-info %s', but it didn't work.", amfm->font_name().c_str());
+      errh->message("I tried to run %<mmpfb --amcp-info %s%>, but it didn't work.", amfm->font_name().c_str());
       errh->message("Maybe your PSRESOURCEPATH environment variable is not set?");
 #endif
       errh->fatal("See the manual page for more information.)");
     } else
-      errh->fatal("can't create weight vector");
+      errh->fatal("can%,t create weight vector");
   }
 
   // Need to check for case when all design coordinates are unspecified. The
@@ -389,7 +390,7 @@ particular purpose.\n");
   // `MyriadMM_-9.79797979e97_-9.79797979e97_' because the DesignVector
   // components are unknown.
   if (!KNOWN(design[0]))
-    errh->fatal("must specify %s's %s coordinate", amfm->font_name().c_str(),
+    errh->fatal("must specify %s%,s %s coordinate", amfm->font_name().c_str(),
 		mmspace->axis_type(0).c_str());
 
   Metrics *m = amfm->interpolate(design, weight, errh);

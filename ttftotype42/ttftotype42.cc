@@ -1,6 +1,6 @@
 /* ttftotype42.cc -- driver for translating TrueType fonts to Type 42 fonts
  *
- * Copyright (c) 2006 Eddie Kohler
+ * Copyright (c) 2006-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -75,8 +75,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
 void
 usage()
 {
-    printf("\
-'Ttftotype42' translates a TrueType or TrueType-flavored OpenType font into\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<Ttftotype42%> translates a TrueType or TrueType-flavored OpenType font into\n\
 PostScript Type 42 format, which is suitable for inclusion in PostScript\n\
 files. The result, is usually written to the standard output.\n\
 \n\
@@ -330,7 +331,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("ttftotype42 (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2006 Eddie Kohler\n\
+	    printf("Copyright (C) 2006-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

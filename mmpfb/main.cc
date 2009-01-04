@@ -1,6 +1,6 @@
 /* main.cc -- driver for mmpfb program
  *
- * Copyright (c) 1997-2006 Eddie Kohler
+ * Copyright (c) 1997-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -106,8 +106,9 @@ usage_error(const char *error_message, ...)
 void
 usage()
 {
-  printf("\
-'Mmpfb' creates a single-master PostScript Type 1 font by interpolating a\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<Mmpfb%> creates a single-master PostScript Type 1 font by interpolating a\n\
 multiple master font at a point you specify. The resulting font does not\n\
 contain multiple master extensions. It is written to the standard output.\n\
 \n\
@@ -124,7 +125,7 @@ General options:\n\
   -o, --output=FILE            Write output to FILE.\n\
   -p, --precision=N            Set precision to N (larger means more precise).\n\
       --subrs=N                Limit output font to at most N subroutines.\n\
-      --no-minimize            Do not replace original font's PostScript code.\n\
+      --no-minimize            Do not replace original font%,s PostScript code.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not generate any error messages.\n\
   -v, --version                Print version number and exit.\n\
@@ -354,7 +355,7 @@ main(int argc, char *argv[])
 
      case VERSION_OPT:
       printf("mmpfb (LCDF typetools) %s\n", VERSION);
-      printf("Copyright (C) 1997-2006 Eddie Kohler\n\
+      printf("Copyright (C) 1997-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -404,7 +405,7 @@ particular purpose.\n");
   Vector<double> default_design = mmspace->default_design_vector();
   for (int i = 0; i < mmspace->naxes(); i++)
     if (!KNOWN(design[i]) && KNOWN(default_design[i])) {
-      errh->warning("using default value %g for %s's %s", default_design[i],
+      errh->warning("using default value %g for %s%,s %s", default_design[i],
 		    font->font_name().c_str(), mmspace->axis_type(i).c_str());
       design[i] = default_design[i];
     }

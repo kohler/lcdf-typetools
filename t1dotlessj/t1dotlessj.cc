@@ -81,8 +81,9 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
 void
 usage()
 {
-    printf("\
-'T1dotlessj' reads a PostScript Type 1 font, derives a new PostScript Type 1\n\
+    FileErrorHandler uerrh(stdout);
+    uerrh.message("\
+%<T1dotlessj%> reads a PostScript Type 1 font, derives a new PostScript Type 1\n\
 font containing just a dotlessj character (by chopping the dot from the j),\n\
 and writes it to the standard output.\n\
 \n\
@@ -92,7 +93,7 @@ Options:\n\
   -a, --pfa                    Output PFA font.\n\
   -b, --pfb                    Output PFB font. This is the default.\n\
   -o, --output=FILE            Write output to FILE instead of standard output.\n\
-  -n, --name=NAME              Set output font's PostScript name.\n\
+  -n, --name=NAME              Set output font%,s PostScript name.\n\
   -h, --help                   Print this message and exit.\n\
   -q, --quiet                  Do not report errors to standard error.\n\
       --version                Print version number and exit.\n\
@@ -184,7 +185,7 @@ Sectioner::undot(PermString font_name, ErrorHandler *errh)
     //    fprintf(stderr, "%d  %s\n", s - _sections.begin(), CharstringUnparser::unparse(Type1Charstring(*s)).c_str());
 
     if (_sections.size() < 3)
-	errh->fatal("<%d>%s: 'j' is already dotless", -EXIT_J_NODOT, font_name.c_str());
+	errh->fatal("<%d>%s: %<j%> is already dotless", -EXIT_J_NODOT, font_name.c_str());
 
     int topmost = -1;
     for (int i = 0; i < _sections.size() - 1; i++)
@@ -195,7 +196,7 @@ Sectioner::undot(PermString font_name, ErrorHandler *errh)
     for (int i = 0; i < _sections.size() - 1; i++)
 	if (_bounds[i*4 + 1] < _bounds[topmost*4 + 1])
 	    goto found_below;
-    errh->fatal("<%d>%s: 'j' is already dotless", -EXIT_J_NODOT, font_name.c_str());
+    errh->fatal("<%d>%s: %<j%> is already dotless", -EXIT_J_NODOT, font_name.c_str());
 
   found_below:
     _sections[topmost] = String();
@@ -350,13 +351,13 @@ particular purpose.\n");
 
     // check for existing dotlessj
     if (font->glyph("dotlessj"))
-	errh->fatal("<%d>%s: already has a 'dotlessj' glyph", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
+	errh->fatal("<%d>%s: already has a %<dotlessj%> glyph", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
     else if (font->glyph("uni0237"))
-	errh->fatal("<%d>%s: already has a dotlessj glyph at 'uni0237'", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
+	errh->fatal("<%d>%s: already has a dotlessj glyph at %<uni0237%>", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
     else if (font->glyph("u0237"))
-	errh->fatal("<%d>%s: already has a dotlessj glyph at 'u0237'", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
+	errh->fatal("<%d>%s: already has a dotlessj glyph at %<u0237%>", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str());
     else if (private_use_dotlessj && font->glyph(private_use_dotlessj))
-	errh->fatal("<%d>%s: already has a dotlessj glyph at '%s'", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str(), private_use_dotlessj);
+	errh->fatal("<%d>%s: already has a dotlessj glyph at %<%s%>", -EXIT_DOTLESSJ_EXISTS, font->font_name().c_str(), private_use_dotlessj);
 
     // check for j
     Type1Charstring *j_cs = font->glyph("j");
@@ -365,13 +366,13 @@ particular purpose.\n");
     if (!j_cs)
 	j_cs = font->glyph("u006A");
     if (!j_cs)
-	errh->fatal("<%d>%s: has no 'j' glyph to make dotless", -EXIT_NO_J, font->font_name().c_str());
+	errh->fatal("<%d>%s: has no %<j%> glyph to make dotless", -EXIT_NO_J, font->font_name().c_str());
 
     // make new font
     String actual_font_name = (font_name ? String(font_name) : font->font_name() + String("LCDFJ"));
     if (actual_font_name.length() > 29 && !font_name) {
-	errh->warning("derived font name '%s' longer than 29 characters", actual_font_name.c_str());
-	errh->message("(Use the '--name' option to supply your own name.)");
+	errh->warning("derived font name %<%s%> longer than 29 characters", actual_font_name.c_str());
+	errh->message("(Use the %<--name%> option to supply your own name.)");
     }
 
     Vector<double> xuid_extension;

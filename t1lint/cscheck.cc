@@ -49,11 +49,11 @@ CharstringChecker::stem(double y, double dy, const char *cmd_name)
 	dy = -dy;
     }
     if (dy < 0.5)
-	_errh->warning("small delta-%s in `%s' (%g)", dimen_name, cmd_name, dy);
+	_errh->warning("small delta-%s in %<%s%> (%g)", dimen_name, cmd_name, dy);
     for (int i = 0; i < hints.size(); i += 2)
 	if ((hints[i] >= y && hints[i+1] <= y)
 	    || (hints[i] >= y+dy && hints[i+1] <= y+dy))
-	    _errh->warning("overlapping `%s' hints", cmd_name);
+	    _errh->warning("overlapping %<%s%> hints", cmd_name);
     hints.push_back(y);
     hints.push_back(y+dy);
 }
@@ -83,19 +83,19 @@ CharstringChecker::check_stem3(const char *cmd_name)
     double stemw1 = hints[i0+1] - hints[i0];
     double stemw2 = hints[i2+1] - hints[i2];
     if ((int)(1024*(stemw1 - stemw2) + .5) != 0)
-	_errh->error("bad `%s': extreme stem widths unequal (%g, %g)", cmd_name, stemw1, stemw2);
+	_errh->error("bad %<%s%>: extreme stem widths unequal (%g, %g)", cmd_name, stemw1, stemw2);
 
     double c0 = (hints[i0] + hints[i0+1])/2;
     double c1 = (hints[i1] + hints[i1+1])/2;
     double c2 = (hints[i2] + hints[i2+1])/2;
     if ((int)(1024*((c1 - c0) - (c2 - c1)) + .5) != 0)
-	_errh->error("bad `%s': stem gaps unequal (%g, %g)", cmd_name, c1-c0, c2-c1);
+	_errh->error("bad %<%s%>: stem gaps unequal (%g, %g)", cmd_name, c1-c0, c2-c1);
 
     // compare to old hints
     if (old_hints.size()) {
 	for (int i = 0; i < old_hints.size(); i++)
 	    if (hints[i] != old_hints[i]) {
-		_errh->warning("`%s' conflicts with old `%s'", cmd_name, cmd_name);
+		_errh->warning("%<%s%> conflicts with old %<%s%>", cmd_name, cmd_name);
 		break;
 	    }
     }
@@ -145,7 +145,7 @@ CharstringChecker::callothersubr()
   if (othersubrnum < 0 || size() < n) return false;
 
   if (!_started && (othersubrnum < 14 || othersubrnum > 18))
-    _errh->warning("first command not `hsbw' or `sbw'");
+    _errh->warning("first command not %<hsbw%> or %<sbw%>");
 
   switch (othersubrnum) {
 
@@ -222,7 +222,7 @@ CharstringChecker::callothersubr()
 
    default:			// unknown
    unknown:
-    _errh->warning("unknown callothersubr `%d'", othersubrnum);
+    _errh->warning("unknown callothersubr %<%d%>", othersubrnum);
     ps_clear();
     for (i = 0; i < n; i++)
       ps_push(top(i));
@@ -253,10 +253,10 @@ CharstringChecker::type1_command(int cmd)
 
   if (cmd != Cs::cHsbw && cmd != Cs::cSbw) {
     if (!_started)
-      _errh->warning("first command not `hsbw' or `sbw'");
+      _errh->warning("first command not %<hsbw%> or %<sbw%>");
   } else {
     if (_started)
-      _errh->error("duplicate `hsbw' or `sbw'");
+      _errh->error("duplicate %<hsbw%> or %<sbw%>");
   }
   _started = true;
 
@@ -336,7 +336,7 @@ CharstringChecker::type1_command(int cmd)
    case Cs::cHstem:
     CHECK_STACK(2);
     if (_hstem3 && !_hstem)
-      _errh->error("charstring has both `hstem' and `hstem3'");
+      _errh->error("charstring has both %<hstem%> and %<hstem3%>");
     _hstem = true;
     stem(at(0), at(1), "hstem");
     clear();
@@ -345,7 +345,7 @@ CharstringChecker::type1_command(int cmd)
    case Cs::cVstem:
     CHECK_STACK(2);
     if (_vstem3 && !_vstem)
-      _errh->error("charstring has both `vstem' and `vstem3'");
+      _errh->error("charstring has both %<vstem%> and %<vstem3%>");
     _vstem = true;
     stem(at(0), at(1), "vstem");
     clear();
@@ -361,7 +361,7 @@ CharstringChecker::type1_command(int cmd)
    case Cs::cVstem3:
     CHECK_STACK(6);
     if (_vstem && !_vstem3)
-      _errh->error("charstring has both `vstem' and `vstem3'");
+      _errh->error("charstring has both %<vstem%> and %<vstem3%>");
     _vstem3 = true;
     _h_vstem.clear();
     stem(at(0), at(1), "vstem3");
@@ -374,7 +374,7 @@ CharstringChecker::type1_command(int cmd)
    case Cs::cHstem3:
     CHECK_STACK(6);
     if (_hstem && !_hstem3)
-      _errh->error("charstring has both `hstem' and `hstem3'");
+      _errh->error("charstring has both %<hstem%> and %<hstem3%>");
     _hstem3 = true;
     _h_hstem.clear();
     stem(at(0), at(1), "hstem3");

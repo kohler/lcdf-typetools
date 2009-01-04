@@ -30,7 +30,7 @@ static ErrorHandler *itc_errh;
 void
 itc_complain()
 {
-    //itc_errh->warning("strange `callothersubr'; is this an ITC font?");
+    //itc_errh->warning("strange %<callothersubr%>; is this an ITC font?");
     itc_complained = true;
 }
 
