@@ -1,6 +1,6 @@
 /* t1dotlessj.cc -- driver for creating dotlessj characters from Type 1 fonts
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -309,7 +309,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("t1dotlessj (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2003-2006 Eddie Kohler\n\
+	    printf("Copyright (C) 2003-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -362,6 +362,8 @@ particular purpose.\n");
     Type1Charstring *j_cs = font->glyph("j");
     if (!j_cs)
 	j_cs = font->glyph("uni006A");
+    if (!j_cs)
+	j_cs = font->glyph("u006A");
     if (!j_cs)
 	errh->fatal("<%d>%s: has no 'j' glyph to make dotless", -EXIT_NO_J, font->font_name().c_str());
 
