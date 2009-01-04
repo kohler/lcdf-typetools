@@ -2028,6 +2028,10 @@ particular purpose.\n");
     }
 
   done:
+    // check for odd option combinations
+    if (warn_missing && !(output_flags & G_VMETRICS))
+	errh->warning("'--warn-missing' has no effect with '--no-virtual'");
+
     // set up file names
     if (!input_file)
 	usage_error(errh, "no font filename provided");
