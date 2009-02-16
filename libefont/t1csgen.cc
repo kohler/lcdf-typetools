@@ -167,10 +167,9 @@ Type1CharstringGen::gen_moveto(const Point &p, bool closepath, bool always)
 {
     // make sure we generate some moveto on the first command
 
-    double dx = p.x - _false.x;
-    double dy = p.y - _false.y;
-    int big_dx = (int)floor(dx * _f_precision + 0.50001);
-    int big_dy = (int)floor(dy * _f_precision + 0.50001);
+    Point d = p - _true;
+    int big_dx = (int)floor(d.x * _f_precision + 0.50001);
+    int big_dy = (int)floor(d.y * _f_precision + 0.50001);
 
     if (big_dx == 0 && big_dy == 0 && _state != S_INITIAL && !always)
 	/* do nothing */;
@@ -178,20 +177,19 @@ Type1CharstringGen::gen_moveto(const Point &p, bool closepath, bool always)
 	if (closepath)
 	    gen_command(Charstring::cClosepath);
 	if (big_dy == 0) {
-	    gen_number(dx, 'x');
+	    gen_number(d.x, 'x');
 	    gen_command(Charstring::cHmoveto);
 	} else if (big_dx == 0) {
-	    gen_number(dy, 'y');
+	    gen_number(d.y, 'y');
 	    gen_command(Charstring::cVmoveto);
 	} else {
-	    gen_number(dx, 'x');
-	    gen_number(dy, 'y');
+	    gen_number(d.x, 'x');
+	    gen_number(d.y, 'y');
 	    gen_command(Charstring::cRmoveto);
 	}
     }
 
-    _true.x = p.x;
-    _true.y = p.y;
+    _true = p;
 }
 
 void
