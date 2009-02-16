@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.73   15.Feb.2009
+
+* cfftot1 bug fix: Avoid introducing stray "rmoveto" commands and attendant
+  visual artifacts into the output.  The problem was caused by some
+  coordinate system confusion.  Reported by John Owens, who had tried to
+  convert Inconsolata.
+
+
 Version 2.72   27.Oct.2008
 
 * t1rawafm: Add missing newlines; thanks, Michael Zedler.
