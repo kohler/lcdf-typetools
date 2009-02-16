@@ -29,6 +29,9 @@
 #include <algorithm>
 #ifndef __KERNEL__
 # include <stdlib.h>
+# if HAVE_UNISTD_H
+#  include <unistd.h>
+# endif
 #endif
 
 /** @file error.hh
@@ -909,12 +912,16 @@ ErrorHandler::emit(const String &, void *user_data, bool)
 FileErrorHandler::FileErrorHandler(FILE *f, const String &context)
     : _f(f), _context(context), _default_flags(0)
 {
+# if HAVE_UNISTD_H
     if (isatty(fileno(_f))) {
+# endif
 	char *s = getenv("LANG");
 	if (s && (strstr(s, "UTF-8") != 0 || strstr(s, "UTF8") != 0
 		  || strstr(s, "utf8") != 0))
 	    _default_flags |= cf_utf8;
+# if HAVE_UNISTD_H
     }
+# endif
 }
 
 String
