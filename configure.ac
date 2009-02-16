@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.73)
+AM_INIT_AUTOMAKE(lcdf-typetools, 2.74)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 
@@ -261,7 +261,7 @@ AC_CACHE_CHECK([whether <new> works], ac_cv_good_new_hdr,
 if test "$ac_cv_good_new_hdr" = yes; then
    AC_DEFINE(HAVE_NEW_HDR, 1, [Define if <new> exists and works.])
 fi
-AC_CHECK_HEADERS(new.h)
+AC_CHECK_HEADERS(new.h unistd.h)
 
 
 dnl

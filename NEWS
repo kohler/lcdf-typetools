@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.74   16.Feb.2009
+
+* Correctly detect <unistd.h>.  Problem reported by C.M. Connelly.
+
+
 Version 2.73   15.Feb.2009
 
 * cfftot1 bug fix: Avoid introducing stray "rmoveto" commands and attendant
