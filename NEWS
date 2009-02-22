@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.75   22.Feb.2009
+
+* Report a helpful warning if automatic mode is specified to a version
+  without kpathsea support.  Question from Keith Briggs.
+
+
 Version 2.74   16.Feb.2009
 
 * Correctly detect <unistd.h>.  Problem reported by C.M. Connelly.
