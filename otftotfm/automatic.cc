@@ -1,6 +1,6 @@
 /* automatic.{cc,hh} -- code for automatic mode and interfacing with kpathsea
  *
- * Copyright (c) 2003-2006 Eddie Kohler
+ * Copyright (c) 2003-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,20 +20,20 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
-#ifdef HAVE_SYS_WAIT_H
+#if HAVE_SYS_WAIT_H
 # include <sys/wait.h>
 #endif
 #include <lcdf/error.hh>
 #include <lcdf/straccum.hh>
-#ifdef HAVE_FCNTL_H
+#if HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
 #include <algorithm>
@@ -162,7 +162,7 @@ getodir(int o, ErrorHandler *errh)
     if (!odir[o] && automatic && odir_info[o].envvar)
 	odir[o] = getenv(odir_info[o].envvar);
 
-#ifdef HAVE_KPATHSEA
+#if HAVE_KPATHSEA
     if (!odir[o] && automatic && !writable_texdir_tried)
 	find_writable_texdir(errh, odir_info[o].name);
 
@@ -212,8 +212,14 @@ getodir(int o, ErrorHandler *errh)
 #endif
 
     if (!odir[o]) {
-	if (automatic)
+	if (automatic) {
 	    errh->warning("%s not specified, placing %s files in %<.%>", odir_info[o].envvar, odir_info[o].name);
+#if !HAVE_KPATHSEA
+	    static int kpathsea_warning = 0;
+	    if (++kpathsea_warning == 1)
+		errh->message("(This version of otftotfm lacks $TEXMF directory support.)");
+#endif
+	}
 	odir[o] = ".";
     }
 
@@ -593,7 +599,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	text += mapline;
 
 	// rewind file
-#ifdef HAVE_FTRUNCATE
+#if HAVE_FTRUNCATE
 	rewind(f);
 	ftruncate(fd, 0);
 #else
