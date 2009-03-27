@@ -1,6 +1,6 @@
 /* cscheck.{cc,hh} -- checking Type 1 charstrings for validity
  *
- * Copyright (c) 1999-2006 Eddie Kohler
+ * Copyright (c) 1999-2009 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -487,20 +487,12 @@ bool
 CharstringSubrChecker::type1_command(int cmd)
 {
     switch (cmd) {
-
     case Cs::cReturn:
 	_returned = true;
 	return false;
-
-    case Cs::cEndchar:
-	set_done();
-	_returned = true;
-	return false;
-
     default:
 	clear();
 	return true;
-
     }
 }
 
