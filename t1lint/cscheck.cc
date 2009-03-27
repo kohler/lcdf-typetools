@@ -80,10 +80,10 @@ CharstringChecker::check_stem3(const char *cmd_name)
 	i2 = 4;
 
     // check constraints. count "almost equal" as equal
-    double stemw1 = hints[i0+1] - hints[i0];
+    double stemw0 = hints[i0+1] - hints[i0];
     double stemw2 = hints[i2+1] - hints[i2];
-    if ((int)(1024*(stemw1 - stemw2) + .5) != 0)
-	_errh->error("bad %<%s%>: extreme stem widths unequal (%g, %g)", cmd_name, stemw1, stemw2);
+    if ((int)(1024*(stemw0 - stemw2) + .5) != 0)
+	_errh->error("bad %<%s%>: extreme stem widths unequal (%g, %g)", cmd_name, stemw0, stemw2);
 
     double c0 = (hints[i0] + hints[i0+1])/2;
     double c1 = (hints[i1] + hints[i1+1])/2;
