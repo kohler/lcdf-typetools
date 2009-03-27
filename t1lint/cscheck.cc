@@ -460,3 +460,61 @@ CharstringChecker::check(const CharstringContext &g, ErrorHandler *errh)
 
     return errh->nerrors() == old_errors;
 }
+
+
+
+CharstringSubrChecker::CharstringSubrChecker()
+    : CharstringInterp(), _errh(0)
+{
+    set_careful(true);
+}
+
+CharstringSubrChecker::CharstringSubrChecker(const Vector<double> &weight)
+    : CharstringInterp(weight), _errh(0)
+{
+    set_careful(true);
+}
+
+bool
+CharstringSubrChecker::error(int which, int data)
+{
+    CharstringInterp::error(which, data);
+    _errh->error("%s", error_string().c_str());
+    return false;
+}
+
+bool
+CharstringSubrChecker::type1_command(int cmd)
+{
+    switch (cmd) {
+
+    case Cs::cReturn:
+	_returned = true;
+	return false;
+
+    case Cs::cEndchar:
+	set_done();
+	_returned = true;
+	return false;
+
+    default:
+	clear();
+	return true;
+
+    }
+}
+
+bool
+CharstringSubrChecker::check(const CharstringContext &g, ErrorHandler *errh)
+{
+    _errh = errh;
+    int old_errors = errh->nerrors();
+
+    _returned = false;
+
+    CharstringInterp::interpret(g);
+
+    if (!_returned)
+	_errh->error("subroutine does not return");
+    return errh->nerrors() == old_errors;
+}

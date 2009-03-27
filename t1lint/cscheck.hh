@@ -49,4 +49,22 @@ class CharstringChecker : public Efont::CharstringInterp { public:
 
 };
 
+class CharstringSubrChecker : public Efont::CharstringInterp { public:
+
+    CharstringSubrChecker();
+    CharstringSubrChecker(const Vector<double> &weight_vec);
+
+    bool error(int, int);
+    bool type1_command(int);
+
+    bool check(const Efont::CharstringContext &, ErrorHandler *);
+
+  private:
+
+    ErrorHandler *_errh;
+
+    bool _returned;
+
+};
+
 #endif
