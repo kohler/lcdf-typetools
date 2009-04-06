@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.76)
+AM_INIT_AUTOMAKE(lcdf-typetools, 2.77)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 

@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.77   6.Apr.2009
+
+* Font library changes: correctly implement binary search in a couple
+  places -- unexpected sizes could lead to overflow and bad behavior.
+  Reported by Mark DeVries for ttftotype42 and CharisSILR.
+
+
 Version 2.76   27.Mar.2009
 
 * mmpfb: Ensure all output subroutines end in the "return" command; some
