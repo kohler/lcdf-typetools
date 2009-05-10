@@ -54,6 +54,7 @@ class HashMap { public:
     int size() const			{ return _n; }
     bool empty() const			{ return _n == 0; }
     int capacity() const		{ return _capacity; }
+    const V &default_value() const	{ return _default_value; }
     void set_default_value(const V &v)	{ _default_value = v; }
 
     typedef _HashMap_const_iterator<K, V> const_iterator;
