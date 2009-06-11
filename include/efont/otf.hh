@@ -2,6 +2,7 @@
 #ifndef EFONT_OTF_HH
 #define EFONT_OTF_HH
 #include <efont/otfdata.hh>
+#include <lcdf/hashcode.hh>
 class ErrorHandler;
 namespace Efont { namespace OpenType {
 class Post;
@@ -377,7 +378,7 @@ inline bool GlyphSet::operator[](Glyph g) const
 
 }}
 
-inline unsigned hashcode(Efont::OpenType::Tag t)
+inline hashcode_t hashcode(Efont::OpenType::Tag t)
 {
     return t.value();
 }

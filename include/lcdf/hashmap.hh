@@ -1,6 +1,7 @@
 #ifndef LCDF_HASHMAP_HH
 #define LCDF_HASHMAP_HH
 #include <assert.h>
+#include <lcdf/hashcode.hh>
 
 // K AND V REQUIREMENTS:
 //
@@ -10,7 +11,7 @@
 //			and no k with (bool)k == false is stored.
 // K &		K::operator=(const K &)
 //		k1 == k2
-// unsigned	hashcode(const K &)
+// hashcode_t	hashcode(const K &)
 //			If hashcode(k1) != hashcode(k2), then k1 != k2.
 //
 //		V::V()
@@ -18,30 +19,6 @@
 
 template <class K, class V> class _HashMap_const_iterator;
 template <class K, class V> class _HashMap_iterator;
-
-inline unsigned
-hashcode(int i)
-{
-    return static_cast<unsigned>(i);
-}
-
-inline unsigned
-hashcode(unsigned u)
-{
-    return u;
-}
-
-inline unsigned
-hashcode(long l)
-{
-    return static_cast<unsigned>(l);
-}
-
-inline unsigned
-hashcode(unsigned long ul)
-{
-    return static_cast<unsigned long>(ul);
-}
 
 template <class K, class V>
 class HashMap { public:
@@ -145,7 +122,7 @@ inline int
 HashMap<K, V>::bucket(const K &key) const
 {
     assert(key);
-    unsigned hc = hashcode(key);
+    hashcode_t hc = hashcode(key);
     int i =   hc       & (_capacity - 1);
     int j = ((hc >> 6) & (_capacity - 1)) | 1;
 
