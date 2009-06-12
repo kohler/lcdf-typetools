@@ -33,3 +33,4 @@ t1rw.cc
 t1unparser.cc
 ttfcs.cc
 ttfhead.cc
+ttfkern.cc
