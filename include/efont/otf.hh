@@ -14,8 +14,8 @@ class Tag { public:
 
     Tag()				: _tag(0U) { }
     explicit Tag(uint32_t tag)		: _tag(tag) { }
-    Tag(const char*);
-    Tag(const String&);
+    Tag(const char *name);
+    Tag(const String &name);
     // default destructor
 
     bool null() const			{ return _tag == 0; }
@@ -53,9 +53,10 @@ class Font { public:
     int length() const			{ return _str.length(); }
 
     int ntables() const;
-    String table(Tag) const;
-    uint32_t table_checksum(Tag) const;
-    Tag table_tag(int) const;
+    bool has_table(Tag tag) const;
+    String table(Tag tag) const;
+    uint32_t table_checksum(Tag tag) const;
+    Tag table_tag(int i) const;
 
     static uint32_t checksum(const uint8_t *, const uint8_t *);
     static uint32_t checksum(const String &);
