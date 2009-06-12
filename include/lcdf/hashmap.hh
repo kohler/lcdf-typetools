@@ -13,6 +13,7 @@
 //		k1 == k2
 // hashcode_t	hashcode(const K &)
 //			If hashcode(k1) != hashcode(k2), then k1 != k2.
+//			Actually any unsigned integer type may be used.
 //
 //		V::V()
 // V &		V::operator=(const V &)
