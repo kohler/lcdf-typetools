@@ -99,24 +99,27 @@ using namespace Efont;
 #define POSITION_OPT		339
 #define WARN_MISSING_OPT	340
 #define BASE_ENCODINGS_OPT	341
+#define FIXED_PITCH_OPT		342
+#define ITALIC_ANGLE_OPT	343
+#define PROPORTIONAL_WIDTH_OPT	344
 
-#define AUTOMATIC_OPT		342
-#define FONT_NAME_OPT		343
-#define QUIET_OPT		344
-#define GLYPHLIST_OPT		345
-#define VENDOR_OPT		346
-#define TYPEFACE_OPT		347
-#define NOCREATE_OPT		348
-#define VERBOSE_OPT		349
-#define FORCE_OPT		350
+#define AUTOMATIC_OPT		350
+#define FONT_NAME_OPT		351
+#define QUIET_OPT		352
+#define GLYPHLIST_OPT		353
+#define VENDOR_OPT		354
+#define TYPEFACE_OPT		355
+#define NOCREATE_OPT		356
+#define VERBOSE_OPT		357
+#define FORCE_OPT		358
 
-#define VIRTUAL_OPT		351
-#define PL_OPT			352
-#define TFM_OPT			353
-#define MAP_FILE_OPT		354
-#define OUTPUT_ENCODING_OPT	355
+#define VIRTUAL_OPT		360
+#define PL_OPT			361
+#define TFM_OPT			362
+#define MAP_FILE_OPT		363
+#define OUTPUT_ENCODING_OPT	364
 
-#define DIR_OPTS		360
+#define DIR_OPTS		380
 #define ENCODING_DIR_OPT	(DIR_OPTS + O_ENCODING)
 #define TFM_DIR_OPT		(DIR_OPTS + O_TFM)
 #define PL_DIR_OPT		(DIR_OPTS + O_PL)
@@ -125,7 +128,7 @@ using namespace Efont;
 #define TYPE1_DIR_OPT		(DIR_OPTS + O_TYPE1)
 #define TRUETYPE_DIR_OPT	(DIR_OPTS + O_TRUETYPE)
 
-#define NO_OUTPUT_OPTS		380
+#define NO_OUTPUT_OPTS		400
 #define NO_ENCODING_OPT		(NO_OUTPUT_OPTS + G_ENCODING)
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 #define NO_DOTLESSJ_OPT		(NO_OUTPUT_OPTS + G_DOTLESSJ)
@@ -173,6 +176,10 @@ static Clp_Option options[] = {
     { "alternates-filter", 0, ALTERNATES_FILTER_OPT, Clp_ValString, 0 },
     { "space-factor", 0, SPACE_FACTOR_OPT, Clp_ValDouble, 0 },
     { "math-spacing", 0, MATH_SPACING_OPT, CHAR_OPTTYPE, Clp_Negate | Clp_Optional },
+    { "fixed-pitch", 0, FIXED_PITCH_OPT, 0, Clp_Negate },
+    { "fixed-width", 0, FIXED_PITCH_OPT, 0, Clp_Negate },
+    { "proportional-width", 0, PROPORTIONAL_WIDTH_OPT, 0, Clp_Negate },
+    { "italic-angle", 0, ITALIC_ANGLE_OPT, Clp_ValDouble, 0 },
 
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -254,6 +261,10 @@ static double minimum_kern = 2.0;
 static double space_factor = 1.0;
 static bool math_spacing = false;
 static int skew_char = -1;
+static bool override_is_fixed_pitch = false;
+static bool is_fixed_pitch;
+static bool override_italic_angle = false;
+static double italic_angle;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -312,6 +323,8 @@ Font feature and transformation options:\n\
   -k, --min-kern=N             Omit kerns with absolute value < N [2.0].\n\
       --space-factor=F         Scale wordspace by a factor of F.\n\
       --design-size=SIZE       Set font design size to SIZE.\n\
+      --fixed-width            Set fixed width (no space stretch).\n\
+      --italic-angle=ANGLE     Set font italic angle (for positioning accents).\n\
 \n");
     uerrh.message("\
 Encoding options:\n\
@@ -1415,6 +1428,10 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	return;
     if (!finfo.cff)
 	errh->warning("TrueType-flavored font support is experimental");
+    if (override_is_fixed_pitch)
+	finfo.set_is_fixed_pitch(is_fixed_pitch);
+    if (override_italic_angle)
+	finfo.set_italic_angle(italic_angle);
 
     // save glyph names
     Vector<PermString> glyph_names;
@@ -1975,6 +1992,21 @@ main(int argc, char *argv[])
 	    if (font_name)
 		usage_error(errh, "font name specified twice");
 	    font_name = clp->vstr;
+	    break;
+
+	case FIXED_PITCH_OPT:
+	    override_is_fixed_pitch = true;
+	    is_fixed_pitch = !clp->negated;
+	    break;
+
+	case PROPORTIONAL_WIDTH_OPT:
+	    override_is_fixed_pitch = true;
+	    is_fixed_pitch = !!clp->negated;
+	    break;
+
+	case ITALIC_ANGLE_OPT:
+	    override_italic_angle = true;
+	    italic_angle = clp->val.d;
 	    break;
 
 	  case GLYPHLIST_OPT:

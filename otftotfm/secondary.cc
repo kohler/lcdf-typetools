@@ -82,7 +82,8 @@ enum { U_EXCLAMDOWN = 0x00A1,	// U+00A1 INVERTED EXCLAMATION MARK
 
 FontInfo::FontInfo(const Efont::OpenType::Font *otf_, ErrorHandler *errh)
     : otf(otf_), cmap(0), cff_file(0), cff(0), post(0), name(0), _nglyphs(-1),
-      _got_glyph_names(false), _ttb_program(0)
+      _got_glyph_names(false), _ttb_program(0), _override_is_fixed_pitch(false),
+      _override_italic_angle(false)
 {
     cmap = new Efont::OpenType::Cmap(otf->table("cmap"), errh);
     assert(cmap->ok());
@@ -190,7 +191,9 @@ FontInfo::program() const
 bool
 FontInfo::is_fixed_pitch() const
 {
-    if (cff) {
+    if (_override_is_fixed_pitch)
+	return _is_fixed_pitch;
+    else if (cff) {
 	double d;
 	return (cff->dict_value(Efont::Cff::oIsFixedPitch, &d) && d);
     } else
@@ -200,7 +203,9 @@ FontInfo::is_fixed_pitch() const
 double
 FontInfo::italic_angle() const
 {
-    if (cff) {
+    if (_override_italic_angle)
+	return _italic_angle;
+    else if (cff) {
 	double d;
 	(void) cff->dict_value(Efont::Cff::oItalicAngle, &d);
 	return d;

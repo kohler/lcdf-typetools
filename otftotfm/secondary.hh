@@ -31,6 +31,15 @@ struct FontInfo {
     bool is_fixed_pitch() const;
     double italic_angle() const;
 
+    void set_is_fixed_pitch(bool is_fixed_pitch) {
+	_override_is_fixed_pitch = true;
+	_is_fixed_pitch = is_fixed_pitch;
+    }
+    void set_italic_angle(double italic_angle) {
+	_override_italic_angle = true;
+	_italic_angle = italic_angle;
+    }
+
     String family_name() const;
     String postscript_name() const;
 
@@ -41,6 +50,10 @@ struct FontInfo {
     mutable bool _got_glyph_names;
     mutable Vector<uint32_t> _unicodes;
     mutable Efont::TrueTypeBoundsCharstringProgram *_ttb_program;
+    bool _override_is_fixed_pitch;
+    bool _override_italic_angle;
+    bool _is_fixed_pitch;
+    double _italic_angle;
 
 };
 

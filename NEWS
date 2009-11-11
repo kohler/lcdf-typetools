@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.80   10.Nov.2009
+
+* otftotfm: Add --fixed-width, --proportional-width, and --italic-angle
+  options.  Requested by Karl Berry.
+
+
 Version 2.79   12.Jun.2009
 
 * otftotfm: Use TrueType "kern" tables to satisfy the "-fkern" feature if

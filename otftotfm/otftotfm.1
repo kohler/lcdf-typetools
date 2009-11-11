@@ -1,5 +1,5 @@
 '\"t
-.ds V 2.79
+.ds V 2.80
 .de M
 .BR "\\$1" "(\\$2)\\$3"
 ..
@@ -467,6 +467,27 @@ TeX "at" a particular size effectively ignores the design size; loading a
 font plain or "scaled" by a given factor uses the design size.)  The default
 is taken from the input font's optical size feature, or 10pt if it has no
 such feature.
+'
+.Sp
+.TP 5
+.BI \-\-fixed\-width
+Set the font to fixed-width (its space character will have no stretch or
+shrink).  Normally you won't need this option; the font will tell
+.B otftotfm
+whether it is fixed width.  The opposite of
+.B \-\-fixed\-width
+is
+.BR \-\-proportional\-width .
+'
+.Sp
+.TP 5
+.BI \-\-italic\-angle= angle
+Set the output font's default italic angle to
+.IR angle ,
+a number of degrees.  This value is used by TeX to position
+accents.  Normally you won't need this option; the font will tell
+.B otftotfm
+its italic angle.
 .PD
 '
 '
