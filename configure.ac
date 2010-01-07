@@ -84,8 +84,8 @@ EOF
      TEMPLATE_OBJS="" ;;
      *)
      TEMPLATE_OBJS="$ac_cv_cxx_templobjs" ;;
-   esac
-   AC_SUBST(TEMPLATE_OBJS)])])
+   esac])
+   AC_SUBST(TEMPLATE_OBJS)])
 
 AC_CXX_TEMPLATE_OBJS
 
