@@ -27,6 +27,9 @@ struct FontInfo {
     bool glyph_names(Vector<PermString> &) const;
     int glyphid(PermString) const;
     const Efont::CharstringProgram *program() const;
+    int units_per_em() const {
+	return program()->units_per_em();
+    }
 
     bool is_fixed_pitch() const;
     double italic_angle() const;
@@ -76,6 +79,7 @@ class T1Secondary : public Secondary { public:
     const FontInfo &_finfo;
     String _font_name;
     String _otf_file_name;
+    int _units_per_em;
     int _xheight;
     int _spacewidth;
     bool char_setting(Vector<Setting> &, Metrics &, int uni, ...);

@@ -611,10 +611,10 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     }
 
     int xheight = font_x_height(finfo, font_xform);
-    if (xheight < 1000)
+    if (xheight * du < 1000)
 	fprint_real(f, "   (XHEIGHT", xheight, du);
 
-    fprint_real(f, "   (QUAD", 1000, du);
+    fprint_real(f, "   (QUAD", finfo.units_per_em(), du);
     fprintf(f, "   )\n");
 
     if (boundary_char >= 0)

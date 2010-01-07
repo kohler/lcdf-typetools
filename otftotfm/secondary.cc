@@ -236,7 +236,9 @@ Secondary::encode_uni(int code, PermString name, uint32_t uni, Metrics &metrics,
 T1Secondary::T1Secondary(const FontInfo &finfo, const String &font_name,
 			 const String &otf_file_name)
     : _finfo(finfo), _font_name(font_name), _otf_file_name(otf_file_name),
-      _xheight(font_x_height(finfo, Transform())), _spacewidth(1000)
+      _units_per_em(finfo.units_per_em()),
+      _xheight(font_x_height(finfo, Transform())),
+      _spacewidth(_units_per_em)
 {
     int bounds[4], width;
     if (char_bounds(bounds, width, finfo, Transform(), ' '))
@@ -600,14 +602,14 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	break;
 
       case U_RINGFITTED: {
-	  int A_width = char_one_bound(_finfo, xform, 4, true, -1000, 'A', 0);
+	  int A_width = char_one_bound(_finfo, xform, 4, true, -_units_per_em, 'A', 0);
 	  uint32_t ring_char = U_RINGABOVE;
-	  int ring_width = char_one_bound(_finfo, xform, 4, true, -1000, ring_char, 0);
-	  if (ring_width <= -1000) {
+	  int ring_width = char_one_bound(_finfo, xform, 4, true, -_units_per_em, ring_char, 0);
+	  if (ring_width <= -_units_per_em) {
 	      ring_char = U_COMBININGRINGABOVE;
-	      ring_width = char_one_bound(_finfo, xform, 4, true, -1000, ring_char, 0);
+	      ring_width = char_one_bound(_finfo, xform, 4, true, -_units_per_em, ring_char, 0);
 	  }
-	  if (A_width > -1000 && ring_width > -1000) {
+	  if (A_width > -_units_per_em && ring_width > -_units_per_em) {
 	      int offset = (A_width - ring_width) / 2;
 	      v.push_back(Setting(Setting::MOVE, offset, 0));
 	      if (char_setting(v, metrics, ring_char, 0)) {
@@ -668,7 +670,7 @@ font_x_height(const FontInfo &finfo, const Transform &font_xform)
 	return os2.x_height();
     } catch (Efont::OpenType::Bounds) {
 	// XXX what if 'x', 'm', 'z' were subject to substitution?
-	return char_one_bound(finfo, font_xform, 3, false, 1000,
+	return char_one_bound(finfo, font_xform, 3, false, finfo.units_per_em(),
 			      'x', 'm', 'z', 0);
     }
 }
@@ -681,7 +683,7 @@ font_cap_height(const FontInfo &finfo, const Transform &font_xform)
 	return os2.cap_height();
     } catch (Efont::OpenType::Bounds) {
 	// XXX what if 'H', 'O', 'B' were subject to substitution?
-	return char_one_bound(finfo, font_xform, 3, false, 1000,
+	return char_one_bound(finfo, font_xform, 3, false, finfo.units_per_em(),
 			      'H', 'O', 'B', 0);
     }
 }
