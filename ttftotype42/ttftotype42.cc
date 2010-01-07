@@ -79,7 +79,7 @@ usage()
     uerrh.message("\
 %<Ttftotype42%> translates a TrueType or TrueType-flavored OpenType font into\n\
 PostScript Type 42 format, which is suitable for inclusion in PostScript\n\
-files. The result, is usually written to the standard output.\n\
+files. The result is usually written to the standard output.\n\
 \n\
 Usage: %s [OPTIONS] [FONTFILE [OUTPUTFILE]]\n\
 \n\

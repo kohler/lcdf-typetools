@@ -122,7 +122,7 @@ AC_SUBST(SELECTED_SUBDIRS)
 
 
 dnl
-dnl kpathsea, auto-cfftot1
+dnl kpathsea, auto-cfftot1, auto-t1dotlessj, auto-ttftotype42, auto-updmap
 dnl
 
 AC_ARG_ENABLE(tetex-build, [  --enable-tetex-build    build as part of a teTeX installation], :, enable_tetex_build=no)
@@ -234,6 +234,7 @@ fi
 
 AC_ARG_ENABLE(auto-cfftot1, [  --disable-auto-cfftot1  disable running cfftot1 from otftotfm], :, enable_auto_cfftot1=yes)
 AC_ARG_ENABLE(auto-t1dotlessj, [  --disable-auto-t1dotlessj disable running t1dotlessj from otftotfm], :, enable_auto_t1dotlessj=yes)
+AC_ARG_ENABLE(auto-ttftotype42, [  --disable-auto-ttftotype42 disable running ttftotype42 from otftotfm], :, enable_auto_ttftotype42=yes)
 AC_ARG_ENABLE(auto-updmap, [  --disable-auto-updmap   disable running updmap from otftotfm], :, enable_auto_updmap=yes)
 
 if test "x$enable_auto_cfftot1" = xyes; then
@@ -241,6 +242,9 @@ if test "x$enable_auto_cfftot1" = xyes; then
 fi
 if test "x$enable_auto_t1dotlessj" = xyes; then
     AC_DEFINE(HAVE_AUTO_T1DOTLESSJ, 1, [Define to run t1dotlessj automatically from otftotfm.])
+fi
+if test "x$enable_auto_ttftotype42" = xyes; then
+    AC_DEFINE(HAVE_AUTO_TTFTOTYPE42, 1, [Define to run ttftotype42 automatically from otftotfm.])
 fi
 if test "x$enable_auto_updmap" = xyes; then
     AC_DEFINE(HAVE_AUTO_UPDMAP, 1, [Define to run system updmap automatically from otftotfm.])

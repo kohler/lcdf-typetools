@@ -126,6 +126,7 @@ using namespace Efont;
 #define VF_DIR_OPT		(DIR_OPTS + O_VF)
 #define VPL_DIR_OPT		(DIR_OPTS + O_VPL)
 #define TYPE1_DIR_OPT		(DIR_OPTS + O_TYPE1)
+#define TYPE42_DIR_OPT		(DIR_OPTS + O_TYPE42)
 #define TRUETYPE_DIR_OPT	(DIR_OPTS + O_TRUETYPE)
 
 #define NO_OUTPUT_OPTS		400
@@ -133,7 +134,10 @@ using namespace Efont;
 #define NO_TYPE1_OPT		(NO_OUTPUT_OPTS + G_TYPE1)
 #define NO_DOTLESSJ_OPT		(NO_OUTPUT_OPTS + G_DOTLESSJ)
 #define NO_UPDMAP_OPT		(NO_OUTPUT_OPTS + G_UPDMAP)
-#define NO_TRUETYPE_OPT		(NO_OUTPUT_OPTS + G_TRUETYPE)
+
+#define YES_OUTPUT_OPTS		2000
+#define TRUETYPE_OPT		(YES_OUTPUT_OPTS + G_TRUETYPE)
+#define TYPE42_OPT		(YES_OUTPUT_OPTS + G_TYPE42)
 
 #define CHAR_OPTTYPE		(Clp_ValFirstUser)
 
@@ -185,9 +189,10 @@ static Clp_Option options[] = {
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
     { "no-encoding", 0, NO_ENCODING_OPT, 0, 0 },
     { "no-type1", 0, NO_TYPE1_OPT, 0, 0 },
-    { "no-truetype", 0, NO_TRUETYPE_OPT, 0, 0 },
     { "no-dotlessj", 0, NO_DOTLESSJ_OPT, 0, 0 },
     { "no-updmap", 0, NO_UPDMAP_OPT, 0, 0 },
+    { "truetype", 0, TRUETYPE_OPT, 0, Clp_Negate },
+    { "type42", 0, TYPE42_OPT, 0, Clp_Negate },
     { "map-file", 0, MAP_FILE_OPT, Clp_ValString, Clp_Negate },
     { "output-encoding", 0, OUTPUT_ENCODING_OPT, Clp_ValString, Clp_Optional },
 
@@ -202,6 +207,7 @@ static Clp_Option options[] = {
     { "vpl-directory", 0, VPL_DIR_OPT, Clp_ValString, 0 },
     { "vf-directory", 0, VF_DIR_OPT, Clp_ValString, 0 },
     { "type1-directory", 0, TYPE1_DIR_OPT, Clp_ValString, 0 },
+    { "type42-directory", 0, TYPE42_DIR_OPT, Clp_ValString, 0 },
     { "truetype-directory", 0, TRUETYPE_DIR_OPT, Clp_ValString, 0 },
 
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
@@ -1284,9 +1290,15 @@ main_dvips_map(const String &ps_name, const FontInfo &finfo, ErrorHandler *errh)
 {
     if (String fn = installed_type1(otf_filename, ps_name, (output_flags & G_TYPE1) != 0, errh))
 	return "<" + pathname_filename(fn);
-    if (!finfo.cff)
-	if (String fn = installed_truetype(otf_filename, (output_flags & G_TRUETYPE) != 0, errh))
-	    return "<" + pathname_filename(fn);
+    if (!finfo.cff) {
+	String ttf_fn, t42_fn;
+	ttf_fn = installed_truetype(otf_filename, (output_flags & G_TRUETYPE) != 0, errh);
+	t42_fn = installed_type42(otf_filename, ps_name, (output_flags & G_TYPE42) != 0, errh);
+	if (t42_fn && (!ttf_fn || (output_flags & G_TYPE42) != 0))
+	    return "<" + pathname_filename(t42_fn);
+	else if (ttf_fn)
+	    return "<" + pathname_filename(ttf_fn);
+    }
     return "<" + pathname_filename(otf_filename);
 }
 
@@ -1943,8 +1955,15 @@ main(int argc, char *argv[])
 	case NO_TYPE1_OPT:
 	case NO_DOTLESSJ_OPT:
 	case NO_UPDMAP_OPT:
-	case NO_TRUETYPE_OPT:
 	    output_flags &= ~(opt - NO_OUTPUT_OPTS);
+	    break;
+
+	case TRUETYPE_OPT:
+	case TYPE42_OPT:
+	    if (!clp->negated)
+		output_flags |= (opt - YES_OUTPUT_OPTS);
+	    else
+		output_flags &= ~(opt - YES_OUTPUT_OPTS);
 	    break;
 
 	  case OUTPUT_ENCODING_OPT:
@@ -1976,13 +1995,14 @@ main(int argc, char *argv[])
 	    output_flags = (output_flags & ~G_ASCII) | G_BINARY;
 	    break;
 
-	  case ENCODING_DIR_OPT:
-	  case TFM_DIR_OPT:
-	  case PL_DIR_OPT:
-	  case VF_DIR_OPT:
-	  case VPL_DIR_OPT:
-	  case TYPE1_DIR_OPT:
-	  case TRUETYPE_DIR_OPT:
+	case ENCODING_DIR_OPT:
+	case TFM_DIR_OPT:
+	case PL_DIR_OPT:
+	case VF_DIR_OPT:
+	case VPL_DIR_OPT:
+	case TYPE1_DIR_OPT:
+	case TRUETYPE_DIR_OPT:
+	case TYPE42_DIR_OPT:
 	    if (!setodir(opt - DIR_OPTS, clp->vstr))
 		usage_error(errh, "%s directory specified twice", odirname(opt - DIR_OPTS));
 	    break;
