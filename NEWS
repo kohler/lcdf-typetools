@@ -1,5 +1,13 @@
 LCDF Typetools NEWS
 
+Version 2.81   7.Jan.2010
+
+* otftotfm: Fix "em" and "ex" measurements (QUAD and XHEIGHT font
+  dimensions) for TrueType fonts.  Problem reported by Nico Schlömer.
+
+* otftotfm: Add --type42 option.
+
+
 Version 2.80   10.Nov.2009
 
 * otftotfm: Add --fixed-width, --proportional-width, and --italic-angle
