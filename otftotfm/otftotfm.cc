@@ -2108,7 +2108,7 @@ particular purpose.\n");
 
   done:
     // check for odd option combinations
-    if (warn_missing && !(output_flags & G_VMETRICS))
+    if (warn_missing > 0 && !(output_flags & G_VMETRICS))
 	errh->warning("%<--warn-missing%> has no effect with %<--no-virtual%>");
 
     // set up file names
