@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.82   19.Jan.2010
+
+* otftotfm: Correctly handle multiply-encoded glyphs (for example, if "j"
+  ends up encoded in more than one slot, apply the j => j.smcp feature to
+  both occurrences).  Reported by Michael Ummels.
+
+
 Version 2.81   7.Jan.2010
 
 * otftotfm: Fix "em" and "ex" measurements (QUAD and XHEIGHT font
