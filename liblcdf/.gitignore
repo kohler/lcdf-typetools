@@ -1,7 +1,7 @@
-Makefile.in
-Makefile
-*.d
+*.o
 .deps
+Makefile
+Makefile.in
 bezier.cc
 clp.c
 error.cc
@@ -9,6 +9,7 @@ filename.cc
 fixlibc.c
 globmatch.cc
 landmark.cc
+liblcdf.a
 md5.c
 permstr.cc
 point.cc

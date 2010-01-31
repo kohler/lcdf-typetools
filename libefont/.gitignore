@@ -1,7 +1,7 @@
-Makefile.in
-Makefile
-*.d
+*.o
 .deps
+Makefile
+Makefile.in
 afm.cc
 afmparse.cc
 afmw.cc
@@ -9,6 +9,7 @@ amfm.cc
 cff.cc
 encoding.cc
 findmet.cc
+libefont.a
 metrics.cc
 otf.cc
 otfcmap.cc
