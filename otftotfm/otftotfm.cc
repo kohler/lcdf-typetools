@@ -1364,12 +1364,53 @@ do_gsub(Metrics& metrics, const OpenType::Font& otf, DvipsEncoding& dvipsenc, bo
     }
 }
 
+static bool
+kern_feature_requested()
+{
+    return std::find(interesting_features.begin(), interesting_features.end(),
+		     OpenType::Tag("kern")) != interesting_features.end();
+}
+
+static void
+do_try_ttf_kern(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& feature_usage, ErrorHandler* errh)
+{
+    // if no GPOS "kern" lookups and "kern" requested, try "kern" table
+    if (!kern_feature_requested())
+	return;
+    try {
+	OpenType::KernTable kern(otf.table("kern"), errh);
+	Vector<OpenType::Positioning> poss;
+	bool understood = kern.unparse_automatics(poss, errh);
+	int nunderstood = metrics.apply(poss);
+
+	// mark as used
+	int d = (understood && nunderstood == poss.size() ? F_GPOS_ALL : (nunderstood ? F_GPOS_PART : 0)) + F_GPOS_TRY;
+	feature_usage.find_force(OpenType::Tag("kern").value()) |= d;
+    } catch (OpenType::BlankTable) {
+	// nada
+    } catch (OpenType::Error e) {
+	errh->warning("kern %<%s%> error, continuing", e.description.c_str());
+    }
+}
+
 static void
 do_gpos(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& feature_usage, ErrorHandler* errh)
 {
     OpenType::Gpos gpos(otf.table("GPOS"), errh);
     Vector<Lookup> lookups(gpos.nlookups(), Lookup());
     find_lookups(gpos.script_list(), gpos.feature_list(), lookups, errh);
+
+    // OpenType recommends that if GPOS exists, but the "kern" feature loads
+    // no lookups, we use the TrueType "kern" table, if any.
+    if (kern_feature_requested()) {
+	OpenType::Tag kern_tag("kern");
+	for (Lookup *l = lookups.begin(); l != lookups.end(); ++l)
+	    if (std::find(l->features.begin(), l->features.end(), kern_tag) != l->features.end())
+		goto skip_ttf_kern;
+	do_try_ttf_kern(metrics, otf, feature_usage, errh);
+    skip_ttf_kern: ;
+    }
+
     Vector<OpenType::Positioning> poss;
     for (int i = 0; i < lookups.size(); i++)
 	if (lookups[i].used) {
@@ -1383,19 +1424,6 @@ do_gpos(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& fea
 	    for (int j = 0; j < lookups[i].features.size(); j++)
 		feature_usage.find_force(lookups[i].features[j].value()) |= d;
 	}
-}
-
-static void
-do_kern(Metrics& metrics, const OpenType::Font& otf, HashMap<uint32_t, int>& feature_usage, ErrorHandler* errh)
-{
-    OpenType::KernTable kern(otf.table("kern"), errh);
-    Vector<OpenType::Positioning> poss;
-    bool understood = kern.unparse_automatics(poss, errh);
-    int nunderstood = metrics.apply(poss);
-
-    // mark as used
-    int d = (understood && nunderstood == poss.size() ? F_GPOS_ALL : (nunderstood ? F_GPOS_PART : 0)) + F_GPOS_TRY;
-    feature_usage.find_force(OpenType::Tag("kern").value()) |= d;
 }
 
 static void
@@ -1501,17 +1529,7 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
     try {
 	do_gpos(metrics, otf, feature_usage, errh);
     } catch (OpenType::BlankTable) {
-	// special case: if no GPOS and "kern" requested, look in "kern" table
-	if (std::find(interesting_features.begin(), interesting_features.end(),
-		      OpenType::Tag("kern")) != interesting_features.end()) {
-	    try {
-		do_kern(metrics, otf, feature_usage, errh);
-	    } catch (OpenType::BlankTable) {
-		// nada
-	    } catch (OpenType::Error e) {
-		errh->warning("kern %<%s%> error, continuing", e.description.c_str());
-	    }
-	}
+	do_try_ttf_kern(metrics, otf, feature_usage, errh);
     } catch (OpenType::Error e) {
 	errh->warning("GPOS %<%s%> error, continuing", e.description.c_str());
     }
