@@ -274,8 +274,8 @@ dnl headers such as unistd.h
 dnl
 
 AC_LANG_C
-FIXLIBC_O=''
-AC_CHECK_FUNCS(strerror, :, FIXLIBC_O='fixlibc.o')
+need_fixlibc=0
+AC_CHECK_FUNCS(strerror, :, [need_fixlibc=1])
 
 AC_CACHE_CHECK(whether strtod works, ac_cv_working_strtod,
 [AC_TRY_RUN([#include <stdio.h>
@@ -285,10 +285,10 @@ int main(int c, char **v) {
   char *endp;
   double d = strtod(s, &endp);
   exit(*endp == 0 ? 1 : 0);
-}], ac_cv_working_strtod=yes, ac_cv_working_strtod=no,
-ac_cv_working_strtod=yes)])
+}], [ac_cv_working_strtod=yes], [ac_cv_working_strtod=no],
+[ac_cv_working_strtod=yes])])
 if test $ac_cv_working_strtod = no; then 
-    FIXLIBC_O='fixlibc.o'
+    need_fixlibc=1
     AC_DEFINE(BROKEN_STRTOD, 1, [Define if strtod is broken.])
 fi
 
@@ -296,8 +296,7 @@ AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate sigaction waitpid)
 AC_CHECK_FUNC(floor, :, [AC_CHECK_LIB(m, floor)])
 AC_CHECK_FUNC(fabs, :, [AC_CHECK_LIB(m, fabs)])
 AC_CHECK_HEADERS(unistd.h fcntl.h sys/time.h sys/wait.h)
-
-AC_SUBST(FIXLIBC_O)
+AM_CONDITIONAL([FIXLIBC], [test x$need_fixlibc = x1])
 
 
 dnl

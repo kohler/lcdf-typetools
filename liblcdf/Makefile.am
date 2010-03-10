@@ -19,8 +19,11 @@ liblcdf_a_SOURCES = bezier.cc \
 	transform.cc \
 	vectorv.cc
 
-liblcdf_a_DEPENDENCIES = @FIXLIBC_O@
-liblcdf_a_LIBADD = @FIXLIBC_O@ @TEMPLATE_OBJS@
+if FIXLIBC
+liblcdf_a_SOURCES += fixlibc.c
+endif FIXLIBC
+
+liblcdf_a_LIBADD = @TEMPLATE_OBJS@
 CLEANFILES = @TEMPLATE_OBJS@
 
 INCLUDES = -I$(top_srcdir)/include
