@@ -98,31 +98,26 @@ AC_HEADER_DIRENT
 
 
 dnl
-dnl select programs to be compiled
+dnl select programs to be compiled and automatically run
 dnl
 
-AC_ARG_ENABLE(cfftot1, [  --disable-cfftot1       do not build the cfftot1 program], :, enable_cfftot1=yes)
-AC_ARG_ENABLE(mmafm, [  --disable-mmafm         do not build the mmafm program], :, enable_mmafm=yes)
-AC_ARG_ENABLE(mmpfb, [  --disable-mmpfb         do not build the mmpfb program], :, enable_mmpfb=yes)
-AC_ARG_ENABLE(otfinfo, [  --disable-otfinfo       do not build the otfinfo program], :, enable_otfinfo=yes)
-AC_ARG_ENABLE(otftotfm, [  --disable-otftotfm      do not build the otftotfm program], :, enable_otftotfm=yes)
-AC_ARG_ENABLE(t1dotlessj, [  --disable-t1dotlessj    do not build the t1dotlessj program], :, enable_t1dotlessj=yes)
-AC_ARG_ENABLE(t1lint, [  --disable-t1lint        do not build the t1lint program], :, enable_t1lint=yes)
-AC_ARG_ENABLE(t1rawafm, [  --disable-t1rawafm      do not build the t1rawafm program], :, enable_t1dotlessj=yes)
-AC_ARG_ENABLE(t1reencode, [  --disable-t1reencode    do not build the t1reencode program], :, enable_t1reencode=yes)
-AC_ARG_ENABLE(t1testpage, [  --disable-t1testpage    do not build the t1testpage program], :, enable_t1testpage=yes)
-AC_ARG_ENABLE(ttftotype42, [  --disable-ttftotype42   do not build the ttftotype42 program], :, enable_ttftotype42=yes)
+m4_include([m4/lcdf-typetools.m4])
 
-SELECTED_SUBDIRS=''
-for i in cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42; do
-    y=`eval 'echo $enable_'"$i"`
-    if test "x$y" != xno; then SELECTED_SUBDIRS="$SELECTED_SUBDIRS $i"; fi
-done
+SELECTED_SUBDIRS=
+AC_FOREACH([Kpse_Prog], kpse_lcdf_typetools_progs,
+           [test "x$enable_[]Kpse_Prog" = xno || SELECTED_SUBDIRS="$SELECTED_SUBDIRS Kpse_Prog"
+])
 AC_SUBST(SELECTED_SUBDIRS)
 
+AC_FOREACH([Kpse_Opt], kpse_otftotfm_auto_opts,
+           [AS_IF([test "x$enable_auto_]Kpse_Opt[" != xno],
+                  [AC_DEFINE([HAVE_AUTO_]AS_TR_CPP(Kpse_Opt), 1,
+                             [Define to run ]Kpse_Opt[ from otftotfm.])])
+])
+
 
 dnl
-dnl kpathsea, auto-cfftot1, auto-t1dotlessj, auto-ttftotype42, auto-updmap
+dnl kpathsea
 dnl
 
 AC_ARG_ENABLE(tetex-build, [  --enable-tetex-build    build as part of a teTeX installation], :, enable_tetex_build=no)
@@ -230,24 +225,6 @@ Either supply the correct PREFIX to --with-kpathsea, or supply
     AC_DEFINE_UNQUOTED(SELFAUTOLOC, "$SELFAUTOLOC", [kpsewhich's $SELFAUTOLOC variable])
     AC_DEFINE_UNQUOTED(SELFAUTODIR, "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
     AC_DEFINE_UNQUOTED(SELFAUTOPARENT, "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
-fi
-
-AC_ARG_ENABLE(auto-cfftot1, [  --disable-auto-cfftot1  disable running cfftot1 from otftotfm], :, enable_auto_cfftot1=yes)
-AC_ARG_ENABLE(auto-t1dotlessj, [  --disable-auto-t1dotlessj disable running t1dotlessj from otftotfm], :, enable_auto_t1dotlessj=yes)
-AC_ARG_ENABLE(auto-ttftotype42, [  --disable-auto-ttftotype42 disable running ttftotype42 from otftotfm], :, enable_auto_ttftotype42=yes)
-AC_ARG_ENABLE(auto-updmap, [  --disable-auto-updmap   disable running updmap from otftotfm], :, enable_auto_updmap=yes)
-
-if test "x$enable_auto_cfftot1" = xyes; then
-    AC_DEFINE(HAVE_AUTO_CFFTOT1, 1, [Define to run cfftot1 automatically from otftotfm.])
-fi
-if test "x$enable_auto_t1dotlessj" = xyes; then
-    AC_DEFINE(HAVE_AUTO_T1DOTLESSJ, 1, [Define to run t1dotlessj automatically from otftotfm.])
-fi
-if test "x$enable_auto_ttftotype42" = xyes; then
-    AC_DEFINE(HAVE_AUTO_TTFTOTYPE42, 1, [Define to run ttftotype42 automatically from otftotfm.])
-fi
-if test "x$enable_auto_updmap" = xyes; then
-    AC_DEFINE(HAVE_AUTO_UPDMAP, 1, [Define to run system updmap automatically from otftotfm.])
 fi
 
 
