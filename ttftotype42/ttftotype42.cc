@@ -213,13 +213,11 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;
 	outfn = "<stdout>";
-    } else if (!(f = fopen(outfn, "wb")))
-	errh->fatal("%s: %s", outfn, strerror(errno));
-
 #if defined(_MSDOS) || defined(_WIN32)
-    if (binary)
 	_setmode(_fileno(f), _O_BINARY);
 #endif
+    } else if (!(f = fopen(outfn, "wb")))
+	errh->fatal("%s: %s", outfn, strerror(errno));
 
     // fprintf(f, "%%!\n");
 
