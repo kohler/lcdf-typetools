@@ -18,6 +18,7 @@
 #include <efont/otfgsub.hh>
 #include <efont/otfgpos.hh>
 #include <efont/otfname.hh>
+#include <efont/otfos2.hh>
 #include <efont/cff.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
@@ -396,8 +397,20 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
 	}
     }
 
+    if (String os2_table = otf.table("OS/2")) {
+	OpenType::Os2 os2(os2_table, errh);
+	if (os2.ok()) {
+	    if (String s = os2.vendor_id()) {
+		while (s.length() && (s.back() == ' ' || s.back() == 0))
+		    s = s.substring(s.begin(), s.end() - 1);
+		if (s)
+		    sa << "Vendor ID:           " << s << "\n";
+	    }
+	}
+    }
+
     if (errh->nerrors() == before_nerrors)
-	result_errh->message("%s", (sa ? sa.c_str() : "no name information"));
+	result_errh->message("%s", (sa ? sa.c_str() : "no information"));
 }
 
 static void
