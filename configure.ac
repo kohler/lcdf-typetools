@@ -268,10 +268,10 @@ if test "x$ac_cv_working_strtod" = xno; then
     AC_DEFINE(BROKEN_STRTOD, 1, [Define if strtod is broken.])
 fi
 
-AC_CHECK_FUNCS(strtoul ctime mkstemp ftruncate sigaction waitpid)
-AC_CHECK_FUNC(floor, :, [AC_CHECK_LIB(m, floor)])
-AC_CHECK_FUNC(fabs, :, [AC_CHECK_LIB(m, fabs)])
-AC_CHECK_HEADERS(unistd.h fcntl.h sys/time.h sys/wait.h)
+AC_CHECK_FUNCS([ctime ftruncate mkstemp sigaction strnlen strtoul waitpid])
+AC_CHECK_FUNC([floor], [:], [AC_CHECK_LIB(m, floor)])
+AC_CHECK_FUNC([fabs], [:], [AC_CHECK_LIB(m, fabs)])
+AC_CHECK_HEADERS([unistd.h fcntl.h sys/time.h sys/wait.h])
 AM_CONDITIONAL([FIXLIBC], [test x$need_fixlibc = x1])
 
 
