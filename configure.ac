@@ -11,7 +11,11 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_CXXCPP
-if test -n "$GCC" ; then CC="$CC -W -Wall" ; CXX="$CXX -W -Wall" ; fi
+
+AC_ARG_ENABLE(warnings, [  --enable-warnings       compile with -Wall],
+[if test "$enableval" = yes ; then
+  CFLAGS="$CFLAGS -W -Wall"
+fi])
 
 dnl AN_MAKEVAR([AR], [AC_PROG_AR])
 dnl AN_PROGRAM([ar], [AC_PROG_AR])
@@ -125,10 +129,12 @@ AC_ARG_ENABLE(tetex-build, [  --enable-tetex-build    build as part of a teTeX i
 AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
   [kpathsea=$withval], [kpathsea=])
 
-if test "x$kpathsea" = xno; then
-    KPSEINTERFACE_O=
-    LIBKPATHSEA=
-else
+KPATHSEA_INCLUDES=
+KPATHSEA_LIBS=
+KPATHSEA_DEPEND=
+
+if test "x$kpathsea" != xno; then
+    SAVE_CPPFLAGS="$CPPFLAGS"; SAVE_LDFLAGS="$LDFLAGS"
     if test "x$enable_tetex_build" = xyes; then
 	if test ! -d $srcdir/../../texk/kpathsea; then
 	    AC_MSG_ERROR([
@@ -143,8 +149,8 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
 	LDFLAGS="$LDFLAGS -L\$(top_builddir)/../../texk/kpathsea/.libs"
         AC_MSG_NOTICE([tetex build of lcdf-typetools, CPPFLAGS now: $CPPFLAGS])
     elif test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
-	CPPFLAGS="$CPPFLAGS -I$kpathsea/include"
-	LDFLAGS="$LDFLAGS -L$kpathsea/lib"
+	KPATHSEA_INCLUDES="-I$kpathsea/include"
+	KPATHSEA_LIBS="-L$kpathsea/lib"
     else
 	kpathsea=yes
     fi
@@ -153,13 +159,15 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
     if test "x$enable_tetex_build" = xyes; then
 	kpse_header=yes
     else
+	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
 	AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
     fi
 
     dnl if not found and kpathsea prefix not set, check /usr/local
     if test "x$kpse_header" != xyes -a "x$kpathsea" = xyes -a -r /usr/local/include/kpathsea/tex-file.h; then
-	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
-	LDFLAGS="$LDFLAGS -L/usr/local/lib"
+	KPATHSEA_INCLUDES="-I/usr/local/include"
+	KPATHSEA_LIBS="-L/usr/local/lib"
+	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
 	AC_CHECK_HEADER(kpathsea/tex-file.h, [kpse_header=yes], [kpse_header=no])
     fi
 
@@ -167,6 +175,7 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
     if test "x$enable_tetex_build" = xyes; then
 	kpse_library=yes
     else
+	LDFLAGS="$SAVE_LDFLAGS $KPATHSEA_LIBS"
 	AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
     fi
 
@@ -185,13 +194,11 @@ using --without-kpathsea.
 
     dnl OK, found
     AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
-    KPSEINTERFACE_O='kpseinterface.$(OBJEXT)'
     if test "x$enable_tetex_build" = xyes; then
-	LIBKPATHSEA='$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a'
-	LIBKPATHSEA_DEP="$LIBKPATHSEA"
+	KPATHSEA_LIBS='$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a'
+	KPATHSEA_DEPEND="$KPATHSEA_LIBS"
     else
-	LIBKPATHSEA='-lkpathsea'
-	LIBKPATHSEA_DEP=''
+	KPATHSEA_LIBS="$KPATHSEA_LIBS -lkpathsea"
     fi
 
     dnl does it have opentype support?
@@ -200,10 +207,14 @@ using --without-kpathsea.
     else
 	AC_CHECK_DECLS(kpse_opentype_format, :, :, [#include <kpathsea/kpathsea.h>])
     fi
+
+    CPPFLAGS="$SAVE_CPPFLAGS"; LDFLAGS="$SAVE_LDFLAGS"
 fi
-AC_SUBST([KPSEINTERFACE_O])
-AC_SUBST([LIBKPATHSEA])
-AC_SUBST([LIBKPATHSEA_DEP])
+
+AM_CONDITIONAL([have_kpathsea], [test "x$with_kpathsea" != xno])
+AC_SUBST([KPATHSEA_INCLUDES])
+AC_SUBST([KPATHSEA_LIBS])
+AC_SUBST([KPATHSEA_DEPEND])
 
 AC_ARG_ENABLE(selfauto-set, [  --disable-selfauto-set  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_set=yes)
 
@@ -273,7 +284,7 @@ int main(int c, char **v) {
   exit(*endp == 0 ? 1 : 0);
 }], [ac_cv_working_strtod=yes], [ac_cv_working_strtod=no],
 [ac_cv_working_strtod=yes])])
-if test $ac_cv_working_strtod = no; then 
+if test "x$ac_cv_working_strtod" = xno; then
     need_fixlibc=1
     AC_DEFINE(BROKEN_STRTOD, 1, [Define if strtod is broken.])
 fi
@@ -352,6 +363,12 @@ AC_COMPILE_IFELSE(
 #elif HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+#ifdef WIN32
+# ifdef __MSC_VER
+#  pragma warning (disable: 4290)
+# endif
+# include <winsock2.h>
+#endif
 ]], [[(void) ntohs(0x0020), (void) ntohl(0x03040020);]])],
 	[AC_MSG_RESULT(yes)
 ac_ntoh_defined=yes],
@@ -420,7 +437,11 @@ AH_TOP([#ifndef LCDF_TYPETOOLS_CONFIG_H
 
 AH_BOTTOM([/* Allow compilation on Windows (thanks, Fabrice Popineau). */
 #ifdef WIN32
-# include <win32lib.h>
+# ifdef __MINGW32__
+#  include <windows.h>
+# else
+#  include <win32lib.h>
+# endif
 #else
 # define CDECL /* nothing */
 #endif

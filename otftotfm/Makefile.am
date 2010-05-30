@@ -15,16 +15,20 @@ otftotfm_SOURCES = \
 	util.cc util.hh
 EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 
-otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@ @LIBKPATHSEA@
-otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a @KPSEINTERFACE_O@ @LIBKPATHSEA_DEP@
+otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
+otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
 INCLUDES = -I$(top_srcdir)/include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otftotfm.1
 
-$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a:
-	cd $(top_builddir)/../../texk/kpathsea && $(MAKE)
+if have_kpathsea
+otftotfm_SOURCES += kpseinterface.c kpseinterface.h
+INCLUDES += $(KPATHSEA_INCLUDES)
+otftotfm_LDADD += $(KPATHSEA_LIBS)
+otftotfm_DEPENDENCIES += $(KPATHSEA_DEPEND)
+endif have_kpathsea
 
 ## Rebuild libkpathsea in a TeX Live build
 @KPATHSEA_RULE@
