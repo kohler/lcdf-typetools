@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(NEWS)
-AM_INIT_AUTOMAKE(lcdf-typetools, 2.82)
+AC_INIT([lcdf-typetools], [2.83])
+AC_CONFIG_SRCDIR([NEWS])
+AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 
@@ -226,6 +227,14 @@ Either supply the correct PREFIX to --with-kpathsea, or supply
     AC_DEFINE_UNQUOTED(SELFAUTODIR, "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
     AC_DEFINE_UNQUOTED(SELFAUTOPARENT, "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
 fi
+
+
+dnl
+dnl TeX Live build stub
+dnl
+
+KPATHSEA_RULE=
+AC_SUBST([KPATHSEA_RULE])
 
 
 dnl

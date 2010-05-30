@@ -25,3 +25,6 @@ EXTRA_DIST = otftotfm.1
 
 $(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a:
 	cd $(top_builddir)/../../texk/kpathsea && $(MAKE)
+
+## Rebuild libkpathsea in a TeX Live build
+@KPATHSEA_RULE@
