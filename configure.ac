@@ -125,7 +125,6 @@ dnl
 dnl kpathsea
 dnl
 
-AC_ARG_ENABLE(tetex-build, [  --enable-tetex-build    build as part of a teTeX installation], :, enable_tetex_build=no)
 AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
   [kpathsea=$withval], [kpathsea=])
 
@@ -135,20 +134,7 @@ KPATHSEA_DEPEND=
 
 if test "x$kpathsea" != xno; then
     SAVE_CPPFLAGS="$CPPFLAGS"; SAVE_LDFLAGS="$LDFLAGS"
-    if test "x$enable_tetex_build" = xyes; then
-	if test ! -d $srcdir/../../texk/kpathsea; then
-	    AC_MSG_ERROR([
-=========================================
-
-You specified --enable-tetex-build, but I can't find the kpathsea
-directory.  I expected it to be in $srcdir/../../texk/kpathsea.
-
-=========================================])
-	fi
-	CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/../../texk -I\$(top_srcdir)/../../texk"
-	LDFLAGS="$LDFLAGS -L\$(top_builddir)/../../texk/kpathsea/.libs"
-        AC_MSG_NOTICE([tetex build of lcdf-typetools, CPPFLAGS now: $CPPFLAGS])
-    elif test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
+    if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
 	KPATHSEA_INCLUDES="-I$kpathsea/include"
 	KPATHSEA_LIBS="-L$kpathsea/lib"
     else
@@ -156,9 +142,7 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
     fi
 
     dnl check for kpathsea/kpathsea.h
-    if test "x$enable_tetex_build" = xyes; then
-	kpse_header=yes
-    else
+    if true; then
 	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
 	AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
     fi
@@ -172,9 +156,7 @@ directory.  I expected it to be in $srcdir/../../texk/kpathsea.
     fi
 
     dnl check for -lkpathsea
-    if test "x$enable_tetex_build" = xyes; then
-	kpse_library=yes
-    else
+    if true; then
 	LDFLAGS="$SAVE_LDFLAGS $KPATHSEA_LIBS"
 	AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
     fi
@@ -194,15 +176,12 @@ using --without-kpathsea.
 
     dnl OK, found
     AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
-    if test "x$enable_tetex_build" = xyes; then
-	KPATHSEA_LIBS='$(top_builddir)/../../texk/kpathsea/.libs/libkpathsea.a'
-	KPATHSEA_DEPEND="$KPATHSEA_LIBS"
-    else
+    if true; then
 	KPATHSEA_LIBS="$KPATHSEA_LIBS -lkpathsea"
     fi
 
     dnl does it have opentype support?
-    if test "x$enable_tetex_build" = xyes; then
+    if false; then
 	AC_DEFINE(HAVE_DECL_KPSE_OPENTYPE_FORMAT)
     else
 	AC_CHECK_DECLS(kpse_opentype_format, :, :, [#include <kpathsea/kpathsea.h>])
@@ -218,7 +197,7 @@ AC_SUBST([KPATHSEA_DEPEND])
 
 AC_ARG_ENABLE(selfauto-set, [  --disable-selfauto-set  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_set=yes)
 
-if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno -a "x$enable_tetex_build" != xyes; then
+if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno; then
     kpsewhich='kpsewhich'
     test "x$kpathsea" != xyes -a -x "$kpathsea/bin/kpsewhich" && kpsewhich="$kpathsea/bin/kpsewhich"
     SELFAUTOLOC=`$kpsewhich --expand-var='$SELFAUTOLOC' 2>/dev/null`
