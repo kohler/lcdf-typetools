@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT([lcdf-typetools], [2.83])
 AC_CONFIG_SRCDIR([NEWS])
 AM_INIT_AUTOMAKE
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([autoconf.h])
 AM_MAINTAINER_MODE
 
 AC_PROG_MAKE_SET
@@ -410,42 +410,6 @@ dnl
 AC_DEFINE(HAVE_PERMSTRING, 1, [Define if PermStrings are available.])
 AC_DEFINE(MMAFM_RUN_MMPFB, 1, [Define to 0 if you don't want mmafm to run mmpfb when it needs to get an intermediate master conversion program.])
 dnl PATHNAME_SEPARATOR?
-
-AH_TOP([#ifndef LCDF_TYPETOOLS_CONFIG_H
-#define LCDF_TYPETOOLS_CONFIG_H])
-
-AH_BOTTOM([/* Allow compilation on Windows (thanks, Fabrice Popineau). */
-#ifdef WIN32
-# ifdef __MINGW32__
-#  include <windows.h>
-# else
-#  include <win32lib.h>
-# endif
-#else
-# define CDECL /* nothing */
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Prototype strerror if we don't have it. */
-#if !HAVE_STRERROR
-char *strerror(int errno);
-#endif
-
-/* Prototype good_strtod if we need it. */
-#if BROKEN_STRTOD
-double good_strtod(const char *nptr, char **endptr);
-#endif
-
-#ifdef __cplusplus
-}
-/* Get rid of a possible inline macro under C++. */
-# define inline inline
-#endif
-
-#endif /* LCDF_TYPETOOLS_CONFIG_H */])
 
 
 dnl
