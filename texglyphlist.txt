@@ -1,4 +1,4 @@
-# lcdf-typetools texglyphlist.txt, Version 2.33
+# lcdf-typetools texglyphlist.txt, Version 2.84
 # Contents: Extensions to the Adobe Glyph List for TeX fonts and
 # encodings. We also extend the second field so that it can contain
 # multiple Unicode scalar values, separated by commas, analogous to
@@ -63,12 +63,14 @@ emptyset;2205,F638
 # emptyslot: invalid Unicode; the user explicitly wants this slot empty
 emptyslot;D801
 epsilon1;03F5
+epsiloninv;03F6
 equivasymptotic;224D
 flat;266D
 floorleft;230A
 floorright;230B
 follows;227B
-followsequal;227D
+followsequal;2AB0
+followsorcurly;227D
 greatermuch;226B
 heart;2661,2665
 interrobang;203D
@@ -89,7 +91,8 @@ pertenthousand;2031
 phi;03D5,03C6
 phi1;03C6
 pi1;03D6
-precedesequal;227C
+precedesequal;2AAF
+precedesorcurly;227C
 prime;2032,02B9
 rho1;03F1
 # ringfitted: a ring character centered on the x-width of A, invalid Unicode
@@ -103,8 +106,8 @@ subsetsqequal;2291
 supersetsqequal;2292
 triangle;25B3
 triangleinv;25BD
-triangleleft;25B9
-triangleright;25C3
+triangleleft;25C1
+triangleright;25B7
 turnstileleft;22A2
 turnstileright;22A3
 # twelveudash: 2/3-em dash; invalid Unicode
