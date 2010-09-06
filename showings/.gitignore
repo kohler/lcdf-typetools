@@ -1,0 +1,13 @@
+*.aux
+*.dvi
+*.log
+MinionPro-It-features.pdf
+MinionPro-It-version.txt
+MinionPro-Regular-features.pdf
+MinionPro-Regular-version.txt
+WarnockPro-It-features.pdf
+WarnockPro-It-version.txt
+WarnockPro-Regular-features.pdf
+WarnockPro-Regular-version.txt
+features.pdf
+features-fontspec.tex
