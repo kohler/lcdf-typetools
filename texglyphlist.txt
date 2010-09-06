@@ -6,23 +6,18 @@
 ###############################################################################
 Delta;2206,0394
 Ifractur;2111
-# FFsmall, FFIsmall, FFLsmall, FIsmall, FLsmall: invalid Unicode
-FFsmall;D804
-FFIsmall;D807
-FFLsmall;D808
-FIsmall;D805
-FLsmall;D806
-# Germandbls: invalid Unicode, used for secondary replacement from EC.enc
-Germandbls;D800
-# Germandblssmall: invalid Unicode
-Germandblssmall;D803
+FFsmall;F766 F766,0066 0066
+FFIsmall;F766 F766 F769,0066 0066 0069
+FFLsmall;F766 F766 F76C,0066 0066 006C
+FIsmall;F766 F769,0066 0069
+FLsmall;F766 F76C,0066 006C
+Germandbls;0053 0053
+Germandblssmall;F773 F773,0073 0073
 Ng;014A
 Omega;2126,03A9
 Rfractur;211C
-# SS: invalid Unicode, used for secondary replacement from EC.enc
-SS;D800
-# SSsmall: invalid Unicode
-SSsmall;D803
+SS;0053 0053
+SSsmall;F773 F773,0073 0073
 # altselector: invalid Unicode
 altselector;D802
 angbracketleft;27E8,2329
