@@ -957,7 +957,7 @@ write_encoding_file(String &filename, const String &encoding_name,
     while (!feof(f))
 	if (char *x = sa.reserve(8192)) {
 	    int amt = fread(x, 1, 8192, f);
-	    sa.forward(amt);
+	    sa.adjust_length(amt);
 	} else {
 	    fclose(f);
 	    return errh->error("Out of memory!");
