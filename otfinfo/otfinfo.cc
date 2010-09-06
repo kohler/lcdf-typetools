@@ -107,7 +107,7 @@ usage()
 %<Otfinfo%> reports information about an OpenType font to standard output.\n\
 Options specify what information to print.\n\
 \n\
-Usage: %s [-sfzpg] [OTFFILES...]\n\n",
+Usage: %s [-sfzpg | OPTIONS] [OTFFILES...]\n\n",
 	   program_name);
     uerrh.message("\
 Query options:\n\
