@@ -49,7 +49,10 @@ coproduct;2A3F
 cwm;200C
 dblbracketleft;27E6
 dblbracketright;27E7
-diamond;2662,2666
+# U+2662 is WHITE DIAMOND SUIT
+# U+25CA is LOZENGE
+# U+2666 is BLACK DIAMOND SUIT
+diamond;2662,25CA,2666
 diamondmath;22C4
 # U+0237 is the proposed allocation for dotless j as of Unicode 4.0
 # U+1D6A5 is the mathematical italic version approved in Unicode 5.0
@@ -69,8 +72,7 @@ followsorcurly;227D
 greatermuch;226B
 heart;2661,2665
 interrobang;203D
-# interrobangdown: inverted interrobang, invalid Unicode
-interrobangdown;D80B
+interrobangdown;2E18
 intersectionsq;2293
 latticetop;22A4
 lessmuch;226A
