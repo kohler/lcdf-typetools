@@ -33,6 +33,13 @@ foreach my $a ("glyphlist.txt", "texglyphlist.txt", "texglyphlist-g2u.txt") {
     print "% - $a, Version ", $versions{$a}, "\n";
 }
 foreach my $a (sort {$a cmp $b} keys %gmap) {
-    print "\\pdfglyphtounicode{$a}{", $gmap{$a}, "}\n";
+    my(@glyphs) = map {
+	my($value) = hex($_);
+	if ($value < 0x10000) {
+	    sprintf "%04X", $value;
+	} else {
+	    sprintf "%04X %04X", 0xD800 + ($value >> 10), 0xDC00 + ($value & 0x3FF);
+	}
+    } split(/\s+/, $gmap{$a});
+    print "\\pdfglyphtounicode{$a}{", join(" ", @glyphs), "}\n";
 }
-
