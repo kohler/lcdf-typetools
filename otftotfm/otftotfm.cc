@@ -626,6 +626,8 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     if (vpl) {
 	int vpl_first_font = (metrics.need_base() ? 0 : 1);
 	font_mapping.assign(metrics.n_mapped_fonts(), 0);
+	if (vpl_first_font == 1 && font_mapping.size() == 1)
+	    font_mapping.push_back(0);
 	// how many times is each font used?
 	Vector<Setting> settings;
 	for (int i = 0; i < 256; i++)
