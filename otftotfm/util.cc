@@ -206,7 +206,8 @@ parse_unicode_number(const char* begin, const char* end, int require_prefix, uin
 	else
 	    return false;
 
-    if (value <= 0xD7FF || (value >= 0xE000 && value <= 0x10FFFF)) {
+    if (value > 0
+	&& (value <= 0xD7FF || (value >= 0xE000 && value <= 0x10FFFF))) {
 	result = value;
 	return true;
     } else
