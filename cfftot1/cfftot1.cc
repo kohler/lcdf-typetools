@@ -125,10 +125,16 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 	errh->fatal("%s: empty file", infn);
     if (c == 1 || c == 'O') {
 	StringAccum sa(150000);
-	while (!feof(f)) {
-	    int forward = fread(sa.reserve(32768), 1, 32768, f);
-	    sa.adjust_length(forward);
-	}
+	int amt;
+	do {
+	    if (char *x = sa.reserve(32768)) {
+		amt = fread(x, 1, 32768, f);
+		sa.adjust_length(amt);
+	    } else
+		amt = 0;
+	} while (amt != 0);
+	if (!feof(f) || ferror(f))
+	    errh->lerror(infn, "%s", strerror(errno));
 	if (f != stdin)
 	    fclose(f);
 

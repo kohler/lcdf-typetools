@@ -136,6 +136,7 @@ String
 read_file(String filename, ErrorHandler *errh, bool warning = false)
 {
     FILE *f;
+    int f_errno;
     if (!filename || filename == "-") {
 	filename = "<stdin>";
 	f = stdin;
@@ -143,21 +144,28 @@ read_file(String filename, ErrorHandler *errh, bool warning = false)
 	// Set the file mode to binary
 	_setmode(_fileno(f), _O_BINARY);
 #endif
-    } else if (!(f = fopen(filename.c_str(), "rb"))) {
-	errh->xmessage((warning ? errh->e_warning : errh->e_error) + ErrorHandler::make_landmark_anno(filename), strerror(errno));
+    } else {
+	f = fopen(filename.c_str(), "rb");
+	f_errno = errno;
+    }
+
+    String error_anno = (warning ? errh->e_warning : errh->e_error) + ErrorHandler::make_landmark_anno(filename);
+    if (!f) {
+	errh->xmessage(error_anno, strerror(f_errno));
 	return String();
     }
 
     StringAccum sa;
-    while (!feof(f)) {
+    int amt;
+    do {
 	if (char *x = sa.reserve(8192)) {
-	    int amt = fread(x, 1, 8192, f);
+	    amt = fread(x, 1, 8192, f);
 	    sa.adjust_length(amt);
-	} else {
-	    errh->xmessage((warning ? errh->e_warning : errh->e_error) + ErrorHandler::make_landmark_anno(filename), "Out of memory!");
-	    break;
-	}
-    }
+	} else
+	    amt = 0;
+    } while (amt != 0);
+    if (!feof(f) || ferror(f))
+	errh->xmessage(error_anno, strerror(errno));
     if (f != stdin)
 	fclose(f);
     return sa.take_string();

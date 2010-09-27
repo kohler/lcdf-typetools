@@ -602,14 +602,16 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 
 	// read old data from map file
 	StringAccum sa;
-	while (!feof(f))
+	int amt;
+	do {
 	    if (char *x = sa.reserve(8192)) {
-		int amt = fread(x, 1, 8192, f);
+		amt = fread(x, 1, 8192, f);
 		sa.adjust_length(amt);
-	    } else {
-		fclose(f);
-		return errh->error("Out of memory!");
-	    }
+	    } else
+		amt = 0;
+	} while (amt != 0);
+	if (!feof(f))
+	    return errh->error("%s: %s", map_file.c_str(), strerror(errno));
 	String text = sa.take_string();
 
 	// add comment if necessary
