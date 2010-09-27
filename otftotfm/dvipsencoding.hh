@@ -11,7 +11,7 @@ class DvipsEncoding { public:
 
     DvipsEncoding();
 
-    static int add_glyphlist(String);
+    static void add_glyphlist(String);
 
     operator bool() const			{ return _e.size() > 0; }
     const String &name() const			{ return _name; }

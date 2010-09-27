@@ -37,7 +37,7 @@ PermString DvipsEncoding::dot_notdef(".notdef");
 
 #define NEXT_GLYPH_NAME(gn)	("/" + (gn))
 
-int
+void
 DvipsEncoding::add_glyphlist(String text)
 {
     const char *s = text.begin(), *end = text.end();
