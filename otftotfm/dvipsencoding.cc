@@ -137,7 +137,7 @@ DvipsEncoding::glyphname_unicode(String gn, Vector<uint32_t> &unis)
     int prefix_start = 0;
     Vector<uint32_t> suffix;
     if (String gn_suffix = gn.substring(underscore + 1, gn.end())) {
-	if (!glyphname_unicode(gn, suffix))
+	if (!glyphname_unicode(gn_suffix, suffix))
 	    return false;
     }
 
