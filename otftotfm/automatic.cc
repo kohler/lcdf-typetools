@@ -578,7 +578,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 
 	int fd = open(map_file.c_str(), O_RDWR | O_CREAT, 0666);
 	if (fd < 0)
-	    return errh->error("%s: %s", map_file.c_str(), strerror(errno));
+	    return errh->lerror(map_file, "%s", strerror(errno));
 	FILE *f = fdopen(fd, "r+");
 	// NB: also change encoding logic if you change this code
 
