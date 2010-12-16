@@ -37,11 +37,10 @@ Os2::parse_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
     // USHORT	version
-    // USHORT	numTables
     if (HEADER_SIZE > _data.length())
 	return errh->error("OTF OS/2 too small for header"), -EFAULT;
-    if (_data.u16(0) > 3)
-	return errh->error("bad OS/2 version number"), -ERANGE;
+    if (_data.u16(0) > 4)
+	return errh->error("unexpected OS/2 version number %d", _data.u16(0)), -ERANGE;
     return 0;
 }
 
