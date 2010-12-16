@@ -417,7 +417,7 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
 	}
     }
 
-    if (errh->nerrors() == before_nerrors)
+    if (sa || errh->nerrors() == before_nerrors)
 	result_errh->message("%s", (sa ? sa.c_str() : "no information"));
 }
 
