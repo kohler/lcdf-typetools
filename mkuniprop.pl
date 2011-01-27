@@ -75,10 +75,10 @@ sub out ($$) {
 	if ($val >= 0 && ($val & ~255) != (($last_val & ~255) + 256)) {
 	    push(@offsets, ($last_val & ~255)+256, 0, 2);
 	}
-	
+
 	undef $last_val;
     }
-	
+
     if (!defined($last_val)) {
 	@arr = (0) x 256;
     }
