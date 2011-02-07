@@ -600,11 +600,11 @@ class String { public:
 	memo_t **pprev;
 	memo_t *next;
 #endif
-	char real_data[1];	// but it is almost certainly more
+	char real_data[0];	// but it is almost certainly more
     };
 
     enum {
-	MEMO_SPACE = offsetof(memo_t, real_data)
+	MEMO_SPACE = sizeof(memo_t)
     };
 
     struct rep_t {
