@@ -136,7 +136,7 @@ String
 read_file(String filename, ErrorHandler *errh, bool warning = false)
 {
     FILE *f;
-    int f_errno;
+    int f_errno = 0;
     if (!filename || filename == "-") {
 	filename = "<stdin>";
 	f = stdin;
