@@ -46,7 +46,7 @@ DvipsEncoding::add_glyphlist(String text)
 	while (s != end && isspace((unsigned char) *s))
 	    ++s;
 	// ignore comments
-	if (*s == '#') {
+	if (s != end && *s == '#') {
 	skip_to_end_of_line:
 	    while (s != end && *s != '\n' && *s != '\r')
 		++s;
