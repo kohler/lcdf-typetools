@@ -508,13 +508,13 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
 	/* no warnings to delete a glyph */;
     else {
 	for (int i = 2; i < v.size(); i++) {
-	    if (i > 2)
+	    if (_unicoding.size() != original_size)
 		_unicoding.push_back(GLYPHLIST_ALTERNATIVE);
 	    if (!glyphname_unicode(v[i], _unicoding)) {
 		errh->warning("can%,t map %<%s%> to Unicode", v[i].c_str());
-		if (i == 2)
+		if (i == v.size() - 1 && _unicoding.size() == original_size)
 		    errh->warning("target %<%s%> will be deleted from encoding", v[0].c_str());
-		else
+		else if (_unicoding.size() != original_size)
 		    _unicoding.pop_back();
 	    }
 	}
