@@ -10,6 +10,7 @@ config.log
 config.status
 configure
 depcomp
+glyphtounicode.tex
 install-sh
 missing
 stamp-h*
