@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.91   13.Jun.2011
+
+* Correct some compilation problems on unusual systems reported by Vladimir
+  Volovich.
+
+
 Version 2.90   3.Jun.2011
 
 * Correct crash on glyph names that start with a dot.  Marc van Dongen
