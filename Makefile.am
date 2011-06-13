@@ -75,7 +75,7 @@ versionize:
 	perl -pi -e 's/^Version: [\d.ab]+$$/Version: $(VERSION)/;' $(top_srcdir)/lcdf-typetools.spec
 
 dist-hook:
-	(cd $(top_srcdir); perl make-glyphtounicode.pl) > $(distdir)/glyphtounicode.tex
+	if test -f $(top_srcdir)/make-glyphtounicode.pl; then (cd $(top_srcdir); perl make-glyphtounicode.pl) > $(distdir)/glyphtounicode.tex; elif test -f $(top_srcdir)/glyphtounicode.tex; then cp $(top_srcdir)/glyphtounicode.tex $(distdir); fi
 
 $(top_srcdir)/glyphtounicode.tex: $(top_srcdir)/glyphlist.txt $(top_srcdir)/texglyphlist.txt $(top_srcdir)/texglyphlist-g2u.txt $(top_srcdir)/make-glyphtounicode.pl
 	cd $(top_srcdir); perl make-glyphtounicode.pl > glyphtounicode.tex
