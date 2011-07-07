@@ -285,7 +285,7 @@ int main(int c, char **v) {
     fi
 fi
 
-AC_CHECK_FUNCS([ctime ftruncate mkstemp sigaction strdup strtoul waitpid])
+AC_CHECK_FUNCS([ctime ftruncate mkstemp sigaction strdup strtoul vsnprintf waitpid])
 AC_CHECK_FUNC([floor], [:], [AC_CHECK_LIB(m, floor)])
 AC_CHECK_FUNC([fabs], [:], [AC_CHECK_LIB(m, fabs)])
 AC_CHECK_HEADERS([unistd.h fcntl.h sys/time.h sys/wait.h])
