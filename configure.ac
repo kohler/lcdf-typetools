@@ -245,6 +245,14 @@ AC_CHECK_HEADERS(new.h unistd.h)
 
 
 dnl
+dnl endianness
+dnl
+
+AC_C_BIGENDIAN(, [AC_DEFINE([WORDS_LITTLEENDIAN], 1, [Define to 1 if your processor stores words with the least significant byte
+   first (like Intel and VAX, unlike Motorola and SPARC).])])
+
+
+dnl
 dnl functions such as strerror, working strtod, working strnlen, strtoul,
 dnl time headers such as unistd.h
 dnl
