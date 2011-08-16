@@ -276,7 +276,9 @@ if test "x$ac_cv_broken_strtod" = xyes; then
     AC_DEFINE(HAVE_BROKEN_STRTOD, 1, [Define if strtod is broken.])
 fi
 
+AC_LANG_CPLUSPLUS
 AC_CHECK_DECLS([strnlen])
+AC_LANG_C
 AC_CHECK_FUNCS([strnlen], [have_strnlen=1], [need_fixlibc=1])
 if test "x$have_strnlen" = x1; then
     AC_CACHE_CHECK([for broken strnlen], [ac_cv_broken_strnlen],
