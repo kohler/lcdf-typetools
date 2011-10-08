@@ -14,7 +14,7 @@ AC_PROG_CXXCPP
 
 AC_ARG_ENABLE(warnings, [  --enable-warnings       compile with -Wall],
 [if test "$enableval" = yes ; then
-  CFLAGS="$CFLAGS -W -Wall"
+  CFLAGS="$CFLAGS -W -Wall"; CXXFLAGS="$CXXFLAGS -W -Wall"
 fi])
 
 dnl AN_MAKEVAR([AR], [AC_PROG_AR])
