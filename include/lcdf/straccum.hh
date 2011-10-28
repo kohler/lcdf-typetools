@@ -80,6 +80,11 @@ class StringAccum { public:
 	return reinterpret_cast<char *>(_s);
     }
 
+    /** @brief Return true iff the StringAccum is empty or out-of-memory. */
+    bool empty() const {
+	return _len == 0;
+    }
+
     /** @brief Return the length of the StringAccum. */
     int length() const {
 	return _len;
@@ -437,7 +442,7 @@ StringAccum::StringAccum(int capacity)
 }
 
 inline void StringAccum::append(const char *s, int len) {
-    assert(s && len >= 0);
+    assert(len >= 0);
     if (_len + len <= _cap) {
 	memcpy(_s + _len, s, len);
 	_len += len;
