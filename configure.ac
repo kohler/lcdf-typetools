@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([lcdf-typetools], [2.92])
+AC_INIT([lcdf-typetools], [2.93])
 AC_CONFIG_SRCDIR([NEWS])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER([autoconf.h])
@@ -12,10 +12,11 @@ AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_CXXCPP
 
-AC_ARG_ENABLE(warnings, [  --enable-warnings       compile with -Wall],
-[if test "$enableval" = yes ; then
-  CFLAGS="$CFLAGS -W -Wall"; CXXFLAGS="$CXXFLAGS -W -Wall"
-fi])
+AC_ARG_ENABLE([warnings],
+  [AS_HELP_STRING([--enable-warnings], [compile with -W -Wall])],
+  [if test "$enableval" = yes; then
+    CFLAGS="$CFLAGS -W -Wall"; CXXFLAGS="$CXXFLAGS -W -Wall"
+  fi])
 
 dnl AN_MAKEVAR([AR], [AC_PROG_AR])
 dnl AN_PROGRAM([ar], [AC_PROG_AR])
@@ -125,7 +126,8 @@ dnl
 dnl kpathsea
 dnl
 
-AC_ARG_WITH(kpathsea, [  --with-kpathsea=PREFIX  Kpathsea is installed (under PREFIX)],
+AC_ARG_WITH([kpathsea],
+  [AS_HELP_STRING([--with-kpathsea=PREFIX], [Kpathsea is installed (under PREFIX)])],
   [kpathsea=$withval], [kpathsea=])
 
 KPATHSEA_INCLUDES=
@@ -195,7 +197,9 @@ AC_SUBST([KPATHSEA_INCLUDES])
 AC_SUBST([KPATHSEA_LIBS])
 AC_SUBST([KPATHSEA_DEPEND])
 
-AC_ARG_ENABLE(selfauto-set, [  --disable-selfauto-set  disable setting SELFAUTO variables from kpsewhich], :, enable_selfauto_set=yes)
+AC_ARG_ENABLE([selfauto-set],
+  [AS_HELP_STRING([--disable-selfauto-set], [disable setting SELFAUTO variables from kpsewhich])],
+  [:], [enable_selfauto_set=yes])
 
 if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno; then
     kpsewhich='kpsewhich'
@@ -411,7 +415,7 @@ dnl is va_list addressable?
 dnl
 
 AC_LANG_CPLUSPLUS
-AC_CACHE_CHECK([for addressable va_list type], 
+AC_CACHE_CHECK([for addressable va_list type],
     ac_cv_va_list_addr,
     [AC_TRY_COMPILE([#include <stdarg.h>
 void f(va_list *) {
