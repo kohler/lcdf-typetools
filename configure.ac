@@ -278,7 +278,6 @@ fi
 
 AC_LANG_CPLUSPLUS
 AC_CHECK_DECLS([strnlen])
-AC_LANG_C
 AC_CHECK_FUNCS([strnlen], [have_strnlen=1], [need_fixlibc=1])
 if test "x$have_strnlen" = x1; then
     AC_CACHE_CHECK([for broken strnlen], [ac_cv_broken_strnlen],
@@ -294,6 +293,7 @@ int main(int c, char **v) {
 	AC_DEFINE([HAVE_BROKEN_STRNLEN], [1], [Define if strnlen is broken.])
     fi
 fi
+AC_LANG_C
 
 AC_CHECK_FUNCS([ctime ftruncate mkstemp sigaction strdup strtoul vsnprintf waitpid])
 AC_CHECK_FUNC([floor], [:], [AC_CHECK_LIB(m, floor)])
