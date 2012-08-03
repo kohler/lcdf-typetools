@@ -98,143 +98,12 @@ AC_CXX_TEMPLATE_OBJS
 
 dnl
 dnl standard headers
+dnl (Though obsolete, AC_HEADER_STC changes the standard includes.)
 dnl
 
+AC_LANG_C
+AC_HEADER_STDC
 AC_HEADER_DIRENT
-
-
-dnl
-dnl select programs to be compiled and automatically run
-dnl
-
-m4_include([m4/lcdf-typetools.m4])
-
-SELECTED_SUBDIRS=
-AC_FOREACH([Kpse_Prog], kpse_lcdf_typetools_progs,
-           [test "x$enable_[]Kpse_Prog" = xno || SELECTED_SUBDIRS="$SELECTED_SUBDIRS Kpse_Prog"
-])
-AC_SUBST(SELECTED_SUBDIRS)
-
-AC_FOREACH([Kpse_Opt], kpse_otftotfm_auto_opts,
-           [AS_IF([test "x$enable_auto_]Kpse_Opt[" != xno],
-                  [AC_DEFINE([HAVE_AUTO_]AS_TR_CPP(Kpse_Opt), 1,
-                             [Define to run ]Kpse_Opt[ from otftotfm.])])
-])
-
-
-dnl
-dnl kpathsea
-dnl
-
-AC_ARG_WITH([kpathsea],
-  [AS_HELP_STRING([--with-kpathsea=PREFIX], [Kpathsea is installed (under PREFIX)])],
-  [kpathsea=$withval], [kpathsea=])
-
-KPATHSEA_INCLUDES=
-KPATHSEA_LIBS=
-KPATHSEA_DEPEND=
-
-if test "x$kpathsea" != xno; then
-    SAVE_CPPFLAGS="$CPPFLAGS"; SAVE_LDFLAGS="$LDFLAGS"
-    if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
-	KPATHSEA_INCLUDES="-I$kpathsea/include"
-	KPATHSEA_LIBS="-L$kpathsea/lib"
-    else
-	kpathsea=yes
-    fi
-
-    dnl check for kpathsea/kpathsea.h
-    if true; then
-	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
-	AC_CHECK_HEADER([kpathsea/kpathsea.h], [kpse_header=yes], [kpse_header=no])
-    fi
-
-    dnl if not found and kpathsea prefix not set, check /usr/local
-    if test "x$kpse_header" != xyes -a "x$kpathsea" = xyes -a -r /usr/local/include/kpathsea/tex-file.h; then
-	KPATHSEA_INCLUDES="-I/usr/local/include"
-	KPATHSEA_LIBS="-L/usr/local/lib"
-	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
-	AC_CHECK_HEADER([kpathsea/tex-file.h], [kpse_header=yes], [kpse_header=no])
-    fi
-
-    dnl check for -lkpathsea
-    if true; then
-	LDFLAGS="$SAVE_LDFLAGS $KPATHSEA_LIBS"
-	AC_CHECK_LIB([kpathsea], [kpse_set_program_name], [kpse_library=yes], [kpse_library=no])
-    fi
-
-    dnl bail out if not found
-    if test "x$kpse_header" != xyes -o "x$kpse_library" != xyes; then
-	AC_MSG_ERROR([
-=========================================
-
-I can't find the kpathsea library and/or header files. Tell me where to look
-using the --with-kpathsea=PREFIX option (header files should be under
-PREFIX/include/kpathsea, and library under PREFIX/lib), or disable support
-using --without-kpathsea.
-
-=========================================])
-    fi
-
-    dnl OK, found
-    AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
-    if true; then
-	KPATHSEA_LIBS="$KPATHSEA_LIBS -lkpathsea"
-    fi
-
-    dnl does it have opentype support?
-    if false; then
-	AC_DEFINE(HAVE_DECL_KPSE_OPENTYPE_FORMAT)
-    else
-	AC_CHECK_DECLS([kpse_opentype_format], [], [], [#include <kpathsea/kpathsea.h>])
-    fi
-
-    CPPFLAGS="$SAVE_CPPFLAGS"; LDFLAGS="$SAVE_LDFLAGS"
-fi
-
-AM_CONDITIONAL([have_kpathsea], [test "x$with_kpathsea" != xno])
-AC_SUBST([KPATHSEA_INCLUDES])
-AC_SUBST([KPATHSEA_LIBS])
-AC_SUBST([KPATHSEA_DEPEND])
-
-AC_ARG_ENABLE([selfauto-set],
-  [AS_HELP_STRING([--disable-selfauto-set], [disable setting SELFAUTO variables from kpsewhich])],
-  [], [enable_selfauto_set=yes])
-
-if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno; then
-    kpsewhich='kpsewhich'
-    test "x$kpathsea" != xyes -a -x "$kpathsea/bin/kpsewhich" && kpsewhich="$kpathsea/bin/kpsewhich"
-    SELFAUTOLOC=`$kpsewhich --expand-var='$SELFAUTOLOC' 2>/dev/null`
-    SELFAUTODIR=`$kpsewhich --expand-var='$SELFAUTODIR' 2>/dev/null`
-    SELFAUTOPARENT=`$kpsewhich --expand-var='$SELFAUTOPARENT' 2>/dev/null`
-    if test -z "$SELFAUTODIR"; then
-	AC_MSG_WARN([
-=========================================
-
-Could not extract SELFAUTO variables from $kpsewhich.
-Either supply the correct PREFIX to --with-kpathsea, or supply
---disable-selfauto-loc.
-
-=========================================])
-    fi
-    AC_DEFINE_UNQUOTED(SELFAUTOLOC, "$SELFAUTOLOC", [kpsewhich's $SELFAUTOLOC variable])
-    AC_DEFINE_UNQUOTED(SELFAUTODIR, "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
-    AC_DEFINE_UNQUOTED(SELFAUTOPARENT, "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
-fi
-
-
-dnl
-dnl TeX Live build stub
-dnl
-
-KPATHSEA_RULE=
-AC_SUBST([KPATHSEA_RULE])
-
-
-dnl
-dnl standard headers
-dnl
-
 AC_CHECK_HEADERS([fcntl.h unistd.h sys/time.h sys/wait.h])
 
 
@@ -438,6 +307,134 @@ void h(int a, ...) {
 if test "x$ac_cv_va_list_addr" = xyes; then
     AC_DEFINE(HAVE_ADDRESSABLE_VA_LIST, 1, [Define if the va_list type is addressable.])
 fi
+
+
+dnl
+dnl select programs to be compiled and automatically run
+dnl
+
+m4_include([m4/lcdf-typetools.m4])
+
+SELECTED_SUBDIRS=
+AC_FOREACH([Kpse_Prog], kpse_lcdf_typetools_progs,
+           [test "x$enable_[]Kpse_Prog" = xno || SELECTED_SUBDIRS="$SELECTED_SUBDIRS Kpse_Prog"
+])
+AC_SUBST(SELECTED_SUBDIRS)
+
+AC_FOREACH([Kpse_Opt], kpse_otftotfm_auto_opts,
+           [AS_IF([test "x$enable_auto_]Kpse_Opt[" != xno],
+                  [AC_DEFINE([HAVE_AUTO_]AS_TR_CPP(Kpse_Opt), 1,
+                             [Define to run ]Kpse_Opt[ from otftotfm.])])
+])
+
+
+dnl
+dnl kpathsea
+dnl
+
+AC_ARG_WITH([kpathsea],
+  [AS_HELP_STRING([--with-kpathsea=PREFIX], [Kpathsea is installed (under PREFIX)])],
+  [kpathsea=$withval], [kpathsea=])
+
+KPATHSEA_INCLUDES=
+KPATHSEA_LIBS=
+KPATHSEA_DEPEND=
+
+if test "x$kpathsea" != xno; then
+    SAVE_CPPFLAGS="$CPPFLAGS"; SAVE_LDFLAGS="$LDFLAGS"
+    if test "x$kpathsea" != x -a "x$kpathsea" != xyes; then
+	KPATHSEA_INCLUDES="-I$kpathsea/include"
+	KPATHSEA_LIBS="-L$kpathsea/lib"
+    else
+	kpathsea=yes
+    fi
+
+    dnl check for kpathsea/kpathsea.h
+    if true; then
+	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
+	AC_CHECK_HEADER([kpathsea/kpathsea.h], [kpse_header=yes], [kpse_header=no])
+    fi
+
+    dnl if not found and kpathsea prefix not set, check /usr/local
+    if test "x$kpse_header" != xyes -a "x$kpathsea" = xyes -a -r /usr/local/include/kpathsea/tex-file.h; then
+	KPATHSEA_INCLUDES="-I/usr/local/include"
+	KPATHSEA_LIBS="-L/usr/local/lib"
+	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
+	AC_CHECK_HEADER([kpathsea/tex-file.h], [kpse_header=yes], [kpse_header=no])
+    fi
+
+    dnl check for -lkpathsea
+    if true; then
+	LDFLAGS="$SAVE_LDFLAGS $KPATHSEA_LIBS"
+	AC_CHECK_LIB([kpathsea], [kpse_set_program_name], [kpse_library=yes], [kpse_library=no])
+    fi
+
+    dnl bail out if not found
+    if test "x$kpse_header" != xyes -o "x$kpse_library" != xyes; then
+	AC_MSG_ERROR([
+=========================================
+
+I can't find the kpathsea library and/or header files. Tell me where to look
+using the --with-kpathsea=PREFIX option (header files should be under
+PREFIX/include/kpathsea, and library under PREFIX/lib), or disable support
+using --without-kpathsea.
+
+=========================================])
+    fi
+
+    dnl OK, found
+    AC_DEFINE(HAVE_KPATHSEA, 1, [Define if you want to use kpathsea.])
+    if true; then
+	KPATHSEA_LIBS="$KPATHSEA_LIBS -lkpathsea"
+    fi
+
+    dnl does it have opentype support?
+    if false; then
+	AC_DEFINE(HAVE_DECL_KPSE_OPENTYPE_FORMAT)
+    else
+	AC_CHECK_DECLS([kpse_opentype_format], [], [], [#include <kpathsea/kpathsea.h>])
+    fi
+
+    CPPFLAGS="$SAVE_CPPFLAGS"; LDFLAGS="$SAVE_LDFLAGS"
+fi
+
+AM_CONDITIONAL([have_kpathsea], [test "x$with_kpathsea" != xno])
+AC_SUBST([KPATHSEA_INCLUDES])
+AC_SUBST([KPATHSEA_LIBS])
+AC_SUBST([KPATHSEA_DEPEND])
+
+AC_ARG_ENABLE([selfauto-set],
+  [AS_HELP_STRING([--disable-selfauto-set], [disable setting SELFAUTO variables from kpsewhich])],
+  [], [enable_selfauto_set=yes])
+
+if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno; then
+    kpsewhich='kpsewhich'
+    test "x$kpathsea" != xyes -a -x "$kpathsea/bin/kpsewhich" && kpsewhich="$kpathsea/bin/kpsewhich"
+    SELFAUTOLOC=`$kpsewhich --expand-var='$SELFAUTOLOC' 2>/dev/null`
+    SELFAUTODIR=`$kpsewhich --expand-var='$SELFAUTODIR' 2>/dev/null`
+    SELFAUTOPARENT=`$kpsewhich --expand-var='$SELFAUTOPARENT' 2>/dev/null`
+    if test -z "$SELFAUTODIR"; then
+	AC_MSG_WARN([
+=========================================
+
+Could not extract SELFAUTO variables from $kpsewhich.
+Either supply the correct PREFIX to --with-kpathsea, or supply
+--disable-selfauto-loc.
+
+=========================================])
+    fi
+    AC_DEFINE_UNQUOTED(SELFAUTOLOC, "$SELFAUTOLOC", [kpsewhich's $SELFAUTOLOC variable])
+    AC_DEFINE_UNQUOTED(SELFAUTODIR, "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
+    AC_DEFINE_UNQUOTED(SELFAUTOPARENT, "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
+fi
+
+
+dnl
+dnl TeX Live build stub
+dnl
+
+KPATHSEA_RULE=
+AC_SUBST([KPATHSEA_RULE])
 
 
 dnl
