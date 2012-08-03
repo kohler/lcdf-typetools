@@ -97,7 +97,7 @@ AC_CXX_TEMPLATE_OBJS
 
 
 dnl
-dnl directory searching
+dnl standard headers
 dnl
 
 AC_HEADER_DIRENT
@@ -146,7 +146,7 @@ if test "x$kpathsea" != xno; then
     dnl check for kpathsea/kpathsea.h
     if true; then
 	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
-	AC_CHECK_HEADER(kpathsea/kpathsea.h, [kpse_header=yes], [kpse_header=no])
+	AC_CHECK_HEADER([kpathsea/kpathsea.h], [kpse_header=yes], [kpse_header=no])
     fi
 
     dnl if not found and kpathsea prefix not set, check /usr/local
@@ -154,13 +154,13 @@ if test "x$kpathsea" != xno; then
 	KPATHSEA_INCLUDES="-I/usr/local/include"
 	KPATHSEA_LIBS="-L/usr/local/lib"
 	CPPFLAGS="$SAVE_CPPFLAGS $KPATHSEA_INCLUDES"
-	AC_CHECK_HEADER(kpathsea/tex-file.h, [kpse_header=yes], [kpse_header=no])
+	AC_CHECK_HEADER([kpathsea/tex-file.h], [kpse_header=yes], [kpse_header=no])
     fi
 
     dnl check for -lkpathsea
     if true; then
 	LDFLAGS="$SAVE_LDFLAGS $KPATHSEA_LIBS"
-	AC_CHECK_LIB(kpathsea, kpse_set_program_name, [kpse_library=yes], [kpse_library=no])
+	AC_CHECK_LIB([kpathsea], [kpse_set_program_name], [kpse_library=yes], [kpse_library=no])
     fi
 
     dnl bail out if not found
@@ -186,7 +186,7 @@ using --without-kpathsea.
     if false; then
 	AC_DEFINE(HAVE_DECL_KPSE_OPENTYPE_FORMAT)
     else
-	AC_CHECK_DECLS(kpse_opentype_format, :, :, [#include <kpathsea/kpathsea.h>])
+	AC_CHECK_DECLS([kpse_opentype_format], [], [], [#include <kpathsea/kpathsea.h>])
     fi
 
     CPPFLAGS="$SAVE_CPPFLAGS"; LDFLAGS="$SAVE_LDFLAGS"
@@ -199,7 +199,7 @@ AC_SUBST([KPATHSEA_DEPEND])
 
 AC_ARG_ENABLE([selfauto-set],
   [AS_HELP_STRING([--disable-selfauto-set], [disable setting SELFAUTO variables from kpsewhich])],
-  [:], [enable_selfauto_set=yes])
+  [], [enable_selfauto_set=yes])
 
 if test "x$enable_selfauto_set" = xyes -a "x$kpathsea" != xno; then
     kpsewhich='kpsewhich'
@@ -232,6 +232,13 @@ AC_SUBST([KPATHSEA_RULE])
 
 
 dnl
+dnl standard headers
+dnl
+
+AC_CHECK_HEADERS([fcntl.h unistd.h sys/time.h sys/wait.h])
+
+
+dnl
 dnl <new> and/or <new.h>
 dnl
 
@@ -243,9 +250,9 @@ AC_CACHE_CHECK([whether <new> works], ac_cv_good_new_hdr,
   return 0;
 ], ac_cv_good_new_hdr=yes, ac_cv_good_new_hdr=no)])
 if test "$ac_cv_good_new_hdr" = yes; then
-   AC_DEFINE(HAVE_NEW_HDR, 1, [Define if <new> exists and works.])
+   AC_DEFINE([HAVE_NEW_HDR], [1], [Define if <new> exists and works.])
 fi
-AC_CHECK_HEADERS(new.h unistd.h)
+AC_CHECK_HEADERS([new.h])
 
 
 dnl
@@ -263,7 +270,7 @@ dnl
 
 AC_LANG_C
 need_fixlibc=0
-AC_CHECK_FUNCS([strerror], [:], [need_fixlibc=1])
+AC_CHECK_FUNCS([strerror], [], [need_fixlibc=1])
 
 AC_CACHE_CHECK([for broken strtod], [ac_cv_broken_strtod],
 [AC_TRY_RUN([#include <stdio.h>
@@ -277,11 +284,11 @@ int main(int c, char **v) {
 [ac_cv_broken_strtod=no])])
 if test "x$ac_cv_broken_strtod" = xyes; then
     need_fixlibc=1
-    AC_DEFINE(HAVE_BROKEN_STRTOD, 1, [Define if strtod is broken.])
+    AC_DEFINE([HAVE_BROKEN_STRTOD], [1], [Define if strtod is broken.])
 fi
 
 AC_LANG_CPLUSPLUS
-AC_CHECK_DECLS([strnlen])
+AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_CHECK_FUNCS([strnlen], [have_strnlen=1], [need_fixlibc=1])
 if test "x$have_strnlen" = x1; then
     AC_CACHE_CHECK([for broken strnlen], [ac_cv_broken_strnlen],
@@ -300,9 +307,8 @@ fi
 AC_LANG_C
 
 AC_CHECK_FUNCS([ctime ftruncate mkstemp sigaction strdup strtoul vsnprintf waitpid])
-AC_CHECK_FUNC([floor], [:], [AC_CHECK_LIB(m, floor)])
-AC_CHECK_FUNC([fabs], [:], [AC_CHECK_LIB(m, fabs)])
-AC_CHECK_HEADERS([unistd.h fcntl.h sys/time.h sys/wait.h])
+AC_CHECK_FUNC([floor], [], [AC_CHECK_LIB([m], [floor])])
+AC_CHECK_FUNC([fabs], [], [AC_CHECK_LIB([m], [fabs])])
 AM_CONDITIONAL([FIXLIBC], [test x$need_fixlibc = x1])
 
 
