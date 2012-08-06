@@ -45,6 +45,7 @@ circledivide;2298
 circledot;2299
 circleminus;2296
 coproduct;2A3F
+ct;0063 0074
 # cwm: Unicode for ZWNJ, used for secondary replacement from EC.enc
 cwm;200C
 dblbracketleft;27E6
@@ -76,6 +77,11 @@ interrobangdown;2E18
 intersectionsq;2293
 latticetop;22A4
 lessmuch;226A
+longdbls;017F 017F
+longsh;017F 0068
+longsi;017F 0069
+longsl;017F 006C
+longst;FB05,017F 0074
 lscript;2113
 natural;266E
 negationslash;0338
@@ -98,6 +104,7 @@ sharp;266F
 similarequal;2243
 slurabove;2322
 slurbelow;2323
+st;FB06,0073 0074
 star;22C6
 subsetsqequal;2291
 supersetsqequal;2292

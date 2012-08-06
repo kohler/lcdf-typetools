@@ -10,6 +10,8 @@ ffi;0066 0066 0069
 ffl;0066 0066 006C
 fi;0066 0069
 fl;0066 006C
+longst;017F 0074
+st;0073 0074
 # --
 # -- texglyphlist.txt overrides /heart, /diamond, /phi, and /phi1 to their
 # -- more typical meanings in encoding files meant for TeX: /heart and
