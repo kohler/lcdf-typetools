@@ -1,4 +1,4 @@
-# lcdf-typetools texglyphlist-g2u.txt, Version 2.84
+# lcdf-typetools texglyphlist-g2u.txt, Version 2.95
 # Contents: Overrides to glyphlist.txt and texglyphlist.txt used to
 # generate glyphtounicode.tex, which maps glyphs to searchable Unicode
 # code points.

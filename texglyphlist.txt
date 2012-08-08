@@ -1,4 +1,4 @@
-# lcdf-typetools texglyphlist.txt, Version 2.84
+# lcdf-typetools texglyphlist.txt, Version 2.95
 # Contents: Extensions to the Adobe Glyph List for TeX fonts and
 # encodings. We also extend the second field so that it can contain
 # multiple Unicode scalar values, separated by commas, analogous to
