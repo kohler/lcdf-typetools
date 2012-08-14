@@ -40,6 +40,20 @@
 
 #ifdef WIN32
 # define mkdir(dir, access) mkdir(dir)
+# define COPY_CMD "copy"
+# define CMD_SEP "&"
+#else
+# define COPY_CMD "cp"
+# define CMD_SEP ";"
+#endif
+
+/* kpathsea may already have defined this */
+#ifndef DEV_NULL
+# ifdef WIN32
+#  define DEV_NULL "NUL"
+# else
+#  define DEV_NULL "/dev/null"
+# endif
 #endif
 
 #if HAVE_AUTO_T1DOTLESSJ
@@ -482,7 +496,7 @@ installed_truetype(const String &ttf_filename, bool allow_generate, ErrorHandler
 
 	int retval;
 	if (!same_filename(ttf_filename, installed_ttf_filename)) {
-	    String command = "cp " + shell_quote(ttf_filename) + " " + shell_quote(installed_ttf_filename);
+	    String command = COPY_CMD " " + shell_quote(ttf_filename) + " " + shell_quote(installed_ttf_filename);
 	    retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
 		errh->error("could not run %<%s%>", command.c_str());
@@ -727,11 +741,11 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    int slash = filename.find_right('\'');
 	    if (slash >= 0)
 		filename = filename.substring(slash + 1);
-	    String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + "; updmap";
+	    String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + CMD_SEP " updmap";
 	    if (verbose)
 		command += " 1>&2";
 	    else
-		command += " >/dev/null 2>&1";
+		command += " >" DEV_NULL " 2>&1";
 	    int retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
 		errh->warning("could not run %<%s%>", command.c_str());

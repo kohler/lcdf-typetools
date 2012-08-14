@@ -50,6 +50,10 @@
 #include <signal.h>
 #include <algorithm>
 #include <math.h>
+/* M_PI isn't defined in C99 */
+#ifndef M_PI
+# define M_PI 3.14159265358979323846264338327
+#endif
 #ifdef HAVE_CTIME
 # include <time.h>
 #endif

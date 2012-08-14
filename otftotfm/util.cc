@@ -103,15 +103,34 @@ same_filename(const String &a, const String &b)
 String
 shell_quote(const String &str)
 {
-#if defined(_MSDOS) || defined(_WIN32)
-    return str;			// XXX
-#else
     if (!str)
-	return String::make_stable("''");
+	return String::make_stable("\"\"");
 
     const char *begin = str.begin();
     const char *end = str.end();
     StringAccum sa;
+
+#if defined(_MSDOS) || defined(_WIN32)
+    sa.append('\"');
+
+    for (const char *s = begin; s < end; ++s)
+	if (isalnum((unsigned char) *s) || *s == '_' || *s == '-' || *s == '+' || *s == '\\' || *s == ':' || *s == '.')
+	    /* do nothing */;
+	else if (*s == '\"') {
+	    sa.append(begin, s);
+	    sa.append("\"\"\"", 3);
+	    begin = s + 1;
+	} else {
+	    sa.append(begin, s + 1);
+	    begin = s + 1;
+	}
+
+    if (sa.length() > 1) {
+	sa.append(begin, end);
+	sa.append('\"');
+	return sa.take_string();
+    }
+#else
     for (const char *s = begin; s < end; s++)
 	if (isalnum((unsigned char) *s) || *s == '_' || *s == '-' || *s == '+' || *s == '/' || *s == ':' || *s == '.')
 	    /* do nothing */;
@@ -121,13 +140,13 @@ shell_quote(const String &str)
 	    begin = s;
 	}
 
-    if (!sa)
-	return str;
-    else {
+    if (sa.length()) {
 	sa.append(begin, end);
 	return sa.take_string();
     }
 #endif
+
+    return str;
 }
 
 int
