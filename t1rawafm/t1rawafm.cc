@@ -299,7 +299,8 @@ main(int argc, char *argv[])
 	int opt = Clp_Next(clp);
 	switch (opt) {
 
-	  case OUTPUT_OPT:
+	case OUTPUT_OPT:
+	output_file:
 	    if (output_file)
 		errh->fatal("output file already specified");
 	    output_file = clp->vstr;
@@ -321,8 +322,9 @@ particular purpose.\n");
 
 	  case Clp_NotOption:
 	    if (font)
-		errh->fatal("font already specified");
-	    do_file(clp->vstr, psres, errh);
+		goto output_file;
+	    else
+		do_file(clp->vstr, psres, errh);
 	    break;
 
 	  case Clp_Done:
