@@ -10,7 +10,7 @@ t1reencode_SOURCES = md5.c md5.h \
 
 t1reencode_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(top_srcdir)/include
+INCLUDES = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = t1reencode.1

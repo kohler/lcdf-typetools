@@ -18,7 +18,7 @@ EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(top_srcdir)/include
+INCLUDES = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otftotfm.1

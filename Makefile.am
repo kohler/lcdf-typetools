@@ -70,14 +70,14 @@ cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1tes
 	cd $@ && $(MAKE)
 
 versionize:
-	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(top_srcdir)/cfftot1/cfftot1.1 $(top_srcdir)/mmafm/mmafm.1 $(top_srcdir)/mmpfb/mmpfb.1 $(top_srcdir)/otfinfo/otfinfo.1 $(top_srcdir)/otftotfm/otftotfm.1 $(top_srcdir)/t1dotlessj/t1dotlessj.1 $(top_srcdir)/t1lint/t1lint.1 $(top_srcdir)/t1rawafm/t1rawafm.1 $(top_srcdir)/t1reencode/t1reencode.1 $(top_srcdir)/t1testpage/t1testpage.1 $(top_srcdir)/ttftotype42/ttftotype42.1
-	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(top_srcdir)/README
-	perl -pi -e 's/^Version: [\d.ab]+$$/Version: $(VERSION)/;' $(top_srcdir)/lcdf-typetools.spec
+	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(srcdir)/cfftot1/cfftot1.1 $(srcdir)/mmafm/mmafm.1 $(srcdir)/mmpfb/mmpfb.1 $(srcdir)/otfinfo/otfinfo.1 $(srcdir)/otftotfm/otftotfm.1 $(srcdir)/t1dotlessj/t1dotlessj.1 $(srcdir)/t1lint/t1lint.1 $(srcdir)/t1rawafm/t1rawafm.1 $(srcdir)/t1reencode/t1reencode.1 $(srcdir)/t1testpage/t1testpage.1 $(srcdir)/ttftotype42/ttftotype42.1
+	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(srcdir)/README
+	perl -pi -e 's/^Version: [\d.ab]+$$/Version: $(VERSION)/;' $(srcdir)/lcdf-typetools.spec
 
 dist-hook:
-	if test -f $(top_srcdir)/make-glyphtounicode.pl; then (cd $(top_srcdir); perl make-glyphtounicode.pl) > $(distdir)/glyphtounicode.tex; elif test -f $(top_srcdir)/glyphtounicode.tex; then cp $(top_srcdir)/glyphtounicode.tex $(distdir); fi
+	if test -f $(srcdir)/make-glyphtounicode.pl; then (cd $(srcdir); perl make-glyphtounicode.pl) > $(distdir)/glyphtounicode.tex; elif test -f $(srcdir)/glyphtounicode.tex; then cp $(srcdir)/glyphtounicode.tex $(distdir); fi
 
-$(top_srcdir)/glyphtounicode.tex: $(top_srcdir)/glyphlist.txt $(top_srcdir)/texglyphlist.txt $(top_srcdir)/texglyphlist-g2u.txt $(top_srcdir)/make-glyphtounicode.pl
-	cd $(top_srcdir); perl make-glyphtounicode.pl > glyphtounicode.tex
+$(srcdir)/glyphtounicode.tex: $(srcdir)/glyphlist.txt $(srcdir)/texglyphlist.txt $(srcdir)/texglyphlist-g2u.txt $(srcdir)/make-glyphtounicode.pl
+	cd $(srcdir); perl make-glyphtounicode.pl > glyphtounicode.tex
 
 .PHONY: rpm liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42
