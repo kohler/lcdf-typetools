@@ -49,10 +49,15 @@ kpsei_path_expand(const char* path)
 char*
 kpsei_find_file(const char* name, int format)
 {
+    char *result;
     switch (format) {
       case KPSEI_FMT_WEB2C:
 	return kpse_find_file(name, kpse_web2c_format, true);
-      case KPSEI_FMT_ENCODING:
+    case KPSEI_FMT_ENCODING:
+#if HAVE_DECL_KPSE_ENC_FORMAT
+	if ((result = kpse_find_file(name, kpse_enc_format, true)))
+	    return result;
+#endif
 	return kpse_find_file(name, kpse_tex_ps_header_format, true);
       case KPSEI_FMT_TYPE1:
 	return kpse_find_file(name, kpse_type1_format, false);

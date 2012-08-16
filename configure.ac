@@ -395,6 +395,9 @@ using --without-kpathsea.
 	AC_CHECK_DECLS([kpse_opentype_format], [], [], [#include <kpathsea/kpathsea.h>])
     fi
 
+    dnl does it have a separate format for encoding files?
+    AC_CHECK_DECLS([kpse_enc_format], [], [], [#include <kpathsea/kpathsea.h>])
+
     CPPFLAGS="$SAVE_CPPFLAGS"; LDFLAGS="$SAVE_LDFLAGS"
 fi
 
