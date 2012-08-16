@@ -64,7 +64,7 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
     va_list val;
     va_start(val, error_message);
     if (!error_message)
-	errh->message("Usage: %s [OPTION]... FONT", program_name);
+	errh->message("Usage: %s [OPTION]... [FONT [OUTPUT]]", program_name);
     else
 	errh->vxmessage(ErrorHandler::e_error, error_message, val);
     errh->message("Type %s --help for more information.", program_name);
@@ -79,13 +79,13 @@ usage()
 %<T1rawafm%> generates a raw (kernless and ligatureless) AFM file corresponding\n\
 to the specified Type 1 font file and writes it to the standard output.\n\
 \n\
-Usage: %s [OPTION]... [FONT]\n\
+Usage: %s [OPTION]... [FONT [OUTPUT]]\n\
 \n\
 FONT is the name of a PFA or PFB font file. If omitted, t1rawafm will read a\n\
 font file from the standard input.\n\
 \n\
 Options:\n\
-  -o, --output=FILE            Write output to FILE instead of standard out.\n\
+  -o, --output=OUTPUT          Write output to FILE instead of standard output.\n\
   -h, --help                   Print this message and exit.\n\
       --version                Print version number and exit.\n\
 \n\
