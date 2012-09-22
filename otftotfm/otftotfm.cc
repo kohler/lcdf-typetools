@@ -2207,7 +2207,7 @@ particular purpose.\n");
 		    errh->message("glyphlist.txt found with kpathsea at %s", g.c_str());
 	    } else
 #endif
-		glyphlist_files.push_back(SHAREDIR "/glyphlist.txt");
+		glyphlist_files.push_back(GLYPHLISTDIR "/glyphlist.txt");
 #if HAVE_KPATHSEA
 	    if (String g = kpsei_find_file("texglyphlist.txt", KPSEI_FMT_MAP)) {
 		glyphlist_files.push_back(g);
@@ -2215,7 +2215,7 @@ particular purpose.\n");
 		    errh->message("texglyphlist.txt found with kpathsea at %s", g.c_str());
 	    } else
 #endif
-		glyphlist_files.push_back(SHAREDIR "/texglyphlist.txt");
+		glyphlist_files.push_back(GLYPHLISTDIR "/texglyphlist.txt");
 	}
 
 	// read glyphlist

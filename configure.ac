@@ -426,10 +426,28 @@ Either supply the correct PREFIX to --with-kpathsea, or supply
 
 =========================================])
     fi
-    AC_DEFINE_UNQUOTED(SELFAUTOLOC, "$SELFAUTOLOC", [kpsewhich's $SELFAUTOLOC variable])
-    AC_DEFINE_UNQUOTED(SELFAUTODIR, "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
-    AC_DEFINE_UNQUOTED(SELFAUTOPARENT, "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
+    AC_DEFINE_UNQUOTED([SELFAUTOLOC], "$SELFAUTOLOC", [kpsewhich's $SELFAUTOLOC variable])
+    AC_DEFINE_UNQUOTED([SELFAUTODIR], "$SELFAUTODIR", [kpsewhich's $SELFAUTODIR variable])
+    AC_DEFINE_UNQUOTED([SELFAUTOPARENT], "$SELFAUTOPARENT", [kpsewhich's $SELFAUTOPARENT variable])
 fi
+
+
+dnl
+dnl glyphlist.txt and *.enc installation locations
+dnl
+
+AC_ARG_ENABLE([glyphlistdir],
+  [AS_HELP_STRING([--enable-glyphlistdir=DIR], [store glyphlist.txt files in DIR [pkgdatadir]])], [glyphlistdir="$enableval"], [glyphlistdir=NONE])
+AC_ARG_ENABLE([encdir],
+  [AS_HELP_STRING([--enable-encdir=DIR], [store encoding files in DIR [pkgdatadir]])], [encdir="$enableval"], [encdir=NONE])
+
+test "x$glyphlistdir" = xNONE -o "x$glyphlistdir" = xno \
+     -o "x$glyphlistdir" = x && glyphlistdir='${pkgdatadir}'
+test "x$encdir" = xNONE -o "x$encdir" = xno \
+     -o "x$encdir" = x && encdir='${pkgdatadir}'
+
+AC_SUBST([glyphlistdir])
+AC_SUBST([encdir])
 
 
 dnl
@@ -454,18 +472,20 @@ dnl set path variables
 dnl
 
 shell_expand () {
-  val=`eval echo '$'"$1"`
-  while echo "x$val" | fgrep '$' >/dev/null 2>&1; do val=`eval echo "$val"`; done
-  eval "$1='$val'"
+    val=`eval echo '$'"$1"`
+    while echo "x$val" | grep '\$' >/dev/null 2>&1; do val=`eval echo "$val"`; done
+    val=`echo "$val" | sed 's,//*,/,g'`
+    eval "$1='$val'"
 }
 
 dnl Preset $prefix and $exec_prefix.
 test "x$prefix" = xNONE && prefix=$ac_default_prefix
 test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 
-shell_expand datadir
-
-AC_DEFINE_UNQUOTED(SHAREDIR, "$datadir/lcdf-typetools", [Data directory.])
+pkgdatadir="${datadir}/$PACKAGE"
+gdir="$glyphlistdir"
+for i in data dataroot pkgdata g; do shell_expand ${i}dir; done
+AC_DEFINE_UNQUOTED([GLYPHLISTDIR], ["$gdir"], [Directory for glyphlist.txt files.])
 
 
 dnl

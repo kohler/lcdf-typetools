@@ -2,9 +2,11 @@
 AUTOMAKE_OPTIONS = foreign check-news
 
 SUBDIRS = liblcdf libefont @SELECTED_SUBDIRS@
-DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42
+DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm \
+	t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42
 
-pkgdata_DATA = glyphlist.txt texglyphlist.txt 7t.enc
+glyphlistdir = @glyphlistdir@
+encdir = @encdir@
 
 EXTRA_DIST = \
 	ONEWS \
@@ -66,8 +68,21 @@ EXTRA_DIST = \
 liblcdf libefont:
 	cd $@ && $(MAKE)
 libefont: liblcdf
-cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42: liblcdf libefont
+cfftot1 mmafm mmpfb otfinfo otftotfm t1dotlessj t1lint t1rawafm \
+t1reencode t1testpage ttftotype42: liblcdf libefont
 	cd $@ && $(MAKE)
+
+install-data-local:
+	test -z "$(glyphlistdir)" || $(MKDIR_P) "$(DESTDIR)$(glyphlistdir)"
+	$(INSTALL_DATA) "$(srcdir)/glyphlist.txt" "$(DESTDIR)$(glyphlistdir)"
+	$(INSTALL_DATA) "$(srcdir)/texglyphlist.txt" "$(DESTDIR)$(glyphlistdir)"
+	test -z "$(encdir)" || $(MKDIR_P) "$(DESTDIR)$(encdir)"
+	$(INSTALL_DATA) "$(srcdir)/7t.enc" "$(DESTDIR)$(encdir)"
+
+uninstall-local:
+	rm -f "$(DESTDIR)$(glyphlistdir)/glyphlist.txt"
+	rm -f "$(DESTDIR)$(glyphlistdir)/texglyphlist.txt"
+	rm -f "$(DESTDIR)$(encdir)/7t.enc"
 
 versionize:
 	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(srcdir)/cfftot1/cfftot1.1 $(srcdir)/mmafm/mmafm.1 $(srcdir)/mmpfb/mmpfb.1 $(srcdir)/otfinfo/otfinfo.1 $(srcdir)/otftotfm/otftotfm.1 $(srcdir)/t1dotlessj/t1dotlessj.1 $(srcdir)/t1lint/t1lint.1 $(srcdir)/t1rawafm/t1rawafm.1 $(srcdir)/t1reencode/t1reencode.1 $(srcdir)/t1testpage/t1testpage.1 $(srcdir)/ttftotype42/ttftotype42.1
