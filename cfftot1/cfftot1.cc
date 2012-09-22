@@ -123,38 +123,39 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
 
     if (c == EOF)
 	errh->fatal("%s: empty file", infn);
-    if (c == 1 || c == 'O') {
-	StringAccum sa(150000);
-	int amt;
-	do {
-	    if (char *x = sa.reserve(32768)) {
-		amt = fread(x, 1, 32768, f);
-		sa.adjust_length(amt);
-	    } else
-		amt = 0;
-	} while (amt != 0);
-	if (!feof(f) || ferror(f))
-	    errh->lerror(infn, "%s", strerror(errno));
-	if (f != stdin)
-	    fclose(f);
-
-	LandmarkErrorHandler cerrh(errh, infn);
-	String data = sa.take_string();
-	if (c == 'O')
-	    data = Efont::OpenType::Font(data, &cerrh).table("CFF");
-
-	Cff *cff = new Cff(data, &cerrh);
-	Cff::FontParent *fp = cff->font(name, &cerrh);
-	if (errh->nerrors() == 0
-	    && !(font = dynamic_cast<Cff::Font *>(fp)))
-	    errh->fatal("%s: CID-keyed fonts not supported", infn);
-    } else
+    if (c != 1 && c != 'O')
 	errh->fatal("%s: not a CFF or OpenType/CFF font", infn);
+
+    StringAccum sa(150000);
+    int amt;
+    do {
+	if (char *x = sa.reserve(32768)) {
+	    amt = fread(x, 1, 32768, f);
+	    sa.adjust_length(amt);
+	} else
+	    amt = 0;
+    } while (amt != 0);
+    if (!feof(f) || ferror(f))
+	errh->lerror(infn, "%s", strerror(errno));
+    if (f != stdin)
+	fclose(f);
+
+    ContextErrorHandler cerrh(errh, "While processing %s:", infn);
+    cerrh.set_indent(0);
+    String data = sa.take_string();
+    if (c == 'O')
+	data = Efont::OpenType::Font(data, &cerrh).table("CFF");
+
+    Cff *cff = new Cff(data, &cerrh);
+    Cff::FontParent *fp = cff->font(name, &cerrh);
+    if (errh->nerrors() == 0
+	&& !(font = dynamic_cast<Cff::Font *>(fp)))
+	errh->fatal("%s: CID-keyed fonts not supported", infn);
 
     if (errh->nerrors() > 0)
 	return;
 
-    Type1Font *font1 = create_type1_font(font, errh);
+    Type1Font *font1 = create_type1_font(font, &cerrh);
 
     if (!outfn || strcmp(outfn, "-") == 0) {
 	f = stdout;

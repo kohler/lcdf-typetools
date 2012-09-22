@@ -86,9 +86,11 @@ class MakeType1CharstringInterp::Subr { public:
 	Subr *subr;
 	int pos;
 	int len;
-	String s;
 	Caller(Subr *s, int p, int l)	: subr(s), pos(p), len(l) { }
-	String charstring(MakeType1CharstringInterp *mcsi) const { return subr->charstring(mcsi)->substring(pos, len); }
+	String charstring(MakeType1CharstringInterp *mcsi) const {
+	    Type1Charstring *t1cs = subr->charstring(mcsi);
+	    return t1cs->substring(pos, len);
+	}
     };
 
     int ncallers() const		{ return _callers.size(); }
@@ -103,8 +105,6 @@ class MakeType1CharstringInterp::Subr { public:
     void transfer_nested_calls(int pos, int length, Subr *new_caller) const;
     void change_callers(Subr *, int pos, int length, int new_length);
     bool unify(MakeType1CharstringInterp *);
-
-    void caller_data(bool assign, MakeType1CharstringInterp *mcsi);
 
   private:
 
@@ -204,7 +204,10 @@ MakeType1CharstringInterp::Subr::name(const MakeType1CharstringInterp *mcsi) con
     case CSR_GSUBR:
 	return "gsubr" + String(n);
     case CSR_GLYPH:
-	return mcsi->output()->glyph_name(n);
+	if (String name = mcsi->output()->glyph_name(n))
+	    return name;
+	else
+	    return "??glyph" + String(n) + "??";
     default:
 	return "";
     }
@@ -272,24 +275,6 @@ MakeType1CharstringInterp::Subr::change_callers(Subr *caller, int pos, int lengt
 	    c.len += delta;
 	} else
 	    c.subr = 0;
-    }
-}
-
-void
-MakeType1CharstringInterp::Subr::caller_data(bool assign, MakeType1CharstringInterp *mcsi)
-{
-    for (int i = 0; i < _callers.size(); i++) {
-	Caller &c = _callers[i];
-	if (!c.subr)
-	    continue;
-	String s = c.subr->charstring(mcsi)->substring(c.pos, c.len);
-	if (assign)
-	    c.s = s;
-	else if (c.s != s) {
-	    //fprintf(stderr, "FAIL %08x caller %08x:%d+%d\n", _csr, c.subr->_csr, c.pos, c.len);
-	    //assert(0);
-	}
-	assert(c.subr->has_call(this));
     }
 }
 
@@ -433,12 +418,21 @@ MakeType1CharstringInterp::run(const CharstringProgram *program, Type1Font *outp
 	run(program->glyph_context(i), receptacle, errh);
 #if 0
 	PermString n = program->glyph_name(i);
-	if (n == "integral.disp") {
+	if (i == 2301 || i == 2302) {
 	    fprintf(stderr, "%s was %s\n", n.c_str(), CharstringUnparser::unparse(*program->glyph(i)).c_str());
 	    fprintf(stderr, "%s == %s\n", n.c_str(), CharstringUnparser::unparse(receptacle).c_str());
 	}
 #endif
-	output->add_glyph(Type1Subr::make_glyph(program->glyph_name(i), receptacle, glyph_definer));
+	PermString name = program->glyph_name(i);
+	if (output->glyph(name)) {
+	    errh->warning("glyph %<%s%> defined more than once", name.c_str());
+	    int i = 1;
+	    do {
+		name = program->glyph_name(i) + String(".") + String(i);
+		++i;
+	    } while (output->glyph(name));
+	}
+	output->add_glyph(Type1Subr::make_glyph(name, receptacle, glyph_definer));
     }
 
     // unify Subrs

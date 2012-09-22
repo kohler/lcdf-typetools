@@ -219,7 +219,7 @@ class CharstringProgram { public:
     inline int xsubr_bias(bool g) const;
 
     virtual int nglyphs() const			{ return 0; }
-    virtual PermString glyph_name(int) const	{ return PermString();}
+    virtual PermString glyph_name(int) const	{ return PermString(); }
     virtual void glyph_names(Vector<PermString> &) const;
     virtual Charstring *glyph(int) const	{ return 0; }
     virtual Charstring *glyph(PermString) const	{ return 0; }
