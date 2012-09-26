@@ -162,13 +162,26 @@ mysystem(const char *command, ErrorHandler *errh)
     }
 }
 
+#if !HAVE_MKSTEMP
+static const char *
+my_tmpnam()
+{
+# ifndef WIN32
+    return tmpnam(0);
+# else
+    const char *dir = getenv("TEMP");
+    return _tempnam(dir ? dir : ".", "otftmp.");
+# endif
+}
+#endif
+
 int
 temporary_file(String &filename, ErrorHandler *errh)
 {
     if (no_create)
 	return 0;		// random number suffices
 
-#ifdef HAVE_MKSTEMP
+#if HAVE_MKSTEMP
     const char *tmpdir = getenv("TMPDIR");
     if (tmpdir)
 	filename = String(tmpdir) + "/otftotfm.XXXXXX";
@@ -185,7 +198,7 @@ temporary_file(String &filename, ErrorHandler *errh)
     return fd;
 #else  // !HAVE_MKSTEMP
     for (int tries = 0; tries < 5; tries++) {
-	if (!(filename = tmpnam(0)))
+	if (!(filename = my_tmpnam()))
 	    return errh->error("cannot create temporary file");
 # ifdef O_EXCL
 	int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_EXCL | O_TRUNC, 0600);

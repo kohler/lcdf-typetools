@@ -85,7 +85,7 @@ FONT is the name of a PFA or PFB font file. If omitted, t1rawafm will read a\n\
 font file from the standard input.\n\
 \n\
 Options:\n\
-  -o, --output=OUTPUT          Write output to FILE instead of standard output.\n\
+  -o, --output=FILE            Write output to FILE instead of standard output.\n\
   -h, --help                   Print this message and exit.\n\
       --version                Print version number and exit.\n\
 \n\
