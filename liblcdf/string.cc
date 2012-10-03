@@ -475,10 +475,8 @@ String::find_left(const String &str, int start) const
 {
     if (start < 0)
 	start = 0;
-    if (start >= length())
-	return -1;
-    if (!str.length())
-	return 0;
+    if (!str.length() && start <= length())
+	return start;
     int first_c = (unsigned char)str[0];
     int pos = start, max_pos = length() - str.length();
     for (pos = find_left(first_c, pos); pos >= 0 && pos <= max_pos;
