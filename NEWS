@@ -1,5 +1,10 @@
 LCDF Typetools NEWS
 
+Version 2.96   25.Oct.2012
+
+* Build improvements inspired by Peter Breitenlohner.
+
+
 Version 2.95   21.Sep.2012
 
 * Fix cfftot1: Don't crash on problematic fonts. Bob Tennent report.
