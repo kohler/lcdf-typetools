@@ -442,25 +442,9 @@ class String { public:
      * @sa String::compare(const String &a, const String &b) */
     bool starts_with(const char *s, int len) const;
 
-
-    /** @brief Return a lowercased version of this string.
-     *
-     * Translates the ASCII characters 'A' through 'Z' into their lowercase
-     * equivalents. */
     String lower() const;
-
-    /** @brief Return an uppercased version of this string.
-     *
-     * Translates the ASCII characters 'a' through 'z' into their uppercase
-     * equivalents. */
     String upper() const;
-
-    /** @brief Return a "printable" version of this string.
-     *
-     * Translates control characters 0-31 into "control" sequences, such as
-     * "^@" for the null character, and characters 127-255 into octal escape
-     * sequences, such as "\377" for 255. */
-    String printable() const;
+    String printable(int type = 0) const;
 
 
     /** @brief Assign this string to @a x. */

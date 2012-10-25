@@ -28,6 +28,13 @@
 #include <ctype.h>
 #include <lcdf/inttypes.h>
 
+#ifndef likely
+#define likely(x) (x)
+#endif
+#ifndef unlikely
+#define unlikely(x) (x)
+#endif
+
 /** @file string.hh
  * @brief The LCDF String class.
  */
@@ -45,9 +52,9 @@
  * <h3>Out-of-memory strings</h3>
  *
  * When there is not enough memory to create a particular string, a special
- * "out-of-memory" string is returned instead.  Out-of-memory strings are
+ * "out-of-memory" string is returned instead. Out-of-memory strings are
  * contagious: the result of any concatenation operation involving an
- * out-of-memory string is another out-of-memory string.  Thus, the final
+ * out-of-memory string is another out-of-memory string. Thus, the final
  * result of a series of String operations will be an out-of-memory string,
  * even if the out-of-memory condition occurs in the middle.
  *
@@ -139,7 +146,6 @@ String::delete_memo(memo_t *memo)
 }
 
 
-
 #if HAVE_STRING_PROFILING
 void
 String::one_profile_report(StringAccum &sa, int i, int examples)
@@ -190,6 +196,7 @@ String::profile_report(StringAccum &sa, int examples)
 /** @endcond never */
 
 
+/** @brief Construct a base-10 string representation of @a x. */
 String::String(int x)
 {
     if (x >= 0 && x < 10)
@@ -201,6 +208,7 @@ String::String(int x)
     }
 }
 
+/** @overload */
 String::String(unsigned x)
 {
     if (x < 10)
@@ -212,6 +220,7 @@ String::String(unsigned x)
     }
 }
 
+/** @overload */
 String::String(long x)
 {
     if (x >= 0 && x < 10)
@@ -223,6 +232,7 @@ String::String(long x)
     }
 }
 
+/** @overload */
 String::String(unsigned long x)
 {
     if (x < 10)
@@ -276,21 +286,21 @@ String::assign_out_of_memory()
 }
 
 void
-String::assign(const char *str, int len, bool need_deref)
+String::assign(const char *s, int len, bool need_deref)
 {
-    if (!str) {
+    if (!s) {
 	assert(len <= 0);
 	len = 0;
     } else if (len < 0)
-	len = strlen(str);
+	len = strlen(s);
 
     // need to start with dereference
     if (need_deref) {
-	if (_r.memo
-	    && str >= _r.memo->real_data
-	    && str + len <= _r.memo->real_data + _r.memo->capacity) {
+	if (unlikely(_r.memo
+		     && s >= _r.memo->real_data
+		     && s + len <= _r.memo->real_data + _r.memo->capacity)) {
 	    // Be careful about "String s = ...; s = s.c_str();"
-	    _r.data = str;
+	    _r.data = s;
 	    _r.length = len;
 	    return;
 	} else
@@ -299,7 +309,7 @@ String::assign(const char *str, int len, bool need_deref)
 
     if (len == 0) {
 	_r.memo = 0;
-	_r.data = (str == &oom_data ? str : &null_data);
+	_r.data = (s == &oom_data ? s : &null_data);
 
     } else {
 	// Make the memo a multiple of 16 characters and bigger than 'len'.
@@ -309,18 +319,23 @@ String::assign(const char *str, int len, bool need_deref)
 	    assign_out_of_memory();
 	    return;
 	}
-	memcpy(_r.memo->real_data, str, len);
+	memcpy(_r.memo->real_data, s, len);
 	_r.data = _r.memo->real_data;
     }
 
     _r.length = len;
 }
 
+/** @brief Append @a len unknown characters to this string.
+ * @return Modifiable pointer to the appended characters.
+ *
+ * The caller may safely modify the returned memory. Null is returned if
+ * the string becomes out-of-memory. */
 char *
 String::append_uninitialized(int len)
 {
     // Appending anything to "out of memory" leaves it as "out of memory"
-    if (len <= 0 || _r.data == &oom_data)
+    if (unlikely(len <= 0) || out_of_memory())
 	return 0;
 
     // If we can, append into unused space. First, we check that there's
@@ -388,9 +403,9 @@ String::append(const char *s, int len, memo_t *memo)
     else if (_r.length == 0 && memo && !out_of_memory()) {
 	deref();
 	assign_memo(s, len, memo);
-    } else if (!(_r.memo
-		 && s >= _r.memo->real_data
-		 && s + len <= _r.memo->real_data + _r.memo->capacity)) {
+    } else if (likely(!(_r.memo
+			&& s >= _r.memo->real_data
+			&& s + len <= _r.memo->real_data + _r.memo->capacity))) {
 	if (char *space = append_uninitialized(len))
 	    memcpy(space, s, len);
     } else {
@@ -400,6 +415,7 @@ String::append(const char *s, int len, memo_t *memo)
     }
 }
 
+/** @brief Append @a len copies of character @a c to this string. */
 void
 String::append_fill(int c, int len)
 {
@@ -408,6 +424,8 @@ String::append_fill(int c, int len)
 	memset(space, c, len);
 }
 
+/** @brief Ensure the string's data is unshared and return a mutable
+    pointer to it. */
 char *
 String::mutable_data()
 {
@@ -434,6 +452,20 @@ String::mutable_c_str()
     return const_cast<char *>(_r.data);
 }
 
+/** @brief Return a substring of this string, consisting of the @a len
+    characters starting at index @a pos.
+    @param pos substring's first position relative to the string
+    @param len length of substring
+
+    If @a pos is negative, starts that far from the end of the string. If @a
+    len is negative, leaves that many characters off the end of the string.
+    If @a pos and @a len specify a substring that is partly outside the
+    string, only the part within the string is returned. If the substring is
+    beyond either end of the string, returns an empty string (but this
+    should be considered a programming error; a future version may generate
+    a warning for this case).
+
+    @note String::substring() is intended to behave like Perl's substr(). */
 String
 String::substring(int pos, int len) const
 {
@@ -475,14 +507,10 @@ String::find_left(const String &str, int start) const
 {
     if (start < 0)
 	start = 0;
-    if (!str.length() && start <= length())
-	return start;
-    int first_c = (unsigned char)str[0];
-    int pos = start, max_pos = length() - str.length();
-    for (pos = find_left(first_c, pos); pos >= 0 && pos <= max_pos;
-	 pos = find_left(first_c, pos + 1))
-	if (!memcmp(_r.data + pos, str._r.data, str.length()))
-	    return pos;
+    int max_pos = length() - str.length();
+    for (int i = start; i <= max_pos; ++i)
+	if (memcmp(_r.data + i, str.data(), str.length()) == 0)
+	    return i;
     return -1;
 }
 
@@ -508,13 +536,18 @@ hard_lower(const String &s, int pos)
     return new_s;
 }
 
+/** @brief Return a lowercased version of this string.
+
+    Translates the ASCII characters 'A' through 'Z' into their lowercase
+    equivalents. */
 String
 String::lower() const
 {
     // avoid copies
-    for (int i = 0; i < _r.length; i++)
-	if (_r.data[i] >= 'A' && _r.data[i] <= 'Z')
-	    return hard_lower(*this, i);
+    if (!out_of_memory())
+	for (int i = 0; i < _r.length; i++)
+	    if (_r.data[i] >= 'A' && _r.data[i] <= 'Z')
+		return hard_lower(*this, i);
     return *this;
 }
 
@@ -529,6 +562,10 @@ hard_upper(const String &s, int pos)
     return new_s;
 }
 
+/** @brief Return an uppercased version of this string.
+
+    Translates the ASCII characters 'a' through 'z' into their uppercase
+    equivalents. */
 String
 String::upper() const
 {
@@ -540,7 +577,7 @@ String::upper() const
 }
 
 static String
-hard_printable(const String &s, int pos)
+hard_printable(const String &s, int pos, int type)
 {
     StringAccum sa(s.length() * 2);
     sa.append(s.data(), pos);
@@ -549,7 +586,7 @@ hard_printable(const String &s, int pos)
     for (; pos < len; pos++) {
 	if (x[pos] >= 32 && x[pos] < 127)
 	    sa << x[pos];
-	else if (x[pos] < 32)
+	else if (x[pos] < 32 && type != 1)
 	    sa << '^' << (unsigned char)(x[pos] + 64);
 	else if (char *buf = sa.extend(4, 1))
 	    sprintf(buf, "\\%03o", x[pos]);
@@ -557,13 +594,22 @@ hard_printable(const String &s, int pos)
     return sa.take_string();
 }
 
+/** @brief Return a "printable" version of this string.
+    @param type quoting type
+
+    The default quoting type (0) translates control characters 0-31 into
+    "control" sequences, such as "^@" for the null character, and characters
+    127-255 into octal escape sequences, such as "\377" for 255. Quoting
+    type 1 translates all characters outside of 32-126 into octal escape
+    sequences. */
 String
-String::printable() const
+String::printable(int type) const
 {
     // avoid copies
-    for (int i = 0; i < _r.length; i++)
-	if (_r.data[i] < 32 || _r.data[i] > 126)
-	    return hard_printable(*this, i);
+    if (!out_of_memory())
+	for (int i = 0; i < _r.length; i++)
+	    if (_r.data[i] < 32 || _r.data[i] > 126)
+		return hard_printable(*this, i, type);
     return *this;
 }
 
