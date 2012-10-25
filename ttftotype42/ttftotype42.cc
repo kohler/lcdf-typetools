@@ -320,6 +320,17 @@ do_file(const char *infn, const char *outfn, ErrorHandler *errh)
 	fclose(f);
 }
 
+#if 0
+static void check_md5sum() {
+    MD5_CONTEXT md5;
+    md5_init(&md5);
+    md5_update(&md5, (const unsigned char *) "message digest", 14);
+    unsigned char result[MD5_DIGEST_SIZE];
+    md5_final(result, &md5);
+    assert(memcmp(result, "\xF9\x6B\x69\x7D\x7C\xB7\x93\x8D\x52\x5A\x2F\x31\xAA\xF1\x61\xD0", MD5_DIGEST_SIZE) == 0);
+}
+#endif
+
 int
 main(int argc, char *argv[])
 {

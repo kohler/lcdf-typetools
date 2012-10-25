@@ -98,7 +98,7 @@ transform(MD5_CONTEXT *ctx, const unsigned char *data)
 	uint32_t D = ctx->D;
 	uint32_t *cwp = correct_words;
 
-#ifdef BIG_ENDIAN_HOST
+#if WORDS_BIGENDIAN
 	{
 		int i;
 		unsigned char *p2, *p1;
@@ -111,8 +111,10 @@ transform(MD5_CONTEXT *ctx, const unsigned char *data)
 			p2[0] = *p1++;
 		}
 	}
-#else
+#elif WORDS_LITTLEENDIAN
 	memcpy(correct_words, data, 64);
+#else
+# error "Neither WORDS_BIGENDIAN nor WORDS_LITTLEENDIAN is defined!"
 #endif
 
 
