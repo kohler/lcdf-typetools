@@ -23,7 +23,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "util.hh"
-#include "md5.h"
+#include <lcdf/md5.h>
 #ifdef HAVE_CTIME
 # include <time.h>
 #endif

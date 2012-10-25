@@ -549,7 +549,7 @@ installed_type42(const String &ttf_filename, const String &ps_fontname, bool all
 #endif
 
 #if HAVE_AUTO_TTFTOTYPE42
-    // if not found, and can generate on the fly, run cfftot1
+    // if not found, and can generate on the fly, run ttftotype42
     if (allow_generate && ttf_filename && ttf_filename != "-" && getodir(O_TYPE42, errh)) {
 	String t42_filename = odir[O_TYPE42] + "/" + ps_fontname + ".t42";
 	if (t42_filename.find_left('\'') >= 0 || ttf_filename.find_left('\'') >= 0)
