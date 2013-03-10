@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
- * Copyright (c) 2001-2012 Eddie Kohler
+ * Copyright (c) 2001-2013 Eddie Kohler
  * Copyright (c) 2008 Meraki, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -629,7 +629,7 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 		if ((flags & cf_signed) && (int64_t)qnum < 0)
 		    qnum = -(int64_t) qnum, flags |= cf_negative;
 		StringAccum sa;
-		sa.append_numeric(static_cast<String::uint_large_t>(qnum), base, (flags & cf_uppercase));
+		sa.append_numeric(static_cast<String::uintmax_t>(qnum), base, (flags & cf_uppercase));
 		s1 = s2 - sa.length();
 		memcpy(const_cast<char*>(s1), sa.data(), s2 - s1);
 		goto got_number;
@@ -659,6 +659,13 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 	    goto number;
 
 	case 'p': {
+	    if (*s == '{') {
+		s1 = s2 = s + 1;
+		while (*s2 && *s2 != '}' && !isspace((unsigned char) *s2))
+		    ++s2;
+		if (*s2 == '}')
+		    goto braces;
+	    }
 	    void *v = va_arg(val, void *);
 	    s2 = numbuf + NUMBUF_SIZE;
 	    s1 = do_number((unsigned long)v, (char *)s2, 16, flags);
@@ -689,21 +696,24 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 	}
 #endif
 
-	case '{': {
-	    const char *rbrace = strchr(s, '}');
-	    if (!rbrace || rbrace == s)
-		assert(0 /* Bad %{ in error */);
-	    String name(s, rbrace - s);
-	    s = rbrace + 1;
+	case '{':
+	    s1 = s2 = s;
+	    while (*s2 && *s2 != '}' && !isspace((unsigned char) *s2))
+		++s2;
+	    if (*s2 != '}')
+		goto error;
+	    goto braces;
+
+	braces:
+	    s = s2 + 1;
 	    for (Conversion *item = error_items; item; item = item->next)
-		if (item->name == name) {
+		if (item->name.equals(s1, s2 - s1)) {
 		    strstore = item->hook(flags, VA_LIST_REF(val));
 		    s1 = strstore.begin();
 		    s2 = strstore.end();
 		    goto got_result;
 		}
 	    goto error;
-	}
 
 	error:
 	default:
@@ -1079,28 +1089,28 @@ ContextErrorHandler::ContextErrorHandler(ErrorHandler *errh, const char *fmt,
 String
 ContextErrorHandler::decorate(const String &str)
 {
-    String cstr = ErrorVeneer::decorate(str), context_anno;
-    const char *cstr_endanno = parse_anno(cstr, cstr.begin(), cstr.end(),
-					  "context", &context_anno,
-					  (const char *) 0);
+    String context_anno;
+    const char *str_endanno = parse_anno(str, str.begin(), str.end(),
+					 "context", &context_anno,
+					 (const char *) 0);
     if (context_anno.equals("no", 2))
-	return cstr;
+	return ErrorVeneer::decorate(str);
 
-    String icstr;
+    String istr;
     if (context_anno.equals("noindent", 8))
-	icstr = combine_anno(cstr, _context_landmark);
+	istr = combine_anno(str, _context_landmark);
     else
-	icstr = combine_anno(cstr, _context_landmark + _indent);
+	istr = combine_anno(str, _context_landmark + _indent);
 
     if (!_context_printed && !context_anno.equals("nocontext", 9)) {
 	String astr = combine_anno(combine_anno(_context, _context_landmark),
-				   cstr.substring(cstr.begin(), cstr_endanno));
+				   str.substring(str.begin(), str_endanno));
 	if (astr && astr.back() != '\n')
 	    astr += '\n';
 	_context_printed = true;
-	return ErrorVeneer::decorate(astr) + icstr;
+	return ErrorVeneer::decorate(astr + istr);
     } else
-	return icstr;
+	return ErrorVeneer::decorate(istr);
 }
 
 
