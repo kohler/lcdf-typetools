@@ -24,7 +24,7 @@
 #include <string.h>
 #include <algorithm>
 
-#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
+#define USHORT_AT(d)		(Data::u16_aligned(d))
 
 namespace Efont { namespace OpenType {
 
@@ -73,8 +73,7 @@ static const uint16_t mac_roman_encoding[] = {
 
 
 Name::Name(const String &s, ErrorHandler *errh)
-    : _str(s)
-{
+    : _str(s) {
     _str.align(2);
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
@@ -103,7 +102,7 @@ String
 Name::name(const_iterator i) const
 {
     if (i < end()) {
-	int stringOffset = USHORT_AT(_str.data() + 4);
+	int stringOffset = USHORT_AT(_str.udata() + 4);
 	int length = USHORT_AT(reinterpret_cast<const uint8_t *>(i) + 8);
 	int offset = USHORT_AT(reinterpret_cast<const uint8_t *>(i) + 10);
 	if (stringOffset + offset + length <= _str.length())
@@ -119,22 +118,22 @@ Name::utf8_name(const_iterator i) const
     // but that's it
     if (!(i < end()))
 	return String();
-    int stringOffset = USHORT_AT(_str.data() + 4);
+    int stringOffset = USHORT_AT(_str.udata() + 4);
     int length = USHORT_AT(reinterpret_cast<const uint8_t *>(i) + 8);
     int offset = USHORT_AT(reinterpret_cast<const uint8_t *>(i) + 10);
     if (stringOffset + offset + length > _str.length())
 	return String();
-    const char *begins = _str.data() + stringOffset + offset;
-    const char *ends = begins + length;
+    const unsigned char *begins = _str.udata() + stringOffset + offset;
+    const unsigned char *ends = begins + length;
     if (platform(*i) == P_MICROSOFT && encoding(*i) == E_MS_UNICODE_BMP) {
 	StringAccum sa;
-	for (const char *s = begins; s + 1 < ends; s += 2)
-	    sa.append_utf8(USHORT_AT(s));
+	for (const unsigned char *s = begins; s + 1 < ends; s += 2)
+	    sa.append_utf8(Data::u16(s));
 	return sa.take_string();
     } else if (platform(*i) == P_MACINTOSH && encoding(*i) == E_MAC_ROMAN) {
 	StringAccum sa;
-	for (const char *s = begins; s < ends; s++)
-	    if ((unsigned char) *s >= 0x80) {
+	for (const unsigned char *s = begins; s < ends; s++)
+	    if (*s >= 0x80) {
 		sa.append(begins, s);
 		sa.append_utf8(mac_roman_encoding[*s & 0x7F]);
 		begins = s + 1;
@@ -191,4 +190,5 @@ Name::version_chaincontext_reverse_backtrack() const
     return true;
 }
 
-}}
+} // namespace Efont::OpenType
+} // namespace Efont

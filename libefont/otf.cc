@@ -30,17 +30,12 @@
 #define static_assert(c) switch (c) case 0: case (c):
 #endif
 
-#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
-#define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
-#define ULONG_AT2(d)		((USHORT_AT((d)) << 16) | USHORT_AT((d)+2))
-
 namespace Efont { namespace OpenType {
 
 Vector<PermString> debug_glyph_names;
 
 Font::Font(const String &s, ErrorHandler *errh)
-    : _str(s)
-{
+    : _str(s) {
     _str.align(4);
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
@@ -61,7 +56,7 @@ Font::parse_header(ErrorHandler *errh)
     if ((data[0] != 'O' || data[1] != 'T' || data[2] != 'T' || data[3] != 'O')
 	&& (data[0] != '\000' || data[1] != '\001'))
 	return errh->error("not an OpenType font (bad magic number)"), -ERANGE;
-    int ntables = USHORT_AT(data + 4);
+    int ntables = Data::u16_aligned(data + 4);
     if (ntables == 0)
 	return errh->error("OTF contains no tables"), -EINVAL;
     if (HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * ntables > len)
@@ -75,9 +70,9 @@ Font::parse_header(ErrorHandler *errh)
     uint32_t last_tag = 0U;
     for (int i = 0; i < ntables; i++) {
 	int loc = HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
-	uint32_t tag = ULONG_AT(data + loc);
-	uint32_t offset = ULONG_AT(data + loc + 8);
-	uint32_t length = ULONG_AT(data + loc + 12);
+	uint32_t tag = Data::u32_aligned(data + loc);
+	uint32_t offset = Data::u32_aligned(data + loc + 8);
+	uint32_t length = Data::u32_aligned(data + loc + 12);
 	if (tag <= last_tag)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (uint32_t) len)
@@ -97,14 +92,15 @@ Font::check_checksums(ErrorHandler *errh) const
     bool ok = true;
     for (int i = 0; i < nt; i++) {
 	const uint8_t *entry = data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
-	String tbl = _str.substring(ULONG_AT(entry + 8), ULONG_AT(entry + 12));
+	String tbl = _str.substring(Data::u32_aligned(entry + 8),
+				    Data::u32_aligned(entry + 12));
 	uint32_t sum = checksum(tbl);
-	if (ULONG_AT(entry) == 0x68656164	// 'head'
+	if (Data::u32_aligned(entry) == 0x68656164	// 'head'
 	    && tbl.length() >= 12)
-	    sum -= ULONG_AT(tbl.data() + 8);
-	if (sum != ULONG_AT(entry + 4)) {
+	    sum -= Data::u32_aligned(tbl.udata() + 8);
+	if (sum != Data::u32_aligned(entry + 4)) {
 	    if (errh)
-		errh->error("table '%s' checksum error: %x vs. %x", Tag(ULONG_AT(entry)).text().c_str(), sum, ULONG_AT(entry + 4));
+		errh->error("table %<%s%> checksum error: %x vs. %x", Tag(Data::u32_aligned(entry)).text().c_str(), sum, Data::u32_aligned(entry + 4));
 	    ok = false;
 	}
     }
@@ -117,7 +113,7 @@ Font::ntables() const
     if (error() < 0)
 	return 0;
     else
-	return USHORT_AT(data() + 4);
+	return Data::u16_aligned(data() + 4);
 }
 
 String
@@ -125,9 +121,9 @@ Font::table(Tag tag) const
 {
     if (error() < 0)
 	return String();
-    const uint8_t *entry = tag.table_entry(data() + HEADER_SIZE, USHORT_AT(data() + 4), TABLE_DIR_ENTRY_SIZE);
+    const uint8_t *entry = tag.table_entry(data() + HEADER_SIZE, Data::u16_aligned(data() + 4), TABLE_DIR_ENTRY_SIZE);
     if (entry)
-	return _str.substring(ULONG_AT(entry + 8), ULONG_AT(entry + 12));
+	return _str.substring(Data::u32_aligned(entry + 8), Data::u32_aligned(entry + 12));
     else
 	return String();
 }
@@ -137,7 +133,7 @@ Font::has_table(Tag tag) const
 {
     const uint8_t *entry = 0;
     if (error() >= 0)
-	entry = tag.table_entry(data() + HEADER_SIZE, USHORT_AT(data() + 4), TABLE_DIR_ENTRY_SIZE);
+	entry = tag.table_entry(data() + HEADER_SIZE, Data::u16_aligned(data() + 4), TABLE_DIR_ENTRY_SIZE);
     return entry != 0;
 }
 
@@ -146,9 +142,9 @@ Font::table_checksum(Tag tag) const
 {
     if (error() < 0)
 	return 0;
-    const uint8_t *entry = tag.table_entry(data() + HEADER_SIZE, USHORT_AT(data() + 4), TABLE_DIR_ENTRY_SIZE);
+    const uint8_t *entry = tag.table_entry(data() + HEADER_SIZE, Data::u16_aligned(data() + 4), TABLE_DIR_ENTRY_SIZE);
     if (entry)
-	return ULONG_AT(entry + 4);
+	return Data::u32_aligned(entry + 4);
     else
 	return 0;
 }
@@ -159,7 +155,7 @@ Font::table_tag(int i) const
     if (error() < 0 || i < 0 || i >= ntables())
 	return Tag();
     else
-	return Tag(ULONG_AT(data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i));
+	return Tag(Data::u32_aligned(data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i));
 }
 
 uint32_t
@@ -168,10 +164,10 @@ Font::checksum(const uint8_t *begin, const uint8_t *end)
     uint32_t sum = 0;
     if (reinterpret_cast<uintptr_t>(begin) % 4)
 	for (; begin + 3 < end; begin += 4)
-	    sum += (begin[0] << 24) + (begin[1] << 16) + (begin[2] << 8) + begin[3];
+	    sum += Data::u32(begin);
     else
 	for (; begin + 3 < end; begin += 4)
-	    sum += ULONG_AT(begin);
+	    sum += Data::u32_aligned(begin);
     uint32_t leftover = 0;
     for (int i = 0; i < 4; i++)
 	leftover = (leftover << 8) + (begin < end ? *begin++ : 0);
@@ -232,10 +228,8 @@ Font::make(bool truetype, const Vector<Tag>& tags, const Vector<String>& data)
 
 	// discount current checksum adjustment in head table
 	uint32_t sum = checksum(data[*tp]);
-	if (tags[*tp] == Tag("head") && data[*tp].length() >= 12) {
-	    const uint8_t *x = data[*tp].udata() + 8;
-	    sum -= (x[0] << 24) + (x[1] << 16) + (x[2] << 8) + x[3];
-	}
+	if (tags[*tp] == Tag("head") && data[*tp].length() >= 12)
+	    sum -= Data::u32(data[*tp].udata() + 8);
 	tdir.l[1] = htonl(sum);
 
 	tdir.l[2] = htonl(offset);
@@ -253,9 +247,9 @@ Font::make(bool truetype, const Vector<Tag>& tags, const Vector<String>& data)
 
     // fix 'head' table
     for (int i = 0; i < tags.size(); i++) {
-	char *thdr = sa.data() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
-	if (ULONG_AT(thdr) == 0x68656164 && ULONG_AT(thdr + 12) >= 12) {
-	    uint32_t offset = ULONG_AT(thdr + 8);
+	unsigned char *thdr = sa.udata() + HEADER_SIZE + TABLE_DIR_ENTRY_SIZE * i;
+	if (Data::u32(thdr) == 0x68656164 && Data::u32(thdr + 12) >= 12) {
+	    uint32_t offset = Data::u32(thdr + 8);
 	    char *head = sa.data() + offset;
 	    memset(head + 8, '\0', 4);
 	    uint32_t allsum = checksum(reinterpret_cast<uint8_t *>(sa.data()), reinterpret_cast<uint8_t *>(sa.data() + sa.length()));
@@ -349,7 +343,7 @@ Tag::table_entry(const uint8_t *table, int n, int entry_size) const
     while (l < r) {
 	int m = l + (r - l) / 2;
 	const uint8_t *entry = table + m * entry_size;
-	uint32_t m_tag = ULONG_AT2(entry);
+	uint32_t m_tag = Data::u32_aligned16(entry);
 	if (_tag < m_tag)
 	    r = m;
 	else if (_tag == m_tag)
@@ -386,7 +380,7 @@ ScriptList::check_header(ErrorHandler *errh)
     // 6bytes	scriptRecord[]
     int scriptCount;
     if (_str.length() < SCRIPTLIST_HEADERSIZE
-	|| (scriptCount = USHORT_AT(_str.udata()),
+	|| (scriptCount = Data::u16_aligned(_str.udata()),
 	    _str.length() < SCRIPTLIST_HEADERSIZE + scriptCount*SCRIPT_RECSIZE))
 	return errh->error("OTF ScriptList too short");
 
@@ -401,8 +395,8 @@ ScriptList::script_offset(Tag script) const
     if (_str.length() == 0)
 	return -1;
     const uint8_t *data = _str.udata();
-    if (const uint8_t *entry = script.table_entry(data + SCRIPTLIST_HEADERSIZE, USHORT_AT(data), SCRIPT_RECSIZE))
-	return USHORT_AT(entry + 4);
+    if (const uint8_t *entry = script.table_entry(data + SCRIPTLIST_HEADERSIZE, Data::u16_aligned(data), SCRIPT_RECSIZE))
+	return Data::u16_aligned(entry + 4);
     else
 	return 0;
 }
@@ -413,9 +407,9 @@ ScriptList::check_script(Tag tag, int script_off, ErrorHandler *errh) const
     const uint8_t *data = _str.udata();
     int langSysCount;
     if (_str.length() < script_off + SCRIPT_HEADERSIZE
-	|| (langSysCount = USHORT_AT(data + script_off + 2),
+	|| (langSysCount = Data::u16_aligned(data + script_off + 2),
 	    (_str.length() < script_off + SCRIPT_HEADERSIZE + langSysCount*LANGSYS_RECSIZE)))
-	return (errh ? errh->error("OTF Script table for '%s' out of range", tag.text().c_str()) : -1);
+	return (errh ? errh->error("OTF Script table for %<%s%> out of range", tag.text().c_str()) : -1);
     // XXX check that langsys are sorted
     return 0;
 }
@@ -437,12 +431,12 @@ ScriptList::langsys_offset(Tag script, Tag langsys, ErrorHandler *errh) const
 
     // search script table
     const uint8_t *data = _str.udata();
-    int langSysCount = USHORT_AT(data + script_off + 2);
+    int langSysCount = Data::u16_aligned(data + script_off + 2);
     if (const uint8_t *entry = langsys.table_entry(data + script_off + SCRIPT_HEADERSIZE, langSysCount, LANGSYS_RECSIZE))
-	return script_off + USHORT_AT(entry + 4);
+	return script_off + Data::u16_aligned(entry + 4);
 
     // return default
-    int defaultLangSys = USHORT_AT(data + script_off);
+    int defaultLangSys = Data::u16_aligned(data + script_off);
     if (defaultLangSys != 0)
 	return script_off + defaultLangSys;
     else
@@ -456,18 +450,18 @@ ScriptList::language_systems(Vector<Tag> &script, Vector<Tag> &langsys, ErrorHan
     langsys.clear();
 
     const uint8_t *data = _str.udata();
-    int nscripts = USHORT_AT(data);
+    int nscripts = Data::u16_aligned(data);
     for (int i = 0; i < nscripts; i++) {
-	Tag script_tag(ULONG_AT2(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE));
-	int script_off = USHORT_AT(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE + 4);
+	Tag script_tag(Data::u32_aligned16(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE));
+	int script_off = Data::u16_aligned(data + SCRIPTLIST_HEADERSIZE + i*SCRIPT_RECSIZE + 4);
 	if (check_script(script_tag, script_off, errh) < 0)
 	    return -1;
 	const uint8_t *script_table = data + script_off;
-	if (USHORT_AT(script_table) != 0) // default LangSys
+	if (Data::u16_aligned(script_table) != 0) // default LangSys
 	    script.push_back(script_tag), langsys.push_back(Tag());
-	int nlangsys = USHORT_AT(script_table + 2);
+	int nlangsys = Data::u16_aligned(script_table + 2);
 	for (int j = 0; j < nlangsys; j++) {
-	    Tag langsys_tag(ULONG_AT2(script_table + SCRIPT_HEADERSIZE + j*LANGSYS_RECSIZE));
+	    Tag langsys_tag(Data::u32_aligned16(script_table + SCRIPT_HEADERSIZE + j*LANGSYS_RECSIZE));
 	    script.push_back(script_tag), langsys.push_back(langsys_tag);
 	}
     }
@@ -490,17 +484,17 @@ ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fi
     const uint8_t *data = _str.udata();
     int featureCount;
     if (_str.length() < offset + LANGSYS_HEADERSIZE
-	|| (featureCount = USHORT_AT(data + offset + 4),
+	|| (featureCount = Data::u16_aligned(data + offset + 4),
 	    (_str.length() < offset + LANGSYS_HEADERSIZE + featureCount*FEATURE_RECSIZE)))
 	return (errh ? errh->error("OTF LangSys table for '%s/%s' out of range", script.text().c_str(), langsys.text().c_str()) : -1);
 
     // search langsys table
-    int f = USHORT_AT(data + offset + 2);
+    int f = Data::u16_aligned(data + offset + 2);
     if (f != 0xFFFF)
 	required_fid = f;
     data += offset + 6;
     for (int i = 0; i < featureCount; i++, data += FEATURE_RECSIZE)
-	fids.push_back(USHORT_AT(data));
+	fids.push_back(Data::u16_aligned(data));
 
     return 0;
 }
@@ -528,7 +522,7 @@ FeatureList::check_header(ErrorHandler *errh)
 {
     int featureCount;
     if (_str.length() < FEATURELIST_HEADERSIZE
-	|| (featureCount = USHORT_AT(_str.udata()),
+	|| (featureCount = Data::u16_aligned(_str.udata()),
 	    _str.length() < FEATURELIST_HEADERSIZE + featureCount*FEATURE_RECSIZE))
 	return errh->error("OTF FeatureList too short");
     return 0;
@@ -540,9 +534,9 @@ FeatureList::tag(int fid) const
     if (_str.length() == 0)
 	return Tag();
     const uint8_t *data = _str.udata();
-    int nfeatures = USHORT_AT(data);
+    int nfeatures = Data::u16_aligned(data);
     if (fid >= 0 && fid < nfeatures)
-	return Tag(ULONG_AT2(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE));
+	return Tag(Data::u32_aligned16(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE));
     else
 	return Tag();
 }
@@ -557,13 +551,13 @@ FeatureList::params(int fid, int length, ErrorHandler *errh, bool old_style_offs
 
     const uint8_t *data = _str.udata();
     int len = _str.length();
-    int nfeatures = USHORT_AT(data);
+    int nfeatures = Data::u16_aligned(data);
     if (fid < 0 || fid >= nfeatures)
 	return errh->error("OTF feature ID '%d' out of range", fid), String();
-    int foff = USHORT_AT(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
+    int foff = Data::u16_aligned(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
     if (len < foff + FEATURE_HEADERSIZE)
 	return errh->error("OTF LookupList for feature ID '%d' too short", fid), String();
-    int poff = USHORT_AT(data + foff);
+    int poff = Data::u16_aligned(data + foff);
     if (poff == 0)
 	return String();
     if (!old_style_offset)
@@ -581,25 +575,25 @@ FeatureList::size_params(int fid, const Name &name, ErrorHandler *errh) const
     for (int i = 0; i < 2; i++) {
 	String s = params(fid, 10, errh, i != 0);
 	const uint8_t *data = s.udata();
-	// errh->message("trying %d %d %d %d %d\n", USHORT_AT(data), USHORT_AT(data + 2), USHORT_AT(data + 4), USHORT_AT(data + 6), USHORT_AT(data + 8));
-	if (USHORT_AT(data) == 0)		// design size == 0
+	// errh->message("trying %d %d %d %d %d\n", Data::u16_aligned(data), Data::u16_aligned(data + 2), Data::u16_aligned(data + 4), Data::u16_aligned(data + 6), Data::u16_aligned(data + 8));
+	if (Data::u16_aligned(data) == 0)		// design size == 0
 	    continue;
-	if (USHORT_AT(data + 2) == 0		// subfamily ID == 0
-	    && USHORT_AT(data + 6) == 0		// range start == 0
-	    && USHORT_AT(data + 8) == 0		// range end == 0
-	    && USHORT_AT(data + 4) == 0)	// menu name ID == 0
+	if (Data::u16_aligned(data + 2) == 0		// subfamily ID == 0
+	    && Data::u16_aligned(data + 6) == 0		// range start == 0
+	    && Data::u16_aligned(data + 8) == 0		// range end == 0
+	    && Data::u16_aligned(data + 4) == 0)	// menu name ID == 0
 	    return s;
-	if (USHORT_AT(data + 6) >= USHORT_AT(data + 8) // range start >= range end
-	    || USHORT_AT(data + 4) < 256	// menu name ID < 256
-	    || USHORT_AT(data + 4) > 32767	// menu name ID > 32767
-	    || !name.english_name(USHORT_AT(data + 4))) // menu name ID is a name ID defined by the font
+	if (Data::u16_aligned(data + 6) >= Data::u16_aligned(data + 8) // range start >= range end
+	    || Data::u16_aligned(data + 4) < 256	// menu name ID < 256
+	    || Data::u16_aligned(data + 4) > 32767	// menu name ID > 32767
+	    || !name.english_name(Data::u16_aligned(data + 4))) // menu name ID is a name ID defined by the font
 	    continue;
-	if (USHORT_AT(data) + 1 >= USHORT_AT(data + 6) // design size >= range start (with 1 dp grace)
-	    && USHORT_AT(data) <= USHORT_AT(data + 8) + 1) // design size <= range end (with 1 dp grace)
+	if (Data::u16_aligned(data) + 1 >= Data::u16_aligned(data + 6) // design size >= range start (with 1 dp grace)
+	    && Data::u16_aligned(data) <= Data::u16_aligned(data + 8) + 1) // design size <= range end (with 1 dp grace)
 	    return s;
 	else if (i == 1				// old-style feature
-		 && USHORT_AT(data + 8) <= 1440	// range end <= 144 point
-		 && USHORT_AT(data) <= 1440) {	// design size <= 144 point
+		 && Data::u16_aligned(data + 8) <= 1440	// range end <= 144 point
+		 && Data::u16_aligned(data) <= 1440) {	// design size <= 144 point
 	    // some old fonts define a bogus feature with design size
 	    // not in range (John Owens, Read Roberts)
 	    if (errh)
@@ -619,10 +613,10 @@ FeatureList::find(Tag tag, const Vector<int> &fids) const
 	return -1;
 
     const uint8_t *data = _str.udata();
-    int nfeatures = USHORT_AT(data);
+    int nfeatures = Data::u16_aligned(data);
     for (const int *fidp = fids.begin(); fidp != fids.end(); fidp++)
 	if (*fidp >= 0 && *fidp < nfeatures) {
-	    uint32_t ftag = ULONG_AT2(data + FEATURELIST_HEADERSIZE + (*fidp)*FEATURE_RECSIZE);
+	    uint32_t ftag = Data::u32_aligned16(data + FEATURELIST_HEADERSIZE + (*fidp)*FEATURE_RECSIZE);
 	    if (ftag == tag.value())
 		return *fidp;
 	}
@@ -645,9 +639,9 @@ FeatureList::filter(Vector<int> &fids, const Vector<Tag> &sorted_ftags) const
 	// XXX check that feature list is in alphabetical order
 
 	const uint8_t *data = _str.udata();
-	int nfeatures = USHORT_AT(data);
+	int nfeatures = Data::u16_aligned(data);
 	while (i < fids.size() && j < sorted_ftags.size() && fids[i] < nfeatures) {
-	    uint32_t ftag = ULONG_AT2(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE);
+	    uint32_t ftag = Data::u32_aligned16(data + FEATURELIST_HEADERSIZE + fids[i]*FEATURE_RECSIZE);
 	    if (ftag < sorted_ftags[j].value()) { // not an interesting feature
 		// replace featureID with a large number, remove later
 		fids[i] = 0x7FFFFFFF;
@@ -677,18 +671,18 @@ FeatureList::lookups(int fid, Vector<int> &results, ErrorHandler *errh, bool cle
 
     const uint8_t *data = _str.udata();
     int len = _str.length();
-    int nfeatures = USHORT_AT(data);
+    int nfeatures = Data::u16_aligned(data);
     if (fid < 0 || fid >= nfeatures)
 	return errh->error("OTF feature ID '%d' out of range", fid);
-    int foff = USHORT_AT(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
+    int foff = Data::u16_aligned(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
     int lookupCount;
     if (len < foff + FEATURE_HEADERSIZE
-	|| (lookupCount = USHORT_AT(data + foff + 2),
+	|| (lookupCount = Data::u16_aligned(data + foff + 2),
 	    len < foff + FEATURE_HEADERSIZE + lookupCount*LOOKUPLIST_RECSIZE))
 	return errh->error("OTF LookupList for feature ID '%d' too short", fid);
     const uint8_t *ldata = data + foff + FEATURE_HEADERSIZE;
     for (int j = 0; j < lookupCount; j++, ldata += LOOKUPLIST_RECSIZE)
-	results.push_back(USHORT_AT(ldata));
+	results.push_back(Data::u16_aligned(ldata));
 
     return 0;
 }
@@ -804,7 +798,7 @@ Coverage::Coverage(const String &str, ErrorHandler *errh, bool do_check) throw (
 	    _str = String();
     } else {			// check()'s shorten-string side effect
 	const uint8_t *data = _str.udata();
-	int count = USHORT_AT(data + 2);
+	int count = Data::u16_aligned(data + 2);
 	if (data[1] == T_LIST)
 	    _str = _str.substring(0, HEADERSIZE + count*LIST_RECSIZE);
 	else
@@ -822,8 +816,8 @@ Coverage::check(ErrorHandler *errh)
     const uint8_t *data = _str.udata();
     if (_str.length() < HEADERSIZE)
 	return errh->error("OTF coverage table too small for header");
-    int coverageFormat = USHORT_AT(data);
-    int count = USHORT_AT(data + 2);
+    int coverageFormat = Data::u16_aligned(data);
+    int count = Data::u16_aligned(data + 2);
 
     int len;
     switch (coverageFormat) {
@@ -858,9 +852,9 @@ Coverage::size() const throw ()
 	return (_str.length() - HEADERSIZE) / LIST_RECSIZE;
     else if (data[1] == T_RANGES) {
 	data += _str.length() - RANGES_RECSIZE;
-	return USHORT_AT(data + 4) + USHORT_AT(data + 2) - USHORT_AT(data) + 1;
+	return Data::u16_aligned(data + 4) + Data::u16_aligned(data + 2) - Data::u16_aligned(data) + 1;
     } else if (data[1] == T_X_BYTEMAP)
-	return ULONG_AT(data + 4);
+	return Data::u32_aligned(data + 4);
     else
 	return -1;
 }
@@ -872,13 +866,13 @@ Coverage::coverage_index(Glyph g) const throw ()
 	return -1;
 
     const uint8_t *data = _str.udata();
-    int count = USHORT_AT(data + 2);
+    int count = Data::u16_aligned(data + 2);
     if (data[1] == T_LIST) {
 	int l = 0, r = count;
 	data += HEADERSIZE;
 	while (l < r) {
 	    int m = l + (r - l) / 2;
-	    int mval = USHORT_AT(data + m * LIST_RECSIZE);
+	    int mval = Data::u16_aligned(data + m * LIST_RECSIZE);
 	    if (g < mval)
 		r = m;
 	    else if (g == mval)
@@ -893,10 +887,10 @@ Coverage::coverage_index(Glyph g) const throw ()
 	while (l < r) {
 	    int m = l + (r - l) / 2;
 	    const uint8_t *rec = data + m * RANGES_RECSIZE;
-	    if (g < USHORT_AT(rec))
+	    if (g < Data::u16_aligned(rec))
 		r = m;
-	    else if (g <= USHORT_AT(rec + 2))
-		return USHORT_AT(rec + 4) + g - USHORT_AT(rec);
+	    else if (g <= Data::u16_aligned(rec + 2))
+		return Data::u16_aligned(rec + 4) + g - Data::u16_aligned(rec);
 	    else
 		l = m + 1;
 	}
@@ -917,20 +911,20 @@ Coverage::operator[](int cindex) const throw ()
 	return 0;
 
     const uint8_t *data = _str.udata();
-    int count = USHORT_AT(data + 2);
+    int count = Data::u16_aligned(data + 2);
     if (data[1] == T_LIST)
-	return (cindex < count ? USHORT_AT(data + cindex * LIST_RECSIZE) : 0);
+	return (cindex < count ? Data::u16_aligned(data + cindex * LIST_RECSIZE) : 0);
     else if (data[1] == T_RANGES) {
 	int l = 0, r = count;
 	data += HEADERSIZE;
 	while (l < r) {
 	    int m = l + (r - l) / 2;
 	    const uint8_t *rec = data + m * RANGES_RECSIZE;
-	    int start_cindex = USHORT_AT(rec + 4);
+	    int start_cindex = Data::u16_aligned(rec + 4);
 	    if (cindex < start_cindex)
 		r = m;
-	    else if (cindex < start_cindex + USHORT_AT(rec + 2) - USHORT_AT(rec))
-		return USHORT_AT(rec) + cindex - start_cindex;
+	    else if (cindex < start_cindex + Data::u16_aligned(rec + 2) - Data::u16_aligned(rec))
+		return Data::u16_aligned(rec) + cindex - start_cindex;
 	    else
 		l = m + 1;
 	}
@@ -946,15 +940,15 @@ Coverage::unparse(StringAccum &sa) const throw ()
     if (_str.length() == 0)
 	sa << "@*#!";
     else if (data[1] == T_LIST) {
-	int count = USHORT_AT(data + 2);
+	int count = Data::u16_aligned(data + 2);
 	for (int i = 0; i < count; i++) {
 	    if (i) sa << ',';
-	    sa << USHORT_AT(data + HEADERSIZE + i*LIST_RECSIZE);
+	    sa << Data::u16_aligned(data + HEADERSIZE + i*LIST_RECSIZE);
 	}
     } else {
 	for (int pos = HEADERSIZE; pos < _str.length(); pos += RANGES_RECSIZE) {
-	    Glyph start = USHORT_AT(data + pos);
-	    Glyph end = USHORT_AT(data + pos + 2);
+	    Glyph start = Data::u16_aligned(data + pos);
+	    Glyph end = Data::u16_aligned(data + pos + 2);
 	    if (pos > HEADERSIZE) sa << ',';
 	    sa << start;
 	    if (end != start) sa << '.' << '.' << end;
@@ -1032,13 +1026,13 @@ Coverage::iterator::iterator(const String &str, bool is_end)
 
     // shrink _str to fit the coverage table
     const uint8_t *data = _str.udata();
-    int n = USHORT_AT(data + 2);
-    switch (USHORT_AT(data)) {
+    int n = Data::u16_aligned(data + 2);
+    switch (Data::u16_aligned(data)) {
     case T_LIST:
 	_str = _str.substring(0, HEADERSIZE + n*LIST_RECSIZE);
     normal_pos_setting:
 	_pos = is_end ? _str.length() : HEADERSIZE;
-	_value = _pos >= _str.length() ? 0 : USHORT_AT(data + _pos);
+	_value = _pos >= _str.length() ? 0 : Data::u16_aligned(data + _pos);
 	break;
     case T_RANGES:
 	_str = _str.substring(0, HEADERSIZE + n*RANGES_RECSIZE);
@@ -1064,7 +1058,7 @@ Coverage::iterator::coverage_index() const
     if (data[1] == T_LIST)
 	return (_pos - HEADERSIZE) / LIST_RECSIZE;
     else if (data[1] == T_RANGES)
-	return USHORT_AT(data + _pos + 4) + _value - USHORT_AT(data + _pos);
+	return Data::u16_aligned(data + _pos + 4) + _value - Data::u16_aligned(data + _pos);
     else
 	return _pos - 8;
 }
@@ -1075,13 +1069,13 @@ Coverage::iterator::operator++(int)
     const uint8_t *data = _str.udata();
     int len = _str.length();
     if (_pos >= len
-	|| (data[1] == T_RANGES && ++_value <= USHORT_AT(data + _pos + 2)))
+	|| (data[1] == T_RANGES && ++_value <= Data::u16_aligned(data + _pos + 2)))
 	return;
     switch (data[1]) {
     case T_LIST:
 	_pos += LIST_RECSIZE;
     normal_pos_setting:
-	_value = _pos >= len ? 0 : USHORT_AT(data + _pos);
+	_value = _pos >= len ? 0 : Data::u16_aligned(data + _pos);
 	break;
     case T_RANGES:
 	_pos += RANGES_RECSIZE;
@@ -1110,8 +1104,8 @@ Coverage::iterator::forward_to(Glyph find)
 	_pos += LIST_RECSIZE;
 	if (_pos >= _str.length())
 	    return false;
-	else if (find <= USHORT_AT(data + _pos)) {
-	    _value = USHORT_AT(data + _pos);
+	else if (find <= Data::u16_aligned(data + _pos)) {
+	    _value = Data::u16_aligned(data + _pos);
 	    return find == _value;
 	}
 
@@ -1121,7 +1115,7 @@ Coverage::iterator::forward_to(Glyph find)
 	data += HEADERSIZE;
 	while (l < r) {
 	    int m = l + (r - l) / 2;
-	    Glyph g = USHORT_AT(data + m * LIST_RECSIZE);
+	    Glyph g = Data::u16_aligned(data + m * LIST_RECSIZE);
 	    if (find < g)
 		r = m;
 	    else if (find == g)
@@ -1130,20 +1124,20 @@ Coverage::iterator::forward_to(Glyph find)
 		l = m + 1;
 	}
 	_pos = HEADERSIZE + l * LIST_RECSIZE;
-	_value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
+	_value = (_pos >= _str.length() ? 0 : Data::u16_aligned(data - HEADERSIZE + _pos));
 
     } else if (data[1] == T_RANGES) {
 	// check for "common" case: this or next element
-	if (find <= USHORT_AT(data + _pos + 2)) {
-	    assert(find >= USHORT_AT(data + _pos));
+	if (find <= Data::u16_aligned(data + _pos + 2)) {
+	    assert(find >= Data::u16_aligned(data + _pos));
 	    _value = find;
 	    return true;
 	}
 	_pos += RANGES_RECSIZE;
 	if (_pos >= _str.length())
 	    return false;
-	else if (find <= USHORT_AT(data + _pos + 2)) {
-	    _value = (find >= USHORT_AT(data + _pos) ? find : USHORT_AT(data + _pos));
+	else if (find <= Data::u16_aligned(data + _pos + 2)) {
+	    _value = (find >= Data::u16_aligned(data + _pos) ? find : Data::u16_aligned(data + _pos));
 	    return find == _value;
 	}
 
@@ -1153,9 +1147,9 @@ Coverage::iterator::forward_to(Glyph find)
 	data += HEADERSIZE;
 	while (l < r) {
 	    int m = l + (r - l) / 2;
-	    if (find < USHORT_AT(data + m * RANGES_RECSIZE))
+	    if (find < Data::u16_aligned(data + m * RANGES_RECSIZE))
 		r = m;
-	    else if (find <= USHORT_AT(data + m * RANGES_RECSIZE + 2)) {
+	    else if (find <= Data::u16_aligned(data + m * RANGES_RECSIZE + 2)) {
 		_pos = HEADERSIZE + m * RANGES_RECSIZE;
 		_value = find;
 		return true;
@@ -1163,7 +1157,7 @@ Coverage::iterator::forward_to(Glyph find)
 		l = m + 1;
 	}
 	_pos = HEADERSIZE + l * LIST_RECSIZE;
-	_value = (_pos >= _str.length() ? 0 : USHORT_AT(data - HEADERSIZE + _pos));
+	_value = (_pos >= _str.length() ? 0 : Data::u16_aligned(data - HEADERSIZE + _pos));
 
     } else if (data[1] == T_X_BYTEMAP) {
 	_pos = 8 + find;
@@ -1259,15 +1253,15 @@ ClassDef::check(ErrorHandler *errh)
     const uint8_t *data = _str.udata();
     if (_str.length() < 6)	// NB: prevents empty format-2 tables
 	return errh->error("OTF class def table too small for header");
-    int classFormat = USHORT_AT(data);
+    int classFormat = Data::u16_aligned(data);
 
     int len;
     if (classFormat == T_LIST) {
-	int count = USHORT_AT(data + 4);
+	int count = Data::u16_aligned(data + 4);
 	len = LIST_HEADERSIZE + count*LIST_RECSIZE;
 	// XXX don't check sorting
     } else if (classFormat == T_RANGES) {
-	int count = USHORT_AT(data + 2);
+	int count = Data::u16_aligned(data + 2);
 	len = RANGES_HEADERSIZE + count*RANGES_RECSIZE;
 	// XXX don't check sorting
     } else
@@ -1288,25 +1282,25 @@ ClassDef::lookup(Glyph g) const throw ()
 	return -1;
 
     const uint8_t *data = _str.udata();
-    int coverageFormat = USHORT_AT(data);
+    int coverageFormat = Data::u16_aligned(data);
 
     if (coverageFormat == T_LIST) {
-	Glyph start = USHORT_AT(data + 2);
-	int count = USHORT_AT(data + 4);
+	Glyph start = Data::u16_aligned(data + 2);
+	int count = Data::u16_aligned(data + 4);
 	if (g < start || g >= start + count)
 	    return 0;
 	else
-	    return USHORT_AT(data + LIST_HEADERSIZE + (g - start) * LIST_RECSIZE);
+	    return Data::u16_aligned(data + LIST_HEADERSIZE + (g - start) * LIST_RECSIZE);
     } else if (coverageFormat == T_RANGES) {
-	int l = 0, r = USHORT_AT(data + 2);
+	int l = 0, r = Data::u16_aligned(data + 2);
 	data += RANGES_HEADERSIZE;
 	while (l < r) {
 	    int m = l + (r - l) / 2;
 	    const uint8_t *rec = data + m * RANGES_RECSIZE;
-	    if (g < USHORT_AT(rec))
+	    if (g < Data::u16_aligned(rec))
 		r = m;
-	    else if (g <= USHORT_AT(rec + 2))
-		return USHORT_AT(rec + 4);
+	    else if (g <= Data::u16_aligned(rec + 2))
+		return Data::u16_aligned(rec + 4);
 	    else
 		l = m + 1;
 	}
@@ -1322,20 +1316,20 @@ ClassDef::unparse(StringAccum &sa) const throw ()
     if (_str.length() == 0)
 	sa << "@*#!";
     else if (data[1] == T_LIST) {
-	Glyph start = USHORT_AT(data + 2);
-	int count = USHORT_AT(data + 4);
+	Glyph start = Data::u16_aligned(data + 2);
+	int count = Data::u16_aligned(data + 4);
 	for (int i = 0; i < count; i++) {
 	    if (i) sa << ',';
-	    sa << start + i << '=' << USHORT_AT(data + LIST_HEADERSIZE + i*LIST_RECSIZE);
+	    sa << start + i << '=' << Data::u16_aligned(data + LIST_HEADERSIZE + i*LIST_RECSIZE);
 	}
     } else {
 	for (int pos = RANGES_HEADERSIZE; pos < _str.length(); pos += RANGES_RECSIZE) {
-	    Glyph start = USHORT_AT(data + pos);
-	    Glyph end = USHORT_AT(data + pos + 2);
+	    Glyph start = Data::u16_aligned(data + pos);
+	    Glyph end = Data::u16_aligned(data + pos + 2);
 	    if (pos > RANGES_HEADERSIZE) sa << ',';
 	    sa << start;
 	    if (end != start) sa << '.' << '.' << end;
-	    sa << '=' << USHORT_AT(data + pos + 4);
+	    sa << '=' << Data::u16_aligned(data + pos + 4);
 	}
     }
 }
@@ -1367,10 +1361,10 @@ ClassDef::class_iterator::class_iterator(const String &str, int pos, int the_cla
     // iterator if necessary
     const uint8_t *data = _str.udata();
     if (_str.length()) {
-	switch (USHORT_AT(data)) {
+	switch (Data::u16_aligned(data)) {
 	  case T_LIST: {
-	      Glyph start = USHORT_AT(data + 2);
-	      int nglyphs = USHORT_AT(data + 4);
+	      Glyph start = Data::u16_aligned(data + 2);
+	      int nglyphs = Data::u16_aligned(data + 4);
 	      _str = _str.substring(0, LIST_HEADERSIZE + nglyphs*LIST_RECSIZE);
 	      if (!_coviter)
 		  _coviter = Coverage(start, start + nglyphs - 1).begin();
@@ -1379,11 +1373,11 @@ ClassDef::class_iterator::class_iterator(const String &str, int pos, int the_cla
 	      break;
 	  }
 	  case T_RANGES: {
-	      Glyph start = USHORT_AT(data + RANGES_HEADERSIZE);
-	      int nranges = USHORT_AT(data + 2);
+	      Glyph start = Data::u16_aligned(data + RANGES_HEADERSIZE);
+	      int nranges = Data::u16_aligned(data + 2);
 	      _str = _str.substring(0, RANGES_HEADERSIZE + nranges*RANGES_RECSIZE);
 	      if (!_coviter) {
-		  Glyph end = USHORT_AT(data + RANGES_HEADERSIZE + 2 + (nranges - 1)*RANGES_RECSIZE);
+		  Glyph end = Data::u16_aligned(data + RANGES_HEADERSIZE + 2 + (nranges - 1)*RANGES_RECSIZE);
 		  _coviter = Coverage(start, end).begin();
 	      }
 	      if (_class)
@@ -1418,7 +1412,7 @@ ClassDef::class_iterator::increment_class0()
 	_pos = FIRST_POS;
 
     if (_pos == FIRST_POS && _coviter) {
-	if (*_coviter < USHORT_AT(data + (is_list ? 2 : RANGES_HEADERSIZE)))
+	if (*_coviter < Data::u16_aligned(data + (is_list ? 2 : RANGES_HEADERSIZE)))
 	    return;
 	_pos = (is_list ? LIST_HEADERSIZE : RANGES_HEADERSIZE);
     }
@@ -1426,21 +1420,21 @@ ClassDef::class_iterator::increment_class0()
     while (_pos > 0 && _pos < len && _coviter) {
 	Glyph g = *_coviter;
 	if (is_list) {
-	    _pos = LIST_HEADERSIZE + LIST_RECSIZE*(g - USHORT_AT(data + 2));
+	    _pos = LIST_HEADERSIZE + LIST_RECSIZE*(g - Data::u16_aligned(data + 2));
 	    if (_pos >= len)
 		break;
-	    else if (USHORT_AT(data + _pos) == 0) // _class == 0
+	    else if (Data::u16_aligned(data + _pos) == 0) // _class == 0
 		return;
 	    _coviter++;
 	} else {
-	    if (g < USHORT_AT(data + _pos)) // in a zero range
+	    if (g < Data::u16_aligned(data + _pos)) // in a zero range
 		return;
-	    else if (g > USHORT_AT(data + _pos + 2))
+	    else if (g > Data::u16_aligned(data + _pos + 2))
 		_pos += RANGES_RECSIZE;
-	    else if (USHORT_AT(data + _pos + 4) == 0) // _class == 0
+	    else if (Data::u16_aligned(data + _pos + 4) == 0) // _class == 0
 		return;
 	    else
-		_coviter.forward_to(USHORT_AT(data + _pos + 2) + 1);
+		_coviter.forward_to(Data::u16_aligned(data + _pos + 2) + 1);
 	}
     }
 
@@ -1470,18 +1464,18 @@ ClassDef::class_iterator::operator++(int)
     while (_pos < len && _coviter) {
 	Glyph g = *_coviter;
 	if (is_list) {
-	    _pos = LIST_HEADERSIZE + LIST_RECSIZE*(g - USHORT_AT(data + 2));
-	    if (_pos >= len || USHORT_AT(data + _pos) == _class)
+	    _pos = LIST_HEADERSIZE + LIST_RECSIZE*(g - Data::u16_aligned(data + 2));
+	    if (_pos >= len || Data::u16_aligned(data + _pos) == _class)
 		return;
 	    _coviter++;
 	} else {
-	    while (_pos < len && (g > USHORT_AT(data + _pos + 2)
-				  || USHORT_AT(data + _pos + 4) != _class))
+	    while (_pos < len && (g > Data::u16_aligned(data + _pos + 2)
+				  || Data::u16_aligned(data + _pos + 4) != _class))
 		_pos += RANGES_RECSIZE;
 	    // now, _pos >= len, or g <= rec.end && class == rec.class
-	    if (_pos >= len || g >= USHORT_AT(data + _pos))
+	    if (_pos >= len || g >= Data::u16_aligned(data + _pos))
 		return;
-	    _coviter.forward_to(USHORT_AT(data + _pos));
+	    _coviter.forward_to(Data::u16_aligned(data + _pos));
 	}
     }
 

@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT([lcdf-typetools], [2.97])
 AC_CONFIG_SRCDIR([NEWS])
 AM_INIT_AUTOMAKE
-AM_CONFIG_HEADER([autoconf.h])
+AC_CONFIG_HEADERS([autoconf.h])
 AM_MAINTAINER_MODE
 
 AC_PROG_MAKE_SET
@@ -17,6 +17,13 @@ AC_ARG_ENABLE([warnings],
   [if test "$enableval" = yes; then
     CFLAGS="$CFLAGS -W -Wall"; CXXFLAGS="$CXXFLAGS -W -Wall"
   fi])
+
+AC_ARG_ENABLE([precondition-checking],
+  [AS_HELP_STRING([--enable-precondition-checking], [include precondition checking assertions])],
+  [if test "$enableval" = yes; then
+    AC_DEFINE([HAVE_PRECONDITION_CHECKING], [1], [Define to include precondition checking assertions.])
+  fi])
+
 
 dnl AN_MAKEVAR([AR], [AC_PROG_AR])
 dnl AN_PROGRAM([ar], [AC_PROG_AR])

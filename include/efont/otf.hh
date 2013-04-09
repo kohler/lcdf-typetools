@@ -10,8 +10,8 @@ class Name;
 
 typedef int Glyph;			// 16-bit integer
 
-class Tag { public:
-
+class Tag {
+  public:
     Tag()				: _tag(0U) { }
     explicit Tag(uint32_t tag)		: _tag(tag) { }
     Tag(const char *name);
@@ -34,13 +34,11 @@ class Tag { public:
     const char* feature_description() const;
 
   private:
-
     uint32_t _tag;
-
 };
 
-class Font { public:
-
+class Font {
+  public:
     Font(const String&, ErrorHandler* = 0);
     // default destructor
 
@@ -65,16 +63,14 @@ class Font { public:
     enum { HEADER_SIZE = 12, TABLE_DIR_ENTRY_SIZE = 16 };
 
   private:
-
     String _str;
     int _error;
 
     int parse_header(ErrorHandler*);
-
 };
 
-class ScriptList { public:
-
+class ScriptList {
+  public:
     ScriptList()		{ }
     inline ScriptList(const String&, ErrorHandler* = 0);
     int assign(const String&, ErrorHandler* = 0);
@@ -86,7 +82,6 @@ class ScriptList { public:
     int features(Tag script, Tag langsys, int& required_fid, Vector<int>& fids, ErrorHandler* = 0, bool clear_fids = true) const;
 
   private:
-
     enum { SCRIPTLIST_HEADERSIZE = 2, SCRIPT_RECSIZE = 6,
 	   SCRIPT_HEADERSIZE = 4, LANGSYS_RECSIZE = 6,
 	   LANGSYS_HEADERSIZE = 6, FEATURE_RECSIZE = 2 };
@@ -97,11 +92,10 @@ class ScriptList { public:
     int script_offset(Tag) const;
     int check_script(Tag, int, ErrorHandler*) const;
     int langsys_offset(Tag, Tag, ErrorHandler* = 0) const;
-
 };
 
-class FeatureList { public:
-
+class FeatureList {
+  public:
     FeatureList()		{ }
     inline FeatureList(const String&, ErrorHandler* = 0);
     int assign(const String&, ErrorHandler* = 0);
@@ -124,7 +118,6 @@ class FeatureList { public:
     int lookups(const ScriptList&, Tag script, Tag langsys, const Vector<Tag>& sorted_ftags, Vector<int>& results, ErrorHandler* = 0) const;
 
   private:
-
     enum { FEATURELIST_HEADERSIZE = 2, FEATURE_RECSIZE = 6,
 	   FEATURE_HEADERSIZE = 4, LOOKUPLIST_RECSIZE = 2 };
 
@@ -133,11 +126,10 @@ class FeatureList { public:
     int check_header(ErrorHandler*);
     int script_offset(Tag) const;
     int langsys_offset(Tag, Tag, ErrorHandler* = 0) const;
-
 };
 
-class Coverage { public:
-
+class Coverage {
+  public:
     Coverage() throw ();		// empty coverage
     Coverage(Glyph first, Glyph last) throw ();	// range coverage
     Coverage(const Vector<bool> &gmap) throw (); // used-bytemap coverage
@@ -196,23 +188,20 @@ class Coverage { public:
 	   HEADERSIZE = 4, LIST_RECSIZE = 2, RANGES_RECSIZE = 6 };
 
   private:
-
     String _str;
 
     int check(ErrorHandler*);
-
 };
 
 Coverage operator&(const Coverage&, const Coverage&);
 bool operator<=(const Coverage&, const Coverage&);
 
-inline bool operator>=(const Coverage& a, const Coverage& b)
-{
+inline bool operator>=(const Coverage& a, const Coverage& b) {
     return b <= a;
 }
 
-class GlyphSet { public:
-
+class GlyphSet {
+  public:
     GlyphSet();
     GlyphSet(const GlyphSet&);
     ~GlyphSet();
@@ -226,7 +215,6 @@ class GlyphSet { public:
     GlyphSet& operator=(const GlyphSet&);
 
   private:
-
     enum { GLYPHBITS = 16, SHIFT = 8,
 	   MAXGLYPH = (1 << GLYPHBITS) - 1, UNSHIFT = GLYPHBITS - SHIFT,
 	   MASK = (1 << UNSHIFT) - 1, VLEN = (1 << SHIFT),
@@ -234,11 +222,10 @@ class GlyphSet { public:
     };
 
     uint32_t* _v[VLEN];
-
 };
 
-class ClassDef { public:
-
+class ClassDef {
+  public:
     ClassDef(const String&, ErrorHandler* = 0) throw ();
     // default destructor
 
@@ -251,7 +238,8 @@ class ClassDef { public:
     void unparse(StringAccum&) const throw ();
     String unparse() const throw ();
 
-    class class_iterator { public:
+    class class_iterator {
+      public:
 	// private constructor
 	// default destructor
 
@@ -294,80 +282,65 @@ class ClassDef { public:
 	   RANGES_HEADERSIZE = 4, RANGES_RECSIZE = 6 };
 
   private:
-
     String _str;
 
     int check(ErrorHandler*);
-
 };
 
 extern Vector<PermString> debug_glyph_names;
 
 
-inline bool operator==(Tag t1, uint32_t t2)
-{
+inline bool operator==(Tag t1, uint32_t t2) {
     return t1.value() == t2;
 }
 
-inline bool operator!=(Tag t1, uint32_t t2)
-{
+inline bool operator!=(Tag t1, uint32_t t2) {
     return t1.value() != t2;
 }
 
-inline bool operator<(Tag t1, uint32_t t2)
-{
+inline bool operator<(Tag t1, uint32_t t2) {
     return t1.value() < t2;
 }
 
-inline bool operator>(Tag t1, uint32_t t2)
-{
+inline bool operator>(Tag t1, uint32_t t2) {
     return t1.value() > t2;
 }
 
-inline bool operator<=(Tag t1, uint32_t t2)
-{
+inline bool operator<=(Tag t1, uint32_t t2) {
     return t1.value() <= t2;
 }
 
-inline bool operator>=(Tag t1, uint32_t t2)
-{
+inline bool operator>=(Tag t1, uint32_t t2) {
     return t1.value() >= t2;
 }
 
-inline bool operator==(Tag t1, Tag t2)
-{
+inline bool operator==(Tag t1, Tag t2) {
     return t1.value() == t2.value();
 }
 
-inline bool operator!=(Tag t1, Tag t2)
-{
+inline bool operator!=(Tag t1, Tag t2) {
     return t1.value() != t2.value();
 }
 
-inline bool operator<(Tag t1, Tag t2)
-{
+inline bool operator<(Tag t1, Tag t2) {
     return t1.value() < t2.value();
 }
 
-inline ScriptList::ScriptList(const String& str, ErrorHandler* errh)
-{
+inline ScriptList::ScriptList(const String& str, ErrorHandler* errh) {
     assign(str, errh);
 }
 
-inline FeatureList::FeatureList(const String& str, ErrorHandler* errh)
-{
+inline FeatureList::FeatureList(const String& str, ErrorHandler* errh) {
     assign(str, errh);
 }
 
-inline void FeatureList::filter(Vector<int>& fids, Tag ftag) const
-{
+inline void FeatureList::filter(Vector<int>& fids, Tag ftag) const {
     Vector<Tag> tags;
     tags.push_back(ftag);
     filter(fids, tags);
 }
 
-inline bool GlyphSet::covers(Glyph g) const
-{
+inline bool GlyphSet::covers(Glyph g) const {
     if ((unsigned)g > MAXGLYPH)
 	return false;
     else if (const uint32_t* u = _v[g >> SHIFT])
@@ -376,15 +349,14 @@ inline bool GlyphSet::covers(Glyph g) const
 	return false;
 }
 
-inline bool GlyphSet::operator[](Glyph g) const
-{
+inline bool GlyphSet::operator[](Glyph g) const {
     return covers(g);
 }
 
-}}
+} // namespace Efont::OpenType
+} // namespace Efont
 
-inline hashcode_t hashcode(Efont::OpenType::Tag t)
-{
+inline hashcode_t hashcode(Efont::OpenType::Tag t) {
     return t.value();
 }
 

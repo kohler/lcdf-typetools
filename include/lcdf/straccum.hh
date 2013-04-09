@@ -80,6 +80,14 @@ class StringAccum { public:
 	return reinterpret_cast<char *>(_s);
     }
 
+    inline const unsigned char* udata() const {
+	return _s;
+    }
+
+    inline unsigned char* udata() {
+	return _s;
+    }
+
     /** @brief Return true iff the StringAccum is empty or out-of-memory. */
     bool empty() const {
 	return _len == 0;

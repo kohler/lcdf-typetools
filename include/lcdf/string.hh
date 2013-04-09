@@ -367,6 +367,12 @@ class String { public:
 	    return String();
     }
 
+    /** @overload */
+    inline String substring(const unsigned char* first, const unsigned char* last) const {
+	return substring(reinterpret_cast<const char*>(first),
+			 reinterpret_cast<const char*>(last));
+    }
+
     /** @brief Return a substring of this string, consisting of the @a len
      * characters starting at index @a pos.
      * @param pos substring's first position relative to the string

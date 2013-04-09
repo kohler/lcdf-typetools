@@ -23,10 +23,10 @@
 #include <string.h>
 #include <efont/otfdata.hh>	// for ntohl()
 
-#define USHORT_AT(d)		(ntohs(*(const uint16_t *)(d)))
-#define SHORT_AT(d)		((int16_t) ntohs(*(const uint16_t *)(d)))
-#define ULONG_AT(d)		(ntohl(*(const uint32_t *)(d)))
-#define LONG_AT(d)		((int32_t) ntohl(*(const uint32_t *)(d)))
+#define USHORT_AT(d)		(Data::u16_aligned(d))
+#define SHORT_AT(d)		(Data::s16_aligned(d))
+#define ULONG_AT(d)		(Data::u32_aligned(d))
+#define LONG_AT(d)		(Data::s32_aligned(d))
 
 namespace Efont { namespace OpenType {
 
