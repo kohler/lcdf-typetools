@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.98   10.Apr.2013
+
+* Fix alignment bug that corrupted output fonts on some platforms
+  (MIPS especially). Reported by Norbert Preining.
+
+
 Version 2.97   25.Oct.2012
 
 * Same.
