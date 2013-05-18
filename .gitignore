@@ -1,3 +1,8 @@
+*.aux
+*.dvi
+*.log
+*.o
+.deps
 Makefile
 Makefile.in
 aclocal.m4
@@ -5,6 +10,7 @@ autoconf.h
 autoconf.h.in
 autoconf.h.in~
 autom4te*
+cfftot1/cfftot1
 config.cache
 config.log
 config.status
@@ -12,6 +18,18 @@ configure
 depcomp
 glyphtounicode.tex
 install-sh
+libefont/libefont.a
+liblcdf/liblcdf.a
 missing
+mmafm/mmafm
+mmpfb/mmpfb
+otfinfo/otfinfo
+otftotfm/otftotfm
 stamp-h*
 stamp-h.in
+t1dotlessj/t1dotlessj
+t1lint/t1lint
+t1rawafm/t1rawafm
+t1reencode/t1reencode
+t1testpage/t1testpage
+ttftotype42/ttftotype42
