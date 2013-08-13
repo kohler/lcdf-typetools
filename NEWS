@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.99   13.Aug.2013
+
+* cfftot1: Correct bug that rarely corrupted Type 1 output fonts.
+  Reported by Sebastian Schubert.
+
+
 Version 2.98   10.Apr.2013
 
 * Fix alignment bug that corrupted output fonts on some platforms

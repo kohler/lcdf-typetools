@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([lcdf-typetools], [2.98])
+AC_INIT([lcdf-typetools], [2.99])
 AC_CONFIG_SRCDIR([NEWS])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([autoconf.h])
