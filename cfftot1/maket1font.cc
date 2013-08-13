@@ -86,7 +86,9 @@ class MakeType1CharstringInterp::Subr { public:
 	Subr *subr;
 	int pos;
 	int len;
-	Caller(Subr *s, int p, int l)	: subr(s), pos(p), len(l) { }
+	Caller(Subr *s, int p, int l)
+            : subr(s), pos(p), len(l) {
+        }
 	String charstring(MakeType1CharstringInterp *mcsi) const {
 	    Type1Charstring *t1cs = subr->charstring(mcsi);
 	    return t1cs->substring(pos, len);
@@ -97,7 +99,7 @@ class MakeType1CharstringInterp::Subr { public:
     const Caller &caller(int i) const	{ return _callers[i]; }
 
     void add_call(Subr *s)		{ _calls.push_back(s); }
-    void add_caller(Subr *, int, int);
+    void add_caller(Subr *s, int pos, int len);
 
     int output_subrno() const		{ return _output_subrno; }
     void set_output_subrno(int n)	{ _output_subrno = n; }
@@ -266,12 +268,13 @@ MakeType1CharstringInterp::Subr::change_callers(Subr *caller, int pos, int lengt
 	    /* nada */;
 	else if (pos <= c.pos && c.pos + c.len <= right) {
 	    // erase
-	    //fprintf(stderr, "  ERASE caller %08x:%d+%d\n", c.subr->_csr, c.pos, c.len);
+	    //if (c.debug) fprintf(stderr, "  ERASE caller %08x:%d+%d [%d+%d]\n", c.subr->_csr, c.pos, c.len, pos, length);
 	    c.subr = 0;
 	} else if (right <= c.pos) {
-	    //fprintf(stderr, "  ADJUST caller %08x:%d+%d -> %d+%d\n", c.subr->_csr, c.pos, c.len, c.pos+delta, c.len);
+	    //if (c.debug) fprintf(stderr, "  ADJUST caller %08x:%d+%d -> %d+%d [%d+%d]\n", c.subr->_csr, c.pos, c.len, c.pos+delta, c.len, pos, length);
 	    c.pos += delta;
 	} else if (c.pos <= pos && right <= c.pos + c.len) {
+            //if (c.debug) fprintf(stderr, "  ADJUST caller %08x:%d+%d -> %d+%d [%d+%d]\n", c.subr->_csr, c.pos, c.len, c.pos, c.len+delta, pos, length);
 	    c.len += delta;
 	} else
 	    c.subr = 0;
@@ -293,7 +296,7 @@ MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
 	return false;
     assert(!_calls.size());	// because this hasn't been unified yet
 
-    // Find the smallest shared substring.
+    // Find the smallest shared complete charstring.
     String substr = _callers[0].charstring(mcsi);
     int suboff = 0;
     for (int i = 1; i < _callers.size(); i++) {
@@ -302,7 +305,18 @@ MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
 	const char *dx = substr.data() + substr.length(), *d1x = d1 + substr1.length();
 	while (dx > d && d1x > d1 && dx[-1] == d1x[-1])
 	    dx--, d1x--;
-	suboff = dx - substr.data();
+        if (d1x != d1) {
+            // 8.13.2013 -- We might have stopped in the middle of a number
+            // or command in d1 -- even if we absorbed all of d! For
+            // example, maybe d's version is "15 rlineto" (encoded "154 5"),
+            // and our version is "518 rlineto" (encoded "248 154 5")! So
+            // whenever we stop before the end of d1, we must adjust our
+            // position to the next caret in d1, which, in the example,
+            // would be after "248 154" and before "5".
+            int suboff1 = Type1Charstring(substr1).first_caret_after(d1x - d1);
+            dx += suboff1 - (d1x - d1);
+        }
+        suboff = dx - substr.data();
     }
     substr = substr.substring(Type1Charstring(substr).first_caret_after(suboff));
     if (!substr.length())
@@ -310,6 +324,7 @@ MakeType1CharstringInterp::Subr::unify(MakeType1CharstringInterp *mcsi)
     for (int i = 0; i < _callers.size(); i++) {
 	Caller &c = _callers[i];
 	if (int delta = c.len - substr.length()) {
+            //if (c.debug) fprintf(stderr, "  PREFIX caller %08x:%d+%d -> %d+%d [%s]\n", c.subr->_csr, c.pos, c.len, c.pos+delta, c.len+delta, CharstringUnparser::unparse(Type1Charstring(substr)).c_str());
 	    c.pos += delta;
 	    c.len -= delta;
 	}
@@ -418,9 +433,10 @@ MakeType1CharstringInterp::run(const CharstringProgram *program, Type1Font *outp
 	run(program->glyph_context(i), receptacle, errh);
 #if 0
 	PermString n = program->glyph_name(i);
-	if (i == 2301 || i == 2302) {
-	    fprintf(stderr, "%s was %s\n", n.c_str(), CharstringUnparser::unparse(*program->glyph(i)).c_str());
-	    fprintf(stderr, "%s == %s\n", n.c_str(), CharstringUnparser::unparse(receptacle).c_str());
+	if (i == 408 || i == 20) {
+	    fprintf(stderr, "%d: %s was %s\n", i, n.c_str(), CharstringUnparser::unparse(*program->glyph(i)).c_str());
+	    fprintf(stderr, "  now %s\n", CharstringUnparser::unparse(receptacle).c_str());
+            fprintf(stderr, "  *** %d.%d: %s\n", 134, 30, CharstringUnparser::unparse(Type1Charstring(receptacle.data_string().substring(134, 30))).c_str());
 	}
 #endif
 	PermString name = program->glyph_name(i);
