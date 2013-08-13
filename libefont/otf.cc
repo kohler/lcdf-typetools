@@ -76,7 +76,7 @@ Font::parse_header(ErrorHandler *errh)
 	if (tag <= last_tag)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (uint32_t) len)
-	    return errh->error("OTF data for '%s' out of range", Tag(tag).text().c_str()), -EFAULT;
+	    return errh->error("OTF data for %<%s%> out of range", Tag(tag).text().c_str()), -EFAULT;
 	last_tag = tag;
     }
 
@@ -486,7 +486,7 @@ ScriptList::features(Tag script, Tag langsys, int &required_fid, Vector<int> &fi
     if (_str.length() < offset + LANGSYS_HEADERSIZE
 	|| (featureCount = Data::u16_aligned(data + offset + 4),
 	    (_str.length() < offset + LANGSYS_HEADERSIZE + featureCount*FEATURE_RECSIZE)))
-	return (errh ? errh->error("OTF LangSys table for '%s/%s' out of range", script.text().c_str(), langsys.text().c_str()) : -1);
+	return (errh ? errh->error("OTF LangSys table for %<%s/%s%> out of range", script.text().c_str(), langsys.text().c_str()) : -1);
 
     // search langsys table
     int f = Data::u16_aligned(data + offset + 2);
@@ -553,17 +553,17 @@ FeatureList::params(int fid, int length, ErrorHandler *errh, bool old_style_offs
     int len = _str.length();
     int nfeatures = Data::u16_aligned(data);
     if (fid < 0 || fid >= nfeatures)
-	return errh->error("OTF feature ID '%d' out of range", fid), String();
+	return errh->error("OTF feature ID %<%d%> out of range", fid), String();
     int foff = Data::u16_aligned(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
     if (len < foff + FEATURE_HEADERSIZE)
-	return errh->error("OTF LookupList for feature ID '%d' too short", fid), String();
+	return errh->error("OTF LookupList for feature ID %<%d%> too short", fid), String();
     int poff = Data::u16_aligned(data + foff);
     if (poff == 0)
 	return String();
     if (!old_style_offset)
 	poff += foff;
     if (len < poff + length)
-	return errh->error("OTF feature parameters for feature ID '%d' out of range", fid), String();
+	return errh->error("OTF feature parameters for feature ID %<%d%> out of range", fid), String();
     else
 	return _str.substring(poff, length);
 }
@@ -673,13 +673,13 @@ FeatureList::lookups(int fid, Vector<int> &results, ErrorHandler *errh, bool cle
     int len = _str.length();
     int nfeatures = Data::u16_aligned(data);
     if (fid < 0 || fid >= nfeatures)
-	return errh->error("OTF feature ID '%d' out of range", fid);
+	return errh->error("OTF feature ID %<%d%> out of range", fid);
     int foff = Data::u16_aligned(data + FEATURELIST_HEADERSIZE + fid*FEATURE_RECSIZE + 4);
     int lookupCount;
     if (len < foff + FEATURE_HEADERSIZE
 	|| (lookupCount = Data::u16_aligned(data + foff + 2),
 	    len < foff + FEATURE_HEADERSIZE + lookupCount*LOOKUPLIST_RECSIZE))
-	return errh->error("OTF LookupList for feature ID '%d' too short", fid);
+	return errh->error("OTF LookupList for feature ID %<%d%> too short", fid);
     const uint8_t *ldata = data + foff + FEATURE_HEADERSIZE;
     for (int j = 0; j < lookupCount; j++, ldata += LOOKUPLIST_RECSIZE)
 	results.push_back(Data::u16_aligned(ldata));

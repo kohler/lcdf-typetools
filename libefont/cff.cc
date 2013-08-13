@@ -541,7 +541,7 @@ Cff::font(PermString font_name, ErrorHandler *errh)
     if (!font_name)
 	errh->error("no fonts in CFF");
     else
-	errh->error("font '%s' not found", font_name.c_str());
+	errh->error("font %<%s%> not found", font_name.c_str());
     return 0;
 }
 
@@ -606,7 +606,7 @@ Cff::Charset::assign(const Cff *cff, int pos, int nglyphs, int max_sid, ErrorHan
     if (_error >= 0)
 	for (int g = 0; g < _sids.size(); g++) {
 	    if (_gids[_sids[g]] >= 0) {
-		errh->error("glyph '%s' in charset twice", cff->sid_permstring(_sids[g]).c_str());
+		errh->error("glyph %<%s%> in charset twice", cff->sid_permstring(_sids[g]).c_str());
 		_error = -EEXIST;
 	    }
 	    _gids[_sids[g]] = g;
@@ -1006,7 +1006,7 @@ Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) con
 	if (op >= operators_used.size())
 	    operators_used.resize(op + 1, 0);
 	if (operators_used[op] && (type & tTypeMask) != tNone)
-	    errh->error("%s: operator '%s' specified twice", dict_name, operator_names[op]);
+	    errh->error("%s: operator %<%s%> specified twice", dict_name, operator_names[op]);
 	operators_used[op]++;
 
 	// check data
@@ -1014,9 +1014,9 @@ Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) con
 
 	  case tNone:
 	    if (op >= 32)
-		errh->warning("%s: unknown operator '12 %d'", dict_name, op - 32);
+		errh->warning("%s: unknown operator %<12 %d%>", dict_name, op - 32);
 	    else
-		errh->warning("%s: unknown operator '%d'", dict_name, op);
+		errh->warning("%s: unknown operator %<%d%>", dict_name, op);
 	    continue;
 
 	  case tSID:
@@ -1033,7 +1033,7 @@ Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) con
 	    if (arity != 1)
 		goto bad_data;
 	    else if (num != 0 && num != 1)
-		errh->warning("%s: data for Boolean operator '%s' not 0 or 1", dict_name, operator_names[op]);
+		errh->warning("%s: data for Boolean operator %<%s%> not 0 or 1", dict_name, operator_names[op]);
 	    break;
 
 	  case tNumber:
@@ -1073,12 +1073,12 @@ Cff::Dict::check(bool is_private, ErrorHandler *errh, const char *dict_name) con
 
 	// check dict location
 	if (((type & tPrivate) != 0) != is_private)
-	    errh->warning("%s: operator '%s' in wrong DICT", dict_name, operator_names[op]);
+	    errh->warning("%s: operator %<%s%> in wrong DICT", dict_name, operator_names[op]);
 
 	continue;
 
       bad_data:
-	errh->error("%s: bad data for operator '%s'", dict_name, operator_names[op]);
+	errh->error("%s: bad data for operator %<%s%>", dict_name, operator_names[op]);
     }
 
     return (errh->nerrors() != before_nerrors ? -1 : 0);
