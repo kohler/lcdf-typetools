@@ -8,7 +8,7 @@ ttftotype42_SOURCES = ttftotype42.cc
 
 ttftotype42_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = ttftotype42.1

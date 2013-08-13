@@ -8,7 +8,7 @@ t1rawafm_SOURCES = t1rawafm.cc
 
 t1rawafm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = t1rawafm.1

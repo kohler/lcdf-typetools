@@ -18,14 +18,14 @@ EXTRA_otftotfm_SOURCES = kpseinterface.c kpseinterface.h
 otftotfm_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 otftotfm_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otftotfm.1
 
 if have_kpathsea
 otftotfm_SOURCES += kpseinterface.c kpseinterface.h
-INCLUDES += $(KPATHSEA_INCLUDES)
+AM_CPPFLAGS += $(KPATHSEA_INCLUDES)
 otftotfm_LDADD += $(KPATHSEA_LIBS)
 otftotfm_DEPENDENCIES += $(KPATHSEA_DEPEND)
 endif have_kpathsea

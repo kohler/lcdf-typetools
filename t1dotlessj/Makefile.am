@@ -8,7 +8,7 @@ t1dotlessj_SOURCES = t1dotlessj.cc
 
 t1dotlessj_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = t1dotlessj.1

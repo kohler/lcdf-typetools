@@ -8,7 +8,7 @@ t1testpage_SOURCES = t1testpage.cc
 
 t1testpage_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = t1testpage.1

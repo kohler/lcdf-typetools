@@ -26,6 +26,6 @@ endif FIXLIBC
 liblcdf_a_LIBADD = @TEMPLATE_OBJS@
 CLEANFILES = @TEMPLATE_OBJS@
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 
 EXTRA_DIST = fixlibc.c

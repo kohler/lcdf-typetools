@@ -10,7 +10,7 @@ otfinfo_SOURCES = \
 otfinfo_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 otfinfo_DEPENDENCIES = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = otfinfo.1

@@ -9,7 +9,7 @@ t1lint_SOURCES = cscheck.hh cscheck.cc \
 
 t1lint_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = t1lint.1

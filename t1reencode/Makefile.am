@@ -9,7 +9,7 @@ t1reencode_SOURCES = t1reencode.cc \
 
 t1reencode_LDADD = ../libefont/libefont.a ../liblcdf/liblcdf.a
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 CLEANFILES = @TEMPLATE_OBJS@
 
 EXTRA_DIST = t1reencode.1
