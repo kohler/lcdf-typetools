@@ -444,7 +444,7 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
 	    return errh->warning("%<%s%> has no encoding, ignoring %<%s%>", v[2].c_str(), v[1].c_str());
 	if ((op & JT_KERN) && l && (av == J_ALL || bv == J_ALL))
 	    return errh->warning("%<%s %s %s%> illegal, only {0} works with *", v[0].c_str(), v[1].c_str(), v[2].c_str());
-	Ligature lig = { av, bv, op, l, 0 };
+	Ligature lig = { av, bv, op, static_cast<int>(l), 0 };
 	add_ligkern(lig, override);
 	return 0;
 
