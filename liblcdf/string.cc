@@ -641,9 +641,9 @@ String::hashcode(const char *begin, const char *end)
 #undef get16
 #if !HAVE_INDIFFERENT_ALIGNMENT
     } else {
-# if WORDS_BIGENDIAN
+# if WORDS_BIGENDIAN || defined(__APPLE__) && defined(__BIG_ENDIAN__)
 #  define get16(p) (((unsigned char) (p)[0] << 8) + (unsigned char) (p)[1])
-# elif WORDS_LITTLEENDIAN
+# elif WORDS_LITTLEENDIAN || defined(__APPLE__) && defined(__LITTLE_ENDIAN__)
 #  define get16(p) ((unsigned char) (p)[0] + ((unsigned char) (p)[1] << 8))
 # else
 #  error "unknown byte order"
