@@ -135,8 +135,8 @@ dnl
 dnl endianness
 dnl
 
-AC_C_BIGENDIAN(, [AC_DEFINE([WORDS_LITTLEENDIAN], 1, [Define to 1 if your processor stores words with the least significant byte
-   first (like Intel and VAX, unlike Motorola and SPARC).])])
+AC_DEFINE([WORDS_BIGENDIAN_SET], [1], [Define if WORDS_BIGENDIAN has been set.])
+AC_C_BIGENDIAN()
 
 
 dnl

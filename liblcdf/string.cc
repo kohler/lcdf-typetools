@@ -643,7 +643,7 @@ String::hashcode(const char *begin, const char *end)
     } else {
 # if WORDS_BIGENDIAN
 #  define get16(p) (((unsigned char) (p)[0] << 8) + (unsigned char) (p)[1])
-# elif WORDS_LITTLEENDIAN
+# elif WORDS_BIGENDIAN_SET
 #  define get16(p) ((unsigned char) (p)[0] + ((unsigned char) (p)[1] << 8))
 # else
 #  error "unknown byte order"

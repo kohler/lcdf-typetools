@@ -111,10 +111,10 @@ transform(MD5_CONTEXT *ctx, const unsigned char *data)
 			p2[0] = *p1++;
 		}
 	}
-#elif WORDS_LITTLEENDIAN
+#elif WORDS_BIGENDIAN_SET
 	memcpy(correct_words, data, 64);
 #else
-# error "Neither WORDS_BIGENDIAN nor WORDS_LITTLEENDIAN is defined!"
+# error "WORDS_BIGENDIAN has not been set!"
 #endif
 
 
@@ -310,13 +310,13 @@ do_final(MD5_CONTEXT *hd)
 #if WORDS_BIGENDIAN
 #define X(a) do { *p++ = hd->a      ; *p++ = hd->a >> 8;      \
 		  *p++ = hd->a >> 16; *p++ = hd->a >> 24; } while(0)
-#elif WORDS_LITTLEENDIAN
+#elif WORDS_BIGENDIAN_SET
 	/*#define X(a) do { *(uint32_t*)p = hd->##a ; p += 4; } while(0)*/
 	/* Unixware's cpp doesn't like the above construct so we do it his way:
 	 * (reported by Allan Clark) */
 #define X(a) do { *(uint32_t*)p = (*hd).a ; p += 4; } while(0)
 #else
-# error "Neither WORDS_BIGENDIAN nor WORDS_LITTLEENDIAN is defined!"
+# error "WORDS_BIGENDIAN has not been set!"
 #endif
 	X(A);
 	X(B);
