@@ -52,7 +52,7 @@ Font::parse_header(ErrorHandler *errh)
     int len = length();
     const uint8_t *data = this->data();
     if (HEADER_SIZE > len)
-	return errh->error("OTF too small for header"), -EFAULT;
+	return errh->error("OTF file corrupted (too small)"), -EFAULT;
     if ((data[0] != 'O' || data[1] != 'T' || data[2] != 'T' || data[3] != 'O')
 	&& (data[0] != '\000' || data[1] != '\001'))
 	return errh->error("not an OpenType font (bad magic number)"), -ERANGE;
@@ -815,7 +815,7 @@ Coverage::check(ErrorHandler *errh)
     // USHORT	glyphCount
     const uint8_t *data = _str.udata();
     if (_str.length() < HEADERSIZE)
-	return errh->error("OTF coverage table too small for header");
+	return errh->error("OTF coverage table too small");
     int coverageFormat = Data::u16_aligned(data);
     int count = Data::u16_aligned(data + 2);
 
@@ -1252,7 +1252,7 @@ ClassDef::check(ErrorHandler *errh)
     // USHORT	glyphCount
     const uint8_t *data = _str.udata();
     if (_str.length() < 6)	// NB: prevents empty format-2 tables
-	return errh->error("OTF class def table too small for header");
+	return errh->error("OTF class def table too small");
     int classFormat = Data::u16_aligned(data);
 
     int len;

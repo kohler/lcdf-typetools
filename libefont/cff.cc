@@ -372,7 +372,7 @@ Cff::parse_header(ErrorHandler *errh)
     if (_len == 0)
 	return errh->error("not a PostScript-flavored OpenType font"), -EFAULT;
     if (_len < HEADER_SIZE)
-	return errh->error("CFF file too small for header (have %d, want %d)", _len, HEADER_SIZE), -EFAULT;
+	return errh->error("CFF file corrupted (too small)"), -EFAULT;
     if (_data[0] != 1)		// major version number
 	return errh->error("bad major version number %d", _data[0]), -ERANGE;
     int hdrSize = _data[2], offSize = _data[3];

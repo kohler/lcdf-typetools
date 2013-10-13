@@ -45,7 +45,7 @@ Cmap::parse_header(ErrorHandler *errh)
     int len = _str.length();
     const uint8_t *data = _str.udata();
     if (HEADER_SIZE > len)
-	return errh->error("OTF cmap too small for header"), -EFAULT;
+	return errh->error("OTF cmap too small"), -EFAULT;
     if (!(data[0] == '\000' && data[1] == '\000'))
 	return errh->error("bad cmap version number"), -ERANGE;
     _ntables = USHORT_AT(data + 2);

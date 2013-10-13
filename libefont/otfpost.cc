@@ -122,7 +122,7 @@ Post::parse_header(ErrorHandler *errh)
     int len = _str.length();
     const uint8_t *data = _str.udata();
     if (HEADER_SIZE > len)
-	return errh->error("OTF post too small for header"), -EFAULT;
+	return errh->error("OTF post table too small"), -EFAULT;
     _version = USHORT_AT(data);	// ignore minor version number
 				// except that version 2.5 isn't compatible
     if (_version < 1 || _version > 3
@@ -136,7 +136,7 @@ Post::parse_header(ErrorHandler *errh)
 	if (HEADER_SIZE + 2 > len
 	    || ((_nglyphs = USHORT_AT(data + HEADER_SIZE)),
 		HEADER_SIZE + 2 + 2 * _nglyphs > len))
-	    return errh->error("OTF post too small for glyph map"), -EFAULT;
+	    return errh->error("OTF post table too small for glyph map"), -EFAULT;
 	const uint8_t *gni = data + HEADER_SIZE + 2;
 	const uint8_t *names = gni + 2 * _nglyphs;
 	int next_name = N_MAC_GLYPHS, g;
