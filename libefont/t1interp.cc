@@ -31,7 +31,7 @@
 #define CHECK_PATH_END()	do { if (_state == S_PATH) { act_closepath(cmd); } _state = S_IPATH; } while (0)
 
 #ifndef static_assert
-# define static_assert(c)	switch (c) case 0: case (c):
+# define static_assert(c, msg)	switch (c) case 0: case (c):
 #endif
 
 namespace Efont {
@@ -111,7 +111,8 @@ CharstringInterp::error(int err, int error_data)
 String
 CharstringInterp::error_string(int error, int error_data)
 {
-    static_assert(-errLastError == (sizeof(error_formats) / sizeof(error_formats[0])) - 1);
+    static_assert(-errLastError == (sizeof(error_formats) / sizeof(error_formats[0])) - 1,
+                  "errLastError defined incorrectly");
     if (error >= 0)
 	return error_formats[0];
     else if (error < errLastError)

@@ -26,10 +26,6 @@
 #include <efont/otfdata.hh>	// for ntohl()
 #include <efont/otfname.hh>
 
-#ifndef static_assert
-#define static_assert(c) switch (c) case 0: case (c):
-#endif
-
 namespace Efont { namespace OpenType {
 
 Vector<PermString> debug_glyph_names;

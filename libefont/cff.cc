@@ -28,7 +28,7 @@
 #include <efont/t1unparser.hh>
 
 #ifndef static_assert
-#define static_assert(c) switch (c) case 0: case (c):
+#define static_assert(c, msg) switch (c) case 0: case (c):
 #endif
 
 namespace Efont {
@@ -346,9 +346,12 @@ Cff::Cff(const String &s, ErrorHandler *errh)
     : _data_string(s), _data(reinterpret_cast<const uint8_t *>(_data_string.data())), _len(_data_string.length()),
       _strings_map(-2)
 {
-    static_assert((sizeof(standard_strings) / sizeof(standard_strings[0])) == NSTANDARD_STRINGS);
-    static_assert((sizeof(standard_encoding) / sizeof(standard_encoding[0])) == 256);
-    static_assert((sizeof(expert_encoding) / sizeof(expert_encoding[0])) == 256);
+    static_assert((sizeof(standard_strings) / sizeof(standard_strings[0])) == NSTANDARD_STRINGS,
+                  "NSTANDARD_STRINGS defined incorrectly");
+    static_assert((sizeof(standard_encoding) / sizeof(standard_encoding[0])) == 256,
+                  "standard_encoding has wrong size");
+    static_assert((sizeof(expert_encoding) / sizeof(expert_encoding[0])) == 256,
+                  "expert_encoding has wrong size");
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
 
