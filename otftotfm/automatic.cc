@@ -660,30 +660,28 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    nl = text.find_left('\n', fl) + 1;
 	}
 
-	// special case: empty mapline, unchanged file
 	if (!mapline && !changed) {
-	    fclose(f);
+            // special case: empty mapline, unchanged file
 	    if (verbose)
 		errh->message("%s unchanged", map_file.c_str());
-	    return 0;
-	}
+	} else {
+            // add our text
+            text += mapline;
 
-	// add our text
-	text += mapline;
-
-	// rewind file
+            // rewind file
 #if HAVE_FTRUNCATE
-	rewind(f);
-	if (ftruncate(fd, 0) < 0)
+            rewind(f);
+            if (ftruncate(fd, 0) < 0)
 #endif
-	{
-	    fclose(f);
-	    f = fopen(map_file.c_str(), "w");
-	    fd = fileno(f);
-	}
+            {
+                fclose(f);
+                f = fopen(map_file.c_str(), "w");
+                fd = fileno(f);
+            }
 
-	// write data
-	ignore_result(fwrite(text.data(), 1, text.length(), f));
+            // write data
+            ignore_result(fwrite(text.data(), 1, text.length(), f));
+        }
 
 	fclose(f);
 
@@ -741,11 +739,9 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	    int slash = filename.find_right('/');
 	    if (slash >= 0)
 		filename = filename.substring(slash + 1);
-	    String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + CMD_SEP " updmap";
-	    if (verbose)
-		command += " 1>&2";
-	    else
-		command += " >" DEV_NULL " 2>&1";
+            String redirect = verbose ? " 1>&2" : " >" DEV_NULL " 2>&1";
+	    String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + redirect
+                + CMD_SEP " updmap" + redirect;
 	    int retval = mysystem(command.c_str(), errh);
 	    if (retval == 127)
 		errh->warning("could not run %<%s%>", command.c_str());
