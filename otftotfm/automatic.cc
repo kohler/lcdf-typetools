@@ -738,7 +738,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 	// run system updmap
 	if (output_flags & G_UPDMAP) {
 	    String filename = map_file;
-	    int slash = filename.find_right('\'');
+	    int slash = filename.find_right('/');
 	    if (slash >= 0)
 		filename = filename.substring(slash + 1);
 	    String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + CMD_SEP " updmap";
