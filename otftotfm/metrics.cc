@@ -1,6 +1,6 @@
 /* metrics.{cc,hh} -- an encoding during and after OpenType features
  *
- * Copyright (c) 2003-2012 Eddie Kohler
+ * Copyright (c) 2003-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -1074,8 +1074,8 @@ Metrics::cut_encoding(int size)
 namespace {
 // preference-sorting extra characters
 enum {
-    CONVENTIONAL_F_LIGATURE_SCORE = 1,
-    CONVENTIONAL_F_F_LIGATURE_SCORE = 2,
+    CONVENTIONAL_F_LIGATURE_SCORE = 4,
+    CONVENTIONAL_F_F_LIGATURE_SCORE = 5,
     BASIC_LATIN_LOWER_SCORE = 3,
     BASIC_LATIN_UPPER_SCORE = 4,
     BASIC_LATIN_OTHER_SCORE = 5,
@@ -1154,6 +1154,28 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	if (_encoding[i].unicode)
 	    scores[i] = unicode_score(_encoding[i].unicode);
 
+    /* Prefer conventional f-ligatures. */
+    bool has_ff = false;
+    for (Ligature3* l = all_ligs.begin(); l != all_ligs.end(); ++l)
+        if (_encoding[l->in1].unicode == 'f'
+            && (_encoding[l->in2].unicode == 'f'
+                || _encoding[l->in2].unicode == 'i'
+                || _encoding[l->in2].unicode == 'l')) {
+            if (scores[l->out] > CONVENTIONAL_F_LIGATURE_SCORE)
+                scores[l->out] = CONVENTIONAL_F_LIGATURE_SCORE;
+            if (_encoding[l->in2].unicode == 'f') {
+                _encoding[l->out].flags |= Char::IS_FF;
+                has_ff = true;
+            }
+        }
+    if (has_ff)
+        for (Ligature3* l = all_ligs.begin(); l != all_ligs.end(); ++l)
+            if (_encoding[l->in1].flag(Char::IS_FF)
+                && (_encoding[l->in2].unicode == 'i'
+                    || _encoding[l->in2].unicode == 'l')
+                && scores[l->out] > CONVENTIONAL_F_F_LIGATURE_SCORE)
+                scores[l->out] = CONVENTIONAL_F_F_LIGATURE_SCORE;
+
     /* Repeat these steps until you reach a stable set of scores: Score
        ligatures (ligscore = SUM[char scores]), then score characters touched
        only by fakes. */
@@ -1162,24 +1184,8 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	changed = false;
 	for (Ligature3 *l = all_ligs.begin(); l != all_ligs.end(); l++) {
 	    int score = scores[l->in1] + scores[l->in2];
-	    if (score < scores[l->out]) {
-		/* 2.May.2008: Prefer conventional f-ligatures. */
-		if (score == 2 * BASIC_LATIN_LOWER_SCORE
-		    && _encoding[l->in1].unicode == 'f'
-		    && (_encoding[l->in2].unicode == 'f'
-			|| _encoding[l->in2].unicode == 'i'
-			|| _encoding[l->in2].unicode == 'l'))
-		    score = CONVENTIONAL_F_LIGATURE_SCORE;
-		else if (score == CONVENTIONAL_F_LIGATURE_SCORE + BASIC_LATIN_LOWER_SCORE) {
-		    if (scores[l->in1] == CONVENTIONAL_F_LIGATURE_SCORE
-			&& (_encoding[l->in2].unicode == 'i'
-			    || _encoding[l->in2].unicode == 'l'))
-			score = CONVENTIONAL_F_F_LIGATURE_SCORE;
-		    else
-			score = 3 * BASIC_LATIN_LOWER_SCORE;
-		}
-		scores[l->out] = score;
-	    }
+	    if (scores[l->out] > score)
+                scores[l->out] = score, changed = true;
 	}
 
 	for (Code c = 0; c < _encoding.size(); c++)

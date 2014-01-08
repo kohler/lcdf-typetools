@@ -140,7 +140,7 @@ class Metrics { public:
 	Code built_in2;
 	int lookup_source;
 	enum { BUILT = 1, INTERMEDIATE = 2, CONTEXT_ONLY = 4, LIVE = 8,
-	       BASE_LIVE = 16, BASE_REP = 32 };
+	       BASE_LIVE = 16, BASE_REP = 32, IS_FF = 64 };
 	int flags;
 
 	Char()				: virtual_char(0) { clear(); }
