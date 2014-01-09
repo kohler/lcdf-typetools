@@ -38,6 +38,9 @@ kpsei_init(const char* argv0, const char* progname)
 #ifdef SELFAUTOPARENT
     putenv("SELFAUTOPARENT=" SELFAUTOPARENT);
 #endif
+#ifdef SELFAUTOGRANDPARENT
+    putenv("SELFAUTOGRANDPARENT=" SELFAUTOGRANDPARENT);
+#endif
 }
 
 char*
