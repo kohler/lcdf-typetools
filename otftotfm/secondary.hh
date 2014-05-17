@@ -92,6 +92,6 @@ bool char_bounds(int bounds[4], int &width, const FontInfo &,
 		 const Transform &, uint32_t uni);
 
 int char_one_bound(const FontInfo &, const Transform &,
-		   int dimen, bool max, int best, uint32_t uni, ...);
+		   int dimen, bool max, int best, int uni, ...);
 
 #endif

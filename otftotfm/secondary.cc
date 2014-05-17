@@ -686,7 +686,7 @@ char_bounds(int bounds[4], int &width, const FontInfo &finfo,
 
 int
 char_one_bound(const FontInfo &finfo, const Transform &transform,
-	       int dimen, bool max, int best, uint32_t uni, ...)
+	       int dimen, bool max, int best, int uni, ...)
 {
     int bounds[5];
     va_list val;
@@ -695,7 +695,7 @@ char_one_bound(const FontInfo &finfo, const Transform &transform,
 	if (char_bounds(bounds, bounds[4], finfo, transform, uni))
 	    if (max ? bounds[dimen] > best : bounds[dimen] < best)
 		best = bounds[dimen];
-	uni = va_arg(val, uint32_t);
+	uni = va_arg(val, int);
     }
     va_end(val);
     return best;
@@ -710,7 +710,7 @@ font_x_height(const FontInfo &finfo, const Transform &font_xform)
     } catch (Efont::OpenType::Bounds) {
 	// XXX what if 'x', 'm', 'z' were subject to substitution?
 	return char_one_bound(finfo, font_xform, 3, false, finfo.units_per_em(),
-			      'x', 'm', 'z', 0);
+			      (int) 'x', (int) 'm', (int) 'z', 0);
     }
 }
 
@@ -723,7 +723,7 @@ font_cap_height(const FontInfo &finfo, const Transform &font_xform)
     } catch (Efont::OpenType::Bounds) {
 	// XXX what if 'H', 'O', 'B' were subject to substitution?
 	return char_one_bound(finfo, font_xform, 3, false, finfo.units_per_em(),
-			      'H', 'O', 'B', 0);
+			      (int) 'H', (int) 'O', (int) 'B', 0);
     }
 }
 
@@ -737,6 +737,6 @@ font_ascender(const FontInfo &finfo, const Transform &font_xform)
 	// XXX what if 'd', 'l' were subject to substitution?
 	return char_one_bound(finfo, font_xform, 3, true,
 			      font_x_height(finfo, font_xform),
-			      'd', 'l', 0);
+			      (int) 'd', (int) 'l', 0);
     }
 }
