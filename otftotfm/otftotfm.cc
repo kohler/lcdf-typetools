@@ -1766,6 +1766,7 @@ main(int argc, char *argv[])
     const char *input_file = 0;
     Vector<String> glyphlist_files;
     bool literal_encoding = false;
+    bool have_encoding_file = false;
     Vector<String> ligkern;
     Vector<String> pos;
     Vector<String> unicoding;
@@ -1850,12 +1851,14 @@ main(int argc, char *argv[])
 	    if (encoding_file)
 		usage_error(errh, "encoding specified twice");
 	    encoding_file = clp->vstr;
+            have_encoding_file = true;
 	    break;
 
 	  case LITERAL_ENCODING_OPT:
 	    if (encoding_file)
 		usage_error(errh, "encoding specified twice");
 	    encoding_file = clp->vstr;
+            have_encoding_file = true;
 	    literal_encoding = true;
 	    break;
 
@@ -2159,10 +2162,7 @@ particular purpose.\n");
     // set up file names
     if (!input_file)
 	usage_error(errh, "no font filename provided");
-    if (!encoding_file) {
-	errh->warning("no encoding provided");
-	errh->message("(Use %<-e ENCODING%> to choose an encoding. %<-e texnansx%> often works,\nor say %<-e -%> to turn off this warning.)");
-    } else if (encoding_file == "-")
+    if (encoding_file == "-")
 	encoding_file = "";
 
     // set up feature filters
@@ -2235,8 +2235,18 @@ particular purpose.\n");
 	    else
 		errh->fatal("encoding %<%s%> not found", encoding_file.c_str());
 	} else {
+            String cff_data(otf.table("CFF"));
+            if (!cff_data)
+                errh->error("explicit encoding required for TrueType fonts");
+            else if (!have_encoding_file)
+                errh->warning("no encoding provided");
+            if (!cff_data || !have_encoding_file)
+                errh->message("(Use %<-e ENCODING%> to choose an encoding. %<-e texnansx%> often works,\nor say %<-e -%> to turn off this warning.)");
+            if (!cff_data)
+                exit(1);
+
 	    // use encoding from font
-	    Cff cff(otf.table("CFF"), &bail_errh);
+	    Cff cff(cff_data, &bail_errh);
 	    Cff::FontParent *font = cff.font(PermString(), &bail_errh);
 	    assert(cff.ok() && font->ok());
 	    if (Type1Encoding *t1e = font->type1_encoding()) {
