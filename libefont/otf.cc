@@ -25,13 +25,14 @@
 #include <algorithm>
 #include <efont/otfdata.hh>	// for ntohl()
 #include <efont/otfname.hh>
+#include <efont/ttfhead.hh>
 
 namespace Efont { namespace OpenType {
 
 Vector<PermString> debug_glyph_names;
 
-Font::Font(const String &s, ErrorHandler *errh)
-    : _str(s) {
+Font::Font(const String& s, ErrorHandler* errh)
+    : _str(s), _units_per_em(0) {
     _str.align(4);
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
 }
@@ -73,6 +74,10 @@ Font::parse_header(ErrorHandler *errh)
 	    return errh->error("tags out of order"), -EINVAL;
 	if (offset + length > (uint32_t) len)
 	    return errh->error("OTF data for %<%s%> out of range", Tag(tag).text().c_str()), -EFAULT;
+        if (Tag::head_tag() == tag) {
+            Head head(_str.substring(offset, length));
+            _units_per_em = head.units_per_em();
+        }
 	last_tag = tag;
     }
 

@@ -2,7 +2,7 @@
 
 /* t1bounds.{cc,hh} -- charstring bounding box finder
  *
- * Copyright (c) 1998-2012 Eddie Kohler
+ * Copyright (c) 1998-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -97,7 +97,7 @@ CharstringBounds::set_xf(const CharstringProgram *program)
 	_last_xf_program = program;
 	double matrix[6];
 	program->font_matrix(matrix);
-	Transform font_xf = Transform(matrix).scaled(1000);
+	Transform font_xf = Transform(matrix).scaled(program->units_per_em());
 	font_xf.check_null(0.001);
 	_xf = _nonfont_xf * font_xf;
     }
@@ -123,27 +123,28 @@ CharstringBounds::translate(double dx, double dy)
 }
 
 bool
-CharstringBounds::output(int bb[4], int &width, bool use_cur_width) const
+CharstringBounds::output(double bb[4], double& width, bool use_cur_width) const
 {
     if (!KNOWN(_lb.x))
 	bb[0] = bb[1] = bb[2] = bb[3] = 0;
     else {
-	bb[0] = (int) floor(_lb.x);
-	bb[1] = (int) floor(_lb.y);
-	bb[2] = (int) ceil(_rt.x);
-	bb[3] = (int) ceil(_rt.y);
+	bb[0] = _lb.x;
+	bb[1] = _lb.y;
+	bb[2] = _rt.x;
+	bb[3] = _rt.y;
     }
     Point p;
     if (use_cur_width)
 	p = _width * _xf;
     else
 	p = Point(0, 0) * _xf;
-    width = (int) ceil(p.x);
+    width = p.x;
     return error() >= 0;
 }
 
 bool
-CharstringBounds::bounds(const Transform &transform, const CharstringContext &g, int bb[4], int &width)
+CharstringBounds::bounds(const Transform& transform, const CharstringContext& g,
+                         double bb[4], double& width)
 {
     CharstringBounds b(transform);
     b.char_bounds(g, false);
@@ -151,7 +152,8 @@ CharstringBounds::bounds(const Transform &transform, const CharstringContext &g,
 }
 
 bool
-CharstringBounds::bounds(const CharstringContext &g, int bb[4], int &width)
+CharstringBounds::bounds(const CharstringContext &g,
+                         double bb[4], double& width)
 {
     CharstringBounds b;
     b.char_bounds(g, false);

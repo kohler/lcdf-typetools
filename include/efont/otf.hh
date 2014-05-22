@@ -18,8 +18,13 @@ class Tag {
     Tag(const String &name);
     // default destructor
 
+    static Tag head_tag()		{ return Tag(0x68656164U); }
+
+    typedef bool (Tag::*unspecified_bool_type)() const;
     bool null() const			{ return _tag == 0; }
-    operator bool() const		{ return _tag != 0; }
+    operator unspecified_bool_type() const {
+        return _tag != 0 ? &Tag::null : 0;
+    }
     bool valid() const;
 
     uint32_t value() const		{ return _tag; }
@@ -37,18 +42,24 @@ class Tag {
     uint32_t _tag;
 };
 
+inline hashcode_t hashcode(const Tag& t) {
+    return t.value();
+}
+
 class Font {
   public:
-    Font(const String&, ErrorHandler* = 0);
+    Font(const String& str, ErrorHandler* errh = 0);
     // default destructor
 
     bool ok() const			{ return _error >= 0; }
-    bool check_checksums(ErrorHandler * = 0) const;
+    bool check_checksums(ErrorHandler* errh = 0) const;
     int error() const			{ return _error; }
 
     const String& data_string() const	{ return _str; }
     const uint8_t* data() const		{ return _str.udata(); }
     int length() const			{ return _str.length(); }
+
+    unsigned units_per_em() const	{ return _units_per_em; }
 
     int ntables() const;
     bool has_table(Tag tag) const;
@@ -65,6 +76,7 @@ class Font {
   private:
     String _str;
     int _error;
+    unsigned _units_per_em;
 
     int parse_header(ErrorHandler*);
 };
@@ -355,9 +367,5 @@ inline bool GlyphSet::operator[](Glyph g) const {
 
 } // namespace Efont::OpenType
 } // namespace Efont
-
-inline hashcode_t hashcode(Efont::OpenType::Tag t) {
-    return t.value();
-}
 
 #endif

@@ -30,11 +30,13 @@ class CharstringBounds : public CharstringInterp { public:
     void clear();
     bool char_bounds(const CharstringContext&, bool shift = true);
     void translate(double dx, double dy);
-    inline Point transform(const Point &) const;
-    bool output(int bb[4], int& width, bool use_cur_width = false) const;
+    inline Point transform(const Point& p) const;
+    bool output(double bb[4], double& width, bool use_cur_width = false) const;
 
-    static bool bounds(const CharstringContext&, int bounds[4], int& width);
-    static bool bounds(const Transform&, const CharstringContext&, int bounds[4], int& width);
+    static bool bounds(const CharstringContext&,
+                       double bounds[4], double& width);
+    static bool bounds(const Transform&, const CharstringContext&,
+                       double bounds[4], double& width);
 
   private:
 

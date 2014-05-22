@@ -1,6 +1,6 @@
 /* otftotfm.cc -- driver for translating OpenType fonts to TeX metrics
  *
- * Copyright (c) 2003-2013 Eddie Kohler
+ * Copyright (c) 2003-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -511,29 +511,43 @@ lig_context_str(int ctx)
 
 static double max_printed_real;
 
-static void
-fprint_real(FILE *f, const char *prefix, double value, double du, const char *suffix = ")\n")
-{
-    if (du == 1.) {
-	fprintf(f, "%s R %g%s", prefix, value, suffix);
-	max_printed_real = std::max(max_printed_real, fabs(value));
-    } else {
-        fprintf(f, "%s R %.4f%s", prefix, value * du, suffix);
-	max_printed_real = std::max(max_printed_real, fabs(value * du));
+namespace {
+struct Printer {
+    Printer(FILE* f, unsigned design_units, unsigned units_per_em)
+        : f_(f), du_((double) design_units / units_per_em),
+          round_(design_units == 1000) {
     }
+    void print(const char* prefix, double value, const char* suffix = ")\n") const;
+    String render(double value) const;
+    FILE* f_;
+    double du_;
+    bool round_;
+};
+
+void Printer::print(const char* prefix, double value, const char* suffix) const {
+    value *= du_;
+    if (round_)
+        value = ceil(value);
+    if (round_ || value - floor(value) < 0.01)
+        fprintf(f_, "%s R %g%s", prefix, value, suffix);
+    else
+        fprintf(f_, "%s R %.4f%s", prefix, value, suffix);
+    max_printed_real = std::max(max_printed_real, fabs(value));
 }
 
-static String
-real_string(double value, double du)
-{
-    if (du == 1.)
+String Printer::render(double value) const {
+    value *= du_;
+    if (round_)
+        value = ceil(value);
+    if (round_ || value - floor(value) < 0.01)
 	return String(value);
     else {
 	char buf[128];
-        sprintf(buf, "%.4f", value * du);
+        sprintf(buf, "%.4f", value);
         return String(buf);
     }
 }
+} // namespace
 
 double
 font_slant(const FontInfo &finfo)
@@ -591,8 +605,8 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	font_xform.scale(extend, 1);
     if (slant)
 	font_xform.shear(slant);
-    int bounds[4], width;
-    double du = (design_units == metrics.units_per_em() ? 1. : design_units / (double) metrics.units_per_em());
+    double bounds[4], width;
+    Printer pr(f, design_units, metrics.units_per_em());
 
     double actual_slant = font_slant(finfo);
     if (actual_slant)
@@ -601,24 +615,24 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     if (char_bounds(bounds, width, finfo, font_xform, ' ')) {
 	// advance space width by letterspacing, scale by space_factor
 	double space_width = (width + (vpl ? letterspace : 0)) * space_factor;
-	fprint_real(f, "   (SPACE", space_width, du);
+	pr.print("   (SPACE", space_width);
 	if (finfo.is_fixed_pitch()) {
 	    // fixed-pitch: no space stretch or shrink
-	    fprint_real(f, "   (STRETCH", 0, du);
-	    fprint_real(f, "   (SHRINK", 0, du);
-	    fprint_real(f, "   (EXTRASPACE", space_width, du);
+	    pr.print("   (STRETCH", 0);
+	    pr.print("   (SHRINK", 0);
+	    pr.print("   (EXTRASPACE", space_width);
 	} else {
-	    fprint_real(f, "   (STRETCH", space_width / 2., du);
-	    fprint_real(f, "   (SHRINK", space_width / 3., du);
-	    fprint_real(f, "   (EXTRASPACE", space_width / 6., du);
+	    pr.print("   (STRETCH", space_width / 2.);
+	    pr.print("   (SHRINK", space_width / 3.);
+	    pr.print("   (EXTRASPACE", space_width / 6.);
 	}
     }
 
-    int xheight = font_x_height(finfo, font_xform);
-    if (xheight * du < 1000)
-	fprint_real(f, "   (XHEIGHT", xheight, du);
+    double xheight = font_x_height(finfo, font_xform);
+    if (xheight < finfo.units_per_em())
+	pr.print("   (XHEIGHT", xheight);
 
-    fprint_real(f, "   (QUAD", finfo.units_per_em(), du);
+    pr.print("   (QUAD", finfo.units_per_em());
     fprintf(f, "   )\n");
 
     if (boundary_char >= 0)
@@ -727,7 +741,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 			double this_kern = kern_amt[k2 - kern_code2.begin()];
 			if (fabs(this_kern) >= minimum_kern)
 			    kern_sa << "   (KRN " << glyph_ids[*k2]
-				    << " R " << real_string(this_kern, du)
+				    << " R " << pr.render(this_kern)
 				    << ')' << glyph_comments[*k2] << '\n';
 		    }
 		if (kern_sa) {
@@ -776,9 +790,9 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 		      if (vpl)
 			  boundser.translate(s->x + x, s->y + y);
 		      if (s->x + x)
-			  sa << "      (MOVERIGHT R " << real_string(s->x + x, du) << ")\n";
+			  sa << "      (MOVERIGHT R " << pr.render(s->x + x) << ")\n";
 		      if (s->y + y)
-			  sa << "      (MOVEUP R " << real_string(s->y + y, du) << ")\n";
+			  sa << "      (MOVEUP R " << pr.render(s->y + y) << ")\n";
 		      break;
 		  }
 
@@ -788,7 +802,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 			boundser.mark(Point(s->x, s->y));
 			boundser.translate(s->x, 0);
 		    }
-		    sa << "      (SETRULE R " << real_string(s->y, du) << " R " << real_string(s->x, du) << ")\n";
+		    sa << "      (SETRULE R " << pr.render(s->y) << " R " << pr.render(s->x) << ")\n";
 		    break;
 
 		  case Setting::FONT:
@@ -838,13 +852,13 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 
 	    // output information
 	    boundser.output(bounds, width);
-	    fprint_real(f, "   (CHARWD", width, du);
+	    pr.print("   (CHARWD", width);
 	    if (bounds[3] > 0)
-		fprint_real(f, "   (CHARHT", bounds[3], du);
+		pr.print("   (CHARHT", bounds[3]);
 	    if (bounds[1] < 0)
-		fprint_real(f, "   (CHARDP", -bounds[1], du);
+		pr.print("   (CHARDP", -bounds[1]);
 	    if (bounds[2] > width)
-		fprint_real(f, "   (CHARIC", bounds[2] - width, du);
+		pr.print("   (CHARIC", bounds[2] - width);
 	    if (vpl && (settings.size() > 1 || settings[0].op != Setting::SHOW))
 		fprintf(f, "   (MAP\n%s      )\n", sa.c_str());
 	    fprintf(f, "   )\n");
@@ -1464,22 +1478,24 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
 	font_xform.shear(slant);
     CharstringBounds boundser(font_xform);
 
-    int x_height = font_x_height(finfo, font_xform);
+    double x_height = font_x_height(finfo, font_xform);
     double slant = font_slant(finfo);
     int boundary_char = dvipsenc.boundary_char();
 
-    int bounds[4], width;
+    double bounds[4], width;
 
     for (int code = 0; code < metrics.encoding_size(); code++)
 	if (metrics.was_base_glyph(code) && code != boundary_char
 	    && char_bounds(bounds, width, finfo, font_xform, code)) {
-	    int left_sb = (bounds[0] < 0 ? -bounds[0] : 0);
+	    int left_sb = (bounds[0] < 0 ? (int) ceil(-bounds[0]) : 0);
 	    metrics.add_single_positioning(code, left_sb, 0, left_sb);
 
 	    if (skew_char >= 0 && code < 256) {
-		double virtual_height = (bounds[3] > x_height ? bounds[3] :x_height) - 0.5 * x_height;
-		int right_sb = (bounds[2] > width ? bounds[2] - width : 0);
-		int skew = (int)(slant * virtual_height + left_sb - right_sb);
+		double virtual_height =
+                    (bounds[3] > x_height ? bounds[3] : x_height)
+                    - 0.5 * x_height;
+		double right_sb = (bounds[2] > width ? bounds[2] - width : 0);
+		int skew = (int) (slant * virtual_height + left_sb - right_sb);
 		metrics.add_kern(code, skew_char, skew);
 	    }
 	}
@@ -2246,7 +2262,7 @@ particular purpose.\n");
                 exit(1);
 
 	    // use encoding from font
-	    Cff cff(cff_data, &bail_errh);
+	    Cff cff(cff_data, otf.units_per_em(), &bail_errh);
 	    Cff::FontParent *font = cff.font(PermString(), &bail_errh);
 	    assert(cff.ok() && font->ok());
 	    if (Type1Encoding *t1e = font->type1_encoding()) {

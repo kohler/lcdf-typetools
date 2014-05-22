@@ -2,7 +2,7 @@
 
 /* t1cs.{cc,hh} -- Type 1/2 charstrings
  *
- * Copyright (c) 1998-2012 Eddie Kohler
+ * Copyright (c) 1998-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -326,6 +326,11 @@ Type2Charstring::process(CharstringInterp &interp) const
 }
 
 
+CharstringProgram::CharstringProgram(unsigned units_per_em)
+    : _parent_program(false),
+      _units_per_em(units_per_em ? units_per_em : 1000) {
+}
+
 const CharstringProgram *
 CharstringProgram::child_program(int) const
 {
@@ -337,12 +342,6 @@ CharstringProgram::font_matrix(double matrix[6]) const
 {
     matrix[0] = matrix[3] = 0.001;
     matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
-}
-
-int
-CharstringProgram::units_per_em() const
-{
-    return 1000;
 }
 
 void

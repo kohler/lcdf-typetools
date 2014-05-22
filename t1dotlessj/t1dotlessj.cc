@@ -124,6 +124,8 @@ class Sectioner : public Type1CharstringGenInterp { public:
     Vector<String> _sections;
     Vector<int> _bounds;
 
+    void append_bounds();
+
 };
 
 Sectioner::Sectioner(int precision)
@@ -153,6 +155,15 @@ Sectioner::act_flex(int cmd, const Point &p0, const Point &p1, const Point &p2, 
     _boundser.act_flex(cmd, p0, p1, p2, p3_4, p5, p6, p7, flex_depth);
 }
 
+void Sectioner::append_bounds() {
+    double bb[5];
+    _boundser.output(bb, bb[4]);
+    _bounds.push_back((int) floor(bb[0]));
+    _bounds.push_back((int) floor(bb[1]));
+    _bounds.push_back((int) ceil(bb[2]));
+    _bounds.push_back((int) ceil(bb[3]));
+}
+
 void
 Sectioner::act_closepath(int cmd)
 {
@@ -160,9 +171,7 @@ Sectioner::act_closepath(int cmd)
     Type1Charstring result;
     Type1CharstringGenInterp::intermediate_output(result);
     _sections.push_back(result.data_string());
-    _bounds.resize(_bounds.size() + 4);
-    int width_crap;
-    _boundser.output(_bounds.end() - 4, width_crap);
+    append_bounds();
     _boundser.clear();
 }
 
@@ -173,9 +182,7 @@ Sectioner::run(const CharstringContext &g)
     Type1Charstring last_section;
     Type1CharstringGenInterp::run(g, last_section);
     _sections.push_back(last_section.data_string());
-    _bounds.resize(_bounds.size() + 4);
-    int width_crap;
-    _boundser.output(_bounds.end() - 4, width_crap);
+    append_bounds();
 }
 
 void

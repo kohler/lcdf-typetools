@@ -1,6 +1,6 @@
 /* otfinfo.cc -- driver for reporting information about OpenType fonts
  *
- * Copyright (c) 2003-2013 Eddie Kohler
+ * Copyright (c) 2003-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -427,7 +427,7 @@ do_query_glyphs(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *res
     int before_nerrors = errh->nerrors();
     try {
 	// get font
-	Cff cff(otf.table("CFF"), errh);
+	Cff cff(otf.table("CFF"), otf.units_per_em(), errh);
 	if (!cff.ok())
 	    throw OpenType::Error();
 

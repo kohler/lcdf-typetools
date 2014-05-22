@@ -2,7 +2,7 @@
 
 /* cff.{cc,hh} -- Compact Font Format fonts
  *
- * Copyright (c) 1998-2012 Eddie Kohler
+ * Copyright (c) 1998-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -332,7 +332,8 @@ default_dict()
     static Cff *cff;
     static Cff::Font *cfffont;
     if (!cfffont) {
-	cff = new Cff(String::make_stable((const char *) default_dict_cff_data, sizeof(default_dict_cff_data)), ErrorHandler::default_handler());
+	cff = new Cff(String::make_stable((const char *) default_dict_cff_data, sizeof(default_dict_cff_data)),
+                      0, ErrorHandler::default_handler());
 	cfffont = (Cff::Font *) cff->font();
     }
     return cfffont->top_dict();
@@ -342,9 +343,9 @@ default_dict()
 #define POS_GT(pos1, pos2)	((unsigned)(pos1) > (unsigned)(pos2))
 
 
-Cff::Cff(const String &s, ErrorHandler *errh)
+Cff::Cff(const String& s, unsigned units_per_em, ErrorHandler* errh)
     : _data_string(s), _data(reinterpret_cast<const uint8_t *>(_data_string.data())), _len(_data_string.length()),
-      _strings_map(-2)
+      _strings_map(-2), _units_per_em(units_per_em)
 {
     static_assert((sizeof(standard_strings) / sizeof(standard_strings[0])) == NSTANDARD_STRINGS,
                   "NSTANDARD_STRINGS defined incorrectly");
@@ -1203,8 +1204,8 @@ handle_private(Cff *cff, const Cff::Dict &top_dict, Cff::Dict &private_dict,
 }
 
 
-Cff::FontParent::FontParent(Cff *cff)
-    : _cff(cff), _error(-1)
+Cff::FontParent::FontParent(Cff* cff)
+    : CharstringProgram(cff->units_per_em()), _cff(cff), _error(-1)
 {
 }
 

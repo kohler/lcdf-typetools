@@ -11,8 +11,6 @@ class TrueTypeBoundsCharstringProgram : public CharstringProgram { public:
     TrueTypeBoundsCharstringProgram(const OpenType::Font *);
     ~TrueTypeBoundsCharstringProgram();
 
-    int units_per_em() const;
-
     int nglyphs() const;
     Charstring *glyph(int gi) const;
     PermString glyph_name(int gi) const;
@@ -24,7 +22,6 @@ class TrueTypeBoundsCharstringProgram : public CharstringProgram { public:
     int _nglyphs;
     int _nhmtx;
     bool _loca_long;
-    int _units_per_em;
     OpenType::Data _loca;
     OpenType::Data _glyf;
     OpenType::Data _hmtx;

@@ -67,7 +67,7 @@ class Data {
 
     operator const String&() const	{ return _str; }
 
-    operator bool() const		{ return _str; }
+    operator String::unspecified_bool_type() const { return _str; }
     const uint8_t *udata() const	{ return _str.udata(); }
     int length() const			{ return _str.length(); }
 

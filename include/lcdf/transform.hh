@@ -24,7 +24,7 @@ class Transform { public:
     void translate(double, double);
     void translate(const Point &p)		{ translate(p.x, p.y); }
     void shear(double);
-    inline void transform(const Transform &);
+    Transform& operator*=(const Transform& x);
 
     inline Transform scaled(double, double) const;
     Transform scaled(const Point &p) const	{ return scaled(p.x, p.y); }
@@ -33,7 +33,6 @@ class Transform { public:
     inline Transform translated(double, double) const;
     inline Transform translated(const Point &p) const;
     inline Transform sheared(double) const;
-    Transform transformed(const Transform &) const;
 
     // Transform operator+(Transform, const Point &);
     // Transform &operator+=(Transform &, const Point &);
@@ -119,29 +118,12 @@ operator*=(Transform &t, double scale)
     return t;
 }
 
-inline Transform
-operator*(Transform t, double scale)
-{
+inline Transform operator*(Transform t, double scale) {
     return t *= scale;
 }
 
-inline Transform
-operator*(const Transform &t, const Transform &tt)
-{
-    return t.transformed(tt);
-}
-
-inline Transform &
-operator*=(Transform &t, const Transform &tt)
-{
-    t = t.transformed(tt);
-    return t;
-}
-
-inline void
-Transform::transform(const Transform &t)
-{
-    *this *= t;
+inline Transform operator*(Transform a, const Transform& b) {
+    return a *= b;
 }
 
 

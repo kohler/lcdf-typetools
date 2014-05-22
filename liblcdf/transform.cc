@@ -2,7 +2,7 @@
 
 /* transform.{cc,hh} -- planar affine transformations
  *
- * Copyright (c) 2000-2012 Eddie Kohler
+ * Copyright (c) 2000-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -105,15 +105,22 @@ Transform::shear(double s)
     *this *= Transform(1, 0, s, 1, 0, 0);
 }
 
-Transform
-Transform::transformed(const Transform &t) const
-{
-    return Transform(_m[0] * t._m[0] + _m[2] * t._m[1],
-		     _m[1] * t._m[0] + _m[3] * t._m[1],
-		     _m[0] * t._m[2] + _m[2] * t._m[3],
-		     _m[1] * t._m[2] + _m[3] * t._m[3],
-		     _m[0] * t._m[4] + _m[2] * t._m[5] + _m[4],
-		     _m[1] * t._m[4] + _m[3] * t._m[5] + _m[5]);
+Transform& Transform::operator*=(const Transform& x) {
+    if (x.null())
+        /* do nothing */;
+    else if (null())
+        memcpy(_m, x._m, sizeof(_m));
+    else {
+        double m[6];
+        m[0] = _m[0] * x._m[0] + _m[2] * x._m[1];
+        m[1] = _m[1] * x._m[0] + _m[3] * x._m[1];
+        m[2] = _m[0] * x._m[2] + _m[2] * x._m[3];
+        m[3] = _m[1] * x._m[2] + _m[3] * x._m[3];
+        m[4] = _m[0] * x._m[4] + _m[2] * x._m[5] + _m[4];
+        m[5] = _m[1] * x._m[4] + _m[3] * x._m[5] + _m[5];
+        memcpy(_m, m, sizeof(_m));
+    }
+    return *this;
 }
 
 

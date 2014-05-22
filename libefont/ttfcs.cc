@@ -2,7 +2,7 @@
 
 /* ttfcs.{cc,hh} -- TrueType "charstring" emulation
  *
- * Copyright (c) 2006-2012 Eddie Kohler
+ * Copyright (c) 2006-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -24,8 +24,9 @@
 #include <lcdf/hashmap.hh>
 namespace Efont {
 
-TrueTypeBoundsCharstringProgram::TrueTypeBoundsCharstringProgram(const OpenType::Font *otf)
-    : _otf(otf), _nglyphs(-1), _loca_long(false), _units_per_em(1024),
+TrueTypeBoundsCharstringProgram::TrueTypeBoundsCharstringProgram(const OpenType::Font* otf)
+    : CharstringProgram(otf->units_per_em()),
+      _otf(otf), _nglyphs(-1), _loca_long(false),
       _loca(otf->table("loca")), _glyf(otf->table("glyf")),
       _hmtx(otf->table("hmtx")), _got_glyph_names(false), _got_unicodes(false)
 {
@@ -34,10 +35,8 @@ TrueTypeBoundsCharstringProgram::TrueTypeBoundsCharstringProgram(const OpenType:
 	_nglyphs = maxp.u16(4);
 
     OpenType::Head head(otf->table("head"), 0);
-    if (head.ok()) {
+    if (head.ok())
 	_loca_long = head.index_to_loc_format() != 0;
-	_units_per_em = head.units_per_em();
-    }
     if (_loca_long)
 	_loca.align_long();
     int loca_onesize = (_loca_long ? 4 : 2);
@@ -75,12 +74,6 @@ TrueTypeBoundsCharstringProgram::~TrueTypeBoundsCharstringProgram()
 {
     for (Charstring **cs = _charstrings.begin(); cs < _charstrings.end(); cs++)
 	delete *cs;
-}
-
-int
-TrueTypeBoundsCharstringProgram::units_per_em() const
-{
-    return _units_per_em;
 }
 
 int

@@ -2,7 +2,7 @@
 
 /* t1font.{cc,hh} -- Type 1 font
  *
- * Copyright (c) 1998-2012 Eddie Kohler
+ * Copyright (c) 1998-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,7 +31,8 @@ static PermString lenIV_str = "lenIV";
 static PermString FontInfo_str = "FontInfo";
 
 Type1Font::Type1Font(PermString name)
-    : _cached_defs(false), _built(true), _font_name(name), _glyph_map(-1),
+    : CharstringProgram(1000),
+      _cached_defs(false), _built(true), _font_name(name), _glyph_map(-1),
       _encoding(0), _cached_mmspace(0), _mmspace(0), _synthetic_item(0)
 {
     _dict = new HashMap<PermString, Type1Definition *>[dLast];
@@ -43,7 +44,8 @@ Type1Font::Type1Font(PermString name)
 }
 
 Type1Font::Type1Font(Type1Reader &reader)
-    : _cached_defs(false), _built(false), _glyph_map(-1), _encoding(0),
+    : CharstringProgram(1000),
+      _cached_defs(false), _built(false), _glyph_map(-1), _encoding(0),
       _cached_mmspace(0), _mmspace(0), _synthetic_item(0)
 {
     _dict = new HashMap<PermString, Type1Definition *>[dLast];

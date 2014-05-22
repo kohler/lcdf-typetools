@@ -2,7 +2,7 @@
 
 /* t1mm.{cc,hh} -- Type 1 multiple master font information
  *
- * Copyright (c) 1998-2012 Eddie Kohler
+ * Copyright (c) 1998-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -25,7 +25,8 @@
 namespace Efont {
 
 MultipleMasterSpace::MultipleMasterSpace(PermString fn, int na, int nm)
-    : _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),
+    : CharstringProgram(1000),
+      _ok(false), _font_name(fn), _naxes(na), _nmasters(nm),
       _axis_types(na, PermString()), _axis_labels(na, PermString()),
       _design_vector(0), _norm_design_vector(0), _weight_vector(0)
 {

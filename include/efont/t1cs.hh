@@ -138,7 +138,7 @@ class Type1Charstring : public Charstring { public:
 
     inline const uint8_t *data() const;
     int length() const				{ return _s.length(); }
-    operator bool() const			{ return _s.length() != 0; }
+    operator String::unspecified_bool_type() const { return _s; }
 
     inline const String &data_string() const;
     inline String substring(int pos, int len) const;
@@ -184,7 +184,9 @@ struct CharstringContext {
 
     CharstringContext(const CharstringProgram *program_, const Charstring *cs_) : program(program_), cs(cs_) { }
 
-    operator bool() const			{ return cs != 0; }
+    operator String::unspecified_bool_type() const {
+        return cs != 0 ? &String::length : 0;
+    }
 
     const CharstringProgram *program;
     const Charstring *cs;
@@ -194,12 +196,12 @@ struct CharstringContext {
 
 class CharstringProgram { public:
 
-    CharstringProgram()				: _parent_program(false) { }
+    explicit CharstringProgram(unsigned units_per_em);
     virtual ~CharstringProgram()		{ }
 
     virtual PermString font_name() const	{ return PermString(); }
     virtual void font_matrix(double[6]) const;
-    virtual int units_per_em() const;
+    unsigned units_per_em() const		{ return _units_per_em; }
 
     inline const CharstringProgram *program(int) const;
     virtual const CharstringProgram *child_program(int) const;
@@ -239,6 +241,7 @@ class CharstringProgram { public:
   private:
 
     bool _parent_program;
+    uint16_t _units_per_em;
 
 };
 

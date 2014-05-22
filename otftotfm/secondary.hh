@@ -88,10 +88,10 @@ class T1Secondary : public Secondary { public:
     int dotlessj_font(Metrics &, ErrorHandler *, Glyph &dj_glyph);
 };
 
-bool char_bounds(int bounds[4], int &width, const FontInfo &,
+bool char_bounds(double bounds[4], double& width, const FontInfo &,
 		 const Transform &, uint32_t uni);
 
-int char_one_bound(const FontInfo &, const Transform &,
-		   int dimen, bool max, int best, int uni, ...);
+double char_one_bound(const FontInfo &, const Transform &,
+                      int dimen, bool max, double best, int uni, ...);
 
 #endif

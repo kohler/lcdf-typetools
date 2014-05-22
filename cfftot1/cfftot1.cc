@@ -1,6 +1,6 @@
 /* cfftot1.cc -- driver for translating CFF fonts to Type 1 fonts
  *
- * Copyright (c) 2002-2013 Eddie Kohler
+ * Copyright (c) 2002-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -143,10 +143,14 @@ do_file(const char *infn, const char *outfn, PermString name, ErrorHandler *errh
     ContextErrorHandler cerrh(errh, "While processing %s:", infn);
     cerrh.set_indent(0);
     String data = sa.take_string();
-    if (c == 'O')
-	data = Efont::OpenType::Font(data, &cerrh).table("CFF");
+    unsigned units_per_em = 0;
+    if (c == 'O') {
+        Efont::OpenType::Font font(data, &cerrh);
+	data = font.table("CFF");
+        units_per_em = font.units_per_em();
+    }
 
-    Cff *cff = new Cff(data, &cerrh);
+    Cff *cff = new Cff(data, units_per_em, &cerrh);
     Cff::FontParent *fp = cff->font(name, &cerrh);
     if (errh->nerrors() == 0
 	&& !(font = dynamic_cast<Cff::Font *>(fp)))

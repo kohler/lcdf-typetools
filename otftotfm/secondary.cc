@@ -1,6 +1,6 @@
 /* secondary.{cc,hh} -- code for generating fake glyphs
  *
- * Copyright (c) 2003-2012 Eddie Kohler
+ * Copyright (c) 2003-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -95,7 +95,7 @@ FontInfo::FontInfo(const Efont::OpenType::Font *otf_, ErrorHandler *errh)
     assert(cmap->ok());
 
     if (String cff_string = otf->table("CFF")) {
-	cff_file = new Efont::Cff(cff_string, errh);
+	cff_file = new Efont::Cff(cff_string, otf->units_per_em(), errh);
 	if (!cff_file->ok())
 	    return;
 	Efont::Cff::FontParent *fp = cff_file->font(PermString(), errh);
@@ -271,12 +271,12 @@ T1Secondary::T1Secondary(const FontInfo &finfo, const String &font_name,
 			 const String &otf_file_name)
     : _finfo(finfo), _font_name(font_name), _otf_file_name(otf_file_name),
       _units_per_em(finfo.units_per_em()),
-      _xheight(font_x_height(finfo, Transform())),
+      _xheight((int) ceil(font_x_height(finfo, Transform()))),
       _spacewidth(_units_per_em)
 {
-    int bounds[4], width;
+    double bounds[4], width;
     if (char_bounds(bounds, width, finfo, Transform(), ' '))
-	_spacewidth = width;
+	_spacewidth = (int) ceil(width);
 }
 
 int
@@ -565,12 +565,12 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	break;
 
       case U_ASTERISKMATH: {
-	  int bounds[5];
+	  double bounds[5];
 	  double dropdown = 0;
 	  if (char_bounds(bounds, bounds[4], _finfo, xform, '*'))
-	      dropdown += std::max(bounds[3], 0) + std::min(bounds[1], 0);
+	      dropdown += std::max(bounds[3], 0.) + std::min(bounds[1], 0.);
 	  if (char_bounds(bounds, bounds[4], _finfo, xform, '('))
-	      dropdown -= std::max(bounds[3], 0) + std::min(bounds[1], 0);
+	      dropdown -= std::max(bounds[3], 0.) + std::min(bounds[1], 0.);
 	  v.push_back(Setting(Setting::MOVE, 0, (int) (-dropdown / 2)));
 	  if (char_setting(v, metrics, '*', 0)) {
 	      v.push_back(Setting(Setting::MOVE, 0, -(int) (-dropdown / 2)));
@@ -675,7 +675,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 
 
 bool
-char_bounds(int bounds[4], int &width, const FontInfo &finfo,
+char_bounds(double bounds[4], double& width, const FontInfo &finfo,
 	    const Transform &transform, uint32_t uni)
 {
     if (Efont::OpenType::Glyph g = finfo.cmap->map_uni(uni))
@@ -684,11 +684,11 @@ char_bounds(int bounds[4], int &width, const FontInfo &finfo,
 	return false;
 }
 
-int
+double
 char_one_bound(const FontInfo &finfo, const Transform &transform,
-	       int dimen, bool max, int best, int uni, ...)
+	       int dimen, bool max, double best, int uni, ...)
 {
-    int bounds[5];
+    double bounds[5];
     va_list val;
     va_start(val, uni);
     while (uni != 0) {
@@ -701,7 +701,7 @@ char_one_bound(const FontInfo &finfo, const Transform &transform,
     return best;
 }
 
-int
+double
 font_x_height(const FontInfo &finfo, const Transform &font_xform)
 {
     try {
@@ -714,7 +714,7 @@ font_x_height(const FontInfo &finfo, const Transform &font_xform)
     }
 }
 
-int
+double
 font_cap_height(const FontInfo &finfo, const Transform &font_xform)
 {
     try {
@@ -727,7 +727,7 @@ font_cap_height(const FontInfo &finfo, const Transform &font_xform)
     }
 }
 
-int
+double
 font_ascender(const FontInfo &finfo, const Transform &font_xform)
 {
     try {

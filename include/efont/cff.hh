@@ -18,7 +18,8 @@ class Cff { public:
     class CIDFont;
     class ChildFont;
 
-    Cff(const String &, ErrorHandler * = 0);
+    explicit Cff(const String& str, unsigned units_per_em,
+                 ErrorHandler* errh = 0);
     ~Cff();
 
     bool ok() const			{ return _error >= 0; }
@@ -40,6 +41,8 @@ class Cff { public:
 
     int ngsubrs() const			{ return _gsubrs_index.nitems(); }
     Charstring *gsubr(int i);
+
+    unsigned units_per_em() const	{ return _units_per_em; }
 
     enum DictOperator {
 	oVersion = 0, oNotice = 1, oFullName = 2, oFamilyName = 3,
@@ -80,8 +83,11 @@ class Cff { public:
 
 	int error() const	{ return (_offsize < 0 ? _offsize : 0); }
 
+        typedef bool (IndexIterator::*unspecified_bool_type)() const;
 	bool live() const	{ return _offset < _last_offset; }
-	operator bool() const	{ return live(); }
+	operator unspecified_bool_type() const {
+            return live() ? &IndexIterator::live : 0;
+        }
 	int nitems() const;
 
 	inline const uint8_t *operator*() const;
@@ -120,6 +126,8 @@ class Cff { public:
 
     IndexIterator _gsubrs_index;
     Vector<Charstring *> _gsubrs_cs;
+
+    unsigned _units_per_em;
 
     int parse_header(ErrorHandler *);
     int font_offset(int, int &, int &) const;
@@ -215,7 +223,7 @@ class Cff::FDSelect { public:
 
 class Cff::FontParent : public CharstringProgram { public:
 
-    FontParent(Cff *);
+    FontParent(Cff* cff);
 
     bool ok() const			{ return _error >= 0; }
     int error() const			{ return _error; }
@@ -227,7 +235,7 @@ class Cff::FontParent : public CharstringProgram { public:
 
   private:
 
-    Cff *_cff;
+    Cff* _cff;
     int _charstring_type;
     int _error;
 
@@ -244,7 +252,7 @@ class Cff::FontParent : public CharstringProgram { public:
 
 class Cff::CIDFont : public Cff::FontParent { public:
 
-    CIDFont(Cff *, PermString, const Dict &, ErrorHandler *);
+    CIDFont(Cff* cff, PermString, const Dict &, ErrorHandler *);
     ~CIDFont();
 
     PermString font_name() const	{ return _font_name; }
@@ -285,7 +293,7 @@ class Cff::CIDFont : public Cff::FontParent { public:
 
 class Cff::ChildFont : public Cff::FontParent { public:
 
-    ChildFont(Cff *, Cff::CIDFont *, int charstring_type, const Dict &, ErrorHandler * = 0);
+    ChildFont(Cff* cff, Cff::CIDFont *, int charstring_type, const Dict &, ErrorHandler * = 0);
     ~ChildFont();
 
     bool ok() const			{ return _error >= 0; }
@@ -333,7 +341,7 @@ class Cff::ChildFont : public Cff::FontParent { public:
 
 class Cff::Font : public Cff::ChildFont { public:
 
-    Font(Cff *, PermString, const Dict &, ErrorHandler *);
+    Font(Cff* cff, PermString, const Dict &, ErrorHandler *);
     ~Font();
 
     PermString font_name() const	{ return _font_name; }
