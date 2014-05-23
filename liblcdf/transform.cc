@@ -99,6 +99,14 @@ Transform::translate(double x, double y)
 	_null = false;
 }
 
+void Transform::raw_translate(double x, double y) {
+    _m[4] += x;
+    _m[5] += y;
+
+    if (x != 0 || y != 0)
+        _null = false;
+}
+
 void
 Transform::shear(double s)
 {

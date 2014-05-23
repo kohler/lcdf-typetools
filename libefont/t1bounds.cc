@@ -29,7 +29,7 @@ CharstringBounds::CharstringBounds()
 {
 }
 
-CharstringBounds::CharstringBounds(const Transform &nonfont_xf)
+CharstringBounds::CharstringBounds(const Transform& nonfont_xf)
     : _lb(UNKDOUBLE, UNKDOUBLE), _rt(UNKDOUBLE, UNKDOUBLE),
       _nonfont_xf(nonfont_xf), _last_xf_program(0)
 {
@@ -46,6 +46,7 @@ void
 CharstringBounds::clear()
 {
     _lb = _rt = Point(UNKDOUBLE, UNKDOUBLE);
+    _width = Point(0, 0);
 }
 
 void
@@ -63,7 +64,7 @@ CharstringBounds::xf_mark(const Bezier &b)
 void
 CharstringBounds::act_width(int, const Point &w)
 {
-    _width = w;
+    _width = w * _xf;
 }
 
 void
@@ -109,8 +110,9 @@ CharstringBounds::char_bounds(const CharstringContext &g, bool shift)
     set_xf(g.program);
     CharstringInterp::interpret(g);
     if (shift) {
-	_xf.translate(_width);
-	_nonfont_xf.translate(_width);
+	_xf.raw_translate(_width);
+	_nonfont_xf.raw_translate(_width);
+        _width = Point(0, 0);
     }
     return error() >= 0;
 }
@@ -133,12 +135,12 @@ CharstringBounds::output(double bb[4], double& width, bool use_cur_width) const
 	bb[2] = _rt.x;
 	bb[3] = _rt.y;
     }
-    Point p;
     if (use_cur_width)
-	p = _width * _xf;
-    else
-	p = Point(0, 0) * _xf;
-    width = p.x;
+	width = _width.x;
+    else {
+	Point p = Point(0, 0) * _xf;
+        width = p.x;
+    }
     return error() >= 0;
 }
 

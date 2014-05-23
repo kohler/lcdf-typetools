@@ -23,6 +23,8 @@ class Transform { public:
     void rotate(double);
     void translate(double, double);
     void translate(const Point &p)		{ translate(p.x, p.y); }
+    void raw_translate(double, double);
+    void raw_translate(const Point& p)		{ raw_translate(p.x, p.y); }
     void shear(double);
     Transform& operator*=(const Transform& x);
 
