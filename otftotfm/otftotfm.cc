@@ -517,28 +517,36 @@ struct Printer {
         : f_(f), du_((double) design_units / units_per_em),
           round_(design_units == 1000) {
     }
-    void print(const char* prefix, double value, const char* suffix = ")\n") const;
+    inline double transform(double value) const;
+    void print_transformed(const char* prefix, double value) const;
+    void print(const char* prefix, double value) const;
     String render(double value) const;
     FILE* f_;
     double du_;
     bool round_;
 };
 
-void Printer::print(const char* prefix, double value, const char* suffix) const {
+inline double Printer::transform(double value) const {
     value *= du_;
     if (round_)
         value = ceil(value);
+    return value;
+}
+
+void Printer::print_transformed(const char* prefix, double value) const {
     if (round_ || value - floor(value) < 0.01)
-        fprintf(f_, "%s R %g%s", prefix, value, suffix);
+        fprintf(f_, "%s R %g)\n", prefix, value);
     else
-        fprintf(f_, "%s R %.4f%s", prefix, value, suffix);
+        fprintf(f_, "%s R %.4f)\n", prefix, value);
     max_printed_real = std::max(max_printed_real, fabs(value));
 }
 
+void Printer::print(const char* prefix, double value) const {
+    print_transformed(prefix, transform(value));
+}
+
 String Printer::render(double value) const {
-    value *= du_;
-    if (round_)
-        value = ceil(value);
+    value = transform(value);
     if (round_ || value - floor(value) < 0.01)
 	return String(value);
     else {
@@ -858,7 +866,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	    if (bounds[1] < 0)
 		pr.print("   (CHARDP", -bounds[1]);
 	    if (bounds[2] > width)
-		pr.print("   (CHARIC", bounds[2] - width);
+		pr.print_transformed("   (CHARIC", pr.transform(bounds[2]) - pr.transform(width));
 	    if (vpl && (settings.size() > 1 || settings[0].op != Setting::SHOW))
 		fprintf(f, "   (MAP\n%s      )\n", sa.c_str());
 	    fprintf(f, "   )\n");
