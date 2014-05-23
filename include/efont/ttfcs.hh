@@ -11,6 +11,8 @@ class TrueTypeBoundsCharstringProgram : public CharstringProgram { public:
     TrueTypeBoundsCharstringProgram(const OpenType::Font *);
     ~TrueTypeBoundsCharstringProgram();
 
+    void font_matrix(double[6]) const;
+
     int nglyphs() const;
     Charstring *glyph(int gi) const;
     PermString glyph_name(int gi) const;

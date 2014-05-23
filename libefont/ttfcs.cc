@@ -76,6 +76,11 @@ TrueTypeBoundsCharstringProgram::~TrueTypeBoundsCharstringProgram()
 	delete *cs;
 }
 
+void TrueTypeBoundsCharstringProgram::font_matrix(double matrix[6]) const {
+    matrix[0] = matrix[3] = 1.0 / _otf->units_per_em();
+    matrix[1] = matrix[2] = matrix[4] = matrix[5] = 0;
+}
+
 int
 TrueTypeBoundsCharstringProgram::nglyphs() const
 {
