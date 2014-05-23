@@ -89,7 +89,7 @@ enum {
 FontInfo::FontInfo(const Efont::OpenType::Font *otf_, ErrorHandler *errh)
     : otf(otf_), cmap(0), cff_file(0), cff(0), post(0), name(0), _nglyphs(-1),
       _got_glyph_names(false), _ttb_program(0), _override_is_fixed_pitch(false),
-      _override_italic_angle(false)
+      _override_italic_angle(false), _override_x_height(x_height_auto)
 {
     cmap = new Efont::OpenType::Cmap(otf->table("cmap"), errh);
     assert(cmap->ok());
@@ -219,6 +219,34 @@ FontInfo::italic_angle() const
 	return post->italic_angle();
 }
 
+double FontInfo::x_height(const Transform& font_xform) const {
+    if (_override_x_height == x_height_explicit)
+        return _x_height;
+    double x1 = -1, x2 = -1;
+    if (_override_x_height != x_height_os2)
+	// XXX what if 'x', 'm', 'z' were subject to substitution?
+	x1 = char_one_bound(*this, font_xform, 3, false, units_per_em(),
+                            (int) 'x', (int) 'm', (int) 'z', 0);
+    if (_override_x_height != x_height_x)
+        try {
+            Efont::OpenType::Os2 os2(otf->table("OS/2"));
+            x2 = os2.x_height();
+        } catch (Efont::OpenType::Bounds) {
+        }
+    static bool warned = false;
+    if (_override_x_height == x_height_auto && x1 >= 0 && x2 >= 0
+        && fabs(x1 - x2) > units_per_em() / 200) {
+        if (!warned) {
+            ErrorHandler* errh = ErrorHandler::default_handler();
+            errh->warning("font x-height and height of %<x%> differ by %d%%", (int) (fabs(x1 - x2) * 100 / units_per_em()));
+            errh->message("(The height of %<x%> is usually more reliable than the x-height, so I%,m\nusing that. Or try --use-x-height or --no-use-x-height.)\n");
+            warned = true;
+        }
+        return x1;
+    } else
+        return x2 >= 0 ? x2 : x1;
+}
+
 
 /* */
 
@@ -271,7 +299,7 @@ T1Secondary::T1Secondary(const FontInfo &finfo, const String &font_name,
 			 const String &otf_file_name)
     : _finfo(finfo), _font_name(font_name), _otf_file_name(otf_file_name),
       _units_per_em(finfo.units_per_em()),
-      _xheight((int) ceil(font_x_height(finfo, Transform()))),
+      _xheight((int) ceil(finfo.x_height(Transform()))),
       _spacewidth(_units_per_em)
 {
     double bounds[4], width;
@@ -707,19 +735,6 @@ char_one_bound(const FontInfo &finfo, const Transform &transform,
 }
 
 double
-font_x_height(const FontInfo &finfo, const Transform &font_xform)
-{
-    try {
-	Efont::OpenType::Os2 os2(finfo.otf->table("OS/2"));
-	return os2.x_height();
-    } catch (Efont::OpenType::Bounds) {
-	// XXX what if 'x', 'm', 'z' were subject to substitution?
-	return char_one_bound(finfo, font_xform, 3, false, finfo.units_per_em(),
-			      (int) 'x', (int) 'm', (int) 'z', 0);
-    }
-}
-
-double
 font_cap_height(const FontInfo &finfo, const Transform &font_xform)
 {
     try {
@@ -741,7 +756,7 @@ font_ascender(const FontInfo &finfo, const Transform &font_xform)
     } catch (Efont::OpenType::Bounds) {
 	// XXX what if 'd', 'l' were subject to substitution?
 	return char_one_bound(finfo, font_xform, 3, true,
-			      font_x_height(finfo, font_xform),
+			      finfo.x_height(font_xform),
 			      (int) 'd', (int) 'l', 0);
     }
 }

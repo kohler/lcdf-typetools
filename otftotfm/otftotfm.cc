@@ -106,6 +106,7 @@ using namespace Efont;
 #define FIXED_PITCH_OPT		342
 #define ITALIC_ANGLE_OPT	343
 #define PROPORTIONAL_WIDTH_OPT	344
+#define X_HEIGHT_OPT		345
 
 #define AUTOMATIC_OPT		350
 #define FONT_NAME_OPT		351
@@ -188,6 +189,7 @@ static Clp_Option options[] = {
     { "fixed-width", 0, FIXED_PITCH_OPT, 0, Clp_Negate },
     { "proportional-width", 0, PROPORTIONAL_WIDTH_OPT, 0, Clp_Negate },
     { "italic-angle", 0, ITALIC_ANGLE_OPT, Clp_ValDouble, 0 },
+    { "x-height", 0, X_HEIGHT_OPT, Clp_ValString, 0 },
 
     { "pl", 'p', PL_OPT, 0, 0 },
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
@@ -275,6 +277,8 @@ static bool override_is_fixed_pitch = false;
 static bool is_fixed_pitch;
 static bool override_italic_angle = false;
 static double italic_angle;
+static int override_x_height = FontInfo::x_height_auto;
+static double x_height;
 
 static String out_encoding_file;
 static String out_encoding_name;
@@ -335,6 +339,7 @@ Font feature and transformation options:\n\
       --design-size=SIZE       Set font design size to SIZE.\n\
       --fixed-width            Set fixed width (no space stretch).\n\
       --italic-angle=ANGLE     Set font italic angle (for positioning accents).\n\
+      --x-height=AMT           Set x-height to AMT units.\n\
 \n");
     uerrh.message("\
 Encoding options:\n\
@@ -636,9 +641,9 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 	}
     }
 
-    double xheight = font_x_height(finfo, font_xform);
-    if (xheight < finfo.units_per_em())
-	pr.print("   (XHEIGHT", xheight);
+    double x_height = finfo.x_height(font_xform);
+    if (x_height < finfo.units_per_em())
+	pr.print("   (XHEIGHT", x_height);
 
     pr.print("   (QUAD", finfo.units_per_em());
     fprintf(f, "   )\n");
@@ -1486,7 +1491,7 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
 	font_xform.shear(slant);
     CharstringBounds boundser(font_xform);
 
-    double x_height = font_x_height(finfo, font_xform);
+    double x_height = finfo.x_height(font_xform);
     double slant = font_slant(finfo);
     int boundary_char = dvipsenc.boundary_char();
 
@@ -1523,6 +1528,8 @@ do_file(const String &otf_filename, const OpenType::Font &otf,
 	finfo.set_is_fixed_pitch(is_fixed_pitch);
     if (override_italic_angle)
 	finfo.set_italic_angle(italic_angle);
+    if (override_x_height != FontInfo::x_height_auto)
+        finfo.set_x_height(override_x_height, x_height);
 
     // save glyph names
     Vector<PermString> glyph_names;
@@ -2142,9 +2149,26 @@ main(int argc, char *argv[])
 #endif
 	    break;
 
+        case X_HEIGHT_OPT: {
+            char* ends;
+            if (strcmp(clp->vstr, "auto") == 0)
+                override_x_height = FontInfo::x_height_auto;
+            else if (strcmp(clp->vstr, "x") == 0)
+                override_x_height = FontInfo::x_height_x;
+            else if (strcmp(clp->vstr, "font") == 0
+                     || strcmp(clp->vstr, "os/2") == 0)
+                override_x_height = FontInfo::x_height_os2;
+            else if ((x_height = strtod(clp->vstr, &ends)) >= 0
+                     && *ends == 0 && *clp->vstr != 0)
+                override_x_height = FontInfo::x_height_explicit;
+            else
+		usage_error(errh, "bad --x-height option");
+            break;
+        }
+
 	  case VERSION_OPT:
 	    printf("otftotfm (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2002-2013 Eddie Kohler\n\
+	    printf("Copyright (C) 2002-2014 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

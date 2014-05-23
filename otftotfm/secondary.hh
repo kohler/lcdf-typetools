@@ -33,6 +33,7 @@ struct FontInfo {
 
     bool is_fixed_pitch() const;
     double italic_angle() const;
+    double x_height(const Transform& font_xform) const;
 
     void set_is_fixed_pitch(bool is_fixed_pitch) {
 	_override_is_fixed_pitch = true;
@@ -41,6 +42,12 @@ struct FontInfo {
     void set_italic_angle(double italic_angle) {
 	_override_italic_angle = true;
 	_italic_angle = italic_angle;
+    }
+    enum { x_height_auto = 0, x_height_explicit,
+           x_height_os2, x_height_x };
+    void set_x_height(int source, double x_height) {
+        _override_x_height = source;
+        _x_height = x_height;
     }
 
     String family_name() const;
@@ -56,7 +63,9 @@ struct FontInfo {
     bool _override_is_fixed_pitch;
     bool _override_italic_angle;
     bool _is_fixed_pitch;
+    uint8_t _override_x_height;
     double _italic_angle;
+    double _x_height;
 
 };
 

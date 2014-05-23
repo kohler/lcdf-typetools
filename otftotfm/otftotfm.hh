@@ -17,7 +17,6 @@ void output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
 	String (*dvips_include)(const String &ps_name, const FontInfo &, ErrorHandler *),
 	ErrorHandler *errh);
 
-double font_x_height(const FontInfo &, const Transform &);
 double font_cap_height(const FontInfo &, const Transform &);
 double font_ascender(const FontInfo &, const Transform &);
 double font_slant(const FontInfo &);
