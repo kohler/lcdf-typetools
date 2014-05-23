@@ -539,7 +539,7 @@ inline double Printer::transform(double value) const {
 }
 
 void Printer::print_transformed(const char* prefix, double value) const {
-    if (round_ || value - floor(value) < 0.01)
+    if (round_ || value == 0 || (value > 0.01 && value - floor(value) < 0.01))
         fprintf(f_, "%s R %g)\n", prefix, value);
     else
         fprintf(f_, "%s R %.4f)\n", prefix, value);
