@@ -452,13 +452,16 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	v.push_back(Setting(Setting::RULE, 0, font_ascender(_finfo, xform)));
 	return 1;
 
-      case U_VISIBLESPACE:
-	v.push_back(Setting(Setting::MOVE, 50, -150));
-	v.push_back(Setting(Setting::RULE, 40, 150));
-	v.push_back(Setting(Setting::RULE, _spacewidth, 40));
-	v.push_back(Setting(Setting::RULE, 40, 150));
-	v.push_back(Setting(Setting::MOVE, 50, 150));
+    case U_VISIBLESPACE: {
+        int sb = (int) (0.050 * _units_per_em), h = (int) (0.150 * _units_per_em),
+            lw = (int) (0.040 * _units_per_em);
+	v.push_back(Setting(Setting::MOVE, sb, -h));
+	v.push_back(Setting(Setting::RULE, lw, h));
+	v.push_back(Setting(Setting::RULE, _spacewidth, lw));
+	v.push_back(Setting(Setting::RULE, lw, h));
+	v.push_back(Setting(Setting::MOVE, sb, h));
 	return 2;
+    }
 
       case U_SS:
 	if (char_setting(v, metrics, 'S', 'S', 0))
@@ -583,7 +586,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, U_ENDASH, 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
-		v.push_back(Setting(Setting::MOVE, (int) (667 - 2 * d - letterspace), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (_units_per_em * 0.667 - 2 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, U_ENDASH, 0);
 	    return 1;
@@ -594,7 +597,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
 	if (char_setting(v, metrics, U_ENDASH, 0)) {
 	    if (!_finfo.is_fixed_pitch()) {
 		double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
-		v.push_back(Setting(Setting::MOVE, (int) (750 - 2 * d - letterspace), 0));
+		v.push_back(Setting(Setting::MOVE, (int) (_units_per_em * 0.750 - 2 * d - letterspace), 0));
 	    }
 	    char_setting(v, metrics, U_ENDASH, 0);
 	    return 1;
@@ -610,7 +613,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
       case U_INTERROBANG: {
 	  double exclam_offset =
 	      (char_one_bound(_finfo, xform, 4, true, 0, '?', 0)
-	       - char_one_bound(_finfo, xform, 4, true, 0, '!', 0)) * 0.5 + 50;
+	       - char_one_bound(_finfo, xform, 4, true, 0, '!', 0)) * 0.5
+              + 0.050 * _units_per_em;
 	  v.push_back(Setting(Setting::PUSH));
 	  v.push_back(Setting(Setting::MOVE, (int) exclam_offset, 0));
 	  if (char_setting(v, metrics, '!', 0)) {
@@ -624,7 +628,8 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
       case U_INTERROBANGDOWN: {
 	  double exclam_offset =
 	      (char_one_bound(_finfo, xform, 4, true, 0, U_QUESTIONDOWN, 0)
-	       - char_one_bound(_finfo, xform, 4, true, 0, U_EXCLAMDOWN, 0)) * 0.5 + 50;
+	       - char_one_bound(_finfo, xform, 4, true, 0, U_EXCLAMDOWN, 0)) * 0.5
+              + 0.050 * _units_per_em;
 	  v.push_back(Setting(Setting::PUSH));
 	  v.push_back(Setting(Setting::MOVE, (int) exclam_offset, 0));
 	  if (char_setting(v, metrics, U_EXCLAMDOWN, 0)) {
