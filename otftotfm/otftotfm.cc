@@ -552,7 +552,7 @@ void Printer::print(const char* prefix, double value) const {
 
 String Printer::render(double value) const {
     value = transform(value);
-    if (round_ || value - floor(value) < 0.01)
+    if (round_ || value == 0 || (value > 0.01 && value - floor(value) < 0.01))
 	return String(value);
     else {
 	char buf[128];
