@@ -99,9 +99,20 @@ TrueTypeBoundsCharstringProgram::glyph_name(int gi) const
 	OpenType::Post post(_otf->table("post"));
 	if (post.ok())
 	    post.glyph_names(_glyph_names);
+        HashMap<PermString, int> name2glyph(-1);
+        // some 'post' tables are bogus, reject multiply-encoded names
+        for (int gi = 0; gi < _glyph_names.size(); ++gi) {
+            int& xgi = name2glyph.find_force(_glyph_names[gi]);
+            if (xgi == -1)
+                xgi = gi;
+            else if (xgi == 0)
+                _glyph_names[gi] = PermString();
+            else
+                _glyph_names[gi] = _glyph_names[xgi] = PermString();
+        }
 	_got_glyph_names = true;
     }
-    if (gi >= 0 && gi < _glyph_names.size())
+    if (gi >= 0 && gi < _glyph_names.size() && _glyph_names[gi])
 	return _glyph_names[gi];
 
     // try 'uniXXXX' names

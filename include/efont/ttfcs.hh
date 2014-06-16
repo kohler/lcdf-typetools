@@ -27,7 +27,7 @@ class TrueTypeBoundsCharstringProgram : public CharstringProgram { public:
     OpenType::Data _loca;
     OpenType::Data _glyf;
     OpenType::Data _hmtx;
-    mutable Vector<Charstring *> _charstrings;
+    mutable Vector<Charstring*> _charstrings;
     mutable Vector<PermString> _glyph_names;
     mutable bool _got_glyph_names;
     mutable Vector<uint32_t> _unicodes;
