@@ -133,10 +133,8 @@ Cmap::check_table(int t, ErrorHandler *errh) const
 	return _table_error[t];
     _table_error[t] = -1;
 
-    const uint8_t *data = _str.udata();
-    uint32_t offset = ULONG_AT(data + HEADER_SIZE + t * ENCODING_SIZE + 4);
-    uint32_t left = _str.length() - offset;
-    data += offset;
+    const uint8_t *data = table_data(t);
+    uint32_t left = _str.uend() - data;
     int format = USHORT_AT(data);
     uint32_t length = 0;	// value not used
 
@@ -260,9 +258,7 @@ Cmap::map_table(int t, uint32_t uni, ErrorHandler *errh) const
     if ((t = check_table(t, errh)) < 0)
 	return 0;
 
-    const uint8_t *data = _str.udata();
-    data += ULONG_AT(data + HEADER_SIZE + t * ENCODING_SIZE + 4);
-
+    const uint8_t *data = table_data(t);
     switch (USHORT_AT(data)) {
 
     case F_BYTE:
@@ -360,9 +356,7 @@ Cmap::dump_table(int t, Vector<uint32_t> &g2c, ErrorHandler *errh) const
     if ((t = check_table(t, errh)) < 0)
 	return;
 
-    const uint8_t *data = _str.udata();
-    data += ULONG_AT(data + HEADER_SIZE + t * ENCODING_SIZE + 4);
-
+    const uint8_t *data = table_data(t);
     switch (USHORT_AT(data)) {
 
     case F_BYTE:

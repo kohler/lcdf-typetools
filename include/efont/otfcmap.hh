@@ -37,6 +37,7 @@ class Cmap { public:
     int check_table(int t, ErrorHandler * = 0) const;
     Glyph map_table(int t, uint32_t, ErrorHandler * = 0) const;
     void dump_table(int t, Vector<uint32_t> &g2c, ErrorHandler * = 0) const;
+    inline const uint8_t* table_data(int t) const;
 
 };
 
@@ -49,6 +50,11 @@ inline Glyph Cmap::map_uni(uint32_t c) const
 inline void Cmap::unmap_all(Vector<uint32_t> &g2c) const
 {
     dump_table(USE_FIRST_UNICODE_TABLE, g2c, ErrorHandler::default_handler());
+}
+
+inline const uint8_t* Cmap::table_data(int t) const {
+    const uint8_t* data = _str.udata();
+    return data + Data::u32_aligned(data + HEADER_SIZE + t * ENCODING_SIZE + 4);
 }
 
 }}
