@@ -1,5 +1,18 @@
 LCDF Typetools NEWS
 
+Version 2.101   16.Jun.2014
+
+* otftotfm: Handle fonts with unexpected transformation matrices,
+  such as CFF fonts with 2048 units per em.
+
+* otftotfm: Add --x-height option.
+
+* otftotfm: Handle more TrueType fonts by fixing otftotfm bugs and
+  compensating for some TTF bugs.
+
+* Thanks to Bob Tennent and Marc Penninga.
+
+
 Version 2.100   8.Jan.2014
 
 * otftotfm: On some fonts, ligature handling could enter an infinite

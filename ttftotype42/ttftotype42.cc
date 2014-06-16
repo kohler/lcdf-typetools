@@ -355,7 +355,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("ttftotype42 (LCDF typetools) %s\n", VERSION);
-	    printf("Copyright (C) 2006-2013 Eddie Kohler\n\
+	    printf("Copyright (C) 2006-2014 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
