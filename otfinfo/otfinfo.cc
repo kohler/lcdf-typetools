@@ -15,10 +15,12 @@
 # include <config.h>
 #endif
 #include <efont/psres.hh>
+#include <efont/otfcmap.hh>
 #include <efont/otfgsub.hh>
 #include <efont/otfgpos.hh>
 #include <efont/otfname.hh>
 #include <efont/otfos2.hh>
+#include <efont/otfpost.hh>
 #include <efont/cff.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
@@ -30,6 +32,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <algorithm>
+#include <utility>
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -56,9 +59,9 @@ using namespace Efont;
 #define QUERY_FAMILY_OPT	327
 #define INFO_OPT		328
 #define DUMP_TABLE_OPT		329
+#define QUERY_UNICODE_OPT	330
 
 const Clp_Option options[] = {
-
     { "script", 0, SCRIPT_OPT, Clp_ValString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
@@ -72,9 +75,9 @@ const Clp_Option options[] = {
     { "glyphs", 'g', QUERY_GLYPHS_OPT, 0, 0 },
     { "tables", 't', TABLES_OPT, 0, 0 },
     { "dump-table", 'T', DUMP_TABLE_OPT, Clp_ValString, 0 },
+    { "unicode", 'u', QUERY_UNICODE_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
-
 };
 
 
@@ -422,32 +425,94 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
 }
 
 static void
-do_query_glyphs(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+do_query_glyphs_cff(const OpenType::Font& otf, ErrorHandler* errh, Vector<PermString>& glyph_names)
 {
-    int before_nerrors = errh->nerrors();
     try {
 	// get font
 	Cff cff(otf.table("CFF"), otf.units_per_em(), errh);
 	if (!cff.ok())
-	    throw OpenType::Error();
+	    return;
 
 	Cff::FontParent *fp = cff.font(PermString(), errh);
 	if (!fp || !fp->ok())
-	    throw OpenType::Error();
+	    return;
 	Cff::Font *font = dynamic_cast<Cff::Font *>(fp);
 	if (!font) {
 	    errh->error("CID-keyed fonts not supported");
-	    throw OpenType::Error();
+	    return;
 	}
 
 	// save glyph names
-	Vector<PermString> glyph_names;
 	font->glyph_names(glyph_names);
-	for (PermString* s = glyph_names.begin(); s < glyph_names.end(); s++)
-	    result_errh->message("%s", s->c_str());
     } catch (OpenType::Error) {
-	if (errh->nerrors() == before_nerrors)
-	    result_errh->message("no glyph name information");
+    }
+}
+
+static void
+do_query_glyphs_post(const OpenType::Font& otf, ErrorHandler* errh, Vector<PermString>& glyph_names)
+{
+    try {
+	// get font
+        OpenType::Post post(otf.table("post"), errh);
+	if (!post.ok())
+            return;
+
+	// save glyph names
+	post.glyph_names(glyph_names);
+    } catch (OpenType::Error) {
+    }
+}
+
+static void
+do_query_glyphs(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    Vector<PermString> glyph_names;
+    if (otf.table("CFF"))
+        do_query_glyphs_cff(otf, errh, glyph_names);
+    else if (otf.table("post"))
+        do_query_glyphs_post(otf, errh, glyph_names);
+    for (PermString* s = glyph_names.begin(); s != glyph_names.end(); ++s)
+        result_errh->message("%s", s->c_str());
+    if (glyph_names.empty() && errh->nerrors() == before_nerrors)
+        errh->message("no glyph name information");
+}
+
+static void
+do_query_unicode(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* result_errh)
+{
+    Vector<PermString> glyph_names;
+    if (otf.table("CFF"))
+        do_query_glyphs_cff(otf, errh, glyph_names);
+    else if (otf.table("post"))
+        do_query_glyphs_post(otf, errh, glyph_names);
+
+    try {
+        OpenType::Cmap cmap(otf.table("cmap"), errh);
+        if (!cmap.ok())
+            throw OpenType::Error();
+
+        Vector<uint32_t> g2c;
+        cmap.unmap_all(g2c);
+
+        Vector<std::pair<uint32_t, int> > u2g;
+        for (int i = 0; i != g2c.size(); ++i)
+            if (g2c[i])
+                u2g.push_back(std::make_pair(g2c[i], i));
+
+        std::sort(u2g.begin(), u2g.end());
+        for (std::pair<uint32_t, int>* it = u2g.begin(); it != u2g.end(); ++it) {
+            char name[10];
+            if (it->first < 0x10000)
+                sprintf(name, "uni%04X", it->first);
+            else
+                sprintf(name, "u%X", it->first);
+            if ((size_t) it->second < glyph_names.size())
+                result_errh->message("%s %d %s\n", name, it->second, glyph_names[it->second].c_str());
+            else
+                result_errh->message("%s %d\n", name, it->second);
+        }
+    } catch (OpenType::Error) {
     }
 }
 
@@ -530,6 +595,7 @@ main(int argc, char *argv[])
 	  case QUERY_GLYPHS_OPT:
 	  case QUERY_FAMILY_OPT:
 	  case QUERY_FVERSION_OPT:
+        case QUERY_UNICODE_OPT:
 	  case TABLES_OPT:
 	  case INFO_OPT:
 	    if (query)
@@ -620,6 +686,8 @@ particular purpose.\n");
 	    do_query_postscript_name(otf, &cerrh, result_errh);
 	else if (query == QUERY_GLYPHS_OPT)
 	    do_query_glyphs(otf, &cerrh, result_errh);
+	else if (query == QUERY_UNICODE_OPT)
+	    do_query_unicode(otf, &cerrh, result_errh);
 	else if (query == QUERY_FAMILY_OPT)
 	    do_query_family_name(otf, &cerrh, result_errh);
 	else if (query == QUERY_FVERSION_OPT)
