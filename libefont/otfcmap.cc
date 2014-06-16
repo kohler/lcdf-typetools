@@ -129,7 +129,7 @@ Cmap::check_table(int t, ErrorHandler *errh) const
 	t = _first_unicode_table;
     if (_error < 0 || t < 0 || t >= _ntables)
 	return errh->error("no such table");
-    if (_table_error[t] > -2)
+    if (_table_error[t] != -2)
 	return _table_error[t];
     _table_error[t] = -1;
 
@@ -250,7 +250,7 @@ Cmap::check_table(int t, ErrorHandler *errh) const
 
     }
 
-    _table_error[t] = 0;
+    _table_error[t] = t;
     return t;
 }
 
