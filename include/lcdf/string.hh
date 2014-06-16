@@ -190,6 +190,14 @@ class String { public:
 	return _r.data + _r.length;
     }
 
+    inline const unsigned char* ubegin() const {
+        return reinterpret_cast<const unsigned char*>(_r.data);
+    }
+
+    inline const unsigned char* uend() const {
+        return reinterpret_cast<const unsigned char*>(_r.data + _r.length);
+    }
+
 
     typedef int (String::*unspecified_bool_type)() const;
     /** @brief Return true iff the string is nonempty. */
