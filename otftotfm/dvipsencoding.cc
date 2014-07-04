@@ -438,10 +438,10 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
       found_kernop:
 	int av = (v[0] == "*" ? J_ALL : encoding_of(v[0]));
 	if (av < 0)
-	    return errh->warning("%<%s%> has no encoding, ignoring %<%s%>", v[0].c_str(), v[1].c_str());
+	    return errh->warning("bad %<%s%> (%<%s%> has no encoding)", v[1].c_str(), v[0].c_str());
 	int bv = (v[2] == "*" ? J_ALL : encoding_of(v[2]));
 	if (bv < 0)
-	    return errh->warning("%<%s%> has no encoding, ignoring %<%s%>", v[2].c_str(), v[1].c_str());
+	    return errh->warning("bad %<%s%> (%<%s%> has no encoding)", v[1].c_str(), v[2].c_str());
 	if ((op & JT_KERN) && l && (av == J_ALL || bv == J_ALL))
 	    return errh->warning("%<%s %s %s%> illegal, only {0} works with *", v[0].c_str(), v[1].c_str(), v[2].c_str());
 	Ligature lig = { av, bv, op, static_cast<int>(l), 0 };
@@ -451,13 +451,13 @@ DvipsEncoding::parse_ligkern_words(Vector<String> &v, int override, ErrorHandler
     } else if (v.size() == 4 && ((op = find_ligkern_op(v[2])) & JT_ADDLIG)) {
 	int av = encoding_of(v[0], override > 0);
 	if (av < 0)
-	    return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring ligature", v[0].c_str()) : -1);
+	    return (override > 0 ? errh->warning("bad ligature (%<%s%> has no encoding)", v[0].c_str()) : -1);
 	int bv = encoding_of(v[1], override > 0);
 	if (bv < 0)
-	    return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring ligature", v[1].c_str()) : -1);
+	    return (override > 0 ? errh->warning("bad ligature (%<%s%> has no encoding)", v[1].c_str()) : -1);
 	int cv = encoding_of(v[3], override > 0);
 	if (cv < 0)
-	    return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring ligature", v[3].c_str()) : -1);
+	    return (override > 0 ? errh->warning("bad ligature (%<%s%> has no encoding)", v[3].c_str()) : -1);
 	Ligature lig = { av, bv, op, 0, cv };
 	add_ligkern(lig, override);
 	return 0;
@@ -474,7 +474,7 @@ DvipsEncoding::parse_position_words(Vector<String> &v, int override, ErrorHandle
 
     int c = encoding_of(v[0]);
     if (c < 0)
-	return (override > 0 ? errh->warning("%<%s%> has no encoding, ignoring positioning", v[0].c_str()) : -1);
+	return (override > 0 ? errh->warning("bad positioning (%<%s%> has no encoding)", v[0].c_str()) : -1);
 
     char *endptr;
     int pdx, pdy, adx;
@@ -500,7 +500,7 @@ DvipsEncoding::parse_unicoding_words(Vector<String> &v, int override, ErrorHandl
     if (v.size() < 2 || (v[1] != "=" && v[1] != "=:" && v[1] != ":="))
 	return -EPARSE;
     else if (v[0] == "||" || (av = encoding_of(v[0])) < 0)
-	return errh->warning("%<%s%> has no encoding, ignoring UNICODING", v[0].c_str());
+	return errh->warning("bad UNICODING (%<%s%> has no encoding)", v[0].c_str());
 
     int original_size = _unicoding.size();
 
