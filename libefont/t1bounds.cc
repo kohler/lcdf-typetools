@@ -110,8 +110,8 @@ CharstringBounds::char_bounds(const CharstringContext &g, bool shift)
     set_xf(g.program);
     CharstringInterp::interpret(g);
     if (shift) {
-	_xf.raw_translate(_width);
-	_nonfont_xf.raw_translate(_width);
+        _xf.raw_translate(_width - _xf.translation());
+        _nonfont_xf.raw_translate(_width - _nonfont_xf.translation());
         _width = Point(0, 0);
     }
     return error() >= 0;
@@ -162,4 +162,4 @@ CharstringBounds::bounds(const CharstringContext &g,
     return b.output(bb, width, true);
 }
 
-}
+} // namespace Efont
