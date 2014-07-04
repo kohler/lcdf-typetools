@@ -1,5 +1,12 @@
 LCDF Typetools NEWS
 
+Version 2.102   4.Jul.2014
+
+* otftotfm: Fix the construction of multi-character secondary
+  replacements; they were given enormous widths. Reported by Wydra
+  Dennis.
+
+
 Version 2.101   16.Jun.2014
 
 * otftotfm: Handle fonts with unexpected transformation matrices,
