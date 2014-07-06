@@ -1002,7 +1002,7 @@ write_encoding_file(String &filename, const String &encoding_name,
 
     // append old encodings
     int pos1 = old_encodings.find_left("\n%%");
-    while (pos1 < old_encodings.length()) {
+    while (pos1 >= 0 && pos1 < old_encodings.length()) {
 	int pos2 = old_encodings.find_left("\n%%", pos1 + 1);
 	if (pos2 < 0)
 	    pos2 = old_encodings.length();
