@@ -1,5 +1,11 @@
 LCDF Typetools NEWS
 
+Version 2.103   6.Jul.2014
+
+* otftotfm: Address a problem experienced by Bob Tennent where a
+  ligature setting wasn't included in the output VPL.
+
+
 Version 2.102   4.Jul.2014
 
 * otftotfm: Fix the construction of multi-character secondary
