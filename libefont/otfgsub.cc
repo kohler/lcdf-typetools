@@ -2,7 +2,7 @@
 
 /* otfgsub.{cc,hh} -- OpenType GSUB table
  *
- * Copyright (c) 2003-2012 Eddie Kohler
+ * Copyright (c) 2003-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -1071,7 +1071,9 @@ GsubContext::coverage() const throw ()
 }
 
 void
-GsubContext::f3_mark_out_glyphs(const Data &data, int nsub, int subtab_offset, const Gsub &gsub, Vector<bool> &gmap)
+GsubContext::subruleset_mark_out_glyphs(const Data &data, int nsub,
+                                        int subtab_offset, const Gsub &gsub,
+                                        Vector<bool> &gmap)
 {
     for (int j = 0; j < nsub; ++j) {
 	int lookup_index = data.u16(subtab_offset + SUBRECSIZE*j + 2);
@@ -1086,7 +1088,27 @@ GsubContext::mark_out_glyphs(const Gsub &gsub, Vector<bool> &gmap) const
 	return;
     int nglyph = _d.u16(2);
     int nsubst = _d.u16(4);
-    f3_mark_out_glyphs(_d, nsubst, F3_HSIZE + nglyph*2, gsub, gmap);
+    subruleset_mark_out_glyphs(_d, nsubst, F3_HSIZE + nglyph*2, gsub, gmap);
+}
+
+bool
+GsubContext::f1_unparse(const Data& data,
+                        int nsub, int subtab_offset,
+                        const Gsub& gsub, Vector<Substitution>& outsubs,
+                        Substitution s) {
+    Substitution subtab_sub;
+    int napplied = 0;
+    for (int j = 0; j < nsub; j++) {
+        int seq_index = data.u16(subtab_offset + SUBRECSIZE*j);
+        int lookup_index = data.u16(subtab_offset + SUBRECSIZE*j + 2);
+        // XXX check seq_index against size of output glyphs?
+        if (gsub.lookup(lookup_index).apply(s.out_glyphptr(), seq_index, s.out_nglyphs(), subtab_sub)) {
+            napplied++;
+            s.out_alter(subtab_sub, seq_index);
+        }
+    }
+    outsubs.push_back(s);
+    return true;
 }
 
 bool
@@ -1112,8 +1134,6 @@ GsubContext::f3_unparse(const Data &data,
     }
 
     // now, apply referred lookups to the resulting substitution array
-    Vector<Glyph> in_glyphs;
-    Vector<int> pos_map;
     Substitution subtab_sub;
     for (int i = 0; i < subs.size(); i++) {
 	Substitution &s = subs[i];
@@ -1155,7 +1175,13 @@ GsubChainContext::GsubChainContext(const Data &d) throw (Error)
     : _d(d)
 {
     switch (_d.u16(0)) {
-      case 1:
+    case 1: {
+        Coverage coverage(_d.offset_subtable(2));
+        if (!coverage.ok()
+            || coverage.size() != _d.u16(4))
+            throw Format("ChainContext Substitution coverage");
+        break;
+    }
       case 2:
 	break;
       case 3: {
@@ -1177,36 +1203,107 @@ GsubChainContext::GsubChainContext(const Data &d) throw (Error)
 Coverage
 GsubChainContext::coverage() const throw ()
 {
-    if (_d.u16(0) != 3)
-	return Coverage();
-    int nbacktrack = _d.u16(2);
-    int input_offset = F3_HSIZE + nbacktrack*2;
-    return Coverage(_d.offset_subtable(input_offset + F3_INPUT_HSIZE), 0, false);
+    switch (_d.u16(0)) {
+    case 1:
+        return Coverage(_d.offset_subtable(2), 0, false);
+    case 3: {
+        int nbacktrack = _d.u16(2);
+        int input_offset = F3_HSIZE + nbacktrack*2;
+        return Coverage(_d.offset_subtable(input_offset + F3_INPUT_HSIZE), 0, false);
+    }
+    default:
+        return Coverage();
+    }
 }
 
 void
 GsubChainContext::mark_out_glyphs(const Gsub &gsub, Vector<bool> &gmap) const
 {
-    if (_d.u16(0) != 3)
-	return;
+    switch (_d.u16(0)) {
+    case 1: {
+        int nsubruleset = _d.u16(4);
+        for (int i = 0; i != nsubruleset; ++i) {
+            int srs_offset = _d.u16(6 + i*2);
+            int nsubrule = _d.u16(srs_offset);
+            for (int j = 0; j != nsubrule; ++j) {
+                int subrule_offset = srs_offset + _d.u16(srs_offset + 2 + j*2);
+                int nbacktrack = _d.u16(subrule_offset);
+                int input_offset = subrule_offset + 2 + nbacktrack*2;
+                int ninput = _d.u16(input_offset);
+                int lookahead_offset = input_offset + 2 + (ninput-1)*2;
+                int nlookahead = _d.u16(lookahead_offset);
+                int subst_offset = lookahead_offset + 2 + nlookahead*2;
+                int nsubst = _d.u16(subst_offset);
 
-    int nbacktrack = _d.u16(2);
-    int input_offset = F3_HSIZE + nbacktrack*2;
-    int ninput = _d.u16(input_offset);
-    int lookahead_offset = input_offset + F3_INPUT_HSIZE + ninput*2;
-    int nlookahead = _d.u16(lookahead_offset);
-    int subst_offset = lookahead_offset + F3_LOOKAHEAD_HSIZE + nlookahead*2;
-    int nsubst = _d.u16(subst_offset);
+                GsubContext::subruleset_mark_out_glyphs(_d, nsubst, subst_offset + 2, gsub, gmap);
+            }
+        }
+        break;
+    }
+    case 3: {
+        int nbacktrack = _d.u16(2);
+        int input_offset = F3_HSIZE + nbacktrack*2;
+        int ninput = _d.u16(input_offset);
+        int lookahead_offset = input_offset + F3_INPUT_HSIZE + ninput*2;
+        int nlookahead = _d.u16(lookahead_offset);
+        int subst_offset = lookahead_offset + F3_LOOKAHEAD_HSIZE + nlookahead*2;
+        int nsubst = _d.u16(subst_offset);
 
-    GsubContext::f3_mark_out_glyphs(_d, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, gmap);
+        GsubContext::subruleset_mark_out_glyphs(_d, nsubst, subst_offset + F3_SUBST_HSIZE, gsub, gmap);
+        break;
+    }
+    default:
+        return;
+    }
 }
 
 bool
-GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v, const Coverage &limit) const
+GsubChainContext::f1_unparse(const Gsub &gsub, Vector<Substitution> &v, const Coverage &limit) const
 {
-    if (_d.u16(0) != 3)
-	return false;
+    Coverage input0_coverage(_d.offset_subtable(2), 0, false);
+    Coverage::iterator i0iter = input0_coverage.begin();
 
+    for (int i0index = 0; i0index != input0_coverage.size();
+         ++i0index, ++i0iter) {
+        int srs_offset = _d.u16(6 + i0index*2);
+        int nsubrule = _d.u16(srs_offset);
+        for (int srindex = 0; srindex != nsubrule; ++srindex) {
+            int sr_offset = srs_offset + _d.u16(srs_offset + 2 + srindex*2);
+            int nbacktrack = _d.u16(sr_offset);
+            int input_offset = sr_offset + 2 + nbacktrack*2;
+            int ninput = _d.u16(input_offset);
+            int lookahead_offset = input_offset + 2 + (ninput-1)*2;
+            int nlookahead = _d.u16(lookahead_offset);
+            int subst_offset = lookahead_offset + 2 + nlookahead*2;
+            int nsubst = _d.u16(subst_offset);
+            int subtab_offset = subst_offset + 2;
+
+            Substitution s(nbacktrack, ninput, ninput, nlookahead);
+            for (int i = 0; i != nbacktrack; ++i)
+                s.left_glyphptr()[i] = _d.u16(sr_offset + 2 + i*2);
+            Glyph* in_begin = s.in_glyphptr();
+            Glyph* out_begin = s.out_glyphptr();
+            in_begin[0] = out_begin[0] = *i0iter;
+            for (int i = 1; i != ninput; ++i)
+                in_begin[i] = out_begin[i] = _d.u16(input_offset + 2 + (i-1)*2);
+            for (int i = 0; i != ninput; ++i)
+                if (!limit.covers(in_begin[i]))
+                    goto skip;
+            for (int i = 0; i != nlookahead; ++i)
+                s.right_glyphptr()[i] = _d.u16(lookahead_offset + 2 + i*2);
+
+            // now, apply referred lookups to the resulting substitution array
+            GsubContext::f1_unparse(_d, nsubst, subtab_offset, gsub, v, s);
+        skip: ;
+        }
+    }
+
+    return true;
+}
+
+bool
+GsubChainContext::f3_unparse(const Gsub &gsub, Vector<Substitution> &v, const Coverage &limit) const
+{
     int nbacktrack = _d.u16(2);
     int input_offset = F3_HSIZE + nbacktrack*2;
     int ninput = _d.u16(input_offset);
@@ -1279,6 +1376,17 @@ GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v, const Cover
     }
 
     return any;
+}
+
+bool
+GsubChainContext::unparse(const Gsub &gsub, Vector<Substitution> &v, const Coverage &limit) const
+{
+    if (_d.u16(0) == 1)
+        return f1_unparse(gsub, v, limit);
+    else if (_d.u16(0) == 3)
+        return f3_unparse(gsub, v, limit);
+    else
+	return false;
 }
 
 

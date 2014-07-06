@@ -99,7 +99,11 @@ class GsubContext { public:
     enum { F3_HSIZE = 6, SUBRECSIZE = 4 };
   private:
     Data _d;
-    static void f3_mark_out_glyphs(const Data &data, int nsub, int subtab_offset, const Gsub &gsub, Vector<bool> &gmap);
+    static void subruleset_mark_out_glyphs(const Data &data, int nsub, int subtab_offset, const Gsub &gsub, Vector<bool> &gmap);
+    static bool f1_unparse(const Data& data,
+                           int nsub, int subtab_offset,
+                           const Gsub& gsub, Vector<Substitution>& outsubs,
+                           Substitution prototype_sub);
     static bool f3_unparse(const Data &data,
 			   int nglyph, int glyphtab_offset, const Coverage &limit,
 			   int nsub, int subtab_offset,
@@ -119,6 +123,8 @@ class GsubChainContext { public:
 	   F3_HSIZE = 4, F3_INPUT_HSIZE = 2, F3_LOOKAHEAD_HSIZE = 2, F3_SUBST_HSIZE = 2 };
   private:
     Data _d;
+    bool f1_unparse(const Gsub &gsub, Vector<Substitution> &subs, const Coverage &limit) const;
+    bool f3_unparse(const Gsub &gsub, Vector<Substitution> &subs, const Coverage &limit) const;
 };
 
 class Substitution { public:
