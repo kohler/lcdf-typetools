@@ -1125,10 +1125,16 @@ operator<(const Slot &a, const Slot &b)
 {
     // note: will give real glyphs priority over virtual ones at a given
     // priority
-    return (a.lookup_source < b.lookup_source
-	    || (a.lookup_source == b.lookup_source
-		&& (a.score < b.score
-		    || (a.score == b.score && a.glyph < b.glyph))));
+    // 6.Jul.2014 -- Make sure you include an old_code comparison; this
+    // is required to ensure that a ligature's inputs (which have smaller
+    // old_codes) are included whenever its outputs are included.
+    if (a.lookup_source != b.lookup_source)
+        return a.lookup_source < b.lookup_source;
+    if (a.score != b.score)
+        return a.score < b.score;
+    if (a.glyph != b.glyph)
+        return a.glyph < b.glyph;
+    return a.old_code < b.old_code;
 }
 }
 
