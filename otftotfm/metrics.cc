@@ -862,6 +862,13 @@ Metrics::apply(const Vector<Positioning>& pv)
 /*****************************************************************************/
 /* liveness marking, Ligature3s						     */
 
+String Metrics::Ligature3::unparse(const Metrics& m) const {
+    StringAccum sa;
+    sa << '[' << m.code_name(in1) << ' ' << m.code_name(in2)
+       << " -> " << m.code_name(out) << ']';
+    return sa.take_string();
+}
+
 inline bool
 operator<(const Metrics::Ligature3 &l1, const Metrics::Ligature3 &l2)
 {

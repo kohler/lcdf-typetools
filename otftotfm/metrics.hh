@@ -122,6 +122,7 @@ class Metrics { public:
 	Code in2;
 	Code out;
 	Ligature3(Code in1_, Code in2_, Code out_) : in1(in1_), in2(in2_), out(out_) { }
+        String unparse(const Metrics& m) const;
     };
 
   private:
