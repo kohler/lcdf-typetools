@@ -1309,8 +1309,8 @@ Metrics::shrink_encoding(int size, const DvipsEncoding &dvipsenc, ErrorHandler *
 	sa.pop_back();
 	errh->lwarning(" ", (unencoded.size() == 1 ? "not enough room in encoding, ignoring %d glyph" : "not enough room in encoding, ignoring %d glyphs"), unencoded.size());
 	errh->lmessage(" ", "(\
-This encoding doesn%,t have room for all the glyphs used by the\n\
-font, so these have been left out:\n%s.\n\
+The font uses more glyphs than the encoding has available slots,\n\
+so these glyphs have been left out:\n%s\n\
 To select specific glyphs, add them to the input encoding.)", sa.c_str());
     }
 
