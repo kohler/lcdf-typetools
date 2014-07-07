@@ -2,7 +2,7 @@
 
 /* t1interp.{cc,hh} -- Type 1/2 charstring interpretation
  *
- * Copyright (c) 1998-2012 Eddie Kohler
+ * Copyright (c) 1998-2014 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,7 +31,7 @@
 #define CHECK_PATH_END()	do { if (_state == S_PATH) { act_closepath(cmd); } _state = S_IPATH; } while (0)
 
 #ifndef static_assert
-# define static_assert(c, msg)	switch (c) case 0: case (c):
+# define static_assert(c, msg)	switch ((int) (c)) case 0: case (c):
 #endif
 
 namespace Efont {

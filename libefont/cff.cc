@@ -28,7 +28,7 @@
 #include <efont/t1unparser.hh>
 
 #ifndef static_assert
-#define static_assert(c, msg) switch (c) case 0: case (c):
+#define static_assert(c, msg) switch ((int) (c)) case 0: case (c):
 #endif
 
 namespace Efont {
