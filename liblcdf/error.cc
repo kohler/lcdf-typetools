@@ -666,11 +666,10 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 		if (*s2 == '}')
 		    goto braces;
 	    }
-	    void *v = va_arg(val, void *);
+	    void* v = va_arg(val, void*);
 	    s2 = numbuf + NUMBUF_SIZE;
-	    s1 = do_number((unsigned long)v, (char *)s2, 16, flags);
-	    s1 = do_number_flags((char *)s1, (char *)s2, 16, flags | cf_alternate_form,
-				 precision, field_width);
+	    s1 = do_number((uintptr_t) v, (char*) s2, 16, flags);
+	    s1 = do_number_flags((char*) s1, (char*) s2, 16, flags | cf_alternate_form, precision, field_width);
 	    break;
 	}
 
