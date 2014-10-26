@@ -102,6 +102,8 @@ class Charstring { public:
 	othcFlexbegin = 1,
 	othcFlexmiddle = 2,
 	othcReplacehints = 3,
+        othcCountercontrolpart = 12,
+        othcCountercontrol = 13,
 	othcMM1 = 14,
 	othcMM2 = 15,
 	othcMM3 = 16,

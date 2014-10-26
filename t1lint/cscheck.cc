@@ -138,106 +138,125 @@ CharstringChecker::error(int which, int data)
 bool
 CharstringChecker::callothersubr()
 {
-  int othersubrnum = (int)top(0);
-  int n = (int)top(1);
-  int i;
+    int othersubrnum = (int)top(0);
+    int n = (int)top(1);
+    int i;
 
-  pop(2);
-  if (othersubrnum < 0 || size() < n) return false;
+    pop(2);
+    if (othersubrnum < 0 || size() < n)
+        return false;
 
-  if (!_started && (othersubrnum < 14 || othersubrnum > 18))
-    _errh->warning("first command not %<hsbw%> or %<sbw%>");
+    if (!_started && (othersubrnum < Cs::othcCountercontrolpart
+                      || othersubrnum > Cs::othcMM6))
+        _errh->warning("first command not %<hsbw%> or %<sbw%>");
 
-  switch (othersubrnum) {
+    bool retval = true;
 
-   case 0:			// Flex
-    if (n != 3) {
-      _errh->error("wrong number of arguments to Flex");
-      goto unknown;
+    switch (othersubrnum) {
+
+    case Cs::othcFlexend:
+        if (n != 3) {
+            _errh->error("wrong number of arguments to Flex");
+            goto unknown;
+        }
+        if (!_flex) {
+            _errh->error("no Flex in progress");
+            retval = false;
+        } else if (ps_size() != 16) {
+            _errh->error("Flex needs 16 arguments, have %d", ps_size());
+            retval = false;
+        } else {
+            ps_clear();
+            ps_push(top(0));
+            ps_push(top(1));
+            _flex = false;
+        }
+        break;
+
+    case Cs::othcFlexbegin:
+        if (n != 0) {
+            _errh->error("wrong number of arguments to Flex");
+            goto unknown;
+        }
+        ps_clear();
+        ps_push(_cp.x);
+        ps_push(_cp.y);
+        _flex = true;
+        _just_flexed = true;
+        //_flex_connect = _connect;
+        break;
+
+    case Cs::othcFlexmiddle:
+        if (n != 0) {
+            _errh->error("wrong number of arguments to Flex");
+            goto unknown;
+        }
+        if (!_flex)
+            retval = error(errFlex, 0);
+        else {
+            if (_just_flexed)
+                _errh->error("Flex control points must be separated by a moveto");
+            ps_push(_cp.x);
+            ps_push(_cp.y);
+            _just_flexed = true;
+        }
+        break;
+
+    case Cs::othcReplacehints:
+        if (n != 1) {
+            _errh->error("wrong number of arguments to hint replacement");
+            goto unknown;
+        }
+        ps_clear();
+        ps_push(top());
+        _h_hstem.clear();
+        _h_vstem.clear();
+        break;
+
+    case Cs::othcCountercontrolpart:
+    case Cs::othcCountercontrol:
+        if (_counter_controlled)
+            _errh->error("duplicate counter control instructions");
+        else if (_started
+                 && _last_command != 256 + Cs::othcCountercontrolpart
+                 && _last_command != Cs::cSbw
+                 && _last_command != Cs::cHsbw)
+            _errh->error("counter control must appear immediately after %<sbw%> or %<hsbw%>");
+        if (n < 0 || n > 22)
+            _errh->error("too many arguments to counter control, max 22");
+        else if (n != size()) {
+            _errh->error("too few arguments to counter control, expected %d", size());
+            n = size();
+        }
+        ps_clear();
+        _counter_controlled = (othersubrnum == Cs::othcCountercontrol);
+        break;
+
+    case Cs::othcMM1:
+    case Cs::othcMM2:
+    case Cs::othcMM3:
+    case Cs::othcMM4:
+    case Cs::othcMM6:
+        retval = mm_command(othersubrnum, n);
+        goto skip_pop;
+
+    default:			// unknown
+    unknown:
+        _errh->warning("unknown callothersubr %<%d%>", othersubrnum);
+        ps_clear();
+        for (i = 0; i < n; i++)
+            ps_push(top(i));
+        break;
+
     }
-    if (!_flex) {
-	_errh->error("no Flex in progress");
-	pop(3);
-	return false;
-    } else if (ps_size() != 16) {
-	_errh->error("Flex needs 16 arguments, have %d", ps_size());
-	pop(3);
-	return false;
-    }
-    //_connect = _flex_connect;
-#if 0
-    addbezier(Point(ps_at(0), ps_at(1)),
-	      Point(ps_at(4), ps_at(5)),
-	      Point(ps_at(6), ps_at(7)),
-	      Point(ps_at(8), ps_at(9)));
-    addbezier(Point(ps_at(8), ps_at(9)),
-	      Point(ps_at(10), ps_at(11)),
-	      Point(ps_at(12), ps_at(13)),
-	      Point(ps_at(14), ps_at(15)));
-#endif
-    ps_clear();
-    ps_push(top(0));
-    ps_push(top(1));
-    _flex = false;
-    break;
 
-   case 1:			// Flex
-    if (n != 0) {
-      _errh->error("wrong number of arguments to Flex");
-      goto unknown;
-    }
-    ps_clear();
-    ps_push(_cp.x);
-    ps_push(_cp.y);
-    _flex = true;
-    _just_flexed = true;
-    //_flex_connect = _connect;
-    break;
-
-   case 2:			// Flex
-    if (n != 0) {
-      _errh->error("wrong number of arguments to Flex");
-      goto unknown;
-    }
-    if (!_flex)
-      return error(errFlex, 0);
-    if (_just_flexed)
-	_errh->error("Flex control points must be separated by a moveto");
-    ps_push(_cp.x);
-    ps_push(_cp.y);
-    _just_flexed = true;
-    break;
-
-   case 3:			// hint replacement
-    if (n != 1) {
-      _errh->error("wrong number of arguments to hint replacement");
-      goto unknown;
-    }
-    ps_clear();
-    ps_push(top());
-    _h_hstem.clear();
-    _h_vstem.clear();
-    break;
-
-   case 14:
-   case 15:
-   case 16:
-   case 17:
-   case 18:
-    return mm_command(othersubrnum, n);
-
-   default:			// unknown
-   unknown:
-    _errh->warning("unknown callothersubr %<%d%>", othersubrnum);
-    ps_clear();
-    for (i = 0; i < n; i++)
-      ps_push(top(i));
-    break;
-
-  }
-
-  pop(n);
-  return true;
+    pop(n);
+    if (_last_command == 256 + Cs::othcCountercontrolpart
+        && othersubrnum != Cs::othcCountercontrol)
+        _errh->error("partial counter control instruction");
+    _last_command = 256 + othersubrnum;
+ skip_pop:
+    return retval;
 }
 
 //#define DEBUG(s) printf s
@@ -263,14 +282,14 @@ CharstringChecker::type1_command(int cmd)
 	return arith_command(cmd);
     }
 
-  if (cmd != Cs::cHsbw && cmd != Cs::cSbw) {
-    if (!_started)
-      _errh->warning("first command not %<hsbw%> or %<sbw%>");
-  } else {
-    if (_started)
-      _errh->error("duplicate %<hsbw%> or %<sbw%>");
-  }
-  _started = true;
+    if (cmd != Cs::cHsbw && cmd != Cs::cSbw) {
+        if (!_started)
+            _errh->warning("first command not %<hsbw%> or %<sbw%>");
+    } else {
+        if (_started)
+            _errh->error("duplicate %<hsbw%> or %<sbw%>");
+    }
+    _started = true;
 
   switch (cmd) {
 
@@ -365,6 +384,7 @@ CharstringChecker::type1_command(int cmd)
 
    case Cs::cEndchar:
     set_done();
+    _last_command = cmd;
     return false;
 
    case Cs::cDotsection:
@@ -451,6 +471,9 @@ CharstringChecker::type1_command(int cmd)
 
   }
 
+  if (_last_command == 256 + Cs::othcCountercontrolpart)
+      _errh->error("partial counter control instruction");
+  _last_command = cmd;
   return true;
 }
 
@@ -463,7 +486,9 @@ CharstringChecker::check(const CharstringContext &g, ErrorHandler *errh)
 
     _started = false;
     _flex = false;
-    _hstem = _hstem3 = _vstem = _vstem3 = _just_flexed = false;
+    _hstem = _hstem3 = _vstem = _vstem3 = false;
+    _just_flexed = _counter_controlled = false;
+    _last_command = -1;
     _h_hstem.clear();
     _h_vstem.clear();
     _h_hstem3.clear();

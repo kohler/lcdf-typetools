@@ -58,6 +58,8 @@ class CharstringChecker : public Efont::CharstringInterp { public:
     bool _vstem3;
 
     bool _just_flexed;
+    bool _counter_controlled;
+    int _last_command;
 
     Vector<double> _h_hstem;
     Vector<double> _h_vstem;
