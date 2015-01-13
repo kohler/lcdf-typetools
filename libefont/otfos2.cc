@@ -39,7 +39,7 @@ Os2::parse_header(ErrorHandler *errh)
     // USHORT	version
     if (HEADER_SIZE > _data.length())
 	return errh->error("OTF OS/2 table too small"), -EFAULT;
-    if (_data.u16(0) > 4)
+    if (_data.u16(0) > 5)
 	return errh->error("unexpected OS/2 version number %d", _data.u16(0)), -ERANGE;
     return 0;
 }

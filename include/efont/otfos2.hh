@@ -21,7 +21,8 @@ class Os2 { public:
 		   O_SUPERSCRIPTYOFFSET = 24, O_STRIKEOUTSIZE = 26,
 		   O_STRIKEOUTPOSITION = 28, O_VENDORID = 58,
 		   O_TYPOASCENDER = 68, O_TYPODESCENDER = 70,
-		   O_TYPOLINEGAP = 72, O_XHEIGHT = 86, O_CAPHEIGHT = 88 };
+		   O_TYPOLINEGAP = 72, O_XHEIGHT = 86, O_CAPHEIGHT = 88,
+                   O_LOWEROPTICALPOINTSIZE = 96, O_UPPEROPTICALPOINTSIZE = 98 };
     enum { HEADER_SIZE = 2 };
 
     inline int16_t typo_ascender() const throw (Bounds);
@@ -29,6 +30,9 @@ class Os2 { public:
     inline int16_t typo_line_gap() const throw (Bounds);
     inline int16_t x_height() const throw (Bounds);
     inline int16_t cap_height() const throw (Bounds);
+    inline double lower_optical_point_size() const throw (Bounds);
+    inline double upper_optical_point_size() const throw (Bounds);
+    inline bool has_optical_point_size() const throw ();
     inline String vendor_id() const throw ();
 
   private:
@@ -64,6 +68,21 @@ inline int16_t Os2::x_height() const throw (Bounds)
 inline int16_t Os2::cap_height() const throw (Bounds)
 {
     return _data.s16(O_CAPHEIGHT);
+}
+
+inline double Os2::lower_optical_point_size() const throw (Bounds)
+{
+    return _data.u16(O_LOWEROPTICALPOINTSIZE) / 20.;
+}
+
+inline double Os2::upper_optical_point_size() const throw (Bounds)
+{
+    return _data.u16(O_UPPEROPTICALPOINTSIZE) / 20.;
+}
+
+inline bool Os2::has_optical_point_size() const throw ()
+{
+    return _data.length() >= O_UPPEROPTICALPOINTSIZE + 2;
 }
 
 inline String Os2::vendor_id() const throw ()

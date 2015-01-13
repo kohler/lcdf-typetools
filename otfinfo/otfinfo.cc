@@ -67,6 +67,7 @@ const Clp_Option options[] = {
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
     { "features", 'f', QUERY_FEATURES_OPT, 0, 0 },
     { "scripts", 's', QUERY_SCRIPTS_OPT, 0, 0 },
+    { "size", 0, QUERY_OPTICAL_SIZE_OPT, 0, 0 },
     { "optical-size", 'z', QUERY_OPTICAL_SIZE_OPT, 0, 0 },
     { "postscript-name", 'p', QUERY_POSTSCRIPT_NAME_OPT, 0, 0 },
     { "family", 'a', QUERY_FAMILY_OPT, 0, 0 },
@@ -263,14 +264,14 @@ do_query_features(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *r
     }
 }
 
-static void
-do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+static bool
+do_query_optical_size_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
 {
     int before_nerrors = errh->nerrors();
     try {
 	String gpos_table = otf.table("GPOS");
 	if (!gpos_table)
-	    throw OpenType::Error();
+	    return false;
 
 	OpenType::Gpos gpos(gpos_table, errh);
 	OpenType::Name name(otf.table("name"), errh);
@@ -282,13 +283,13 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 
 	int size_fid = gpos.feature_list().find(OpenType::Tag("size"), fids);
 	if (size_fid < 0)
-	    throw OpenType::Error();
+	    return false;
 
 	// old Adobe fonts implement an old, incorrect idea
 	// of what the FeatureParams offset means.
 	OpenType::Data size_data = gpos.feature_list().size_params(size_fid, name, errh);
 	if (!size_data.length())
-	    throw OpenType::Error();
+	    return false;
 
 	StringAccum sa;
 	sa << "design size " << (size_data.u16(0) / 10.) << " pt";
@@ -301,6 +302,32 @@ do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandle
 	}
 
 	result_errh->message("%s", sa.c_str());
+        return true;
+
+    } catch (OpenType::Error) {
+	return errh->nerrors() != before_nerrors;
+    }
+}
+
+static void
+do_query_optical_size(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh)
+{
+    int before_nerrors = errh->nerrors();
+    try {
+        if (do_query_optical_size_size(otf, errh, result_errh))
+            return;
+
+        String os2_table = otf.table("OS/2");
+        if (!os2_table)
+            throw OpenType::Error();
+
+	OpenType::Os2 os2(os2_table, errh);
+	if (!os2.ok() || !os2.has_optical_point_size())
+            throw OpenType::Error();
+
+        StringAccum sa;
+        sa << "size range [" << os2.lower_optical_point_size() << ", " << os2.upper_optical_point_size() << ")";
+        result_errh->message("%s", sa.c_str());
 
     } catch (OpenType::Error) {
 	if (errh->nerrors() == before_nerrors)
