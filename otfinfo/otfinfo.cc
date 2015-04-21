@@ -519,14 +519,8 @@ do_query_unicode(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* re
         if (!cmap.ok())
             throw OpenType::Error();
 
-        Vector<uint32_t> g2c;
-        cmap.unmap_all(g2c);
-
         Vector<std::pair<uint32_t, int> > u2g;
-        for (int i = 0; i != g2c.size(); ++i)
-            if (g2c[i])
-                u2g.push_back(std::make_pair(g2c[i], i));
-
+        cmap.unmap_all(u2g);
         std::sort(u2g.begin(), u2g.end());
         for (std::pair<uint32_t, int>* it = u2g.begin(); it != u2g.end(); ++it) {
             char name[10];
