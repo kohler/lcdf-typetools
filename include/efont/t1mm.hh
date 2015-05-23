@@ -13,21 +13,21 @@ class MultipleMasterSpace : public CharstringProgram { public:
 
     typedef Vector<double> NumVector;
 
-    PermString font_name() const	{ return _font_name; }
-    int naxes() const			{ return _naxes; }
-    int nmasters() const		{ return _nmasters; }
+    PermString font_name() const        { return _font_name; }
+    int naxes() const                   { return _naxes; }
+    int nmasters() const                { return _nmasters; }
 
     int axis(PermString) const;
     double axis_low(int) const;
     double axis_high(int) const;
 
-    PermString axis_type(int a) const	{ return _axis_types[a]; }
-    PermString axis_label(int a) const	{ return _axis_labels[a]; }
+    PermString axis_type(int a) const   { return _axis_types[a]; }
+    PermString axis_label(int a) const  { return _axis_labels[a]; }
     inline PermString axis_abbreviation(int a) const;
     static PermString axis_abbreviation(PermString);
 
-    const Type1Charstring &ndv() const	{ return _ndv; }
-    const Type1Charstring &cdv() const	{ return _cdv; }
+    const Type1Charstring &ndv() const  { return _ndv; }
+    const Type1Charstring &cdv() const  { return _cdv; }
 
     void set_master_positions(const Vector<NumVector> &);
     void set_normalize(const Vector<NumVector> &, const Vector<NumVector> &);

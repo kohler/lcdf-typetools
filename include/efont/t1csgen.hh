@@ -10,12 +10,12 @@ class Type1CharstringGen { public:
 
     Type1CharstringGen(int precision = 5);
 
-    int precision() const		{ return _precision; }
+    int precision() const               { return _precision; }
 
     void clear();
-    char *data()			{ return _ncs.data(); }
-    const char *data() const		{ return _ncs.data(); }
-    int length() const			{ return _ncs.length(); }
+    char *data()                        { return _ncs.data(); }
+    const char *data() const            { return _ncs.data(); }
+    int length() const                  { return _ncs.length(); }
 
     void gen_number(double, int kind = 0);
     void gen_command(int);
@@ -53,15 +53,15 @@ class Type1CharstringGenInterp : public CharstringInterp { public:
 
     Type1CharstringGenInterp(int precision);
 
-    int precision() const		{ return _csgen.precision(); }
-    void set_direct_hint_replacement(bool dhr)	{ _direct_hr = dhr; }
+    int precision() const               { return _csgen.precision(); }
+    void set_direct_hint_replacement(bool dhr)  { _direct_hr = dhr; }
     void set_hint_replacement_storage(Type1Font *);
 
-    int nhints() const			{ return _stem_hstem.size(); }
-    double max_flex_height() const	{ return _max_flex_height; }
-    bool bad_flex() const		{ return _bad_flex; }
+    int nhints() const                  { return _stem_hstem.size(); }
+    double max_flex_height() const      { return _max_flex_height; }
+    bool bad_flex() const               { return _bad_flex; }
 
-    const Type1CharstringGen &csgen() const	{ return _csgen; }
+    const Type1CharstringGen &csgen() const     { return _csgen; }
 
     void act_width(int, const Point &);
     void act_seac(int, double, double, double, int, int);

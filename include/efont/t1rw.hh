@@ -19,9 +19,9 @@ class Type1Reader { public:
     virtual void set_charstring_definer(PermString);
 
     bool next_line(StringAccum &);
-    bool was_charstring() const		{ return _charstring_len > 0; }
-    int charstring_start() const	{ return _charstring_start; }
-    int charstring_length() const	{ return _charstring_len; }
+    bool was_charstring() const         { return _charstring_len > 0; }
+    int charstring_start() const        { return _charstring_start; }
+    int charstring_length() const       { return _charstring_len; }
 
   private:
 
@@ -114,7 +114,7 @@ class Type1Writer { public:
     Type1Writer();
     virtual ~Type1Writer();
 
-    bool eexecing() const				{ return _eexec; }
+    bool eexecing() const                               { return _eexec; }
 
     inline void print(int);
     void print(const char *, int);
@@ -128,10 +128,10 @@ class Type1Writer { public:
     virtual void switch_eexec(bool);
     virtual void print0(const unsigned char *, int) = 0;
 
-    PermString charstring_start() const		{ return _charstring_start; }
-    int lenIV() const				{ return _lenIV; }
-    void set_charstring_start(PermString p)	{ _charstring_start = p; }
-    void set_lenIV(int l)			{ _lenIV = l; }
+    PermString charstring_start() const         { return _charstring_start; }
+    int lenIV() const                           { return _lenIV; }
+    void set_charstring_start(PermString p)     { _charstring_start = p; }
+    void set_lenIV(int l)                       { _lenIV = l; }
 
   private:
 
@@ -194,7 +194,7 @@ class Type1PFBWriter: public Type1Writer {
 inline void Type1Writer::print(int c)
 {
     if (_pos >= BufSize)
-	local_flush();
+        local_flush();
     _buf[_pos++] = c;
 }
 

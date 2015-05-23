@@ -10,17 +10,17 @@ class CharstringBounds : public CharstringInterp { public:
     CharstringBounds();
     CharstringBounds(const Transform&);
     CharstringBounds(const Transform&, const Vector<double>& weight_vec);
-    ~CharstringBounds()				{ }
+    ~CharstringBounds()                         { }
 
-    const Point& width() const			{ return _width; }
-    double x_width() const			{ return _width.x; }
-    bool bb_known() const			{ return KNOWN(_lb.x); }
-    double bb_left() const			{ return _lb.x; }
-    double bb_top() const			{ return _rt.y; }
-    double bb_right() const			{ return _rt.x; }
-    double bb_bottom() const			{ return _lb.y; }
-    const Point& bb_bottom_left() const		{ return _lb; }
-    const Point& bb_top_right() const		{ return _rt; }
+    const Point& width() const                  { return _width; }
+    double x_width() const                      { return _width.x; }
+    bool bb_known() const                       { return KNOWN(_lb.x); }
+    double bb_left() const                      { return _lb.x; }
+    double bb_top() const                       { return _rt.y; }
+    double bb_right() const                     { return _rt.x; }
+    double bb_bottom() const                    { return _lb.y; }
+    const Point& bb_bottom_left() const         { return _lb; }
+    const Point& bb_top_right() const           { return _rt; }
 
     void act_width(int, const Point&);
     void act_line(int, const Point&, const Point&);
@@ -60,15 +60,15 @@ class CharstringBounds : public CharstringInterp { public:
 inline void CharstringBounds::xf_mark(const Point& p)
 {
     if (!KNOWN(_lb.x))
-	_lb = _rt = p;
+        _lb = _rt = p;
     if (p.x < _lb.x)
-	_lb.x = p.x;
+        _lb.x = p.x;
     else if (p.x > _rt.x)
-	_rt.x = p.x;
+        _rt.x = p.x;
     if (p.y < _lb.y)
-	_lb.y = p.y;
+        _lb.y = p.y;
     else if (p.y > _rt.y)
-	_rt.y = p.y;
+        _rt.y = p.y;
 }
 
 inline void CharstringBounds::mark(const Point& p)

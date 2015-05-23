@@ -56,9 +56,9 @@ CharstringBounds::xf_mark(const Bezier &b)
     b.halve(b1, b2);
     xf_mark(b1.point(3));
     if (!xf_controls_inside(b1))
-	xf_mark(b1);
+        xf_mark(b1);
     if (!xf_controls_inside(b2))
-	xf_mark(b2);
+        xf_mark(b2);
 }
 
 void
@@ -86,8 +86,8 @@ CharstringBounds::act_curve(int, const Point &p0, const Point &p1, const Point &
     xf_mark(q3);
 
     if (!xf_inside(q1) || !xf_inside(q2)) {
-	Bezier b(q0, q1, q2, q3);
-	xf_mark(b);
+        Bezier b(q0, q1, q2, q3);
+        xf_mark(b);
     }
 }
 
@@ -95,12 +95,12 @@ void
 CharstringBounds::set_xf(const CharstringProgram *program)
 {
     if (_last_xf_program != program) {
-	_last_xf_program = program;
-	double matrix[6];
-	program->font_matrix(matrix);
-	Transform font_xf = Transform(matrix).scaled(program->units_per_em());
-	font_xf.check_null(0.001);
-	_xf = _nonfont_xf * font_xf;
+        _last_xf_program = program;
+        double matrix[6];
+        program->font_matrix(matrix);
+        Transform font_xf = Transform(matrix).scaled(program->units_per_em());
+        font_xf.check_null(0.001);
+        _xf = _nonfont_xf * font_xf;
     }
 }
 
@@ -128,17 +128,17 @@ bool
 CharstringBounds::output(double bb[4], double& width, bool use_cur_width) const
 {
     if (!KNOWN(_lb.x))
-	bb[0] = bb[1] = bb[2] = bb[3] = 0;
+        bb[0] = bb[1] = bb[2] = bb[3] = 0;
     else {
-	bb[0] = _lb.x;
-	bb[1] = _lb.y;
-	bb[2] = _rt.x;
-	bb[3] = _rt.y;
+        bb[0] = _lb.x;
+        bb[1] = _lb.y;
+        bb[2] = _rt.x;
+        bb[3] = _rt.y;
     }
     if (use_cur_width)
-	width = _width.x;
+        width = _width.x;
     else {
-	Point p = Point(0, 0) * _xf;
+        Point p = Point(0, 0) * _xf;
         width = p.x;
     }
     return error() >= 0;

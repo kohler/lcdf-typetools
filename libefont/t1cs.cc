@@ -98,25 +98,25 @@ String
 Charstring::command_name(int cmd)
 {
     if (cmd >= 0 && cmd <= cLastCommand)
-	return command_names[cmd];
+        return command_names[cmd];
     else if (cmd < cEscapeDelta + 256)
-	return String("COMMAND_12_") + String(cmd - cEscapeDelta);
+        return String("COMMAND_12_") + String(cmd - cEscapeDelta);
     else
-	return String("<INVALID>");
+        return String("<INVALID>");
 }
 
 
 Type1Charstring::Type1Charstring(int lenIV, const String &s)
     : Charstring(), _key(-1)
 {
-    if (lenIV < 0)		// no charstring encryption
-	_s = s;
+    if (lenIV < 0)              // no charstring encryption
+        _s = s;
     else if (lenIV < s.length()) {
-	const unsigned char *d = reinterpret_cast<const unsigned char*>(s.data());
-	_key = t1R_cs;
-	for (int i = 0; i < lenIV; i++, d++)
-	    _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
-	_s = s.substring(lenIV);
+        const unsigned char *d = reinterpret_cast<const unsigned char*>(s.data());
+        _key = t1R_cs;
+        for (int i = 0; i < lenIV; i++, d++)
+            _key = ((*d + _key) * t1C1 + t1C2) & 0xFFFF;
+        _s = s.substring(lenIV);
     }
 }
 
@@ -124,9 +124,9 @@ void
 Type1Charstring::prepend(const Type1Charstring &t1cs)
 {
     if (_key >= 0)
-	decrypt();
+        decrypt();
     if (t1cs._key >= 0)
-	t1cs.decrypt();
+        t1cs.decrypt();
     _s = t1cs._s + _s;
 }
 
@@ -134,14 +134,14 @@ void
 Type1Charstring::decrypt() const
 {
     if (_key >= 0) {
-	int r = _key;
-	uint8_t *d = reinterpret_cast<uint8_t *>(_s.mutable_data());
-	for (int i = 0; i < _s.length(); i++, d++) {
-	    uint8_t encrypted = *d;
-	    *d = encrypted ^ (r >> 8);
-	    r = ((encrypted + r) * t1C1 + t1C2) & 0xFFFF;
-	}
-	_key = -1;
+        int r = _key;
+        uint8_t *d = reinterpret_cast<uint8_t *>(_s.mutable_data());
+        for (int i = 0; i < _s.length(); i++, d++) {
+            uint8_t encrypted = *d;
+            *d = encrypted ^ (r >> 8);
+            r = ((encrypted + r) * t1C1 + t1C2) & 0xFFFF;
+        }
+        _key = -1;
     }
 }
 
@@ -152,57 +152,57 @@ Type1Charstring::process(CharstringInterp &interp) const
     int left = _s.length();
 
     while (left > 0) {
-	bool more;
-	int ahead;
+        bool more;
+        int ahead;
 
-	if (*data >= 32 && *data <= 246) {		// push small number
-	    more = interp.number(data[0] - 139);
-	    ahead = 1;
+        if (*data >= 32 && *data <= 246) {              // push small number
+            more = interp.number(data[0] - 139);
+            ahead = 1;
 
-	} else if (*data < 32) {			// a command
-	    if (*data == cEscape) {
-		if (left < 2)
-		    goto runoff_error;
-		more = interp.type1_command(cEscapeDelta + data[1]);
-		ahead = 2;
-	    } else if (*data == cShortint) { // short integer
-		if (left < 3)
-		    goto runoff_error;
-		int16_t val = (data[1] << 8) | data[2];
-		more = interp.number(val);
-		ahead = 3;
-	    } else {
-		more = interp.type1_command(data[0]);
-		ahead = 1;
-	    }
+        } else if (*data < 32) {                        // a command
+            if (*data == cEscape) {
+                if (left < 2)
+                    goto runoff_error;
+                more = interp.type1_command(cEscapeDelta + data[1]);
+                ahead = 2;
+            } else if (*data == cShortint) { // short integer
+                if (left < 3)
+                    goto runoff_error;
+                int16_t val = (data[1] << 8) | data[2];
+                more = interp.number(val);
+                ahead = 3;
+            } else {
+                more = interp.type1_command(data[0]);
+                ahead = 1;
+            }
 
-	} else if (*data >= 247 && *data <= 250) {	// push medium number
-	    if (left < 2)
-		goto runoff_error;
-	    int val = + ((data[0] - 247) << 8) + 108 + data[1];
-	    more = interp.number(val);
-	    ahead = 2;
+        } else if (*data >= 247 && *data <= 250) {      // push medium number
+            if (left < 2)
+                goto runoff_error;
+            int val = + ((data[0] - 247) << 8) + 108 + data[1];
+            more = interp.number(val);
+            ahead = 2;
 
-	} else if (*data >= 251 && *data <= 254) {	// push negative medium number
-	    if (left < 2)
-		goto runoff_error;
-	    int val = - ((data[0] - 251) << 8) - 108 - data[1];
-	    more = interp.number(val);
-	    ahead = 2;
+        } else if (*data >= 251 && *data <= 254) {      // push negative medium number
+            if (left < 2)
+                goto runoff_error;
+            int val = - ((data[0] - 251) << 8) - 108 - data[1];
+            more = interp.number(val);
+            ahead = 2;
 
-	} else {					// 255: push huge number
-	    if (left < 5)
-		goto runoff_error;
-	    int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
-	    more = interp.number(val);
-	    ahead = 5;
-	}
+        } else {                                        // 255: push huge number
+            if (left < 5)
+                goto runoff_error;
+            int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
+            more = interp.number(val);
+            ahead = 5;
+        }
 
-	if (!more)
-	    return interp.error() == CharstringInterp::errOK;
+        if (!more)
+            return interp.error() == CharstringInterp::errOK;
 
-	data += ahead;
-	left -= ahead;
+        data += ahead;
+        left -= ahead;
     }
 
   runoff_error:
@@ -217,19 +217,19 @@ Type1Charstring::first_caret_after(int pos) const
     const uint8_t *edata = data + (pos < length() ? pos : length());
 
     while (data < edata) {
-	if (*data >= 32 && *data <= 246)	// push small number
-	    data++;
-	else if (*data < 32) {			// a command
-	    if (*data == cEscape)
-		data += 2;
-	    else if (*data == cShortint)
-		data += 3;
-	    else
-		data++;
-	} else if (*data >= 247 && *data <= 254)	// push medium number
-	    data += 2;
-	else					// 255: push huge number
-	    data += 5;
+        if (*data >= 32 && *data <= 246)        // push small number
+            data++;
+        else if (*data < 32) {                  // a command
+            if (*data == cEscape)
+                data += 2;
+            else if (*data == cShortint)
+                data += 3;
+            else
+                data++;
+        } else if (*data >= 247 && *data <= 254)        // push medium number
+            data += 2;
+        else                                    // 255: push huge number
+            data += 5;
     }
 
     const uint8_t *odata = Type1Charstring::data();
@@ -240,19 +240,19 @@ void
 Type1Charstring::assign_substring(int pos, int len, const String &cs)
 {
     if (_key >= 0)
-	decrypt();
+        decrypt();
     if (pos < 0 || len < 0 || pos + len >= _s.length())
-	/* do nothing */;
+        /* do nothing */;
     else if (cs.length() == len) {
-	char *d = _s.mutable_data();
-	memcpy(d + pos, cs.data(), cs.length());
+        char *d = _s.mutable_data();
+        memcpy(d + pos, cs.data(), cs.length());
     } else if (cs.length() <= len) {
-	char *d = _s.mutable_data();
-	memcpy(d + pos, cs.data(), cs.length());
-	memmove(d + pos + cs.length(), d + pos + len, _s.length() - pos - len);
-	_s = _s.substring(0, cs.length() - len);
+        char *d = _s.mutable_data();
+        memcpy(d + pos, cs.data(), cs.length());
+        memmove(d + pos + cs.length(), d + pos + len, _s.length() - pos - len);
+        _s = _s.substring(0, cs.length() - len);
     } else
-	_s = _s.substring(0, pos) + cs + _s.substring(pos + len);
+        _s = _s.substring(0, pos) + cs + _s.substring(pos + len);
 }
 
 
@@ -263,61 +263,61 @@ Type2Charstring::process(CharstringInterp &interp) const
     int left = _s.length();
 
     while (left > 0) {
-	bool more;
-	int ahead;
+        bool more;
+        int ahead;
 
-	if (*data >= 32 && *data <= 246) {		// push small number
-	    more = interp.number(data[0] - 139);
-	    ahead = 1;
+        if (*data >= 32 && *data <= 246) {              // push small number
+            more = interp.number(data[0] - 139);
+            ahead = 1;
 
-	} else if (*data < 32) {			// a command
-	    if (*data == cEscape) {
-		if (left < 2)
-		    goto runoff_error;
-		more = interp.type2_command(cEscapeDelta + data[1], 0, 0);
-		ahead = 2;
-	    } else if (*data == cShortint) { // short integer
-		if (left < 3)
-		    goto runoff_error;
-		int16_t val = (data[1] << 8) | data[2];
-		more = interp.number(val);
-		ahead = 3;
-	    } else if (*data == cHintmask || *data == cCntrmask) {
-		int left_ptr = left - 1;
-		more = interp.type2_command(data[0], data + 1, &left_ptr);
-		ahead = 1 + (left - 1) - left_ptr;
-	    } else {
-		more = interp.type2_command(data[0], 0, 0);
-		ahead = 1;
-	    }
+        } else if (*data < 32) {                        // a command
+            if (*data == cEscape) {
+                if (left < 2)
+                    goto runoff_error;
+                more = interp.type2_command(cEscapeDelta + data[1], 0, 0);
+                ahead = 2;
+            } else if (*data == cShortint) { // short integer
+                if (left < 3)
+                    goto runoff_error;
+                int16_t val = (data[1] << 8) | data[2];
+                more = interp.number(val);
+                ahead = 3;
+            } else if (*data == cHintmask || *data == cCntrmask) {
+                int left_ptr = left - 1;
+                more = interp.type2_command(data[0], data + 1, &left_ptr);
+                ahead = 1 + (left - 1) - left_ptr;
+            } else {
+                more = interp.type2_command(data[0], 0, 0);
+                ahead = 1;
+            }
 
-	} else if (*data >= 247 && *data <= 250) {	// push medium number
-	    if (left < 2)
-		goto runoff_error;
-	    int val = + ((data[0] - 247) << 8) + 108 + data[1];
-	    more = interp.number(val);
-	    ahead = 2;
+        } else if (*data >= 247 && *data <= 250) {      // push medium number
+            if (left < 2)
+                goto runoff_error;
+            int val = + ((data[0] - 247) << 8) + 108 + data[1];
+            more = interp.number(val);
+            ahead = 2;
 
-	} else if (*data >= 251 && *data <= 254) {	// push negative medium number
-	    if (left < 2)
-		goto runoff_error;
-	    int val = - ((data[0] - 251) << 8) - 108 - data[1];
-	    more = interp.number(val);
-	    ahead = 2;
+        } else if (*data >= 251 && *data <= 254) {      // push negative medium number
+            if (left < 2)
+                goto runoff_error;
+            int val = - ((data[0] - 251) << 8) - 108 - data[1];
+            more = interp.number(val);
+            ahead = 2;
 
-	} else {					// 255: push huge number
-	    if (left < 5)
-		goto runoff_error;
-	    int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
-	    more = interp.number(val / 65536.);
-	    ahead = 5;
-	}
+        } else {                                        // 255: push huge number
+            if (left < 5)
+                goto runoff_error;
+            int32_t val = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
+            more = interp.number(val / 65536.);
+            ahead = 5;
+        }
 
-	if (!more)
-	    return interp.error() == CharstringInterp::errOK;
+        if (!more)
+            return interp.error() == CharstringInterp::errOK;
 
-	data += ahead;
-	left -= ahead;
+        data += ahead;
+        left -= ahead;
     }
 
   runoff_error:
@@ -350,7 +350,7 @@ CharstringProgram::glyph_names(Vector<PermString> &gnames) const
     int n = nglyphs();
     gnames.resize(n);
     for (int i = 0; i < n; i++)
-	gnames[i] = glyph_name(i);
+        gnames[i] = glyph_name(i);
 }
 
 Vector<double> *

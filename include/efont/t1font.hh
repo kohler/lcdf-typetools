@@ -27,53 +27,53 @@ class Type1Font : public CharstringProgram { public:
     inline PermString font_name() const;
     void font_matrix(double[6]) const;
 
-    int nitems() const			{ return _items.size(); }
-    Type1Item *item(int i) const	{ return _items[i]; }
-    void add_item(Type1Item *it)	{ _items.push_back(it); }
+    int nitems() const                  { return _items.size(); }
+    Type1Item *item(int i) const        { return _items[i]; }
+    void add_item(Type1Item *it)        { _items.push_back(it); }
     void add_definition(int dict, Type1Definition *);
     void add_type1_encoding(Type1Encoding *);
 
-    int nsubrs() const			{ return _subrs.size(); }
+    int nsubrs() const                  { return _subrs.size(); }
     Type1Charstring *subr(int) const;
 
-    int nglyphs() const			{ return _glyphs.size(); }
+    int nglyphs() const                 { return _glyphs.size(); }
     PermString glyph_name(int) const;
     Type1Charstring *glyph(int) const;
     Type1Charstring *glyph(PermString) const;
     void add_glyph(Type1Subr *);
 
-    Type1Subr *subr_x(int i) const	{ return _subrs[i]; }
+    Type1Subr *subr_x(int i) const      { return _subrs[i]; }
     bool set_subr(int, const Type1Charstring &, PermString definer = PermString());
     bool remove_subr(int);
     void fill_in_subrs();
     void renumber_subrs(const Vector<int> &); // dangerous!
 
-    Type1Subr *glyph_x(int i) const	{ return _glyphs[i]; }
+    Type1Subr *glyph_x(int i) const     { return _glyphs[i]; }
 
     Type1Encoding *type1_encoding() const { return _encoding; }
 
     // note: the order is relevant
     enum Dict {
-	dFont = 0,		dF = dFont,
-	dFontInfo = 1,		dFI = dFontInfo,
-	dPrivate = 2,		dP = dPrivate,
-	dBlend = 3,		dB = dBlend,
-	dBlendFontInfo = dB+dFI, dBFI = dBlendFontInfo,
-	dBlendPrivate = dB+dP,	dBP = dBlendPrivate,
-	dLast
+        dFont = 0,              dF = dFont,
+        dFontInfo = 1,          dFI = dFontInfo,
+        dPrivate = 2,           dP = dPrivate,
+        dBlend = 3,             dB = dBlend,
+        dBlendFontInfo = dB+dFI, dBFI = dBlendFontInfo,
+        dBlendPrivate = dB+dP,  dBP = dBlendPrivate,
+        dLast
     };
 
     Type1Definition *dict(int d, PermString s) const { return _dict[d][s]; }
-    Type1Definition *dict(PermString s) const	{ return _dict[dF][s]; }
-    Type1Definition *p_dict(PermString s) const	{ return _dict[dP][s]; }
-    Type1Definition *b_dict(PermString s) const	{ return _dict[dB][s]; }
+    Type1Definition *dict(PermString s) const   { return _dict[dF][s]; }
+    Type1Definition *p_dict(PermString s) const { return _dict[dP][s]; }
+    Type1Definition *b_dict(PermString s) const { return _dict[dB][s]; }
     Type1Definition *bp_dict(PermString s) const { return _dict[dBP][s];}
     Type1Definition *fi_dict(PermString s) const { return _dict[dFI][s];}
 
     typedef HashMap<PermString, Type1Definition *> DictHashMap;
     inline DictHashMap::const_iterator dict_begin(int dict) const;
     inline DictHashMap::iterator dict_begin(int dict);
-    int first_dict_item(int d) const		{ return _index[d]; }
+    int first_dict_item(int d) const            { return _index[d]; }
 
     Type1Definition *ensure(Dict, PermString);
     void add_header_comment(const String &);
@@ -83,7 +83,7 @@ class Type1Font : public CharstringProgram { public:
 
     void undo_synthetic();
 
-    void set_charstring_definer(PermString d)	{ _charstring_definer = d; }
+    void set_charstring_definer(PermString d)   { _charstring_definer = d; }
 
     void write(Type1Writer &);
 
@@ -159,7 +159,7 @@ inline void Type1Font::set_dict(int dict, PermString name, Type1Definition *t1d)
 inline PermString Type1Font::font_name() const
 {
     if (!_cached_defs)
-	cache_defs();
+        cache_defs();
     return _font_name;
 }
 

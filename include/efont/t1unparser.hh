@@ -10,9 +10,9 @@ class CharstringUnparser : public CharstringInterp { public:
     CharstringUnparser();
     CharstringUnparser(const CharstringUnparser &);
 
-    const String &indent() const		{ return _indent; }
-    void set_indent(const String &s)		{ _indent = s; }
-    void set_one_command_per_line(bool b)	{ _one_command_per_line = b; }
+    const String &indent() const                { return _indent; }
+    void set_indent(const String &s)            { _indent = s; }
+    void set_one_command_per_line(bool b)       { _one_command_per_line = b; }
 
     void clear();
 

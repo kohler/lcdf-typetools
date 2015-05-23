@@ -218,7 +218,7 @@ Type1Font::skeleton_make(PermString font_name, const String &version)
     StringAccum sa;
     sa << "%!PS-AdobeFont-1.0: " << font_name;
     if (version)
-	sa << ' ' << version;
+        sa << ' ' << version;
     output->add_item(new Type1CopyItem(sa.take_string()));
 
     output->_dict_deltas[dF] = 3; // Private, FontInfo, Encoding
@@ -238,9 +238,9 @@ void
 Type1Font::skeleton_fontinfo_end()
 {
     if (first_dict_item(Type1Font::dFI) >= 0)
-	add_item(new Type1CopyItem("end readonly def"));
+        add_item(new Type1CopyItem("end readonly def"));
     else
-	add_item(new Type1CopyItem("% no FontInfo dict"));
+        add_item(new Type1CopyItem("% no FontInfo dict"));
 }
 
 void
@@ -311,15 +311,15 @@ add_number_def(Type1Font *output, int dict, PermString name, const Type1Font *fo
 {
     double v;
     if (Type1Definition *t1d = font->dict(dict, name))
-	if (t1d->value_num(v))
-	    output->add_definition(dict, Type1Definition::make(name, v, "def"));
+        if (t1d->value_num(v))
+            output->add_definition(dict, Type1Definition::make(name, v, "def"));
 }
 
 static void
 add_copy_def(Type1Font *output, int dict, PermString name, const Type1Font *font, const char *definer = "def")
 {
     if (Type1Definition *t1d = font->dict(dict, name))
-	output->add_definition(dict, Type1Definition::make_literal(name, t1d->value(), definer));
+        output->add_definition(dict, Type1Definition::make_literal(name, t1d->value(), definer));
 }
 
 static String
@@ -327,8 +327,8 @@ font_dict_string(const Type1Font *font, int dict, PermString name)
 {
     String s;
     if (Type1Definition *d = font->dict(dict, name))
-	if (d->value_string(s))
-	    return s;
+        if (d->value_string(s))
+            return s;
     return String();
 }
 
@@ -340,34 +340,34 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name, const
 
     // other comments from font header
     for (int i = 0; i < font->nitems(); i++)
-	if (Type1CopyItem *c = font->item(i)->cast_copy()) {
-	    if (c->length() > 1 && c->value()[0] == '%') {
-		if (c->value()[1] != '!')
-		    output->add_item(new Type1CopyItem(c->value()));
-	    } else
-		break;
-	} else
-	    break;
+        if (Type1CopyItem *c = font->item(i)->cast_copy()) {
+            if (c->length() > 1 && c->value()[0] == '%') {
+                if (c->value()[1] != '!')
+                    output->add_item(new Type1CopyItem(c->value()));
+            } else
+                break;
+        } else
+            break;
 
     output->skeleton_comments_end();
 
     // FontInfo dictionary
     if (version)
-	output->add_definition(dFI, Type1Definition::make_string("version", version, "readonly def"));
+        output->add_definition(dFI, Type1Definition::make_string("version", version, "readonly def"));
     if (String s = font_dict_string(font, dFI, "Notice"))
-	output->add_definition(dFI, Type1Definition::make_string("Notice", s, "readonly def"));
+        output->add_definition(dFI, Type1Definition::make_string("Notice", s, "readonly def"));
     if (String s = font_dict_string(font, dFI, "Copyright"))
-	output->add_definition(dFI, Type1Definition::make_string("Copyright", s, "readonly def"));
+        output->add_definition(dFI, Type1Definition::make_string("Copyright", s, "readonly def"));
     if (String s = font_dict_string(font, dFI, "FullName"))
-	output->add_definition(dFI, Type1Definition::make_string("FullName", s, "readonly def"));
+        output->add_definition(dFI, Type1Definition::make_string("FullName", s, "readonly def"));
     if (String s = font_dict_string(font, dFI, "FamilyName"))
-	output->add_definition(dFI, Type1Definition::make_string("FamilyName", s, "readonly def"));
+        output->add_definition(dFI, Type1Definition::make_string("FamilyName", s, "readonly def"));
     if (String s = font_dict_string(font, dFI, "Weight"))
-	output->add_definition(dFI, Type1Definition::make_string("Weight", s, "readonly def"));
+        output->add_definition(dFI, Type1Definition::make_string("Weight", s, "readonly def"));
     if (Type1Definition *t1d = font->fi_dict("isFixedPitch")) {
-	bool v;
-	if (t1d->value_bool(v))
-	    output->add_definition(dFI, Type1Definition::make_literal("isFixedPitch", (v ? "true" : "false"), "def"));
+        bool v;
+        if (t1d->value_bool(v))
+            output->add_definition(dFI, Type1Definition::make_literal("isFixedPitch", (v ? "true" : "false"), "def"));
     }
     add_number_def(output, dFI, "ItalicAngle", font);
     add_number_def(output, dFI, "UnderlinePosition", font);
@@ -381,26 +381,26 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name, const
     add_copy_def(output, dF, "FontMatrix", font, "readonly def");
     add_number_def(output, dF, "StrokeWidth", font);
     if (!xuid_extension)
-	add_number_def(output, dF, "UniqueID", font);
+        add_number_def(output, dF, "UniqueID", font);
     add_copy_def(output, dF, "XUID", font, "readonly def");
     if (xuid_extension) {
-	Vector<double> xuid;
-	if (Type1Definition *xuid_def = output->dict("XUID"))
-	    xuid_def->value_numvec(xuid);
-	if (!xuid.size()) {
-	    Type1Definition *uid_def = font->dict("UniqueID");
-	    int uid;
-	    if (uid_def && uid_def->value_int(uid)) {
-		xuid.push_back(1);
-		xuid.push_back(uid);
-	    }
-	}
-	if (xuid.size()) {
-	    for (int i = 0; i < xuid_extension->size(); i++)
-		xuid.push_back((*xuid_extension)[i]);
-	    Type1Definition *xuid_def = output->ensure(dF, "XUID");
-	    xuid_def->set_numvec(xuid);
-	}
+        Vector<double> xuid;
+        if (Type1Definition *xuid_def = output->dict("XUID"))
+            xuid_def->value_numvec(xuid);
+        if (!xuid.size()) {
+            Type1Definition *uid_def = font->dict("UniqueID");
+            int uid;
+            if (uid_def && uid_def->value_int(uid)) {
+                xuid.push_back(1);
+                xuid.push_back(uid);
+            }
+        }
+        if (xuid.size()) {
+            for (int i = 0; i < xuid_extension->size(); i++)
+                xuid.push_back((*xuid_extension)[i]);
+            Type1Definition *xuid_def = output->ensure(dF, "XUID");
+            xuid_def->set_numvec(xuid);
+        }
     }
     add_copy_def(output, dF, "FontBBox", font, "readonly def");
     output->skeleton_fontdict_end();
@@ -421,7 +421,7 @@ Type1Font::skeleton_make_copy(const Type1Font *font, PermString font_name, const
     add_number_def(output, dP, "LanguageGroup", font);
     add_number_def(output, dP, "ExpansionFactor", font);
     if (!xuid_extension)
-	add_number_def(output, dP, "UniqueID", font);
+        add_number_def(output, dP, "UniqueID", font);
     output->add_definition(dP, Type1Definition::make_literal("MinFeature", "{16 16}", "|-"));
     output->add_definition(dP, Type1Definition::make_literal("password", "5839", "def"));
     output->add_definition(dP, Type1Definition::make_literal("lenIV", "0", "def"));

@@ -24,7 +24,7 @@ Data
 Data::subtable(unsigned offset) const throw (Bounds)
 {
     if (offset > (unsigned) _str.length())
-	throw Bounds();
+        throw Bounds();
     return Data(_str.substring(offset));
 }
 
@@ -33,7 +33,7 @@ Data::offset_subtable(unsigned offset_offset) const throw (Bounds)
 {
     int offset = u16(offset_offset);
     if (offset > _str.length())
-	throw Bounds();
+        throw Bounds();
     return Data(_str.substring(offset));
 }
 

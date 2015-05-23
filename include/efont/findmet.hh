@@ -13,10 +13,10 @@ class PsresDatabase;
 
 class MetricsFinder { public:
 
-    MetricsFinder()			: _next(0), _prev(0) { }
+    MetricsFinder()                     : _next(0), _prev(0) { }
     virtual ~MetricsFinder();
 
-    MetricsFinder *next() const		{ return _next; }
+    MetricsFinder *next() const         { return _next; }
 
     void add_finder(MetricsFinder *);
 
@@ -35,8 +35,8 @@ class MetricsFinder { public:
     MetricsFinder *_next;
     MetricsFinder *_prev;
 
-    MetricsFinder(const MetricsFinder &)			{ }
-    MetricsFinder &operator=(const MetricsFinder &)	{ return *this; }
+    MetricsFinder(const MetricsFinder &)                        { }
+    MetricsFinder &operator=(const MetricsFinder &)     { return *this; }
 
   protected:
 

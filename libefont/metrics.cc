@@ -17,7 +17,7 @@
 # include <config.h>
 #endif
 #include <efont/metrics.hh>
-#include <efont/t1cs.hh>	/* for UNKDOUBLE */
+#include <efont/t1cs.hh>        /* for UNKDOUBLE */
 namespace Efont {
 
 Metrics::Metrics()
@@ -91,7 +91,7 @@ Metrics::add_glyph(PermString n)
 
 static void
 set_dimen(Vector<double> &dest, const Vector<double> &src, double scale,
-	  bool increment)
+          bool increment)
 {
   int c = src.size();
   if (increment)

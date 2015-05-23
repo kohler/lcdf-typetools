@@ -66,7 +66,7 @@ PairProgram::add_kern(GlyphIndex left, GlyphIndex right, int ki)
 
 bool
 PairProgram::add_lig(GlyphIndex left, GlyphIndex right, GlyphIndex result,
-		     int kind)
+                     int kind)
 {
   PairOp newop(left, right, result, kind, _left_map[left]);
   int newopi = _op.size();
@@ -137,12 +137,12 @@ PairProgram::print() const
     PairOpBlock &opb = *blocks[i];
     for (int j = 0; j < opb.size(); j++)
       if (opb[j].is_lig())
-	printf("%s->%s ", printname(opb[j].right()),
-	       printname(opb[j].result()));
+        printf("%s->%s ", printname(opb[j].right()),
+               printname(opb[j].result()));
       else if (opb[j].is_kern())
-	printf("%s[%g] ", printname(opb[j].right()), kern(opb[j].value()));
+        printf("%s[%g] ", printname(opb[j].right()), kern(opb[j].value()));
       else if (opb[j].is_noop())
-	printf(". ");
+        printf(". ");
     if (blocks[i]->nextblock != -1)
       printf("  :B%d", blocks[i]->nextblock);
     printf("\n");

@@ -14,7 +14,7 @@ struct AfmMetricsXt: public MetricsXt {
     PermString notice;
     PermString encoding_scheme;
 
-    PermString kind() const			{ return "AFM"; }
+    PermString kind() const                     { return "AFM"; }
 
 };
 
@@ -41,7 +41,7 @@ class AfmReader { public:
     void y_width_warning() const;
     void no_match_warning(const char *context = 0) const;
 
-    double &fd(int i)				{ return _afm->fd(i); }
+    double &fd(int i)                           { return _afm->fd(i); }
     GlyphIndex find_err(PermString, const char *) const;
 
     void read_char_metric_data() const;

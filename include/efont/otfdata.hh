@@ -37,39 +37,39 @@ namespace Efont { namespace OpenType {
 class Error {
   public:
     String description;
-    Error()				: description(String::make_stable("unspecified error")) { }
-    Error(const String &d)		: description(d) { }
+    Error()                             : description(String::make_stable("unspecified error")) { }
+    Error(const String &d)              : description(d) { }
 };
 
 class Bounds : public Error {
   public:
-    Bounds()				: Error(String::make_stable("bounds error")) { }
+    Bounds()                            : Error(String::make_stable("bounds error")) { }
 };
 
 class Format : public Error {
   public:
-    Format(const String& name)		: Error(name + " format error") { }
+    Format(const String& name)          : Error(name + " format error") { }
     Format(const String& name, const String& type)
-					: Error(name + " " + type + " format error") { }
+                                        : Error(name + " " + type + " format error") { }
 };
 
 class BlankTable : public Format {
   public:
-    BlankTable(const String& name)	: Format(name, "blank table") { }
+    BlankTable(const String& name)      : Format(name, "blank table") { }
 };
 
 class Data {
   public:
-    Data()				{ }
-    Data(const String& str)		: _str(str) { _str.align(2); }
+    Data()                              { }
+    Data(const String& str)             : _str(str) { _str.align(2); }
     // default copy constructor
     // default destructor
 
-    operator const String&() const	{ return _str; }
+    operator const String&() const      { return _str; }
 
     operator String::unspecified_bool_type() const { return _str; }
-    const uint8_t *udata() const	{ return _str.udata(); }
-    int length() const			{ return _str.length(); }
+    const uint8_t *udata() const        { return _str.udata(); }
+    int length() const                  { return _str.length(); }
 
     static inline uint16_t u16(const unsigned char* s);
     static inline uint16_t u16_aligned(const unsigned char* s);
@@ -97,7 +97,7 @@ class Data {
     Data offset_subtable(unsigned offset_offset) const throw (Bounds);
     inline Data substring(int left, int len = -1) const throw ();
 
-    void align_long()			{ _str.align(4); }
+    void align_long()                   { _str.align(4); }
 
   private:
 
@@ -107,9 +107,9 @@ class Data {
 
 inline uint8_t Data::operator[](unsigned offset) const throw (Bounds) {
     if (offset >= static_cast<unsigned>(_str.length()))
-	throw Bounds();
+        throw Bounds();
     else
-	return _str[offset];
+        return _str[offset];
 }
 
 inline uint16_t Data::u16(const unsigned char* s) {
@@ -184,30 +184,30 @@ inline int32_t Data::s32_aligned(const unsigned char* s) {
 
 inline uint16_t Data::u16(unsigned offset) const throw (Bounds) {
     if (offset + 1 >= static_cast<unsigned>(_str.length()) || offset + 1 == 0)
-	throw Bounds();
+        throw Bounds();
     else
-	return u16_aligned(_str.udata() + offset);
+        return u16_aligned(_str.udata() + offset);
 }
 
 inline int16_t Data::s16(unsigned offset) const throw (Bounds) {
     if (offset + 1 >= static_cast<unsigned>(_str.length()) || offset + 1 == 0)
-	throw Bounds();
+        throw Bounds();
     else
-	return s16_aligned(_str.udata() + offset);
+        return s16_aligned(_str.udata() + offset);
 }
 
 inline uint32_t Data::u32(unsigned offset) const throw (Bounds) {
     if (offset + 3 >= static_cast<unsigned>(_str.length()) || offset + 3 < 3)
-	throw Bounds();
+        throw Bounds();
     else
-	return u32_aligned16(_str.udata() + offset);
+        return u32_aligned16(_str.udata() + offset);
 }
 
 inline int32_t Data::s32(unsigned offset) const throw (Bounds) {
     if (offset + 3 >= static_cast<unsigned>(_str.length()) || offset + 3 < 3)
-	throw Bounds();
+        throw Bounds();
     else
-	return s32_aligned16(_str.udata() + offset);
+        return s32_aligned16(_str.udata() + offset);
 }
 
 inline uint8_t Data::operator[](int offset) const throw (Bounds) {

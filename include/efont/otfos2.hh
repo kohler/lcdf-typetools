@@ -11,17 +11,17 @@ class Os2 { public:
     Os2(const Data &, ErrorHandler * = 0);
     // default destructor
 
-    bool ok() const			{ return _error >= 0; }
-    int error() const			{ return _error; }
+    bool ok() const                     { return _error >= 0; }
+    int error() const                   { return _error; }
 
     enum Offsets { O_AVGCHARWIDTH = 2, O_SUBSCRIPTXSIZE = 10,
-		   O_SUBSCRIPTYSIZE = 12, O_SUBSCRIPTXOFFSET = 14,
-		   O_SUBSCRIPTYOFFSET = 16, O_SUPERSCRIPTXSIZE = 18,
-		   O_SUPERSCRIPTYSIZE = 20, O_SUPERSCRIPTXOFFSET = 22,
-		   O_SUPERSCRIPTYOFFSET = 24, O_STRIKEOUTSIZE = 26,
-		   O_STRIKEOUTPOSITION = 28, O_VENDORID = 58,
-		   O_TYPOASCENDER = 68, O_TYPODESCENDER = 70,
-		   O_TYPOLINEGAP = 72, O_XHEIGHT = 86, O_CAPHEIGHT = 88,
+                   O_SUBSCRIPTYSIZE = 12, O_SUBSCRIPTXOFFSET = 14,
+                   O_SUBSCRIPTYOFFSET = 16, O_SUPERSCRIPTXSIZE = 18,
+                   O_SUPERSCRIPTYSIZE = 20, O_SUPERSCRIPTXOFFSET = 22,
+                   O_SUPERSCRIPTYOFFSET = 24, O_STRIKEOUTSIZE = 26,
+                   O_STRIKEOUTPOSITION = 28, O_VENDORID = 58,
+                   O_TYPOASCENDER = 68, O_TYPODESCENDER = 70,
+                   O_TYPOLINEGAP = 72, O_XHEIGHT = 86, O_CAPHEIGHT = 88,
                    O_LOWEROPTICALPOINTSIZE = 96, O_UPPEROPTICALPOINTSIZE = 98 };
     enum { HEADER_SIZE = 2 };
 

@@ -34,18 +34,18 @@ namespace Efont { namespace OpenType {
 
 Gpos::Gpos(const Data &d, ErrorHandler *errh) throw (Error)
 {
-    // Fixed	Version
-    // Offset	ScriptList
-    // Offset	FeatureList
-    // Offset	LookupList
+    // Fixed    Version
+    // Offset   ScriptList
+    // Offset   FeatureList
+    // Offset   LookupList
     if (d.length() == 0)
-	throw BlankTable("GPOS");
+        throw BlankTable("GPOS");
     if (d.u16(0) != 1)
-	throw Format("GPOS");
+        throw Format("GPOS");
     if (_script_list.assign(d.offset_subtable(4), errh) < 0)
-	throw Format("GPOS script list");
+        throw Format("GPOS script list");
     if (_feature_list.assign(d.offset_subtable(6), errh) < 0)
-	throw Format("GPOS feature list");
+        throw Format("GPOS feature list");
     _lookup_list = d.offset_subtable(8);
 }
 
@@ -59,9 +59,9 @@ GposLookup
 Gpos::lookup(unsigned i) const
 {
     if (i >= _lookup_list.u16(0))
-	throw Error("GPOS lookup out of range");
+        throw Error("GPOS lookup out of range");
     else
-	return GposLookup(_lookup_list.offset_subtable(2 + i*2));
+        return GposLookup(_lookup_list.offset_subtable(2 + i*2));
 }
 
 
@@ -71,7 +71,7 @@ Gpos::lookup(unsigned i) const
  **************************/
 
 const int GposValue::nibble_bitcount_x2[] = { 0, 2, 2, 4, 2, 4, 4, 6,
-					      2, 4, 4, 6, 4, 6, 6, 8 };
+                                              2, 4, 4, 6, 4, 6, 6, 8 };
 
 
 /**************************
@@ -83,13 +83,13 @@ GposLookup::GposLookup(const Data &d) throw (Error)
     : _d(d)
 {
     if (_d.length() < 6)
-	throw Format("GPOS Lookup table");
+        throw Format("GPOS Lookup table");
     _type = _d.u16(0);
     if (_type == L_EXTENSION && _d.u16(4) != 0) {
-	Data first_subtable = _d.offset_subtable(HEADERSIZE);
-	if (first_subtable.length() < 8 || first_subtable.u16(0) != 1)
-	    throw Format("GPOS Extension Lookup table");
-	_type = first_subtable.u16(2);
+        Data first_subtable = _d.offset_subtable(HEADERSIZE);
+        if (first_subtable.length() < 8 || first_subtable.u16(0) != 1)
+            throw Format("GPOS Extension Lookup table");
+        _type = first_subtable.u16(2);
     }
 }
 
@@ -98,11 +98,11 @@ GposLookup::subtable(int i) const
 {
     Data subd = _d.offset_subtable(HEADERSIZE + i*RECSIZE);
     if (_d.u16(0) != L_EXTENSION)
-	return subd;
+        return subd;
     else if (subd.length() >= 8 && subd.u16(0) == 1 && subd.u16(2) == _type)
-	return subd.subtable(subd.u32(4));
+        return subd.subtable(subd.u32(4));
     else
-	return Data();
+        return Data();
 }
 
 bool
@@ -111,29 +111,29 @@ GposLookup::unparse_automatics(Vector<Positioning> &v, ErrorHandler *errh) const
     int nlookup = _d.u16(4), success = 0;
     switch (_type) {
       case L_SINGLE:
-	for (int i = 0; i < nlookup; i++)
-	    try {
-		GposSingle s(subtable(i));
-		s.unparse(v);
-		success++;
-	    } catch (Error e) {
-		if (errh)
-		    errh->warning("%s, continuing", e.description.c_str());
-	    }
-	return success > 0;
+        for (int i = 0; i < nlookup; i++)
+            try {
+                GposSingle s(subtable(i));
+                s.unparse(v);
+                success++;
+            } catch (Error e) {
+                if (errh)
+                    errh->warning("%s, continuing", e.description.c_str());
+            }
+        return success > 0;
       case L_PAIR:
-	for (int i = 0; i < nlookup; i++)
-	    try {
-		GposPair p(subtable(i));
-		p.unparse(v);
-		success++;
-	    } catch (Error e) {
-		if (errh)
-		    errh->warning("%s, continuing", e.description.c_str());
-	    }
-	return success > 0;
+        for (int i = 0; i < nlookup; i++)
+            try {
+                GposPair p(subtable(i));
+                p.unparse(v);
+                success++;
+            } catch (Error e) {
+                if (errh)
+                    errh->warning("%s, continuing", e.description.c_str());
+            }
+        return success > 0;
       default:
-	return false;
+        return false;
     }
 }
 
@@ -147,12 +147,12 @@ GposSingle::GposSingle(const Data &d) throw (Error)
     : _d(d)
 {
     if (_d[0] != 0
-	|| (_d[1] != 1 && _d[1] != 2))
-	throw Format("GPOS Single Positioning");
+        || (_d[1] != 1 && _d[1] != 2))
+        throw Format("GPOS Single Positioning");
     Coverage coverage(_d.offset_subtable(2));
     if (!coverage.ok()
-	|| (_d[1] == 2 && coverage.size() > _d.u16(6)))
-	throw Format("GPOS Single Positioning coverage");
+        || (_d[1] == 2 && coverage.size() > _d.u16(6)))
+        throw Format("GPOS Single Positioning coverage");
 }
 
 Coverage
@@ -165,15 +165,15 @@ void
 GposSingle::unparse(Vector<Positioning> &v) const
 {
     if (_d[1] == 1) {
-	int format = _d.u16(4);
-	Data value = _d.subtable(6);
-	for (Coverage::iterator i = coverage().begin(); i; i++)
-	    v.push_back(Positioning(Position(*i, format, value)));
+        int format = _d.u16(4);
+        Data value = _d.subtable(6);
+        for (Coverage::iterator i = coverage().begin(); i; i++)
+            v.push_back(Positioning(Position(*i, format, value)));
     } else {
-	int format = _d.u16(4);
-	int size = GposValue::size(format);
-	for (Coverage::iterator i = coverage().begin(); i; i++)
-	    v.push_back(Positioning(Position(*i, format, _d.subtable(F2_HEADERSIZE + size*i.coverage_index()))));
+        int format = _d.u16(4);
+        int size = GposValue::size(format);
+        for (Coverage::iterator i = coverage().begin(); i; i++)
+            v.push_back(Positioning(Position(*i, format, _d.subtable(F2_HEADERSIZE + size*i.coverage_index()))));
     }
 }
 
@@ -187,12 +187,12 @@ GposPair::GposPair(const Data &d) throw (Error)
     : _d(d)
 {
     if (_d[0] != 0
-	|| (_d[1] != 1 && _d[1] != 2))
-	throw Format("GPOS Pair Positioning");
+        || (_d[1] != 1 && _d[1] != 2))
+        throw Format("GPOS Pair Positioning");
     Coverage coverage(_d.offset_subtable(2));
     if (!coverage.ok()
-	|| (_d[1] == 1 && coverage.size() > _d.u16(8)))
-	throw Format("GPOS Pair Positioning coverage");
+        || (_d[1] == 1 && coverage.size() > _d.u16(8)))
+        throw Format("GPOS Pair Positioning coverage");
 }
 
 Coverage
@@ -205,40 +205,40 @@ void
 GposPair::unparse(Vector<Positioning> &v) const
 {
     if (_d[1] == 1) {
-	int format1 = _d.u16(4);
-	int format2 = _d.u16(6);
-	int f2_pos = PAIRVALUE_HEADERSIZE + GposValue::size(format1);
-	int pairvalue_size = f2_pos + GposValue::size(format2);
-	for (Coverage::iterator i = coverage().begin(); i; i++) {
-	    Data pairset = _d.offset_subtable(F1_HEADERSIZE + i.coverage_index()*F1_RECSIZE);
-	    int npair = pairset.u16(0);
-	    for (int j = 0; j < npair; j++) {
-		Data pair = pairset.subtable(PAIRSET_HEADERSIZE + j*pairvalue_size);
-		v.push_back(Positioning(Position(*i, format1, pair.subtable(PAIRVALUE_HEADERSIZE)),
-					Position(pair.u16(0), format2, pair.subtable(f2_pos))));
-	    }
-	}
-    } else {			// _d[1] == 2
-	int format1 = _d.u16(4);
-	int format2 = _d.u16(6);
-	int f2_pos = GposValue::size(format1);
-	int recsize = f2_pos + GposValue::size(format2);
-	ClassDef class1(_d.offset_subtable(8));
-	ClassDef class2(_d.offset_subtable(10));
-	Coverage coverage = this->coverage();
-	int nclass1 = _d.u16(12);
-	int nclass2 = _d.u16(14);
-	int offset = F2_HEADERSIZE;
-	for (int c1 = 0; c1 < nclass1; c1++)
-	    for (int c2 = 0; c2 < nclass2; c2++, offset += recsize) {
-		Position p1(format1, _d.subtable(offset));
-		Position p2(format2, _d.subtable(offset + f2_pos));
-		if (p1 || p2) {
-		    for (ClassDef::class_iterator c1i = class1.begin(c1, coverage); c1i; c1i++)
-			for (ClassDef::class_iterator c2i = class2.begin(c2); c2i; c2i++)
-			    v.push_back(Positioning(Position(*c1i, p1), Position(*c2i, p2)));
-		}
-	    }
+        int format1 = _d.u16(4);
+        int format2 = _d.u16(6);
+        int f2_pos = PAIRVALUE_HEADERSIZE + GposValue::size(format1);
+        int pairvalue_size = f2_pos + GposValue::size(format2);
+        for (Coverage::iterator i = coverage().begin(); i; i++) {
+            Data pairset = _d.offset_subtable(F1_HEADERSIZE + i.coverage_index()*F1_RECSIZE);
+            int npair = pairset.u16(0);
+            for (int j = 0; j < npair; j++) {
+                Data pair = pairset.subtable(PAIRSET_HEADERSIZE + j*pairvalue_size);
+                v.push_back(Positioning(Position(*i, format1, pair.subtable(PAIRVALUE_HEADERSIZE)),
+                                        Position(pair.u16(0), format2, pair.subtable(f2_pos))));
+            }
+        }
+    } else {                    // _d[1] == 2
+        int format1 = _d.u16(4);
+        int format2 = _d.u16(6);
+        int f2_pos = GposValue::size(format1);
+        int recsize = f2_pos + GposValue::size(format2);
+        ClassDef class1(_d.offset_subtable(8));
+        ClassDef class2(_d.offset_subtable(10));
+        Coverage coverage = this->coverage();
+        int nclass1 = _d.u16(12);
+        int nclass2 = _d.u16(14);
+        int offset = F2_HEADERSIZE;
+        for (int c1 = 0; c1 < nclass1; c1++)
+            for (int c2 = 0; c2 < nclass2; c2++, offset += recsize) {
+                Position p1(format1, _d.subtable(offset));
+                Position p2(format2, _d.subtable(offset + f2_pos));
+                if (p1 || p2) {
+                    for (ClassDef::class_iterator c1i = class1.begin(c1, coverage); c1i; c1i++)
+                        for (ClassDef::class_iterator c2i = class2.begin(c2); c2i; c2i++)
+                            v.push_back(Positioning(Position(*c1i, p1), Position(*c2i, p2)));
+                }
+            }
     }
 }
 
@@ -252,11 +252,11 @@ static void
 unparse_glyphid(StringAccum &sa, Glyph gid, const Vector<PermString> *gns)
 {
     if (!gns)
-	gns = &debug_glyph_names;
+        gns = &debug_glyph_names;
     if (gid && gns && gns->size() > gid && (*gns)[gid])
-	sa << (*gns)[gid];
+        sa << (*gns)[gid];
     else
-	sa << "g" << gid;
+        sa << "g" << gid;
 }
 
 void
@@ -264,10 +264,10 @@ Position::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 {
     unparse_glyphid(sa, g, gns);
     if (placed())
-	sa << '@' << pdx << ',' << pdy;
+        sa << '@' << pdx << ',' << pdy;
     sa << '+' << adx;
     if (ady)
-	sa << '/' << ady;
+        sa << '/' << ady;
 }
 
 String
@@ -294,25 +294,25 @@ void
 Positioning::unparse(StringAccum &sa, const Vector<PermString> *gns) const
 {
     if (!*this)
-	sa << "NULL[]";
+        sa << "NULL[]";
     else if (is_single()) {
-	sa << "SINGLE[";
-	_left.unparse(sa, gns);
-	sa << ']';
+        sa << "SINGLE[";
+        _left.unparse(sa, gns);
+        sa << ']';
     } else if (is_pairkern()) {
-	sa << "KERN[";
-	unparse_glyphid(sa, _left.g, gns);
-	sa << ' ';
-	unparse_glyphid(sa, _right.g, gns);
-	sa << "+" << _left.adx << ']';
+        sa << "KERN[";
+        unparse_glyphid(sa, _left.g, gns);
+        sa << ' ';
+        unparse_glyphid(sa, _right.g, gns);
+        sa << "+" << _left.adx << ']';
     } else if (is_pair()) {
-	sa << "PAIR[";
-	_left.unparse(sa, gns);
-	sa << ' ';
-	_right.unparse(sa, gns);
-	sa << ']';
+        sa << "PAIR[";
+        _left.unparse(sa, gns);
+        sa << ' ';
+        _right.unparse(sa, gns);
+        sa << ']';
     } else
-	sa << "UNKNOWN[]";
+        sa << "UNKNOWN[]";
 }
 
 String

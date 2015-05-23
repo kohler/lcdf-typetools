@@ -38,12 +38,12 @@ class PsresDatabaseSection { public:
 
     PsresDatabaseSection(PermString);
 
-    PermString section_name() const		{ return _section_name; }
+    PermString section_name() const             { return _section_name; }
 
     void add_psres_file_section(Slurper&, PermString, bool);
     void add_section(PsresDatabaseSection*, bool override);
 
-    const String& value(PermString key)		{ return value(_map[key]); }
+    const String& value(PermString key)         { return value(_map[key]); }
     inline const String& unescaped_value(PermString key) const;
     Filename filename_value(PermString key);
 

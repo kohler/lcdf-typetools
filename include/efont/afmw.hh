@@ -19,7 +19,7 @@ class AfmWriter { public:
     void write_kerns() const;
     void write();
 
-    double fd(int i) const		{ return _m->fd(i); }
+    double fd(int i) const              { return _m->fd(i); }
 
     AfmWriter(Metrics *, FILE *);
 

@@ -29,18 +29,18 @@ Os2::Os2(const Data &data, ErrorHandler *errh)
 {
     _error = parse_header(errh ? errh : ErrorHandler::silent_handler());
     if (_error < 0)
-	_data = Data();
+        _data = Data();
 }
 
 int
 Os2::parse_header(ErrorHandler *errh)
 {
     // HEADER FORMAT:
-    // USHORT	version
+    // USHORT   version
     if (HEADER_SIZE > _data.length())
-	return errh->error("OTF OS/2 table too small"), -EFAULT;
+        return errh->error("OTF OS/2 table too small"), -EFAULT;
     if (_data.u16(0) > 5)
-	return errh->error("unexpected OS/2 version number %d", _data.u16(0)), -ERANGE;
+        return errh->error("unexpected OS/2 version number %d", _data.u16(0)), -ERANGE;
     return 0;
 }
 

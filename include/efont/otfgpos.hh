@@ -30,14 +30,14 @@ class Gpos { public:
 
 class GposLookup { public:
     GposLookup(const Data &) throw (Error);
-    int type() const			{ return _type; }
-    uint16_t flags() const		{ return _d.u16(2); }
+    int type() const                    { return _type; }
+    uint16_t flags() const              { return _d.u16(2); }
     bool unparse_automatics(Vector<Positioning> &, ErrorHandler * = 0) const;
     enum {
-	HEADERSIZE = 6, RECSIZE = 2,
-	L_SINGLE = 1, L_PAIR = 2, L_CURSIVE = 3, L_MARKTOBASE = 4,
-	L_MARKTOLIGATURE = 5, L_MARKTOMARK = 6, L_CONTEXT = 7,
-	L_CHAIN = 8, L_EXTENSION = 9
+        HEADERSIZE = 6, RECSIZE = 2,
+        L_SINGLE = 1, L_PAIR = 2, L_CURSIVE = 3, L_MARKTOBASE = 4,
+        L_MARKTOLIGATURE = 5, L_MARKTOMARK = 6, L_CONTEXT = 7,
+        L_CHAIN = 8, L_EXTENSION = 9
     };
   private:
     Data _d;
@@ -52,14 +52,14 @@ class GposValue { public:
     static inline int16_t xadvance(uint16_t format, const Data &);
     static inline int16_t yadvance(uint16_t format, const Data &);
     enum {
-	F_XPLACEMENT = 0x0001,
-	F_YPLACEMENT = 0x0002,
-	F_XADVANCE = 0x0004,
-	F_YADVANCE = 0x0008,
-	F_XPLACEMENT_DEVICE = 0x0010,
-	F_YPLACEMENT_DEVICE = 0x0020,
-	F_XADVANCE_DEVICE = 0x0040,
-	F_YADVANCE_DEVICE = 0x0080
+        F_XPLACEMENT = 0x0001,
+        F_YPLACEMENT = 0x0002,
+        F_XADVANCE = 0x0004,
+        F_YADVANCE = 0x0008,
+        F_XPLACEMENT_DEVICE = 0x0010,
+        F_YPLACEMENT_DEVICE = 0x0020,
+        F_XADVANCE_DEVICE = 0x0040,
+        F_YADVANCE_DEVICE = 0x0080
     };
   private:
     static const int nibble_bitcount_x2[];
@@ -81,25 +81,25 @@ class GposPair { public:
     Coverage coverage() const throw ();
     void unparse(Vector<Positioning> &) const;
     enum { F1_HEADERSIZE = 10, F1_RECSIZE = 2,
-	   PAIRSET_HEADERSIZE = 2, PAIRVALUE_HEADERSIZE = 2,
-	   F2_HEADERSIZE = 16 };
+           PAIRSET_HEADERSIZE = 2, PAIRVALUE_HEADERSIZE = 2,
+           F2_HEADERSIZE = 16 };
   private:
     Data _d;
 };
 
 struct Position {
     Glyph g;
-    int pdx, pdy;		// placement
-    int adx, ady;		// advance
+    int pdx, pdy;               // placement
+    int adx, ady;               // advance
     inline Position();
     inline Position(Glyph, uint16_t format, const Data &);
     inline Position(uint16_t format, const Data &);
     inline Position(Glyph, const Position &);
     inline Position(Glyph g, int pdx, int pdy, int adx, int ady);
-    bool empty() const		{ return pdx == 0 && pdy == 0 && adx == 0 && ady == 0; }
-    operator bool() const	{ return !empty(); }
-    bool h_empty() const	{ return pdx == 0 && pdy == 0 && adx == 0; }
-    bool placed() const		{ return pdx != 0 || pdy != 0; }
+    bool empty() const          { return pdx == 0 && pdy == 0 && adx == 0 && ady == 0; }
+    operator bool() const       { return !empty(); }
+    bool h_empty() const        { return pdx == 0 && pdy == 0 && adx == 0; }
+    bool placed() const         { return pdx != 0 || pdy != 0; }
     void unparse(StringAccum &, const Vector<PermString> * = 0) const;
     String unparse(const Vector<PermString> * = 0) const;
 };
@@ -124,10 +124,10 @@ class Positioning { public:
     inline bool is_pairkern() const;
 
     // extract data
-    const Position &left() const	{ return _left; }
-    Glyph left_glyph() const		{ return _left.g; }
-    const Position &right() const	{ return _right; }
-    Glyph right_glyph() const		{ return _right.g; }
+    const Position &left() const        { return _left; }
+    Glyph left_glyph() const            { return _left.g; }
+    const Position &right() const       { return _right; }
+    Glyph right_glyph() const           { return _right.g; }
     inline void all_in_glyphs(Vector<Glyph> &gs) const;
 
     void unparse(StringAccum &, const Vector<PermString> * = 0) const;
@@ -148,33 +148,33 @@ inline int GposValue::size(uint16_t format)
 inline int16_t GposValue::xplacement(uint16_t format, const Data &d)
 {
     if (format & F_XPLACEMENT)
-	return d.s16(0);
+        return d.s16(0);
     else
-	return 0;
+        return 0;
 }
 
 inline int16_t GposValue::yplacement(uint16_t format, const Data &d)
 {
     if (format & F_YPLACEMENT)
-	return d.s16((format & F_XPLACEMENT ? 2 : 0));
+        return d.s16((format & F_XPLACEMENT ? 2 : 0));
     else
-	return 0;
+        return 0;
 }
 
 inline int16_t GposValue::xadvance(uint16_t format, const Data &d)
 {
     if (format & F_XADVANCE)
-	return d.s16(nibble_bitcount_x2[format & (F_XADVANCE - 1)]);
+        return d.s16(nibble_bitcount_x2[format & (F_XADVANCE - 1)]);
     else
-	return 0;
+        return 0;
 }
 
 inline int16_t GposValue::yadvance(uint16_t format, const Data &d)
 {
     if (format & F_YADVANCE)
-	return d.s16(nibble_bitcount_x2[format & (F_YADVANCE - 1)]);
+        return d.s16(nibble_bitcount_x2[format & (F_YADVANCE - 1)]);
     else
-	return 0;
+        return 0;
 }
 
 inline Position::Position()
@@ -240,9 +240,9 @@ inline void Positioning::all_in_glyphs(Vector<Glyph> &gs) const
 {
     gs.clear();
     if (_left.g != 0)
-	gs.push_back(_left.g);
+        gs.push_back(_left.g);
     if (_right.g != 0)
-	gs.push_back(_right.g);
+        gs.push_back(_right.g);
 }
 
 }}

@@ -24,7 +24,7 @@ struct AmfmMaster {
     bool loaded;
     Metrics *afm;
 
-    AmfmMaster()			: loaded(0), afm(0) { }
+    AmfmMaster()                        : loaded(0), afm(0) { }
 
 };
 
@@ -44,25 +44,25 @@ class AmfmMetrics { public:
     AmfmMetrics(MetricsFinder *);
     ~AmfmMetrics();
 
-    void use()				{ _uses++; }
-    void unuse()			{ if (--_uses == 0) delete this; }
+    void use()                          { _uses++; }
+    void unuse()                        { if (--_uses == 0) delete this; }
 
     bool sanity(ErrorHandler *) const;
 
-    double fd(int i) const		{ return _fdv[i]; }
-    double &fd(int i)			{ return _fdv[i]; }
+    double fd(int i) const              { return _fdv[i]; }
+    double &fd(int i)                   { return _fdv[i]; }
 
-    PermString font_name() const	{ return _font_name; }
-    PermString directory() const	{ return _directory; }
+    PermString font_name() const        { return _font_name; }
+    PermString directory() const        { return _directory; }
 
-    int naxes() const			{ return _naxes; }
-    int nmasters() const		{ return _nmasters; }
+    int naxes() const                   { return _naxes; }
+    int nmasters() const                { return _nmasters; }
     MultipleMasterSpace *mmspace() const { return _mmspace; }
 
     int primary_label_value(int, PermString) const;
 
     Metrics *interpolate(const Vector<double> &design,
-			 const Vector<double> &weight, ErrorHandler *);
+                         const Vector<double> &weight, ErrorHandler *);
 
   private:
 
@@ -96,8 +96,8 @@ class AmfmMetrics { public:
 
     friend class AmfmReader;
 
-    AmfmMetrics(const AmfmMetrics &)		{ assert(0); }
-    AmfmMetrics &operator=(const AmfmMetrics &)	{ assert(0); return *this; }
+    AmfmMetrics(const AmfmMetrics &)            { assert(0); }
+    AmfmMetrics &operator=(const AmfmMetrics &) { assert(0); return *this; }
 
     AmfmPrimaryFont *find_primary_font(const Vector<double> &design) const;
 
@@ -122,9 +122,9 @@ class AmfmReader { public:
     MultipleMasterSpace *_mmspace;
     ErrorHandler *_errh;
 
-    double &fd(int i) const		{ return _amfm->fd(i); }
-    int naxes() const			{ return _amfm->_naxes; }
-    int nmasters() const		{ return _amfm->_nmasters; }
+    double &fd(int i) const             { return _amfm->fd(i); }
+    int naxes() const                   { return _amfm->_naxes; }
+    int nmasters() const                { return _amfm->_nmasters; }
 
     void check_mmspace();
 

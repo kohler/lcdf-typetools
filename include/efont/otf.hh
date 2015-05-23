@@ -8,26 +8,26 @@ namespace Efont { namespace OpenType {
 class Post;
 class Name;
 
-typedef int Glyph;			// 16-bit integer
+typedef int Glyph;                      // 16-bit integer
 
 class Tag {
   public:
-    Tag()				: _tag(0U) { }
-    explicit Tag(uint32_t tag)		: _tag(tag) { }
+    Tag()                               : _tag(0U) { }
+    explicit Tag(uint32_t tag)          : _tag(tag) { }
     Tag(const char *name);
     Tag(const String &name);
     // default destructor
 
-    static Tag head_tag()		{ return Tag(0x68656164U); }
+    static Tag head_tag()               { return Tag(0x68656164U); }
 
     typedef bool (Tag::*unspecified_bool_type)() const;
-    bool null() const			{ return _tag == 0; }
+    bool null() const                   { return _tag == 0; }
     operator unspecified_bool_type() const {
         return _tag != 0 ? &Tag::null : 0;
     }
     bool valid() const;
 
-    uint32_t value() const		{ return _tag; }
+    uint32_t value() const              { return _tag; }
 
     String text() const;
     static String langsys_text(Tag script, Tag langsys = Tag());
@@ -51,15 +51,15 @@ class Font {
     Font(const String& str, ErrorHandler* errh = 0);
     // default destructor
 
-    bool ok() const			{ return _error >= 0; }
+    bool ok() const                     { return _error >= 0; }
     bool check_checksums(ErrorHandler* errh = 0) const;
-    int error() const			{ return _error; }
+    int error() const                   { return _error; }
 
-    const String& data_string() const	{ return _str; }
-    const uint8_t* data() const		{ return _str.udata(); }
-    int length() const			{ return _str.length(); }
+    const String& data_string() const   { return _str; }
+    const uint8_t* data() const         { return _str.udata(); }
+    int length() const                  { return _str.length(); }
 
-    unsigned units_per_em() const	{ return _units_per_em; }
+    unsigned units_per_em() const       { return _units_per_em; }
 
     int ntables() const;
     bool has_table(Tag tag) const;
@@ -83,20 +83,20 @@ class Font {
 
 class ScriptList {
   public:
-    ScriptList()		{ }
+    ScriptList()                { }
     inline ScriptList(const String&, ErrorHandler* = 0);
     int assign(const String&, ErrorHandler* = 0);
     // default destructor
 
-    bool ok() const			{ return _str.length() > 0; }
+    bool ok() const                     { return _str.length() > 0; }
 
     int language_systems(Vector<Tag>& scripts, Vector<Tag>& langsys, ErrorHandler* = 0) const;
     int features(Tag script, Tag langsys, int& required_fid, Vector<int>& fids, ErrorHandler* = 0, bool clear_fids = true) const;
 
   private:
     enum { SCRIPTLIST_HEADERSIZE = 2, SCRIPT_RECSIZE = 6,
-	   SCRIPT_HEADERSIZE = 4, LANGSYS_RECSIZE = 6,
-	   LANGSYS_HEADERSIZE = 6, FEATURE_RECSIZE = 2 };
+           SCRIPT_HEADERSIZE = 4, LANGSYS_RECSIZE = 6,
+           LANGSYS_HEADERSIZE = 6, FEATURE_RECSIZE = 2 };
 
     String _str;
 
@@ -108,12 +108,12 @@ class ScriptList {
 
 class FeatureList {
   public:
-    FeatureList()		{ }
+    FeatureList()               { }
     inline FeatureList(const String&, ErrorHandler* = 0);
     int assign(const String&, ErrorHandler* = 0);
     // default destructor
 
-    bool ok() const			{ return _str.length() > 0; }
+    bool ok() const                     { return _str.length() > 0; }
 
     Tag tag(int fid) const;
     String params(int fid, int length, ErrorHandler* = 0, bool old_style_offset = false) const;
@@ -131,7 +131,7 @@ class FeatureList {
 
   private:
     enum { FEATURELIST_HEADERSIZE = 2, FEATURE_RECSIZE = 6,
-	   FEATURE_HEADERSIZE = 4, LOOKUPLIST_RECSIZE = 2 };
+           FEATURE_HEADERSIZE = 4, LOOKUPLIST_RECSIZE = 2 };
 
     String _str;
 
@@ -142,62 +142,62 @@ class FeatureList {
 
 class Coverage {
   public:
-    Coverage() throw ();		// empty coverage
-    Coverage(Glyph first, Glyph last) throw ();	// range coverage
+    Coverage() throw ();                // empty coverage
+    Coverage(Glyph first, Glyph last) throw (); // range coverage
     Coverage(const Vector<bool> &gmap) throw (); // used-bytemap coverage
     Coverage(const String &str, ErrorHandler *errh = 0, bool check = true) throw ();
     // default destructor
 
-    bool ok() const throw ()		{ return _str.length() > 0; }
+    bool ok() const throw ()            { return _str.length() > 0; }
     int size() const throw ();
     bool has_fast_covers() const throw () {
-	return _str.length() > 0 && _str.data()[1] == T_X_BYTEMAP;
+        return _str.length() > 0 && _str.data()[1] == T_X_BYTEMAP;
     }
 
     int coverage_index(Glyph) const throw ();
-    bool covers(Glyph g) const throw ()	{ return coverage_index(g) >= 0; }
+    bool covers(Glyph g) const throw () { return coverage_index(g) >= 0; }
 
     void unparse(StringAccum&) const throw ();
     String unparse() const throw ();
 
     class iterator { public:
-	iterator()			: _pos(0), _value(0) { }
-	// private constructor
-	// default destructor
+        iterator()                      : _pos(0), _value(0) { }
+        // private constructor
+        // default destructor
 
-	bool ok() const			{ return _pos < _str.length(); }
-	operator bool() const		{ return ok(); }
+        bool ok() const                 { return _pos < _str.length(); }
+        operator bool() const           { return ok(); }
 
-	Glyph operator*() const		{ return _value; }
-	Glyph value() const		{ return _value; }
-	int coverage_index() const;
+        Glyph operator*() const         { return _value; }
+        Glyph value() const             { return _value; }
+        int coverage_index() const;
 
-	void operator++(int);
-	void operator++()		{ (*this)++; }
-	bool forward_to(Glyph);
+        void operator++(int);
+        void operator++()               { (*this)++; }
+        bool forward_to(Glyph);
 
-	// XXX should check iterators are of same type
-	bool operator<(const iterator& o) { return _value < o._value; }
-	bool operator<=(const iterator& o) { return _value <= o._value; }
-	bool operator>=(const iterator& o) { return _value >= o._value; }
-	bool operator>(const iterator& o) { return _value > o._value; }
-	bool operator==(const iterator& o) { return _value == o._value; }
-	bool operator!=(const iterator& o) { return _value != o._value; }
+        // XXX should check iterators are of same type
+        bool operator<(const iterator& o) { return _value < o._value; }
+        bool operator<=(const iterator& o) { return _value <= o._value; }
+        bool operator>=(const iterator& o) { return _value >= o._value; }
+        bool operator>(const iterator& o) { return _value > o._value; }
+        bool operator==(const iterator& o) { return _value == o._value; }
+        bool operator!=(const iterator& o) { return _value != o._value; }
 
       private:
-	String _str;
-	int _pos;
-	Glyph _value;
-	friend class Coverage;
-	iterator(const String &str, bool is_end);
+        String _str;
+        int _pos;
+        Glyph _value;
+        friend class Coverage;
+        iterator(const String &str, bool is_end);
     };
 
-    iterator begin() const		{ return iterator(_str, false); }
-    iterator end() const		{ return iterator(_str, true); }
+    iterator begin() const              { return iterator(_str, false); }
+    iterator end() const                { return iterator(_str, true); }
     Glyph operator[](int) const throw ();
 
     enum { T_LIST = 1, T_RANGES = 2, T_X_BYTEMAP = 3,
-	   HEADERSIZE = 4, LIST_RECSIZE = 2, RANGES_RECSIZE = 6 };
+           HEADERSIZE = 4, LIST_RECSIZE = 2, RANGES_RECSIZE = 6 };
 
   private:
     String _str;
@@ -221,16 +221,16 @@ class GlyphSet {
     inline bool covers(Glyph g) const;
     inline bool operator[](Glyph g) const;
     int change(Glyph, bool);
-    void insert(Glyph g)		{ change(g, true); }
-    void remove(Glyph g)		{ change(g, false); }
+    void insert(Glyph g)                { change(g, true); }
+    void remove(Glyph g)                { change(g, false); }
 
     GlyphSet& operator=(const GlyphSet&);
 
   private:
     enum { GLYPHBITS = 16, SHIFT = 8,
-	   MAXGLYPH = (1 << GLYPHBITS) - 1, UNSHIFT = GLYPHBITS - SHIFT,
-	   MASK = (1 << UNSHIFT) - 1, VLEN = (1 << SHIFT),
-	   VULEN = (1 << UNSHIFT) >> 5
+           MAXGLYPH = (1 << GLYPHBITS) - 1, UNSHIFT = GLYPHBITS - SHIFT,
+           MASK = (1 << UNSHIFT) - 1, VLEN = (1 << SHIFT),
+           VULEN = (1 << UNSHIFT) >> 5
     };
 
     uint32_t* _v[VLEN];
@@ -241,7 +241,7 @@ class ClassDef {
     ClassDef(const String&, ErrorHandler* = 0) throw ();
     // default destructor
 
-    bool ok() const			{ return _str.length() > 0; }
+    bool ok() const                     { return _str.length() > 0; }
     int nclass() const throw ();
 
     int lookup(Glyph) const throw ();
@@ -252,46 +252,46 @@ class ClassDef {
 
     class class_iterator {
       public:
-	// private constructor
-	// default destructor
+        // private constructor
+        // default destructor
 
-	bool ok() const			{ return _pos < _str.length(); }
-	operator bool() const		{ return ok(); }
+        bool ok() const                 { return _pos < _str.length(); }
+        operator bool() const           { return ok(); }
 
-	Glyph operator*() const		{ return *_coviter; }
-	Glyph value() const		{ return *_coviter; }
-	int class_value() const		{ return _class; }
+        Glyph operator*() const         { return *_coviter; }
+        Glyph value() const             { return *_coviter; }
+        int class_value() const         { return _class; }
 
-	void operator++(int);
-	void operator++()		{ (*this)++; }
+        void operator++(int);
+        void operator++()               { (*this)++; }
 
-	// XXX should check iterators are of same type
-	bool operator<(const class_iterator& o) { return _coviter < o._coviter; }
-	bool operator<=(const class_iterator& o) { return _coviter <= o._coviter; }
-	bool operator>=(const class_iterator& o) { return _coviter >= o._coviter; }
-	bool operator>(const class_iterator& o) { return _coviter > o._coviter; }
-	bool operator==(const class_iterator& o) { return _coviter == o._coviter; }
-	bool operator!=(const class_iterator& o) { return _coviter != o._coviter; }
+        // XXX should check iterators are of same type
+        bool operator<(const class_iterator& o) { return _coviter < o._coviter; }
+        bool operator<=(const class_iterator& o) { return _coviter <= o._coviter; }
+        bool operator>=(const class_iterator& o) { return _coviter >= o._coviter; }
+        bool operator>(const class_iterator& o) { return _coviter > o._coviter; }
+        bool operator==(const class_iterator& o) { return _coviter == o._coviter; }
+        bool operator!=(const class_iterator& o) { return _coviter != o._coviter; }
 
       private:
-	String _str;
-	int _pos;
-	int _class;
-	Coverage::iterator _coviter;
-	friend class ClassDef;
-	class_iterator(const String&, int, int, const Coverage::iterator&);
-	void increment_class0();
-	enum { FIRST_POS = -1, LAST_POS = -2 };
+        String _str;
+        int _pos;
+        int _class;
+        Coverage::iterator _coviter;
+        friend class ClassDef;
+        class_iterator(const String&, int, int, const Coverage::iterator&);
+        void increment_class0();
+        enum { FIRST_POS = -1, LAST_POS = -2 };
     };
 
     // XXX does not work correctly for class 0
-    class_iterator begin(int c) const	{ return class_iterator(_str, 0, c, Coverage::iterator()); }
+    class_iterator begin(int c) const   { return class_iterator(_str, 0, c, Coverage::iterator()); }
     class_iterator begin(int c, const Coverage& coverage) const { return class_iterator(_str, 0, c, coverage.begin()); }
-    class_iterator end(int c) const	{ return class_iterator(_str, _str.length(), c, Coverage::iterator()); }
+    class_iterator end(int c) const     { return class_iterator(_str, _str.length(), c, Coverage::iterator()); }
 
     enum { T_LIST = 1, T_RANGES = 2,
-	   LIST_HEADERSIZE = 6, LIST_RECSIZE = 2,
-	   RANGES_HEADERSIZE = 4, RANGES_RECSIZE = 6 };
+           LIST_HEADERSIZE = 6, LIST_RECSIZE = 2,
+           RANGES_HEADERSIZE = 4, RANGES_RECSIZE = 6 };
 
   private:
     String _str;
@@ -354,11 +354,11 @@ inline void FeatureList::filter(Vector<int>& fids, Tag ftag) const {
 
 inline bool GlyphSet::covers(Glyph g) const {
     if ((unsigned)g > MAXGLYPH)
-	return false;
+        return false;
     else if (const uint32_t* u = _v[g >> SHIFT])
-	return (u[(g & MASK) >> 5] & (1 << (g & 0x1F))) != 0;
+        return (u[(g & MASK) >> 5] & (1 << (g & 0x1F))) != 0;
     else
-	return false;
+        return false;
 }
 
 inline bool GlyphSet::operator[](Glyph g) const {

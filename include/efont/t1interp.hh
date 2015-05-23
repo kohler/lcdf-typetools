@@ -10,39 +10,39 @@ class CharstringInterp { public:
 
     CharstringInterp();
     CharstringInterp(const Vector<double> &weight_vec);
-    virtual ~CharstringInterp()			{ }
+    virtual ~CharstringInterp()                 { }
 
-    int error() const				{ return _error; }
-    int error_data() const			{ return _error_data; }
+    int error() const                           { return _error; }
+    int error_data() const                      { return _error_data; }
     static String error_string(int error, int error_data);
     inline String error_string() const;
 
-    bool careful() const			{ return _careful; }
-    void set_careful(bool c)			{ _careful = c; }
+    bool careful() const                        { return _careful; }
+    void set_careful(bool c)                    { _careful = c; }
 
-    bool done() const				{ return _done; }
-    void set_done()				{ _done = true; }
+    bool done() const                           { return _done; }
+    void set_done()                             { _done = true; }
 
-    int size() const				{ return _sp; }
-    double &at(unsigned i)			{ return _s[i]; }
-    double &top(unsigned i = 0)			{ return _s[_sp - i - 1]; }
-    double pop(unsigned n = 1)			{ _sp -= n; return _s[_sp]; }
+    int size() const                            { return _sp; }
+    double &at(unsigned i)                      { return _s[i]; }
+    double &top(unsigned i = 0)                 { return _s[_sp - i - 1]; }
+    double pop(unsigned n = 1)                  { _sp -= n; return _s[_sp]; }
     inline void push(double);
-    void clear()				{ _sp = 0; }
+    void clear()                                { _sp = 0; }
 
-    int ps_size() const				{ return _ps_sp; }
-    double ps_at(unsigned i) const		{ return _ps_s[i]; }
-    double ps_pop()				{ return _ps_s[--_ps_sp]; }
+    int ps_size() const                         { return _ps_sp; }
+    double ps_at(unsigned i) const              { return _ps_s[i]; }
+    double ps_pop()                             { return _ps_s[--_ps_sp]; }
     inline void ps_push(double);
-    void ps_clear()				{ _ps_sp = 0; }
+    void ps_clear()                             { _ps_sp = 0; }
 
-    int subr_depth() const			{ return _subr_depth; }
+    int subr_depth() const                      { return _subr_depth; }
 
     inline double &vec(Vector<double> *, int);
-    const Vector<double> &weight_vector() const	{ return _weight_vector; }
-    Vector<double> *scratch_vector()		{ return &_scratch_vector; }
+    const Vector<double> &weight_vector() const { return _weight_vector; }
+    Vector<double> *scratch_vector()            { return &_scratch_vector; }
 
-    const CharstringProgram *program() const	{ return _program; }
+    const CharstringProgram *program() const    { return _program; }
     inline Charstring *get_subr(int) const;
     inline Charstring *get_gsubr(int) const;
     inline Charstring *get_xsubr(bool g, int) const;
@@ -52,7 +52,7 @@ class CharstringInterp { public:
     inline bool interpret(const CharstringContext &);
 
     //virtual void init(const CharstringProgram *);
-    bool error(int c)				{ return error(c, 0); }
+    bool error(int c)                           { return error(c, 0); }
     virtual bool error(int, int);
     virtual bool number(double);
 
@@ -65,9 +65,9 @@ class CharstringInterp { public:
     bool mm_command(int, int);
     bool itc_command(int, int);
 
-    const Point &left_sidebearing() const	{ return _lsb; }
-    const Point &currentpoint() const		{ return _cp; }
-    void set_state_path()			{ _state = S_PATH; }
+    const Point &left_sidebearing() const       { return _lsb; }
+    const Point &currentpoint() const           { return _cp; }
+    void set_state_path()                       { _state = S_PATH; }
 
     virtual bool callothersubr_command(int, int);
     virtual bool type1_command(int);
@@ -94,30 +94,30 @@ class CharstringInterp { public:
     typedef Charstring Cs;
 
     enum Errors {
-	errOK		= 0,
-	errInternal	= -1,
-	errRunoff	= -2,
-	errUnimplemented = -3,
-	errOverflow	= -4,
-	errUnderflow	= -5,
-	errVector	= -6,
-	errValue	= -7,
-	errSubr		= -8,
-	errGlyph	= -9,
-	errCurrentPoint	= -10,
-	errFlex		= -11,
-	errMultipleMaster = -12,
-	errOpenStroke	= -13,
-	errLateSidebearing = -14,
-	errOthersubr	= -15,
-	errOrdering	= -16,
-	errHintmask	= -17,
-	errSubrDepth	= -18,
-	errLastError	= -18
+        errOK           = 0,
+        errInternal     = -1,
+        errRunoff       = -2,
+        errUnimplemented = -3,
+        errOverflow     = -4,
+        errUnderflow    = -5,
+        errVector       = -6,
+        errValue        = -7,
+        errSubr         = -8,
+        errGlyph        = -9,
+        errCurrentPoint = -10,
+        errFlex         = -11,
+        errMultipleMaster = -12,
+        errOpenStroke   = -13,
+        errLateSidebearing = -14,
+        errOthersubr    = -15,
+        errOrdering     = -16,
+        errHintmask     = -17,
+        errSubrDepth    = -18,
+        errLastError    = -18
     };
 
     enum { STACK_SIZE = 48, PS_STACK_SIZE = 24, MAX_SUBR_DEPTH = 10,
-	   SCRATCH_SIZE = 32 };
+           SCRATCH_SIZE = 32 };
 
   private:
 
@@ -143,7 +143,7 @@ class CharstringInterp { public:
     const CharstringProgram *_program;
 
     enum State {
-	S_INITIAL, S_SEAC, S_SBW, S_HSTEM, S_VSTEM, S_HINTMASK, S_IPATH, S_PATH
+        S_INITIAL, S_SEAC, S_SBW, S_HSTEM, S_VSTEM, S_HINTMASK, S_IPATH, S_PATH
     };
     State _state;
     bool _flex;
@@ -177,26 +177,26 @@ inline String CharstringInterp::error_string() const
 inline void CharstringInterp::push(double d)
 {
     if (_sp < STACK_SIZE)
-	_s[_sp++] = d;
+        _s[_sp++] = d;
     else
-	error(errOverflow);
+        error(errOverflow);
 }
 
 inline void CharstringInterp::ps_push(double d)
 {
     if (_ps_sp < PS_STACK_SIZE)
-	_ps_s[_ps_sp++] = d;
+        _ps_s[_ps_sp++] = d;
     else
-	error(errOverflow);
+        error(errOverflow);
 }
 
 inline double &CharstringInterp::vec(Vector<double> *v, int i)
 {
     if (i < 0 || i >= v->size()) {
-	error(errVector);
-	return double_for_error;
+        error(errVector);
+        return double_for_error;
     } else
-	return v->at_u(i);
+        return v->at_u(i);
 }
 
 inline Charstring *CharstringInterp::get_subr(int n) const
@@ -222,7 +222,7 @@ inline Charstring *CharstringInterp::get_glyph(PermString n) const
 inline void CharstringInterp::ensure_weight_vector()
 {
     if (!_weight_vector.size())
-	fetch_weight_vector();
+        fetch_weight_vector();
 }
 
 inline bool CharstringInterp::callxsubr_command(bool g)

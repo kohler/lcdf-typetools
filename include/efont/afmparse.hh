@@ -10,29 +10,29 @@ class AfmParser { public:
 
     AfmParser(Slurper &);
 
-    bool ok() const			{ return _slurper.ok(); }
-    operator Landmark() const		{ return _slurper.landmark(); }
-    Landmark landmark() const		{ return _slurper.landmark(); }
-    unsigned lineno() const		{ return _slurper.lineno(); }
-    const Filename &filename() const	{ return _slurper.filename(); }
+    bool ok() const                     { return _slurper.ok(); }
+    operator Landmark() const           { return _slurper.landmark(); }
+    Landmark landmark() const           { return _slurper.landmark(); }
+    unsigned lineno() const             { return _slurper.lineno(); }
+    const Filename &filename() const    { return _slurper.filename(); }
 
-    bool key_matched() const		{ return _fail_field >= 0; }
-    int fail_field() const		{ return _fail_field; }
-    PermString message() const		{ return _message; }
-    void clear_message()		{ _message = PermString(); }
+    bool key_matched() const            { return _fail_field >= 0; }
+    int fail_field() const              { return _fail_field; }
+    PermString message() const          { return _message; }
+    void clear_message()                { _message = PermString(); }
 
     PermString keyword() const;
     bool is(const char *, ...);
     bool isall(const char *, ...);
 
     inline bool next_line();
-    void save_line()			{ _slurper.save_line(); }
+    void save_line()                    { _slurper.save_line(); }
     void skip_until(unsigned char);
 
-    unsigned char *cur_line() const	{ return _pos; }
-    unsigned char first() const		{ return _pos[0]; }
+    unsigned char *cur_line() const     { return _pos; }
+    unsigned char first() const         { return _pos[0]; }
     unsigned char operator[](int i) const { return _pos[i]; }
-    bool left() const			{ return *_pos != 0; }
+    bool left() const                   { return *_pos != 0; }
 
   private:
 

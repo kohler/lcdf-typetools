@@ -209,7 +209,7 @@ static const Mapping languages[] = {
     { T("DCR "), "Woods Cree" },
     { T("DEU "), "German" },
     { T("DGR "), "Dogri" },
-    { T("DHV "), "Dhivehi" },	// deprecated
+    { T("DHV "), "Dhivehi" },   // deprecated
     { T("DIV "), "Dhivehi" },
     { T("DJR "), "Djerma" },
     { T("DNG "), "Dangme" },
@@ -503,7 +503,7 @@ static const Mapping languages[] = {
     { T("TSG "), "Tsonga" },
     { T("TUA "), "Turoyo Aramaic" },
     { T("TUL "), "Tulu" },
-    { T("TUR "), "Turkish" },	// deprecated?
+    { T("TUR "), "Turkish" },   // deprecated?
     { T("TUV "), "Tuvin" },
     { T("TWI "), "Twi" },
     { T("UDM "), "Udmurt" },
@@ -685,13 +685,13 @@ find_description(uint32_t tag, const Mapping *maps, int n)
     // should use STL...
     int l = 0, r = n;
     while (l < r) {
-	int m = l + (r - l) / 2;
-	if (maps[m].tag < tag)
-	    l = m + 1;
-	else if (maps[m].tag == tag)
-	    return maps[m].description;
-	else
-	    r = m;
+        int m = l + (r - l) / 2;
+        if (maps[m].tag < tag)
+            l = m + 1;
+        else if (maps[m].tag == tag)
+            return maps[m].description;
+        else
+            r = m;
     }
     return 0;
 }

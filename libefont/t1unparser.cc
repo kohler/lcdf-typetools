@@ -43,10 +43,10 @@ bool
 CharstringUnparser::number(double n)
 {
     if (_start_of_line) {
-	_sa << _indent;
-	_start_of_line = false;
+        _sa << _indent;
+        _start_of_line = false;
     } else
-	_sa << ' ';
+        _sa << ' ';
     _sa << n;
     return true;
 }
@@ -55,17 +55,17 @@ bool
 CharstringUnparser::type1_command(int cmd)
 {
     if (_start_of_line) {
-	_sa << _indent;
-	_start_of_line = false;
+        _sa << _indent;
+        _start_of_line = false;
     } else
-	_sa << ' ';
+        _sa << ' ';
     if (cmd >= 0 && cmd <= Cs::cLastCommand)
-	_sa << Cs::command_names[cmd];
+        _sa << Cs::command_names[cmd];
     else
-	_sa << "UNKNOWN_12_" << (cmd - 32);
+        _sa << "UNKNOWN_12_" << (cmd - 32);
     if (_one_command_per_line) {
-	_sa << '\n';
-	_start_of_line = true;
+        _sa << '\n';
+        _start_of_line = true;
     }
     return true;
 }
@@ -74,26 +74,26 @@ bool
 CharstringUnparser::type2_command(int cmd, const unsigned char *data, int *left)
 {
     if (_start_of_line) {
-	_sa << _indent;
-	_start_of_line = false;
+        _sa << _indent;
+        _start_of_line = false;
     } else
-	_sa << ' ';
+        _sa << ' ';
 
     if (cmd >= 0 && cmd <= Cs::cLastCommand)
-	_sa << Cs::command_names[cmd];
+        _sa << Cs::command_names[cmd];
     else
-	_sa << "UNKNOWN_12_" << (cmd - 32);
+        _sa << "UNKNOWN_12_" << (cmd - 32);
 
     switch (cmd) {
       case Cs::cHstem: case Cs::cHstemhm: case Cs::cVstem: case Cs::cVstemhm:
       case Cs::cHintmask: case Cs::cCntrmask:
-	CharstringInterp::type2_command(cmd, data, left);
-	break;
+        CharstringInterp::type2_command(cmd, data, left);
+        break;
     }
 
     if (_one_command_per_line) {
-	_sa << '\n';
-	_start_of_line = true;
+        _sa << '\n';
+        _start_of_line = true;
     }
 
     return true;
@@ -104,7 +104,7 @@ CharstringUnparser::act_hintmask(int, const unsigned char *data, int nhints)
 {
     _sa << '[';
     for (int i = 0; i < nhints; i++, data++)
-	sprintf(_sa.extend(2), "%02X", *data);
+        sprintf(_sa.extend(2), "%02X", *data);
     _sa << ']';
 }
 
@@ -119,11 +119,11 @@ String
 CharstringUnparser::unparse(const Charstring *cs)
 {
     if (cs) {
-	CharstringUnparser u;
-	u.interpret(0, cs);
-	return u.value();
+        CharstringUnparser u;
+        u.interpret(0, cs);
+        return u.value();
     } else
-	return "(null)";
+        return "(null)";
 }
 
 String

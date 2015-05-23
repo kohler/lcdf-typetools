@@ -84,17 +84,17 @@ read_psres_line(Slurper &slurper, int *equals_pos)
     // process backslash escapes
     for (; pos < len - 1; pos++) {
       if (s[pos] == '\\') {
-	// quote the next character
-	pos++;
-	last_escape = pos;
+        // quote the next character
+        pos++;
+        last_escape = pos;
       } else if (!found_eq && s[pos] == '=') {
-	// an equals sign: store its position
-	if (equals_pos) *equals_pos = pos;
-	found_eq = true;
+        // an equals sign: store its position
+        if (equals_pos) *equals_pos = pos;
+        found_eq = true;
       } else if (s[pos] == '%') {
-	// unescaped '%' is a comment; return immediately after shortening line
-	len = pos;
-	goto done;
+        // unescaped '%' is a comment; return immediately after shortening line
+        len = pos;
+        goto done;
       }
     }
 
@@ -136,7 +136,7 @@ psres_escape(char *s, unsigned len)
 
 void
 PsresDatabaseSection::add_psres_file_section
-	(Slurper &slurper, PermString directory, bool override)
+        (Slurper &slurper, PermString directory, bool override)
 {
   int equals_pos;
   bool first_line = true;
@@ -148,9 +148,9 @@ PsresDatabaseSection::add_psres_file_section
     if (first_line) {
       first_line = false;
       if (s[0] == '/') {
-	psres_escape(s + 1, slurper.cur_line_length() - 1);
-	directory = PermString(s + 1);
-	continue;
+        psres_escape(s + 1, slurper.cur_line_length() - 1);
+        directory = PermString(s + 1);
+        continue;
       }
     }
 
@@ -253,8 +253,8 @@ PsresDatabase::add_psres_directory(PermString directory)
   while (struct dirent *dirent = readdir(dir)) {
     int len = DIR_NAMLEN(dirent);
     if (len > 4 && dirent->d_name[0] != '.'
-	&& memcmp(dirent->d_name + len - 4, ".upr", 4) == 0
-	&& (len != 9 || memcmp(dirent->d_name, "PSres.upr", 9) != 0)) {
+        && memcmp(dirent->d_name + len - 4, ".upr", 4) == 0
+        && (len != 9 || memcmp(dirent->d_name, "PSres.upr", 9) != 0)) {
       Filename fn(directory, PermString(dirent->d_name, len));
       add_psres_file(fn, false);
     }
@@ -281,8 +281,8 @@ PsresDatabase::add_psres_directory(PermString directory)
   while (proceed) {
     int len = strlen(find_file_data.cFileName);
     if (len > 4 && find_file_data.cFileName[0] != '.'
-	&& _strnicmp(find_file_data.cFileName + len - 4, ".upr", 4) == 0
-	&& (len != 9 || _strnicmp(find_file_data.cFileName, "PSres.upr", 9) != 0)) {
+        && _strnicmp(find_file_data.cFileName + len - 4, ".upr", 4) == 0
+        && (len != 9 || _strnicmp(find_file_data.cFileName, "PSres.upr", 9) != 0)) {
       Filename fn(directory, PermString(find_file_data.cFileName, len));
       add_psres_file(fn, false);
     }
@@ -296,7 +296,7 @@ PsresDatabase::add_psres_directory(PermString directory)
 
 void
 PsresDatabase::add_psres_path(const char *path, const char *default_path,
-			      bool override)
+                              bool override)
 {
   if (!path && !default_path)
     return;
@@ -320,7 +320,7 @@ PsresDatabase::add_psres_path(const char *path, const char *default_path,
     Filename filename(directory, "PSres.upr");
     if (epath == path) {
       add_psres_path(default_path, 0, false);
-      default_path = 0;	// don't use default path twice
+      default_path = 0; // don't use default path twice
     } else if (!filename.readable() || !add_psres_file(filename, false))
       add_psres_directory(directory);
 
@@ -343,19 +343,19 @@ void
 PsresDatabaseSection::add_section(PsresDatabaseSection *s, bool override)
 {
     for (HashMap<PermString, int>::const_iterator i = s->_map.begin(); i; i++) {
-	int value = i.value();
-	if (_map[i.key()] <= 0) {
-	    int my_index = _directories.size();
-	    _directories.push_back(s->_directories[value]);
-	    _values.push_back(s->_values[value]);
-	    _value_escaped.push_back(s->_value_escaped[value]);
-	    _map.insert(i.key(), my_index);
-	} else if (override) {
-	    int my_index = _map[i.key()];
-	    _directories[my_index] = s->_directories[value];
-	    _values[my_index] = s->_values[value];
-	    _value_escaped[my_index] = s->_value_escaped[value];
-	}
+        int value = i.value();
+        if (_map[i.key()] <= 0) {
+            int my_index = _directories.size();
+            _directories.push_back(s->_directories[value]);
+            _values.push_back(s->_values[value]);
+            _value_escaped.push_back(s->_value_escaped[value]);
+            _map.insert(i.key(), my_index);
+        } else if (override) {
+            int my_index = _map[i.key()];
+            _directories[my_index] = s->_directories[value];
+            _values[my_index] = s->_values[value];
+            _value_escaped[my_index] = s->_value_escaped[value];
+        }
     }
 }
 
@@ -391,9 +391,9 @@ PsresDatabase::value(PermString sec, PermString key) const
 {
     PsresDatabaseSection *s = section(sec);
     if (s)
-	return s->value(key);
+        return s->value(key);
     else
-	return String::make_empty();
+        return String::make_empty();
 }
 
 const String &
@@ -401,9 +401,9 @@ PsresDatabase::unescaped_value(PermString sec, PermString key) const
 {
     PsresDatabaseSection *s = section(sec);
     if (s)
-	return s->unescaped_value(key);
+        return s->unescaped_value(key);
     else
-	return String::make_empty();
+        return String::make_empty();
 }
 
 Filename

@@ -31,7 +31,7 @@ void
 Type1Reader::static_initialize()
 {
     if (xvalue['A'])
-	return;
+        return;
     // rely on static data being initialized to 0
     xvalue['0'] = 0;  xvalue['1'] = 1;  xvalue['2'] = 2;  xvalue['3'] = 3;
     xvalue['4'] = 4;  xvalue['5'] = 5;  xvalue['6'] = 6;  xvalue['7'] = 7;
@@ -66,26 +66,26 @@ void
 Type1Reader::switch_eexec(bool on, unsigned char *data, int len)
 {
     if (on) {
-	if (_pos < len + 3) {
-	    unsigned char *new_data = new unsigned char[len + 3 + DATA_SIZE];
-	    assert(_len <= DATA_SIZE);
-	    memcpy(new_data + len + 3, _data + _pos, _len - _pos);
-	    _len = len + 3 + _len - _pos;
-	    _pos = len + 3;
-	    delete[] _data;
-	    _data = new_data;
-	}
-	int original_pos = _pos;
-	// don't forget _ungot!!
-	if (_ungot >= 0)
-	    _data[--_pos] = _ungot, _ungot = -1;
-	if (_crlf == 0 || _crlf == 2)
-	    _data[--_pos] = '\n';
-	if (_crlf == 1 || _crlf == 2)
-	    _data[--_pos] = '\r';
-	memcpy(_data + _pos - len, data, len);
-	_pos -= len;
-	start_eexec(original_pos - _pos);
+        if (_pos < len + 3) {
+            unsigned char *new_data = new unsigned char[len + 3 + DATA_SIZE];
+            assert(_len <= DATA_SIZE);
+            memcpy(new_data + len + 3, _data + _pos, _len - _pos);
+            _len = len + 3 + _len - _pos;
+            _pos = len + 3;
+            delete[] _data;
+            _data = new_data;
+        }
+        int original_pos = _pos;
+        // don't forget _ungot!!
+        if (_ungot >= 0)
+            _data[--_pos] = _ungot, _ungot = -1;
+        if (_crlf == 0 || _crlf == 2)
+            _data[--_pos] = '\n';
+        if (_crlf == 1 || _crlf == 2)
+            _data[--_pos] = '\r';
+        memcpy(_data + _pos - len, data, len);
+        _pos -= len;
+        start_eexec(original_pos - _pos);
     }
     _eexec = on;
 }
@@ -97,9 +97,9 @@ Type1Reader::more_data()
     _pos = 0;
     _len = more_data(_data, DATA_SIZE);
     if (_len < 0)
-	return -1;
+        return -1;
     else
-	return _data[_pos++];
+        return _data[_pos++];
 }
 
 
@@ -107,9 +107,9 @@ inline int
 Type1Reader::get_base()
 {
     if (_pos >= _len)
-	return more_data();
+        return more_data();
     else
-	return _data[_pos++];
+        return _data[_pos++];
 }
 
 
@@ -127,13 +127,13 @@ Type1Reader::ascii_eexec_get()
 {
     int d1 = get_base();
     while (isspace(d1))
-	d1 = get_base();
+        d1 = get_base();
 
     int d2 = get_base();
     while (isspace(d2))
-	d2 = get_base();
+        d2 = get_base();
     if (d2 < 0)
-	return -1;
+        return -1;
 
     return eexec((xvalue[d1] << 4) | (xvalue[d2]));
 }
@@ -143,14 +143,14 @@ inline int
 Type1Reader::get()
 {
     if (!_eexec)
-	return get_base();
+        return get_base();
 
     else if (_binary_eexec) {
-	int c = get_base();
-	return c < 0 ? c : eexec(c);
+        int c = get_base();
+        return c < 0 ? c : eexec(c);
 
     } else
-	return ascii_eexec_get();
+        return ascii_eexec_get();
 }
 
 
@@ -169,30 +169,30 @@ Type1Reader::start_eexec(int initial_ascii)
        of PFB fonts; but it turns out some PFBs would be unreadable with that
        pedantic rule. */
     while (isspace(c) && (initial_ascii >= 0 || !preserve_whitespace()))
-	c = get_base(), initial_ascii--;
+        c = get_base(), initial_ascii--;
 
     /* Differentiate between ASCII eexec and binary eexec. */
     int rand_bytes[4];
     _binary_eexec = false;
     for (int i = 0; i < 4; i++) {
-	if (i)
-	    c = get_base();
-	rand_bytes[i] = c;
-	if (!isxdigit(c))
-	    _binary_eexec = true;
+        if (i)
+            c = get_base();
+        rand_bytes[i] = c;
+        if (!isxdigit(c))
+            _binary_eexec = true;
     }
 
     _r = t1R_ee;
     if (_binary_eexec)
-	for (int i = 0; i < 4; i++)
-	    eexec(rand_bytes[i]);
+        for (int i = 0; i < 4; i++)
+            eexec(rand_bytes[i]);
     else {
-	for (int i = 0; i < 2; i++) {
-	    c = xvalue[rand_bytes[i*2]] * 16 + xvalue[rand_bytes[i*2+1]];
-	    eexec(c);
-	}
-	ascii_eexec_get();
-	ascii_eexec_get();
+        for (int i = 0; i < 2; i++) {
+            c = xvalue[rand_bytes[i*2]] * 16 + xvalue[rand_bytes[i*2+1]];
+            eexec(c);
+        }
+        ascii_eexec_get();
+        ascii_eexec_get();
     }
 }
 
@@ -204,38 +204,38 @@ Type1Reader::test_charstring(StringAccum &str)
        more efficient cut time by about 40%. */
 
     if (!_charstring_definer)
-	return false;
+        return false;
     if (_charstring_len >= 0)
-	return str.length() <= _charstring_start + _charstring_len;
+        return str.length() <= _charstring_start + _charstring_len;
 
-    str.append('\0');		// protect against running off end of string
+    str.append('\0');           // protect against running off end of string
     char *s = str.data();
     char *start;
     while (*s == ' ')
-	s++;
+        s++;
 
     if (s[0] == '/')
-	s++;
+        s++;
     else if (s[0] == 'd' && s[1] == 'u' && s[2] == 'p' && isspace((unsigned char) s[3])) {
-	s += 4;
-	// 17.Jan.2000 -- some fonts have extra space here.
-	while (isspace((unsigned char) *s))
-	    s++;
+        s += 4;
+        // 17.Jan.2000 -- some fonts have extra space here.
+        while (isspace((unsigned char) *s))
+            s++;
     } else
-	goto not_charstring;
+        goto not_charstring;
 
     // Force one literal space rather than isspace().
     // Why? Consistency: we force 1 literal space around _charstring_definer.
     while (*s != ' ' && *s)
-	s++;
+        s++;
     if (*s++ != ' ' || !isdigit((unsigned char) *s))
-	goto not_charstring;
+        goto not_charstring;
     start = s;
     s++;
     while (*s != ' ' && *s)
-	s++;
+        s++;
     if (strncmp(s, _charstring_definer.c_str(), _charstring_definer.length()) != 0)
-	goto not_charstring;
+        goto not_charstring;
 
     _charstring_len = strtol(start, 0, 10);
     _charstring_start = (s - str.data()) + _charstring_definer.length();
@@ -257,7 +257,7 @@ bool
 Type1Reader::next_line(StringAccum &s)
 {
     if (_len < 0)
-	return false;
+        return false;
 
     // Can't be a charstring if incoming accumulator has nonzero length.
     _charstring_start = 0;
@@ -267,33 +267,33 @@ Type1Reader::next_line(StringAccum &s)
     _ungot = -1;
 
     for (int c = first_char; c >= 0; c = get())
-	switch (c) {
+        switch (c) {
 
-	  case '\n':
-	    if (test_charstring(s))
-		goto normal;
-	    else {
-		_crlf = 0;
-		goto done;
-	    }
+          case '\n':
+            if (test_charstring(s))
+                goto normal;
+            else {
+                _crlf = 0;
+                goto done;
+            }
 
-	  case '\r':
-	    // check for \r\n (counts as only one line ending)
-	    if (test_charstring(s))
-		goto normal;
-	    c = get();
-	    if (c != '\n' || preserve_whitespace())
-		_ungot = c, _crlf = 1;
-	    else
-		_crlf = 2;
-	    goto done;
+          case '\r':
+            // check for \r\n (counts as only one line ending)
+            if (test_charstring(s))
+                goto normal;
+            c = get();
+            if (c != '\n' || preserve_whitespace())
+                _ungot = c, _crlf = 1;
+            else
+                _crlf = 2;
+            goto done;
 
-	  normal:
-	  default:
-	    s.append((char)c);
-	    break;
+          normal:
+          default:
+            s.append((char)c);
+            break;
 
-	}
+        }
 
   done:
     return true;
@@ -304,22 +304,22 @@ int
 Type1Reader::get_data(unsigned char *data, int len)
 {
     if (_len < 0)
-	return -1;
+        return -1;
     if (len <= 0)
-	return 0;
+        return 0;
 
     int pos = 0;
     if (_ungot >= 0) {
-	*data++ = _ungot;
-	pos++;
-	_ungot = -1;
+        *data++ = _ungot;
+        pos++;
+        _ungot = -1;
     }
 
     for (; pos < len; pos++) {
-	int c = get();
-	if (c < 0)
-	    break;
-	*data++ = c;
+        int c = get();
+        if (c < 0)
+            break;
+        *data++ = c;
     }
 
     return pos;
@@ -356,26 +356,26 @@ int
 Type1PFBReader::more_data(unsigned char *data, int len)
 {
     while (_left == 0) {
-	int c = getc(_f);
-	if (c != 128)
-	    return -1;
+        int c = getc(_f);
+        if (c != 128)
+            return -1;
 
-	c = getc(_f);
-	if (c == 3 || c < 1 || c > 3)
-	    return -1;
-	_binary = (c == 2);
+        c = getc(_f);
+        if (c == 3 || c < 1 || c > 3)
+            return -1;
+        _binary = (c == 2);
 
-	_left = getc(_f);
-	_left |= getc(_f) << 8;
-	_left |= getc(_f) << 16;
-	_left |= getc(_f) << 24;
+        _left = getc(_f);
+        _left |= getc(_f) << 8;
+        _left |= getc(_f) << 16;
+        _left |= getc(_f) << 24;
     }
 
     if (_left < 0)
-	return -1;
+        return -1;
 
     if (len > _left)
-	len = _left;
+        len = _left;
     _left -= len;
 
     return fread(data, 1, len, _f);
@@ -401,12 +401,12 @@ int
 Type1SubsetReader::more_data(unsigned char *data, int len)
 {
     if (_left <= 0)
-	return -1;
+        return -1;
     if (len > _left)
-	len = _left;
+        len = _left;
     int how_much = _reader->get_data(data, len);
     if (how_much > 0)
-	_left -= how_much;
+        _left -= how_much;
     return how_much;
 }
 
@@ -459,9 +459,9 @@ void
 Type1Writer::local_flush()
 {
     if (_eexec_start >= 0 && _eexec_end < 0)
-	_eexec_end = _pos;
+        _eexec_end = _pos;
     for (int p = _eexec_start; p < _eexec_end; p++)
-	_buf[p] = eexec(_buf[p]);
+        _buf[p] = eexec(_buf[p]);
     print0(_buf, _pos);
     _pos = 0;
     _eexec_start = _eexec ? 0 : -1;
@@ -473,14 +473,14 @@ void
 Type1Writer::print(const char *s, int n)
 {
     while (n > 0) {
-	if (_pos >= BufSize)
-	    local_flush();
-	int copy = BufSize - _pos;
-	if (copy > n) copy = n;
-	memcpy(_buf + _pos, s, copy);
-	_pos += copy;
-	s += copy;
-	n -= copy;
+        if (_pos >= BufSize)
+            local_flush();
+        int copy = BufSize - _pos;
+        if (copy > n) copy = n;
+        memcpy(_buf + _pos, s, copy);
+        _pos += copy;
+        s += copy;
+        n -= copy;
     }
 }
 
@@ -510,11 +510,11 @@ Type1Writer::switch_eexec(bool on)
 {
     _eexec = on;
     if (_eexec) {
-	_eexec_start = _pos;
-	_r = t1R_ee;
-	print("SUCK", 4);
+        _eexec_start = _pos;
+        _r = t1R_ee;
+        print("SUCK", 4);
     } else
-	_eexec_end = _pos;
+        _eexec_end = _pos;
 }
 
 
@@ -545,18 +545,18 @@ void
 Type1PFAWriter::print0(const unsigned char *c, int l)
 {
     if (eexecing()) {
-	const char *hex = "0123456789ABCDEF";
-	for (; l; c++, l--) {
-	    putc(hex[*c / 16], _f);
-	    putc(hex[*c % 16], _f);
-	    if (++_hex_line == 39) {
-		putc('\n', _f);
-		_hex_line = 0;
-	    }
-	}
+        const char *hex = "0123456789ABCDEF";
+        for (; l; c++, l--) {
+            putc(hex[*c / 16], _f);
+            putc(hex[*c % 16], _f);
+            if (++_hex_line == 39) {
+                putc('\n', _f);
+                _hex_line = 0;
+            }
+        }
     } else {
-	ssize_t result = fwrite(c, 1, l, _f);
-	(void) result;
+        ssize_t result = fwrite(c, 1, l, _f);
+        (void) result;
     }
 }
 
@@ -582,16 +582,16 @@ Type1PFBWriter::flush()
 {
     Type1Writer::flush();
     if (_save.length()) {
-	fputc(128, _f);
-	fputc(_binary ? 2 : 1, _f);
-	long l = _save.length();
-	fputc(l & 0xFF, _f);
-	fputc((l >> 8) & 0xFF, _f);
-	fputc((l >> 16) & 0xFF, _f);
-	fputc((l >> 24) & 0xFF, _f);
-	ssize_t result = fwrite(_save.data(), 1, _save.length(), _f);
-	(void) result;
-	_save.clear();
+        fputc(128, _f);
+        fputc(_binary ? 2 : 1, _f);
+        long l = _save.length();
+        fputc(l & 0xFF, _f);
+        fputc((l >> 8) & 0xFF, _f);
+        fputc((l >> 16) & 0xFF, _f);
+        fputc((l >> 24) & 0xFF, _f);
+        ssize_t result = fwrite(_save.data(), 1, _save.length(), _f);
+        (void) result;
+        _save.clear();
     }
 }
 

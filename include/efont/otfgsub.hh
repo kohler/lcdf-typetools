@@ -32,15 +32,15 @@ class Gsub { public:
 
 class GsubLookup { public:
     GsubLookup(const Data &) throw (Error);
-    int type() const			{ return _type; }
-    uint16_t flags() const		{ return _d.u16(2); }
+    int type() const                    { return _type; }
+    uint16_t flags() const              { return _d.u16(2); }
     void mark_out_glyphs(const Gsub &gsub, Vector<bool> &gmap) const;
     bool unparse_automatics(const Gsub &gsub, Vector<Substitution> &subs, const Coverage &limit) const;
     bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum {
-	HEADERSIZE = 6, RECSIZE = 2,
-	L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
-	L_CONTEXT = 5, L_CHAIN = 6, L_EXTENSION = 7, L_REVCHAIN = 8
+        HEADERSIZE = 6, RECSIZE = 2,
+        L_SINGLE = 1, L_MULTIPLE = 2, L_ALTERNATE = 3, L_LIGATURE = 4,
+        L_CONTEXT = 5, L_CHAIN = 6, L_EXTENSION = 7, L_REVCHAIN = 8
     };
   private:
     Data _d;
@@ -70,7 +70,7 @@ class GsubMultiple { public:
     void unparse(Vector<Substitution> &, bool alternate = false) const;
     bool apply(const Glyph *, int pos, int n, Substitution &, bool alternate = false) const;
     enum { HEADERSIZE = 6, RECSIZE = 2,
-	   SEQ_HEADERSIZE = 2, SEQ_RECSIZE = 2 };
+           SEQ_HEADERSIZE = 2, SEQ_RECSIZE = 2 };
   private:
     Data _d;
 };
@@ -84,8 +84,8 @@ class GsubLigature { public:
     void unparse(Vector<Substitution> &) const;
     bool apply(const Glyph *, int pos, int n, Substitution &) const;
     enum { HEADERSIZE = 6, RECSIZE = 2,
-	   SET_HEADERSIZE = 2, SET_RECSIZE = 2,
-	   LIG_HEADERSIZE = 4, LIG_RECSIZE = 2 };
+           SET_HEADERSIZE = 2, SET_RECSIZE = 2,
+           LIG_HEADERSIZE = 4, LIG_RECSIZE = 2 };
   private:
     Data _d;
 };
@@ -105,10 +105,10 @@ class GsubContext { public:
                            const Gsub& gsub, Vector<Substitution>& outsubs,
                            Substitution prototype_sub);
     static bool f3_unparse(const Data &data,
-			   int nglyph, int glyphtab_offset, const Coverage &limit,
-			   int nsub, int subtab_offset,
-			   const Gsub &gsub, Vector<Substitution> &outsubs,
-			   const Substitution &prototype_sub);
+                           int nglyph, int glyphtab_offset, const Coverage &limit,
+                           int nsub, int subtab_offset,
+                           const Gsub &gsub, Vector<Substitution> &outsubs,
+                           const Substitution &prototype_sub);
     friend class GsubChainContext;
 };
 
@@ -119,8 +119,8 @@ class GsubChainContext { public:
     void mark_out_glyphs(const Gsub &gsub, Vector<bool> &gmap) const;
     bool unparse(const Gsub &gsub, Vector<Substitution> &subs, const Coverage &limit) const;
     enum { F1_HEADERSIZE = 6, F1_RECSIZE = 2,
-	   F1_SRS_HSIZE = 2, F1_SRS_RSIZE = 2,
-	   F3_HSIZE = 4, F3_INPUT_HSIZE = 2, F3_LOOKAHEAD_HSIZE = 2, F3_SUBST_HSIZE = 2 };
+           F1_SRS_HSIZE = 2, F1_SRS_RSIZE = 2,
+           F3_HSIZE = 4, F3_INPUT_HSIZE = 2, F3_LOOKAHEAD_HSIZE = 2, F3_SUBST_HSIZE = 2 };
   private:
     Data _d;
     bool f1_unparse(const Gsub &gsub, Vector<Substitution> &subs, const Coverage &limit) const;
@@ -210,9 +210,9 @@ class Substitution { public:
 
     enum { T_NONE = 0, T_GLYPH, T_GLYPHS, T_COVERAGE };
     typedef union {
-	Glyph gid;
-	Glyph *gids;	// first entry is a count
-	Coverage *coverage;
+        Glyph gid;
+        Glyph *gids;    // first entry is a count
+        Coverage *coverage;
     } Substitute;
 
     Substitute _left;

@@ -10,15 +10,15 @@ class Post { public:
     Post(const String &, ErrorHandler * = 0);
     // default destructor
 
-    bool ok() const			{ return _error >= 0; }
-    int error() const			{ return _error; }
+    bool ok() const                     { return _error >= 0; }
+    int error() const                   { return _error; }
 
     double italic_angle() const;
     bool is_fixed_pitch() const;
     inline int underline_position() const;
     inline int underline_thickness() const;
     inline uint32_t mem_type42(bool ismax) const;
-    int nglyphs() const			{ return _nglyphs; }
+    int nglyphs() const                 { return _nglyphs; }
     bool glyph_names(Vector<PermString> &gnames) const;
 
   private:
