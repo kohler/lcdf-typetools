@@ -137,27 +137,15 @@ Post::parse_header(ErrorHandler *errh)
             || ((_nglyphs = USHORT_AT(data + HEADER_SIZE)),
                 HEADER_SIZE + 2 + 2 * _nglyphs > len))
             return errh->error("OTF post table too small for glyph map"), -EFAULT;
+        int pos = HEADER_SIZE + 2 + 2 * _nglyphs;
+        while (pos < len && pos + data[pos] < len) {
+            _extend_glyph_names.push_back(pos);
+            pos += 1 + data[pos];
+        }
         const uint8_t *gni = data + HEADER_SIZE + 2;
-        const uint8_t *names = gni + 2 * _nglyphs;
-        int next_name = N_MAC_GLYPHS, g;
-        bool gni_error_reported = false;
-        for (int i = 0; i < _nglyphs; i++, gni += 2)
-            // Some fonts have more than 32768 glyphs.  Although the 'post'
-            // spec says name indexes 32768-65535 are reserved, some large
-            // fonts treat those indexes as valid.
-            if ((g = USHORT_AT(gni)) >= 32768 && g >= _nglyphs) {
-                if (!gni_error_reported)
-                    errh->error("bad glyph name index in post");
-                gni_error_reported = true;
-            } else
-                while (g >= next_name) {
-                    if (names - data > len
-                        || (names + 1 + names[0]) - data > len)
-                        return errh->error("OTF post too small for glyph names"), -EFAULT;
-                    _extend_glyph_names.push_back(names - data);
-                    names += 1 + names[0];
-                    next_name++;
-                }
+        for (int i = 0, g; i < _nglyphs; ++i, gni += 2)
+            if ((g = USHORT_AT(gni)) >= _extend_glyph_names.size() + N_MAC_GLYPHS)
+                return errh->error("bad glyph name index in post");
     } else if (_version == 1)
         _nglyphs = N_MAC_GLYPHS;
     else
