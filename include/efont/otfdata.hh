@@ -65,6 +65,7 @@ class Data {
     // default copy constructor
     // default destructor
 
+    const String& string() const        { return _str; }
     operator const String&() const      { return _str; }
 
     operator String::unspecified_bool_type() const { return _str; }

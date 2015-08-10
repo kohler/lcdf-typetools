@@ -87,7 +87,7 @@ inline bool Os2::has_optical_point_size() const throw ()
 
 inline String Os2::vendor_id() const throw ()
 {
-    return _data.substring(O_VENDORID, 4);
+    return _data.substring(O_VENDORID, 4).string();
 }
 
 }}
