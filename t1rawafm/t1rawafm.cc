@@ -130,6 +130,8 @@ do_file(const char *filename, PsresDatabase *psres, ErrorHandler *errh)
         reader = new Type1PFAReader(f);
 
     font = new Type1Font(*reader);
+    if (!font->ok())
+        errh->fatal("%s: not a Type 1 font", filename);
 
     delete reader;
 }
