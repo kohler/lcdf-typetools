@@ -816,14 +816,14 @@ ErrorHandler::error(const char *fmt, ...)
     return r;
 }
 
-int
+void
 ErrorHandler::fatal(const char *fmt, ...)
 {
     va_list val;
     va_start(val, fmt);
     int r = vxmessage(String::make_stable(e_fatal, 4), fmt, val);
     va_end(val);
-    return r;
+    abort();
 }
 
 void
@@ -868,7 +868,7 @@ ErrorHandler::lerror(const String &landmark, const char *fmt, ...)
     return r;
 }
 
-int
+void
 ErrorHandler::lfatal(const String &landmark, const char *fmt, ...)
 {
     va_list val;
@@ -876,7 +876,7 @@ ErrorHandler::lfatal(const String &landmark, const char *fmt, ...)
     String l = make_landmark_anno(landmark);
     int r = vxmessage(String::make_stable(e_fatal, 4) + l, fmt, val);
     va_end(val);
-    return r;
+    abort();
 }
 
 int
@@ -920,6 +920,19 @@ ErrorHandler::emit(const String &, void *user_data, bool)
     return user_data;
 }
 
+void
+ErrorHandler::account(int level)
+{
+    if (level <= el_error)
+        ++_nerrors;
+#ifndef __KERNEL__
+    if (level <= el_abort)
+        abort();
+    else if (level <= el_fatal)
+        exit(-level);
+#endif
+}
+
 
 #ifndef __KERNEL__
 //
@@ -959,16 +972,6 @@ FileErrorHandler::emit(const String &str, void *, bool)
     ssize_t result = fwrite(sa.begin(), 1, sa.length(), _f);
     (void) result;
     return 0;
-}
-
-void
-FileErrorHandler::account(int level)
-{
-    ErrorHandler::account(level);
-    if (level <= el_abort)
-	abort();
-    else if (level <= el_fatal)
-	exit(-level);
 }
 
 #endif

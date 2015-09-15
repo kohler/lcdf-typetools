@@ -17,8 +17,10 @@
 #endif
 #if __GNUC__ <= 3
 # define ERRH_SENTINEL
+# define ERRH_NORETURN
 #else
 # define ERRH_SENTINEL __attribute__((sentinel))
+# define ERRH_NORETURN __attribute__((noreturn))
 #endif
 
 /** @class ErrorHandler
@@ -191,9 +193,8 @@ class ErrorHandler { public:
     /** @brief Print a fatal error message (level el_fatal).
      * @return error_result
      *
-     * In many ErrorHandlers, calling fatal() will cause the process to
-     * abort. */
-    int fatal(const char *fmt, ...);
+     * Calling fatal() will cause the process to abort. */
+    void fatal(const char *fmt, ...) ERRH_NORETURN;
 
     /** @brief Print a debug message with a landmark annotation. */
     void ldebug(const String &landmark, const char *fmt, ...);
@@ -204,7 +205,7 @@ class ErrorHandler { public:
     /** @brief Print an error message with a landmark annotation. */
     int lerror(const String &landmark, const char *fmt, ...);
     /** @brief Print a fatal error message with a landmark annotation. */
-    int lfatal(const String &landmark, const char *fmt, ...);
+    void lfatal(const String &landmark, const char *fmt, ...) ERRH_NORETURN;
 
 
     /** @brief Print an annotated error message.
@@ -427,13 +428,9 @@ class ErrorHandler { public:
      * After calling emit() for the lines of an error message, ErrorHandler
      * calls account(), passing the minimum (worst) error level of any message
      * line (or 1000 if no line had a level).  The default implementation
-     * updates the nerrors() counter.  Some other ErrorHandlers
-     * add account() behavior that, for example, exits after printing messages
-     * at el_fatal level or below. */
-    virtual void account(int level) {
-	if (level <= el_error)
-	    ++_nerrors;
-    }
+     * updates the nerrors() counter, and exits the program if @a level is
+     * small enough. */
+    virtual void account(int level);
 
     /** @brief Clear accumulated error state.
      *
@@ -653,7 +650,6 @@ class FileErrorHandler : public ErrorHandler { public:
 
     String vformat(const char *fmt, va_list val);
     void *emit(const String &str, void *user_data, bool more);
-    void account(int level);
 
   private:
 
