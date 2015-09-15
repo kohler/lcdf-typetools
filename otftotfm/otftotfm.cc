@@ -2284,14 +2284,14 @@ particular purpose.\n");
 		errh->fatal("encoding %<%s%> not found", encoding_file.c_str());
 	} else {
             String cff_data(otf.table("CFF"));
-            if (!cff_data)
+            if (!cff_data) {
                 errh->error("explicit encoding required for TrueType fonts");
-            else if (!have_encoding_file)
-                errh->warning("no encoding provided");
-            if (!cff_data || !have_encoding_file)
-                errh->message("(Use %<-e ENCODING%> to choose an encoding. %<-e texnansx%> often works,\nor say %<-e -%> to turn off this warning.)");
-            if (!cff_data)
+                errh->message("(Use %<-e ENCODING%> to choose an encoding. %<-e texnansx%> often works.)");
                 exit(1);
+            } else if (!have_encoding_file) {
+                errh->warning("no encoding provided");
+                errh->message("(Use %<-e ENCODING%> to choose an encoding. %<-e texnansx%> often works,\nor say %<-e -%> to turn off this warning.)");
+            }
 
 	    // use encoding from font
 	    Cff cff(cff_data, otf.units_per_em(), &bail_errh);
