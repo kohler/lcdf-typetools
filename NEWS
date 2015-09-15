@@ -1,5 +1,16 @@
 LCDF Typetools NEWS
 
+Version 2.105   15.Sep.2015
+
+* Several crash fixes.
+
+* otfinfo -g: Print all Unicode mappings for a glyph.
+
+* t1lint: Support counter control hints.
+
+* Thanks to Github issue contributors.
+
+
 Version 2.104   7.Jul.2014
 
 * Fix a nit with format-1 chaining context substitutions.
