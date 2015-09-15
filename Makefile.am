@@ -6,7 +6,7 @@ DIST_SUBDIRS = liblcdf libefont cfftot1 mmafm mmpfb otfinfo otftotfm \
 	t1dotlessj t1lint t1rawafm t1reencode t1testpage ttftotype42
 
 EXTRA_DIST = \
-	ONEWS \
+	ONEWS README.md \
 	lcdf-typetools.spec \
 	include/config.h \
 	include/lcdf/bezier.hh \
@@ -74,7 +74,7 @@ t1reencode t1testpage ttftotype42: liblcdf libefont
 
 versionize:
 	perl -pi -e 's/^\.ds V.*/.ds V $(VERSION)/;' $(srcdir)/cfftot1/cfftot1.1 $(srcdir)/mmafm/mmafm.1 $(srcdir)/mmpfb/mmpfb.1 $(srcdir)/otfinfo/otfinfo.1 $(srcdir)/otftotfm/otftotfm.1 $(srcdir)/t1dotlessj/t1dotlessj.1 $(srcdir)/t1lint/t1lint.1 $(srcdir)/t1rawafm/t1rawafm.1 $(srcdir)/t1reencode/t1reencode.1 $(srcdir)/t1testpage/t1testpage.1 $(srcdir)/ttftotype42/ttftotype42.1
-	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(srcdir)/README
+	perl -pi -e 's/^(\U$(PACKAGE)\E) [\d.ab]+$$/$$1 $(VERSION)/;' $(srcdir)/README.md
 	perl -pi -e 's/^Version: [\d.ab]+$$/Version: $(VERSION)/;' $(srcdir)/lcdf-typetools.spec
 
 dist-hook:
