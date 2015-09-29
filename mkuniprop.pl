@@ -7,19 +7,19 @@ sub P_Ll () { 32; }
 sub P_Lul () { 33; }
 
 my(%propmap) = ('Cn' => P_Cn, 'Co' => 1, 'Cs' => 2, 'Cf' => 3, 'Cc' => 4,
-		'Zs' => 10, 'Zl' => 11, 'Zp' => 12,
-		'Mn' => 20, 'Mc' => 21, 'Me' => 22,
-		'Lo' => 30, 'Lu' => P_Lu, 'Ll' => P_Ll, 'Lul' => P_Lul, 'Lt' => 34, 'Lm' => 35,
-		'No' => 40, 'Nd' => 41, 'Nl' => 42,
-		'Po' => 50, 'Pc' => 51, 'Pd' => 52, 'Ps' => 53, 'Pe' => 54, 'Pi' => 55, 'Pf' => 56,
-		'So' => 60, 'Sm' => 61, 'Sc' => 62, 'Sk' => 63,
-		);
+                'Zs' => 10, 'Zl' => 11, 'Zp' => 12,
+                'Mn' => 20, 'Mc' => 21, 'Me' => 22,
+                'Lo' => 30, 'Lu' => P_Lu, 'Ll' => P_Ll, 'Lul' => P_Lul, 'Lt' => 34, 'Lm' => 35,
+                'No' => 40, 'Nd' => 41, 'Nl' => 42,
+                'Po' => 50, 'Pc' => 51, 'Pd' => 52, 'Ps' => 53, 'Pe' => 54, 'Pi' => 55, 'Pf' => 56,
+                'So' => 60, 'Sm' => 61, 'Sc' => 62, 'Sk' => 63,
+                );
 my(@propinvmap);
 
 {
     my ($k, $v);
     while (($k, $v) = each %propmap) {
-	$propinvmap[$v] = $k;
+        $propinvmap[$v] = $k;
     }
 }
 
@@ -35,19 +35,19 @@ sub compress () {
     my($t) = '';
     my($v) = -100;
     for (my $i = 0; $i < 256; $i++) {
-	if ($v != $arr[$i]) {
-	    $v = $arr[$i];
-	    if ($v == P_Lu && $i < 255 && $arr[$i+1] == P_Ll) {
-		$v = P_Lul;
-		$t .= chr($i) . chr($v);
-		while ($i <= 254 && $arr[$i] == P_Lu && $arr[$i+1] == P_Ll) {
-		    $i += 2;
-		}
-		$i--;
-	    } else {
-		$t .= chr($i) . chr($v);
-	    }
-	}
+        if ($v != $arr[$i]) {
+            $v = $arr[$i];
+            if ($v == P_Lu && $i < 255 && $arr[$i+1] == P_Ll) {
+                $v = P_Lul;
+                $t .= chr($i) . chr($v);
+                while ($i <= 254 && $arr[$i] == P_Lu && $arr[$i+1] == P_Ll) {
+                    $i += 2;
+                }
+                $i--;
+            } else {
+                $t .= chr($i) . chr($v);
+            }
+        }
     }
     $t;
 }
@@ -55,32 +55,32 @@ sub compress () {
 sub out ($$) {
     my($val, $prop) = @_;
     if (defined($last_val) && ($val & ~255) != ($last_val & ~255)) {
-	$text = compress();
-	if (!exists($compressed_hash{$text})) {
-	    $compressed_hash{$text} = [length($all_compressed), length($all_compressed) + length($text)];
-	    $all_compressed .= $text;
-	    print "   ";
-	    foreach my $short (unpack('n*', $text)) {
-		die "X" . ($short&255) if !defined($propinvmap[int($short&255)]);
-		print " ", int($short>>8), ", P_", $propinvmap[int($short&255)], ",";
-	    }
-	    print "\n";
-	}
+        $text = compress();
+        if (!exists($compressed_hash{$text})) {
+            $compressed_hash{$text} = [length($all_compressed), length($all_compressed) + length($text)];
+            $all_compressed .= $text;
+            print "   ";
+            foreach my $short (unpack('n*', $text)) {
+                die "X" . ($short&255) if !defined($propinvmap[int($short&255)]);
+                print " ", int($short>>8), ", P_", $propinvmap[int($short&255)], ",";
+            }
+            print "\n";
+        }
 
-	# now add offsets
-	my($off1, $off2) = @{$compressed_hash{$text}};
-	if (!@offsets || $offsets[-2] != $off1 || $offsets[-1] != $off2) {
-	    push(@offsets, ($last_val & ~255), $off1, $off2);
-	}
-	if ($val >= 0 && ($val & ~255) != (($last_val & ~255) + 256)) {
-	    push(@offsets, ($last_val & ~255)+256, 0, 2);
-	}
+        # now add offsets
+        my($off1, $off2) = @{$compressed_hash{$text}};
+        if (!@offsets || $offsets[-2] != $off1 || $offsets[-1] != $off2) {
+            push(@offsets, ($last_val & ~255), $off1, $off2);
+        }
+        if ($val >= 0 && ($val & ~255) != (($last_val & ~255) + 256)) {
+            push(@offsets, ($last_val & ~255)+256, 0, 2);
+        }
 
-	undef $last_val;
+        undef $last_val;
     }
 
     if (!defined($last_val)) {
-	@arr = (0) x 256;
+        @arr = (0) x 256;
     }
     die "prop $prop" if !exists($propmap{$prop});
     $arr[$val & 255] = $propmap{$prop};
@@ -90,7 +90,7 @@ sub out ($$) {
 print <<"EOD;";
 /* uniprop.{cc,hh} -- code for Unicode character properties
  *
- * Copyright (c) 2004-2011 Eddie Kohler
+ * Copyright (c) 2004-2015 Eddie Kohler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -133,18 +133,18 @@ UnicodeProperty::find_offset(uint32_t u)
 {
     // Up to U+1A00 each page has its own definition.
     if (u < 0x1A00)
-	return &property_offsets[3*(u >> 8)];
+        return &property_offsets[3*(u >> 8)];
     // At or after U+1A00, binary search.
     int l = 0x1A, r = nproperty_offsets - 2;
     while (l <= r) {
-	int m = (l + r) / 2;
-	const unsigned int *ptr = &property_offsets[3*m];
-	if (u < ptr[0])
-	    r = m - 1;
-	else if (u >= ptr[3])
-	    l = m + 1;
-	else
-	    return ptr;
+        int m = (l + r) / 2;
+        const unsigned int *ptr = &property_offsets[3*m];
+        if (u < ptr[0])
+            r = m - 1;
+        else if (u >= ptr[3])
+            l = m + 1;
+        else
+            return ptr;
     }
     // If search fails, return last record, which will be all-unassigned.
     return &property_offsets[3*(nproperty_offsets - 1)];
@@ -162,25 +162,25 @@ UnicodeProperty::property(uint32_t u)
     int l = offsets[1], r = offsets[2] - 4;
     const unsigned char *the_ptr;
     while (l <= r) {
-	int m = ((l + r) / 2) & ~1;
-	const unsigned char *ptr = &property_pages[m];
-	if (u < ptr[0])
-	    r = m - 2;
-	else if (u >= ptr[2])
-	    l = m + 2;
-	else {
-	    the_ptr = ptr;
-	    goto found_ptr;
-	}
+        int m = ((l + r) / 2) & ~1;
+        const unsigned char *ptr = &property_pages[m];
+        if (u < ptr[0])
+            r = m - 2;
+        else if (u >= ptr[2])
+            l = m + 2;
+        else {
+            the_ptr = ptr;
+            goto found_ptr;
+        }
     }
     the_ptr = &property_pages[l];
 
   found_ptr:
     // Found right block.
     if (the_ptr[1] == P_Lul)
-	return ((u - the_ptr[0]) % 2 ? P_Ll : P_Lu);
+        return ((u - the_ptr[0]) % 2 ? P_Ll : P_Lu);
     else
-	return the_ptr[1];
+        return the_ptr[1];
 }
 
 static const char property_names[] =
@@ -211,49 +211,49 @@ const char *
 UnicodeProperty::property_name(int p)
 {
     if (p >= 0 && p <= P_Sk && property_names[p*3])
-	return &property_names[p*3];
+        return &property_names[p*3];
     else
-	return "?";
+        return "?";
 }
 
 bool
 UnicodeProperty::parse_property(const String &s, int &prop, int &prop_mask)
 {
     if (s.length() == 0)
-	return false;
+        return false;
     else if (s.length() <= 2) {
-	for (int i = 0; i <= P_S; i += 010)
-	    if (property_names[3*i] == s[0]) {
-		if (s.length() == 1) {
-		    prop = i;
-		    prop_mask = P_TMASK;
-		    return true;
-		}
-		for (; property_names[3*i]; i++)
-		    if (property_names[3*i+1] == s[1]) {
-			prop = i;
-			prop_mask = 0377;
-			return true;
-		    }
-		break;
-	    }
-	return false;
+        for (int i = 0; i <= P_S; i += 010)
+            if (property_names[3*i] == s[0]) {
+                if (s.length() == 1) {
+                    prop = i;
+                    prop_mask = P_TMASK;
+                    return true;
+                }
+                for (; property_names[3*i]; i++)
+                    if (property_names[3*i+1] == s[1]) {
+                        prop = i;
+                        prop_mask = 0377;
+                        return true;
+                    }
+                break;
+            }
+        return false;
     } else {
-	const char * const *dict = property_category_long_names;
-	for (int i = 0; i <= P_S; i += 010, dict++)
-	    if (s == *dict) {
-		prop = i;
-		prop_mask = P_TMASK;
-		return true;
-	    }
+        const char * const *dict = property_category_long_names;
+        for (int i = 0; i <= P_S; i += 010, dict++)
+            if (s == *dict) {
+                prop = i;
+                prop_mask = P_TMASK;
+                return true;
+            }
         dict = property_long_names;
-	for (int i = 0; i <= P_Sk; i++, dict++)
-	    if (*dict && s == *dict) {
-		prop = i;
-		prop_mask = 0377;
-		return true;
-	    }
-	return false;
+        for (int i = 0; i <= P_Sk; i++, dict++)
+            if (*dict && s == *dict) {
+                prop = i;
+                prop_mask = 0377;
+                return true;
+            }
+        return false;
     }
 }
 
