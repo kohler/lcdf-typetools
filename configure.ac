@@ -24,6 +24,13 @@ AC_ARG_ENABLE([precondition-checking],
     AC_DEFINE([HAVE_PRECONDITION_CHECKING], [1], [Define to include precondition checking assertions.])
   fi])
 
+AC_ARG_ENABLE([adobe-code],
+  [AS_HELP_STRING([--disable-adobe-code], [do not include Adobe code])],
+  [], [enable_adobe_code=yes])
+if test "$enable_adobe_code" = yes; then
+   AC_DEFINE([HAVE_ADOBE_CODE], [1], [Define to incldue Adobe code in output fonts.])
+fi
+
 
 dnl AN_MAKEVAR([AR], [AC_PROG_AR])
 dnl AN_PROGRAM([ar], [AC_PROG_AR])

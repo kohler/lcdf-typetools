@@ -24,7 +24,9 @@
 #include <ctype.h>
 namespace Efont {
 
-static const char *othersubrs_code = "% Copyright (c) 1987-1990 Adobe Systems Incorporated.\n"
+#if HAVE_ADOBE_CODE
+
+static const char* othersubrs_code = "% Copyright (c) 1987-1990 Adobe Systems Incorporated.\n"
 "% All Rights Reserved.\n"
 "% This code to be used for Flex and hint replacement.\n"
 "% Version 1.1\n"
@@ -207,6 +209,18 @@ static const char *othersubrs_code = "% Copyright (c) 1987-1990 Adobe Systems In
 "ifelse\n"
 "} executeonly\n"
 "] noaccess def";
+
+#else
+
+static const char* othersubrs_code = "/OtherSubrs\n"
+"[\n"
+"{pop pop pop grestore 12 6 roll curveto curveto pop pop} executeonly\n"
+"{gsave currentpoint newpath moveto} executeonly\n"
+"{currentpoint currentpoint newpath moveto} executeonly\n"
+"{} executeonly\n"
+"] noaccess def";
+
+#endif
 
 
 Type1Font *
