@@ -98,7 +98,7 @@ MultipleMasterSpace::error(ErrorHandler *errh, const char *s, ...) const
         assert(strlen(s) < 800);
         sprintf(buf, (s[0] == ' ' ? "%.200s%s" : "%.200s: %s"),
                 _font_name.c_str(), s);
-        errh->vxmessage(ErrorHandler::e_error, buf, val);
+        errh->xmessage(ErrorHandler::e_error, buf, val);
         va_end(val);
     }
     return false;

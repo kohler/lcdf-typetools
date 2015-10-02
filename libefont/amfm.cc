@@ -285,7 +285,7 @@ AmfmReader::lwarning(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->vxmessage(_l.landmark(), ErrorHandler::e_warning, format, val);
+    _errh->xmessage(_l.landmark(), ErrorHandler::e_warning, format, val);
     va_end(val);
 }
 
@@ -294,7 +294,7 @@ AmfmReader::lerror(const char *format, ...) const
 {
     va_list val;
     va_start(val, format);
-    _errh->vxmessage(_l.landmark(), ErrorHandler::e_error, format, val);
+    _errh->xmessage(_l.landmark(), ErrorHandler::e_error, format, val);
     va_end(val);
 }
 
