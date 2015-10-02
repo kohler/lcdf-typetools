@@ -1091,7 +1091,7 @@ ErrorVeneer::account(int level)
 ContextErrorHandler::ContextErrorHandler(ErrorHandler *errh, const char *fmt,
 					 ...)
     : ErrorVeneer(errh), _indent(String::make_stable("  ", 2)),
-      _context_printed(false)
+      _context_printed(false), _context_landmark("{l:}")
 {
     va_list val;
     va_start(val, fmt);
