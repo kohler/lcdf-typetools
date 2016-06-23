@@ -828,7 +828,7 @@ ErrorHandler::fatal(const char *fmt, ...)
 {
     va_list val;
     va_start(val, fmt);
-    int r = xmessage(String::make_stable(e_fatal, 4), fmt, val);
+    (void) xmessage(String::make_stable(e_fatal, 4), fmt, val);
     va_end(val);
     abort();
 }
@@ -881,7 +881,7 @@ ErrorHandler::lfatal(const String &landmark, const char *fmt, ...)
     va_list val;
     va_start(val, fmt);
     String l = make_landmark_anno(landmark);
-    int r = xmessage(String::make_stable(e_fatal, 4) + l, fmt, val);
+    (void) xmessage(String::make_stable(e_fatal, 4) + l, fmt, val);
     va_end(val);
     abort();
 }
@@ -1091,7 +1091,7 @@ ErrorVeneer::account(int level)
 ContextErrorHandler::ContextErrorHandler(ErrorHandler *errh, const char *fmt,
 					 ...)
     : ErrorVeneer(errh), _indent(String::make_stable("  ", 2)),
-      _context_printed(false), _context_landmark("{l:}")
+      _context_landmark("{l:}"), _context_printed(false)
 {
     va_list val;
     va_start(val, fmt);

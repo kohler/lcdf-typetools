@@ -1279,7 +1279,6 @@ GsubChainContext::f1_unparse(const Gsub &gsub, Vector<Substitution> &v, const Co
             int subtab_offset = subst_offset + 2;
 
             Substitution s(nbacktrack, ninput, ninput, nlookahead);
-            Glyph* left_begin = s.left_glyphptr();
             if (gsub.chaincontext_reverse_backtrack()) {
                 for (int i = 0; i != nbacktrack; ++i)
                     s.left_glyphptr()[i] = _d.u16(sr_offset + 2 + i*2);

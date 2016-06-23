@@ -528,7 +528,7 @@ do_query_unicode(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* re
                 sprintf(name, "uni%04X", it->first);
             else
                 sprintf(name, "u%X", it->first);
-            if ((size_t) it->second < glyph_names.size())
+            if (it->second < glyph_names.size())
                 result_errh->message("%s %d %s\n", name, it->second, glyph_names[it->second].c_str());
             else
                 result_errh->message("%s %d\n", name, it->second);
