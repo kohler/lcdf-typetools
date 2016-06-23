@@ -2,6 +2,7 @@
 #define OTFTOTFM_UTIL_HH
 #include <lcdf/string.hh>
 #include <lcdf/globmatch.hh>
+#include <stdio.h>
 class ErrorHandler;
 
 extern bool no_create;
@@ -21,6 +22,7 @@ bool same_filename(const String &a, const String &b);
 String shell_quote(const String &);
 int temporary_file(String &, ErrorHandler *);
 int mysystem(const char *command, ErrorHandler *);
+FILE* mypopen(const char* command, const char* type, ErrorHandler* errh);
 bool parse_unicode_number(const char*, const char*, int require_prefix, uint32_t& result);
 
 #ifdef WIN32

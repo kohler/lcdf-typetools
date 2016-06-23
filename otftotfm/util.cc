@@ -162,6 +162,19 @@ mysystem(const char *command, ErrorHandler *errh)
     }
 }
 
+FILE*
+mypopen(const char* command, const char* type, ErrorHandler* errh)
+{
+    if (no_create) {
+        errh->message("would run %s", command);
+        return popen("true", type);
+    } else {
+        if (verbose)
+            errh->message("running %s", command);
+        return popen(command, type);
+    }
+}
+
 #if !HAVE_MKSTEMP
 static const char *
 my_tmpnam()

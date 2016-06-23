@@ -1154,11 +1154,48 @@ output_tfm(Metrics &metrics, const String &ps_name, int boundary_char,
 
     StringAccum command;
     if (vpl)
-	command << "vptovf " << shell_quote(pl_filename) << ' ' << shell_quote(vf_filename) << ' ' << shell_quote(tfm_filename) << " >&2";
+	command << "vptovf " << shell_quote(pl_filename) << ' ' << shell_quote(vf_filename) << ' ' << shell_quote(tfm_filename) << " 2>&1";
     else
-	command << "pltotf " << shell_quote(pl_filename) << ' ' << shell_quote(tfm_filename) << " >&2";
+	command << "pltotf " << shell_quote(pl_filename) << ' ' << shell_quote(tfm_filename) << " 2>&1";
 
-    int status = mysystem(command.c_str(), errh);
+    FILE* cmdfile = mypopen(command.c_str(), "r", errh);
+    int status;
+    if (cmdfile) {
+        StringAccum results;
+        while (!feof(cmdfile)) {
+            char* buf = results.reserve(BUFSIZ);
+            results.adjust_length(fread(buf, 1, BUFSIZ, cmdfile));
+        }
+        // compensate for shitty vptovf/pltotf messages
+        char* by_units, *last_line;
+        while (!results.empty()
+               && (by_units = strstr((char*) results.c_str(), "  units"))
+               && (last_line = strrchr((char*) results.c_str(), '\n'))
+               && results.end() - last_line > 1
+               && isdigit((unsigned char) last_line[1])) {
+            char* start_number = last_line + 1;
+            char* end_number = last_line + 2;
+            while (end_number < results.end()
+                   && isdigit((unsigned char) *end_number))
+                ++end_number;
+            if (end_number < results.end() && *end_number == '.') {
+                char* dot = end_number;
+                ++end_number;
+                while (end_number < results.end()
+                       && end_number < dot + 8
+                       && isdigit((unsigned char) *end_number))
+                    ++end_number;
+            }
+            String number(start_number, end_number);
+            char* by_units_dest = by_units + 1 + (end_number - start_number);
+            memmove(by_units_dest, by_units + 1, start_number - (by_units + 1));
+            memmove(by_units + 1, number.begin(), number.length());
+        }
+        if (!results.empty())
+            fwrite(results.begin(), 1, results.length(), stderr);
+        status = pclose(cmdfile);
+    } else
+        status = -1;
 
     if (!no_create)
 	unlink(pl_filename.c_str());
