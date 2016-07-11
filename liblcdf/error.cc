@@ -595,7 +595,7 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 
 	    s2 = numbuf + NUMBUF_SIZE;
 
-	    unsigned long num;
+	    do_number_t num;
 	    switch (width_flag) {
 	    case 'H':
 	    case -8:
@@ -651,13 +651,12 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 	    default:
 		goto error;
 	    }
-	    s1 = do_number(num, (char *)s2, base, flags);
+	    s1 = do_number(num, (char*) s2, base, flags);
 
 #if HAVE_INT64_TYPES
 	got_number:
 #endif
-	    s1 = do_number_flags((char *)s1, (char *)s2, base, flags,
-				 precision, field_width);
+	    s1 = do_number_flags((char*)s1, (char*) s2, base, flags, precision, field_width);
 	    break;
 	}
 
@@ -681,7 +680,7 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 	    }
 	    void* v = va_arg(val, void*);
 	    s2 = numbuf + NUMBUF_SIZE;
-	    s1 = do_number((unsigned long) v, (char*) s2, 16, flags);
+	    s1 = do_number((do_number_t) v, (char*) s2, 16, flags);
 	    s1 = do_number_flags((char*) s1, (char*) s2, 16, flags | cf_alternate_form, precision, field_width);
 	    break;
 	}
