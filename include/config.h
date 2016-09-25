@@ -6,7 +6,7 @@
 /* Allow compilation on Windows (thanks, Fabrice Popineau). */
 #ifdef WIN32
 # ifdef __MINGW32__
-#  include <windows.h>
+#  include <winsock2.h>
 # else
 #  include <win32lib.h>
 # endif
