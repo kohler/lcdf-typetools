@@ -297,7 +297,7 @@ Secondary::encode_uni(int code, PermString name, uint32_t uni, Metrics &metrics,
 
 T1Secondary::T1Secondary(const FontInfo &finfo, const String &font_name,
                          const String &otf_file_name)
-    : _finfo(finfo), _font_name(font_name), _otf_file_name(otf_file_name),
+    : Secondary(finfo), _font_name(font_name), _otf_file_name(otf_file_name),
       _units_per_em(finfo.units_per_em()),
       _xheight((int) ceil(finfo.x_height(Transform()))),
       _spacewidth(_units_per_em)
@@ -316,46 +316,27 @@ Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHand
         return 0;
 }
 
-int T1Secondary::force_unicode_encoding(Metrics& metrics, int uni) {
-    int code = metrics.unicode_encoding(uni);
+Secondary::SettingSet& Secondary::SettingSet::show(int uni) {
+    if (!ok_)
+        return *this;
+    int code = m_.unicode_encoding(uni);
     if (code < 0) {
-        Glyph glyph = _finfo.cmap->map_uni(uni);
-        if (glyph == 0 || (code = metrics.force_encoding(glyph)) < 0)
-            return -1;
+        Glyph glyph = s_->_finfo.cmap->map_uni(uni);
+        if (glyph != 0)
+            code = m_.force_encoding(glyph);
     }
-    return code;
-}
-
-bool
-T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
-{
-    Vector<int> codes;
-
-    // collect codes
-    va_list val;
-    va_start(val, uni);
-
-    int kerntype = Setting::KERN;
-    if (uni == U_USE_KERNX) {
-        kerntype = Setting::KERNX;
-        uni = va_arg(val, int);
+    if (code < 0) {
+        ok_ = false;
+        while (v_.size() > original_size_)
+            v_.pop_back();
+    } else {
+        if (!v_.empty()
+            && v_.back().op == Setting::SHOW
+            && kern_type_)
+            v_.push_back(Setting(kern_type_));
+        v_.push_back(Setting(Setting::SHOW, code, m_.base_glyph(code)));
     }
-
-    for (; uni; uni = va_arg(val, int)) {
-        int code = force_unicode_encoding(metrics, uni);
-        if (code < 0)
-            return false;
-        codes.push_back(code);
-    }
-    va_end(val);
-
-    // generate setting
-    for (int i = 0; i < codes.size(); i++) {
-        if (i)
-            v.push_back(Setting(kerntype));
-        v.push_back(Setting(Setting::SHOW, codes[i], metrics.base_glyph(codes[i])));
-    }
-    return true;
+    return *this;
 }
 
 bool
@@ -469,7 +450,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
     int vsize = v.size();
     extern int letterspace;
 
-    if (char_setting(v, metrics, uni, 0))
+    if (set(v, metrics).show(uni).ok())
         return 1;
 
     switch (uni) {
@@ -498,60 +479,54 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
         return 2;
     }
 
-      case U_SS:
-        if (char_setting(v, metrics, 'S', 'S', 0))
+    case U_SS:
+        if (set(v, metrics).show('S').show('S').ok())
             return 1;
         break;
 
-      case U_SSSMALL:
-        if (char_setting(v, metrics, U_SSMALL, U_SSMALL, 0))
-            return 1;
-        else if (char_setting(v, metrics, 's', 's', 0))
+    case U_SSSMALL:
+        if (set(v, metrics).show(U_SSMALL).show(U_SSMALL).ok()
+            || set(v, metrics).show('s').show('s').ok())
             return 1;
         break;
 
       case U_FFSMALL:
-        if (char_setting(v, metrics, U_FSMALL, U_FSMALL, 0))
-            return 1;
-        else if (char_setting(v, metrics, 'f', 'f', 0))
+        if (set(v, metrics).show(U_FSMALL).show(U_FSMALL).ok()
+            || set(v, metrics).show('f').show('f').ok())
             return 1;
         break;
 
       case U_FISMALL:
-        if (char_setting(v, metrics, U_FSMALL, U_ISMALL, 0))
-            return 1;
-        else if (char_setting(v, metrics, 'f', 'i', 0))
+        if (set(v, metrics).show(U_FSMALL).show(U_ISMALL).ok()
+            || set(v, metrics).show('f').show('i').ok())
             return 1;
         break;
 
       case U_FLSMALL:
-        if (char_setting(v, metrics, U_FSMALL, U_LSMALL, 0))
-            return 1;
-        else if (char_setting(v, metrics, 'f', 'l', 0))
+        if (set(v, metrics).show(U_FSMALL).show(U_LSMALL).ok()
+            || set(v, metrics).show('f').show('l').ok())
             return 1;
         break;
 
       case U_FFISMALL:
-        if (char_setting(v, metrics, U_FSMALL, U_FSMALL, U_ISMALL, 0))
-            return 1;
-        else if (char_setting(v, metrics, 'f', 'f', 'i', 0))
+        if (set(v, metrics).show(U_FSMALL).show(U_FSMALL).show(U_ISMALL).ok()
+            || set(v, metrics).show('f').show('f').show('i').ok())
             return 1;
         break;
 
       case U_FFLSMALL:
-        if (char_setting(v, metrics, U_FSMALL, U_FSMALL, U_LSMALL, 0))
-            return 1;
-        else if (char_setting(v, metrics, 'f', 'f', 'l', 0))
+        if (set(v, metrics).show(U_FSMALL).show(U_FSMALL).show(U_LSMALL).ok()
+            || set(v, metrics).show('f').show('f').show('l').ok())
             return 1;
         break;
 
       case U_IJ:
-        if (char_setting(v, metrics, 'I', 'J', 0))
+        if (set(v, metrics).show('I').show('J').ok())
             return 1;
         break;
 
       case U_ij:
-        if (char_setting(v, metrics, 'i', 'j', 0))
+        if (set(v, metrics).show('i').show('j').ok())
             return 1;
         break;
 
@@ -564,40 +539,40 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
               v.push_back(Setting(Setting::FONT, which));
               v.push_back(Setting(Setting::SHOW, 'j', dj_glyph));
               return 2;
-          } else if (which == J_NODOT && char_setting(v, metrics, 'j', 0))
+          } else if (which == J_NODOT && set(v, metrics).show('j').ok())
               return 1;
           break;
       }
 
       case U_DBLBRACKETLEFT:
-        if (char_setting(v, metrics, '[', 0)) {
+        if (set(v, metrics).show('[').ok()) {
             if (!_finfo.is_fixed_pitch()) {
                 double d = char_one_bound(_finfo, xform, 4, true, 0, '[', 0);
                 v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d - letterspace), 0));
             }
-            char_setting(v, metrics, '[', 0);
+            set(v, metrics).show('[');
             return 1;
         }
         break;
 
       case U_DBLBRACKETRIGHT:
-        if (char_setting(v, metrics, ']', 0)) {
+        if (set(v, metrics).show(']').ok()) {
             if (!_finfo.is_fixed_pitch()) {
                 double d = char_one_bound(_finfo, xform, 4, true, 0, ']', 0);
                 v.push_back(Setting(Setting::MOVE, (int) (-0.666 * d - letterspace), 0));
             }
-            char_setting(v, metrics, ']', 0);
+            set(v, metrics).show(']');
             return 1;
         }
         break;
 
       case U_BARDBL:
-        if (char_setting(v, metrics, '|', 0)) {
+        if (set(v, metrics).show('|').ok()) {
             if (!_finfo.is_fixed_pitch()) {
                 double d = char_one_bound(_finfo, Transform(), 4, true, 0, '|', 0);
                 v.push_back(Setting(Setting::MOVE, (int) (-0.333 * d - letterspace), 0));
             }
-            char_setting(v, metrics, '|', 0);
+            set(v, metrics).show('|');
             return 1;
         }
         break;
@@ -610,7 +585,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
           if (char_bounds(bounds, bounds[4], _finfo, xform, '('))
               dropdown -= std::max(bounds[3], 0.) + std::min(bounds[1], 0.);
           v.push_back(Setting(Setting::MOVE, 0, (int) (-dropdown / 2)));
-          if (char_setting(v, metrics, '*', 0)) {
+          if (set(v, metrics).show('*').ok()) {
               v.push_back(Setting(Setting::MOVE, 0, -(int) (-dropdown / 2)));
               return 1;
           }
@@ -618,30 +593,30 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
       }
 
       case U_TWELVEUDASH:
-        if (char_setting(v, metrics, U_ENDASH, 0)) {
+        if (set(v, metrics).show(U_ENDASH).ok()) {
             if (!_finfo.is_fixed_pitch()) {
                 double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
                 v.push_back(Setting(Setting::MOVE, (int) (_units_per_em * 0.667 - 2 * d - letterspace), 0));
             }
-            char_setting(v, metrics, U_ENDASH, 0);
+            set(v, metrics).show(U_ENDASH);
             return 1;
         }
         break;
 
       case U_THREEQUARTERSEMDASH:
-        if (char_setting(v, metrics, U_ENDASH, 0)) {
+        if (set(v, metrics).show(U_ENDASH).ok()) {
             if (!_finfo.is_fixed_pitch()) {
                 double d = char_one_bound(_finfo, xform, 4, true, 0, U_ENDASH, 0);
                 v.push_back(Setting(Setting::MOVE, (int) (_units_per_em * 0.750 - 2 * d - letterspace), 0));
             }
-            char_setting(v, metrics, U_ENDASH, 0);
+            set(v, metrics).show(U_ENDASH);
             return 1;
         }
         break;
 
       case U_CENTIGRADE:
         // TODO: set italic correction to that of a 'C'
-        if (char_setting(v, metrics, U_USE_KERNX, U_DEGREE, 'C', 0))
+        if (set(v, metrics).kern(Setting::KERNX).show(U_DEGREE).show('C').ok())
             return 1;
         break;
 
@@ -652,9 +627,9 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
               + 0.050 * _units_per_em;
           v.push_back(Setting(Setting::PUSH));
           v.push_back(Setting(Setting::MOVE, (int) exclam_offset, 0));
-          if (char_setting(v, metrics, '!', 0)) {
+          if (set(v, metrics).show('!').ok()) {
               v.push_back(Setting(Setting::POP));
-              if (char_setting(v, metrics, '?', 0))
+              if (set(v, metrics).show('?').ok())
                   return 1;
           }
           break;
@@ -667,16 +642,17 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
               + 0.050 * _units_per_em;
           v.push_back(Setting(Setting::PUSH));
           v.push_back(Setting(Setting::MOVE, (int) exclam_offset, 0));
-          if (char_setting(v, metrics, U_EXCLAMDOWN, 0)) {
+          if (set(v, metrics).show(U_EXCLAMDOWN).ok()) {
               v.push_back(Setting(Setting::POP));
-              if (char_setting(v, metrics, U_QUESTIONDOWN, 0))
+              if (set(v, metrics).show(U_QUESTIONDOWN).ok())
                   return 1;
           }
           break;
       }
 
       case U_PERTENTHOUSAND:
-        if (char_setting(v, metrics, U_USE_KERNX, 0xF661, U_FRACTION, 0xF655, 0xF655, 0xF655, 0))
+        if (set(v, metrics).kern(Setting::KERNX).show(0xF661).show(U_FRACTION)
+            .show(0xF655).show(0xF655).show(0xF655).ok())
             return 1;
         break;
 
@@ -691,7 +667,7 @@ T1Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHa
           if (A_width > -_units_per_em && ring_width > -_units_per_em) {
               int offset = (A_width - ring_width) / 2;
               v.push_back(Setting(Setting::MOVE, offset, 0));
-              if (char_setting(v, metrics, ring_char, 0)) {
+              if (set(v, metrics).show(ring_char).ok()) {
                   v.push_back(Setting(Setting::MOVE, A_width - ring_width - offset, 0));
                   return 1;
               }
