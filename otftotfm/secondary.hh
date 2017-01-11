@@ -92,6 +92,7 @@ class T1Secondary : public Secondary { public:
     int _units_per_em;
     int _xheight;
     int _spacewidth;
+    int force_unicode_encoding(Metrics& metrics, int uni);
     bool char_setting(Vector<Setting> &, Metrics &, int uni, ...);
     enum { J_NODOT = -1031892 /* unlikely value */ };
     int dotlessj_font(Metrics &, ErrorHandler *, Glyph &dj_glyph);

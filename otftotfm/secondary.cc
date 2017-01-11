@@ -316,6 +316,16 @@ Secondary::setting(uint32_t uni, Vector<Setting> &v, Metrics &metrics, ErrorHand
         return 0;
 }
 
+int T1Secondary::force_unicode_encoding(Metrics& metrics, int uni) {
+    int code = metrics.unicode_encoding(uni);
+    if (code < 0) {
+        Glyph glyph = _finfo.cmap->map_uni(uni);
+        if (glyph == 0 || (code = metrics.force_encoding(glyph)) < 0)
+            return -1;
+    }
+    return code;
+}
+
 bool
 T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
 {
@@ -332,12 +342,9 @@ T1Secondary::char_setting(Vector<Setting> &v, Metrics &metrics, int uni, ...)
     }
 
     for (; uni; uni = va_arg(val, int)) {
-        int code = metrics.unicode_encoding(uni);
-        if (code < 0) {
-            Glyph glyph = _finfo.cmap->map_uni(uni);
-            if (glyph == 0 || (code = metrics.force_encoding(glyph)) < 0)
-                return false;
-        }
+        int code = force_unicode_encoding(metrics, uni);
+        if (code < 0)
+            return false;
         codes.push_back(code);
     }
     va_end(val);
