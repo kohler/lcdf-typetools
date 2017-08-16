@@ -731,12 +731,12 @@ Type1Subr::gen(Type1Writer &w)
         for (int i = 0; i < w.lenIV(); i++) {
             unsigned char c = (unsigned char)(r >> 8);
             *t++ = c;
-            r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
+            r = ((c + r) * (uint32_t) t1C1 + t1C2) & 0xFFFF;
         }
         for (int i = 0; i < len; i++, data++) {
             unsigned char c = (*data ^ (r >> 8));
             *t++ = c;
-            r = ((c + r) * t1C1 + t1C2) & 0xFFFF;
+            r = ((c + r) * (uint32_t) t1C1 + t1C2) & 0xFFFF;
         }
 
         w.print((char *)buf, len + w.lenIV());
