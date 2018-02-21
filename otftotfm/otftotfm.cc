@@ -1542,14 +1542,15 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
     CharstringBounds boundser(font_xform);
 
     double x_height = finfo.x_height(font_xform);
-    double slant = font_slant(finfo);
+    double actual_slant = font_slant(finfo);
     int boundary_char = dvipsenc.boundary_char();
 
     double bounds[4], width;
 
     for (int code = 0; code < metrics.encoding_size(); code++)
-        if (metrics.was_base_glyph(code) && code != boundary_char
-            && char_bounds(bounds, width, finfo, font_xform, code)) {
+        if (metrics.was_base_glyph(code)
+            && code != boundary_char
+            && char_bounds(bounds, width, finfo, font_xform, metrics.unicode(code))) {
             int left_sb = (bounds[0] < 0 ? (int) ceil(-bounds[0]) : 0);
             metrics.add_single_positioning(code, left_sb, 0, left_sb);
 
@@ -1558,7 +1559,7 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
                     (bounds[3] > x_height ? bounds[3] : x_height)
                     - 0.5 * x_height;
                 double right_sb = (bounds[2] > width ? bounds[2] - width : 0);
-                int skew = (int) (slant * virtual_height + left_sb - right_sb);
+                int skew = (int) (actual_slant * virtual_height + left_sb - right_sb);
                 metrics.add_kern(code, skew_char, skew);
             }
         }
