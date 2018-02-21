@@ -1555,11 +1555,11 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
             metrics.add_single_positioning(code, left_sb, 0, left_sb);
 
             if (skew_char >= 0 && code < 256) {
-                double virtual_height =
-                    (bounds[3] > x_height ? bounds[3] : x_height)
-                    - 0.5 * x_height;
-                double right_sb = (bounds[2] > width ? bounds[2] - width : 0);
-                int skew = (int) (actual_slant * virtual_height + left_sb - right_sb);
+                double sheight = std::max(bounds[3], x_height) - 0.5 * x_height;
+                double right_sb = std::max(bounds[2] - width, 0.0);
+                double desired = 1.5 * left_sb + 0.5 * width + actual_slant * sheight - 0.5 * right_sb;
+                double computed = 0.5 * (left_sb + width + right_sb);
+                int skew = (int) (desired - computed);
                 metrics.add_kern(code, skew_char, skew);
             }
         }
