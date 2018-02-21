@@ -133,6 +133,7 @@ using namespace Efont;
 #define TYPE1_DIR_OPT           (DIR_OPTS + O_TYPE1)
 #define TYPE42_DIR_OPT          (DIR_OPTS + O_TYPE42)
 #define TRUETYPE_DIR_OPT        (DIR_OPTS + O_TRUETYPE)
+#define DIR_OPT                 (DIR_OPTS + NUMODIR)
 
 #define NO_OUTPUT_OPTS          400
 #define NO_ENCODING_OPT         (NO_OUTPUT_OPTS + G_ENCODING)
@@ -207,6 +208,7 @@ static Clp_Option options[] = {
     { "vendor", 'v', VENDOR_OPT, Clp_ValString, 0 },
     { "typeface", 0, TYPEFACE_OPT, Clp_ValString, 0 },
 
+    { "directory", 0, DIR_OPT, Clp_ValString, 0 },
     { "encoding-directory", 0, ENCODING_DIR_OPT, Clp_ValString, 0 },
     { "pl-directory", 0, PL_DIR_OPT, Clp_ValString, 0 },
     { "tfm-directory", 0, TFM_DIR_OPT, Clp_ValString, 0 },
@@ -388,6 +390,7 @@ File location options:\n\
       --encoding-directory=DIR Put encoding files in DIR [.|automatic].\n\
       --type1-directory=DIR    Put Type 1 fonts in DIR [automatic].\n\
       --truetype-directory=DIR Put TrueType fonts in DIR [automatic].\n\
+      --directory=DIR          Put output in DIR [.|automatic].\n\
       --map-file=FILE          Update FILE with psfonts.map information [-].\n\
 \n\
 Other options:\n\
@@ -1846,6 +1849,10 @@ main(int argc, char *argv[])
     bool no_ecommand = false, default_ligkern = true;
     int warn_missing = -1;
     String codingscheme;
+    const char* odirs[NUMODIR + 1];
+    for (int i = 0; i <= NUMODIR; ++i) {
+        odirs[i] = 0;
+    }
 
     GlyphFilter current_substitution_filter;
     GlyphFilter current_alternate_filter;
@@ -2123,7 +2130,10 @@ main(int argc, char *argv[])
         case TYPE1_DIR_OPT:
         case TRUETYPE_DIR_OPT:
         case TYPE42_DIR_OPT:
-            if (!setodir(opt - DIR_OPTS, clp->vstr))
+        case DIR_OPT:
+            if (!odirs[opt - DIR_OPTS])
+                odirs[opt - DIR_OPTS] = clp->vstr;
+            else
                 usage_error(errh, "%s directory specified twice", odirname(opt - DIR_OPTS));
             break;
 
@@ -2253,6 +2263,16 @@ particular purpose.\n");
         usage_error(errh, "no font filename provided");
     if (encoding_file == "-")
         encoding_file = "";
+
+    // set up output directories
+    if (odirs[NUMODIR]) {
+        for (int i = 0; i < NUMODIR; ++i)
+            if (!odirs[i])
+                odirs[i] = odirs[NUMODIR];
+    }
+    for (int i = 0; i < NUMODIR; ++i)
+        if (odirs[i])
+            setodir(i, odirs[i]);
 
     // set up feature filters
     if (!altselector_features.size()) {

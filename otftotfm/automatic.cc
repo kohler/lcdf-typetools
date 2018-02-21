@@ -245,20 +245,22 @@ getodir(int o, ErrorHandler *errh)
     return odir[o];
 }
 
-bool
+void
 setodir(int o, const String &value)
 {
     assert(o >= 0 && o < NUMODIR);
-    bool had = (bool) odir[o];
     odir[o] = value;
-    return !had;
 }
 
 const char *
 odirname(int o)
 {
-    assert(o >= 0 && o < NUMODIR);
-    return odir_info[o].name;
+    if (o == NUMODIR) {
+        return "default";
+    } else {
+        assert(o >= 0 && o < NUMODIR);
+        return odir_info[o].name;
+    }
 }
 
 #if HAVE_KPATHSEA
