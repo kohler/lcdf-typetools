@@ -13,7 +13,7 @@ enum { G_ENCODING = 1, G_METRICS = 2, G_VMETRICS = 4, G_TYPE1 = 8,
        G_PSFONTSMAP = 16, G_BINARY = 32, G_ASCII = 64, G_DOTLESSJ = 128,
        G_UPDMAP = 256, G_TRUETYPE = 512, G_TYPE42 = 1024 };
 
-extern int output_flags;
+extern unsigned output_flags;
 
 String read_file(String filename, ErrorHandler *, bool warn = false);
 String printable_filename(const String &);

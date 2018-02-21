@@ -192,7 +192,8 @@ static Clp_Option options[] = {
     { "italic-angle", 0, ITALIC_ANGLE_OPT, Clp_ValDouble, 0 },
     { "x-height", 0, X_HEIGHT_OPT, Clp_ValString, 0 },
 
-    { "pl", 'p', PL_OPT, 0, 0 },
+    { "pl", 'p', PL_OPT, 0, Clp_Negate },
+    { "tfm", 't', TFM_OPT, 0, Clp_Negate }, // not in documentation
     { "virtual", 0, VIRTUAL_OPT, 0, Clp_Negate },
     { "no-encoding", 0, NO_ENCODING_OPT, 0, 0 },
     { "no-type1", 0, NO_TYPE1_OPT, 0, 0 },
@@ -228,7 +229,6 @@ static Clp_Option options[] = {
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
 
-    { "tfm", 't', TFM_OPT, 0, 0 }, // deprecated
     { "query-features", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "qf", 0, QUERY_FEATURES_OPT, 0, 0 },
     { "query-scripts", 0, QUERY_SCRIPTS_OPT, 0, 0 },
@@ -285,7 +285,7 @@ static double x_height;
 static String out_encoding_file;
 static String out_encoding_name;
 
-int output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_DOTLESSJ | G_UPDMAP | G_BINARY | G_TRUETYPE;
+unsigned output_flags = G_ENCODING | G_METRICS | G_VMETRICS | G_PSFONTSMAP | G_TYPE1 | G_DOTLESSJ | G_UPDMAP | G_TRUETYPE;
 
 bool automatic = false;
 bool verbose = false;
@@ -1139,20 +1139,22 @@ output_encoding(const Metrics &metrics,
 static void
 output_tfm(Metrics &metrics, const String &ps_name, int boundary_char,
            const FontInfo &finfo, String tfm_filename, String vf_filename,
-           ErrorHandler *errh)
+           String pl_filename, ErrorHandler *errh)
 {
-    String pl_filename;
+    bool had_pl_filename = !pl_filename.empty();
     bool vpl = vf_filename;
 
-    if (no_create) {
-        errh->message("would write %s to temporary file", (vpl ? "VPL" : "PL"));
-        pl_filename = "<temporary>";
-    } else {
-        int pl_fd = temporary_file(pl_filename, errh);
-        if (pl_fd < 0)
-            return;
-        output_pl(metrics, ps_name, boundary_char, finfo, vpl, pl_filename, errh);
-        close(pl_fd);
+    if (!pl_filename) {
+        if (no_create) {
+            errh->message("would write %s to temporary file", (vpl ? "VPL" : "PL"));
+            pl_filename = "<temporary>";
+        } else {
+            int pl_fd = temporary_file(pl_filename, errh);
+            if (pl_fd < 0)
+                return;
+            output_pl(metrics, ps_name, boundary_char, finfo, vpl, pl_filename, errh);
+            close(pl_fd);
+        }
     }
 
     StringAccum command;
@@ -1200,7 +1202,7 @@ output_tfm(Metrics &metrics, const String &ps_name, int boundary_char,
     } else
         status = -1;
 
-    if (!no_create)
+    if (!no_create && !had_pl_filename)
         unlink(pl_filename.c_str());
 
     if (status != 0)
@@ -1246,14 +1248,16 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
             }
         }
     } else {
+        String vplfile;
+        if (output_flags & G_ASCII) {
+            vplfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
+            output_pl(metrics, ps_name, boundary_char, finfo, true, vplfile, errh);
+            update_odir(O_VPL, vplfile, errh);
+        }
         if (output_flags & G_BINARY) {
             String tfm = getodir(O_TFM, errh) + "/" + font_name + ".tfm";
             String vf = getodir(O_VF, errh) + "/" + font_name + ".vf";
-            output_tfm(metrics, ps_name, boundary_char, finfo, tfm, vf, errh);
-        } else {
-            String outfile = getodir(O_VPL, errh) + "/" + font_name + ".vpl";
-            output_pl(metrics, ps_name, boundary_char, finfo, true, outfile, errh);
-            update_odir(O_VPL, outfile, errh);
+            output_tfm(metrics, ps_name, boundary_char, finfo, tfm, vf, vplfile, errh);
         }
     }
 
@@ -1266,15 +1270,17 @@ output_metrics(Metrics &metrics, const String &ps_name, int boundary_char,
     double save_minimum_kern = minimum_kern;
     if (need_virtual)
         minimum_kern = 100000;
-    if (!(output_flags & G_METRICS))
-        /* do nothing */;
-    else if (output_flags & G_BINARY) {
-        String tfm = getodir(O_TFM, errh) + "/" + base_font_name + ".tfm";
-        output_tfm(metrics, ps_name, boundary_char, finfo, tfm, String(), errh);
-    } else {
-        String outfile = getodir(O_PL, errh) + "/" + base_font_name + ".pl";
-        output_pl(metrics, ps_name, boundary_char, finfo, false, outfile, errh);
-        update_odir(O_PL, outfile, errh);
+    if (output_flags & G_METRICS) {
+        String plfile;
+        if (output_flags & G_ASCII) {
+            plfile = getodir(O_PL, errh) + "/" + base_font_name + ".pl";
+            output_pl(metrics, ps_name, boundary_char, finfo, false, plfile, errh);
+            update_odir(O_PL, plfile, errh);
+        }
+        if (output_flags & G_BINARY) {
+            String tfm = getodir(O_TFM, errh) + "/" + base_font_name + ".tfm";
+            output_tfm(metrics, ps_name, boundary_char, finfo, tfm, String(), plfile, errh);
+        }
     }
     minimum_kern = save_minimum_kern;
 
@@ -1848,6 +1854,7 @@ main(int argc, char *argv[])
     Vector<String> base_encoding_files;
     bool no_ecommand = false, default_ligkern = true;
     int warn_missing = -1;
+    unsigned specified_output_flags = 0;
     String codingscheme;
     const char* odirs[NUMODIR + 1];
     for (int i = 0; i <= NUMODIR; ++i) {
@@ -2076,6 +2083,7 @@ main(int argc, char *argv[])
                 output_flags &= ~G_VMETRICS;
             else
                 output_flags |= G_VMETRICS;
+            specified_output_flags |= G_VMETRICS;
             break;
 
         case NO_ENCODING_OPT:
@@ -2083,6 +2091,7 @@ main(int argc, char *argv[])
         case NO_DOTLESSJ_OPT:
         case NO_UPDMAP_OPT:
             output_flags &= ~(opt - NO_OUTPUT_OPTS);
+            specified_output_flags |= opt - NO_OUTPUT_OPTS;
             break;
 
         case TRUETYPE_OPT:
@@ -2091,6 +2100,7 @@ main(int argc, char *argv[])
                 output_flags |= (opt - YES_OUTPUT_OPTS);
             else
                 output_flags &= ~(opt - YES_OUTPUT_OPTS);
+            specified_output_flags |= opt - YES_OUTPUT_OPTS;
             break;
 
           case OUTPUT_ENCODING_OPT:
@@ -2098,6 +2108,7 @@ main(int argc, char *argv[])
                 usage_error(errh, "encoding output file specified twice");
             out_encoding_file = (clp->have_val ? clp->vstr : "-");
             output_flags = G_ENCODING;
+            specified_output_flags = -1;
             break;
 
           case MINIMUM_KERN_OPT:
@@ -2112,14 +2123,23 @@ main(int argc, char *argv[])
                 if (!set_map_file(clp->vstr))
                     usage_error(errh, "map file specified twice");
             }
+            specified_output_flags |= G_PSFONTSMAP;
             break;
 
-          case PL_OPT:
-            output_flags = (output_flags & ~G_BINARY) | G_ASCII;
+        case PL_OPT:
+            if (clp->negated)
+                output_flags &= ~G_ASCII;
+            else
+                output_flags |= G_ASCII;
+            specified_output_flags |= G_ASCII;
             break;
 
-          case TFM_OPT:
-            output_flags = (output_flags & ~G_ASCII) | G_BINARY;
+        case TFM_OPT:
+            if (clp->negated)
+                output_flags &= ~G_BINARY;
+            else
+                output_flags |= G_BINARY;
+            specified_output_flags |= G_BINARY;
             break;
 
         case ENCODING_DIR_OPT:
@@ -2257,6 +2277,8 @@ particular purpose.\n");
     // check for odd option combinations
     if (warn_missing > 0 && !(output_flags & G_VMETRICS))
         errh->warning("%<--warn-missing%> has no effect with %<--no-virtual%>");
+    if (!(specified_output_flags & (G_BINARY | G_ASCII)))
+        output_flags |= G_BINARY;
 
     // set up file names
     if (!input_file)
