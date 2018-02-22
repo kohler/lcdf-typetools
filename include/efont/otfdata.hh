@@ -114,11 +114,7 @@ inline uint8_t Data::operator[](unsigned offset) const {
 }
 
 inline uint16_t Data::u16(const unsigned char* s) {
-#if __x86__ || __x86_64__ || HAVE_INDIFFERENT_ALIGNMENT
-    return ntohs(*reinterpret_cast<const uint16_t*>(s));
-#else
     return (s[0] << 8) + s[1];
-#endif
 }
 
 inline uint16_t Data::u16_aligned(const unsigned char* s) {
@@ -127,11 +123,7 @@ inline uint16_t Data::u16_aligned(const unsigned char* s) {
 }
 
 inline int16_t Data::s16(const unsigned char* s) {
-#if __x86__ || __x86_64__ || HAVE_INDIFFERENT_ALIGNMENT
-    return ntohs(*reinterpret_cast<const int16_t*>(s));
-#else
     return (int16_t) ((s[0] << 8) + s[1]);
-#endif
 }
 
 inline int16_t Data::s16_aligned(const unsigned char* s) {
@@ -140,20 +132,12 @@ inline int16_t Data::s16_aligned(const unsigned char* s) {
 }
 
 inline uint32_t Data::u32(const unsigned char* s) {
-#if __x86__ || __x86_64__ || HAVE_INDIFFERENT_ALIGNMENT
-    return ntohl(*reinterpret_cast<const uint32_t*>(s));
-#else
-    return (s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
-#endif
+    return ((unsigned) s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
 }
 
 inline uint32_t Data::u32_aligned16(const unsigned char* s) {
-#if __x86__ || __x86_64__ || HAVE_INDIFFERENT_ALIGNMENT
-    return ntohl(*reinterpret_cast<const uint32_t*>(s));
-#else
     efont_precondition((reinterpret_cast<uintptr_t>(s) & 1) == 0);
-    return (u16_aligned(s) << 16) + u16_aligned(s + 2);
-#endif
+    return ((unsigned) u16_aligned(s) << 16) + u16_aligned(s + 2);
 }
 
 inline uint32_t Data::u32_aligned(const unsigned char* s) {
@@ -162,20 +146,12 @@ inline uint32_t Data::u32_aligned(const unsigned char* s) {
 }
 
 inline int32_t Data::s32(const unsigned char* s) {
-#if __x86__ || __x86_64__ || HAVE_INDIFFERENT_ALIGNMENT
-    return ntohl(*reinterpret_cast<const int32_t*>(s));
-#else
-    return (int32_t) ((s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3]);
-#endif
+    return (int32_t) (((unsigned) s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3]);
 }
 
 inline int32_t Data::s32_aligned16(const unsigned char* s) {
-#if __x86__ || __x86_64__ || HAVE_INDIFFERENT_ALIGNMENT
-    return ntohl(*reinterpret_cast<const int32_t*>(s));
-#else
     efont_precondition((reinterpret_cast<uintptr_t>(s) & 1) == 0);
-    return (int32_t) ((u16_aligned(s) << 16) + u16_aligned(s + 2));
-#endif
+    return (int32_t) (((unsigned) u16_aligned(s) << 16) + u16_aligned(s + 2));
 }
 
 inline int32_t Data::s32_aligned(const unsigned char* s) {
