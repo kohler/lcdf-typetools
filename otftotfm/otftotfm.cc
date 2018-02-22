@@ -1557,7 +1557,7 @@ do_math_spacing(Metrics &metrics, const FontInfo &finfo,
             if (skew_char >= 0 && code < 256) {
                 double sheight = std::max(bounds[3], x_height) - 0.5 * x_height;
                 double right_sb = std::max(bounds[2] - width, 0.0);
-                double desired = left_sb + 0.5 * width + actual_slant * sheight;
+                double desired = left_sb + 0.5 * width + actual_slant * sheight + 0.25 * right_sb;
                 double computed = 0.5 * (left_sb + width + right_sb);
                 int skew = (int) (desired - computed);
                 metrics.add_kern(code, skew_char, skew);
