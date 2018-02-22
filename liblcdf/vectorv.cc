@@ -65,7 +65,9 @@ Vector<void*>::reserve(int want)
     if (!new_l)
         return false;
 
-    memcpy(new_l, _l, sizeof(void*) * _n);
+    if (_n) {
+        memcpy(new_l, _l, sizeof(void*) * _n);
+    }
     delete[] _l;
 
     _l = new_l;
