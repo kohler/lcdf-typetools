@@ -83,20 +83,20 @@ class Data {
     static inline int32_t s32_aligned16(const unsigned char* s);
     static inline int32_t s32_aligned(const unsigned char* s);
 
-    inline uint8_t operator[](unsigned offset) const throw (Bounds);
-    inline uint16_t u16(unsigned offset) const throw (Bounds);
-    inline int16_t s16(unsigned offset) const throw (Bounds);
-    inline uint32_t u32(unsigned offset) const throw (Bounds);
-    inline int32_t s32(unsigned offset) const throw (Bounds);
-    inline uint8_t operator[](int offset) const throw (Bounds);
-    inline uint16_t u16(int offset) const throw (Bounds);
-    inline int16_t s16(int offset) const throw (Bounds);
-    inline uint32_t u32(int offset) const throw (Bounds);
-    inline int32_t s32(int offset) const throw (Bounds);
+    inline uint8_t operator[](unsigned offset) const;
+    inline uint16_t u16(unsigned offset) const;
+    inline int16_t s16(unsigned offset) const;
+    inline uint32_t u32(unsigned offset) const;
+    inline int32_t s32(unsigned offset) const;
+    inline uint8_t operator[](int offset) const;
+    inline uint16_t u16(int offset) const;
+    inline int16_t s16(int offset) const;
+    inline uint32_t u32(int offset) const;
+    inline int32_t s32(int offset) const;
 
-    Data subtable(unsigned offset) const throw (Bounds);
-    Data offset_subtable(unsigned offset_offset) const throw (Bounds);
-    inline Data substring(int left, int len = -1) const throw ();
+    Data subtable(unsigned offset) const;
+    Data offset_subtable(unsigned offset_offset) const;
+    inline Data substring(int left, int len = -1) const noexcept;
 
     void align_long()                   { _str.align(4); }
 
@@ -106,7 +106,7 @@ class Data {
 
 };
 
-inline uint8_t Data::operator[](unsigned offset) const throw (Bounds) {
+inline uint8_t Data::operator[](unsigned offset) const {
     if (offset >= static_cast<unsigned>(_str.length()))
         throw Bounds();
     else
@@ -183,55 +183,55 @@ inline int32_t Data::s32_aligned(const unsigned char* s) {
     return ntohl(*reinterpret_cast<const int32_t*>(s));
 }
 
-inline uint16_t Data::u16(unsigned offset) const throw (Bounds) {
+inline uint16_t Data::u16(unsigned offset) const {
     if (offset + 1 >= static_cast<unsigned>(_str.length()) || offset + 1 == 0)
         throw Bounds();
     else
         return u16_aligned(_str.udata() + offset);
 }
 
-inline int16_t Data::s16(unsigned offset) const throw (Bounds) {
+inline int16_t Data::s16(unsigned offset) const {
     if (offset + 1 >= static_cast<unsigned>(_str.length()) || offset + 1 == 0)
         throw Bounds();
     else
         return s16_aligned(_str.udata() + offset);
 }
 
-inline uint32_t Data::u32(unsigned offset) const throw (Bounds) {
+inline uint32_t Data::u32(unsigned offset) const {
     if (offset + 3 >= static_cast<unsigned>(_str.length()) || offset + 3 < 3)
         throw Bounds();
     else
         return u32_aligned16(_str.udata() + offset);
 }
 
-inline int32_t Data::s32(unsigned offset) const throw (Bounds) {
+inline int32_t Data::s32(unsigned offset) const {
     if (offset + 3 >= static_cast<unsigned>(_str.length()) || offset + 3 < 3)
         throw Bounds();
     else
         return s32_aligned16(_str.udata() + offset);
 }
 
-inline uint8_t Data::operator[](int offset) const throw (Bounds) {
+inline uint8_t Data::operator[](int offset) const {
     return (*this)[unsigned(offset)];
 }
 
-inline uint16_t Data::u16(int offset) const throw (Bounds) {
+inline uint16_t Data::u16(int offset) const {
     return u16(unsigned(offset));
 }
 
-inline int16_t Data::s16(int offset) const throw (Bounds) {
+inline int16_t Data::s16(int offset) const {
     return s16(unsigned(offset));
 }
 
-inline uint32_t Data::u32(int offset) const throw (Bounds) {
+inline uint32_t Data::u32(int offset) const {
     return u32(unsigned(offset));
 }
 
-inline int32_t Data::s32(int offset) const throw (Bounds) {
+inline int32_t Data::s32(int offset) const {
     return s32(unsigned(offset));
 }
 
-inline Data Data::substring(int left, int len) const throw () {
+inline Data Data::substring(int left, int len) const noexcept {
     return Data(_str.substring(left, len));
 }
 

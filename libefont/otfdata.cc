@@ -21,7 +21,7 @@
 namespace Efont { namespace OpenType {
 
 Data
-Data::subtable(unsigned offset) const throw (Bounds)
+Data::subtable(unsigned offset) const
 {
     if (offset > (unsigned) _str.length())
         throw Bounds();
@@ -29,7 +29,7 @@ Data::subtable(unsigned offset) const throw (Bounds)
 }
 
 Data
-Data::offset_subtable(unsigned offset_offset) const throw (Bounds)
+Data::offset_subtable(unsigned offset_offset) const
 {
     int offset = u16(offset_offset);
     if (offset > _str.length())
