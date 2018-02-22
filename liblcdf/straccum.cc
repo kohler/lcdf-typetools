@@ -161,7 +161,9 @@ StringAccum::hard_append(const char *s, int len)
     // a naive implementation might use sa's data after freeing it.
     const char *my_s = reinterpret_cast<char *>(_s);
 
-    if (_len + len <= _cap) {
+    if (len <= 0) {
+        // do nothing
+    } else if (_len + len <= _cap) {
     success:
         memcpy(_s + _len, s, len);
         _len += len;
