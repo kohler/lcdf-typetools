@@ -721,5 +721,6 @@ particular purpose.\n");
 	    do_info(otf, &cerrh, result_errh);
     }
 
+    Clp_DeleteParser(clp);
     return (errh->nerrors() == 0 ? 0 : 1);
 }

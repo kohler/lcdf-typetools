@@ -2386,7 +2386,6 @@ particular purpose.\n");
                     dvipsenc.encode(i, (*t1e)[i]);
             } else
                 errh->fatal("font has no encoding, specify one explicitly");
-            delete font;
         }
 
         // apply default ligkern commands
@@ -2414,5 +2413,6 @@ particular purpose.\n");
         errh->error("unhandled exception %<%s%>", e.description.c_str());
     }
 
+    Clp_DeleteParser(clp);
     return (errh->nerrors() == 0 ? 0 : 1);
 }

@@ -123,7 +123,6 @@ FontInfo::~FontInfo()
 {
     delete cmap;
     delete cff_file;
-    delete cff;
     delete post;
     delete name;
     delete _ttb_program;
