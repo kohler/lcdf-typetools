@@ -1877,6 +1877,7 @@ main(int argc, char *argv[])
     GlyphFilter current_substitution_filter;
     GlyphFilter current_alternate_filter;
     GlyphFilter* current_filter_ptr = &null_filter;
+    Vector<GlyphFilter*> allocated_filters;
 
     while (1) {
         int opt = Clp_Next(clp);
@@ -1908,8 +1909,10 @@ main(int argc, char *argv[])
               else if (feature_filters[t])
                   usage_error(errh, "feature %<%s%> included twice", t.text().c_str());
               else {
-                  if (!current_filter_ptr)
+                  if (!current_filter_ptr) {
                       current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
+                      allocated_filters.push_back(current_filter_ptr);
+                  }
                   interesting_features.push_back(t);
                   feature_filters.insert(t, current_filter_ptr);
               }
@@ -2041,8 +2044,10 @@ main(int argc, char *argv[])
               else if (altselector_feature_filters[t])
                   usage_error(errh, "altselector feature %<%s%> included twice", t.text().c_str());
               else {
-                  if (!current_filter_ptr)
+                  if (!current_filter_ptr) {
                       current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
+                      allocated_filters.push_back(current_filter_ptr);
+                  }
                   altselector_features.push_back(t);
                   altselector_feature_filters.insert(t, current_filter_ptr);
               }
@@ -2311,8 +2316,10 @@ particular purpose.\n");
 
     // set up feature filters
     if (!altselector_features.size()) {
-        if (!current_filter_ptr)
+        if (!current_filter_ptr) {
             current_filter_ptr = new GlyphFilter(current_substitution_filter + current_alternate_filter);
+            allocated_filters.push_back(current_filter_ptr);
+        }
         altselector_features.push_back(OpenType::Tag("dlig"));
         altselector_feature_filters.insert(OpenType::Tag("dlig"), current_filter_ptr);
         altselector_features.push_back(OpenType::Tag("salt"));
@@ -2425,6 +2432,8 @@ particular purpose.\n");
         errh->error("unhandled exception %<%s%>", e.description.c_str());
     }
 
+    for (int i = 0; i < allocated_filters.size(); ++i)
+        delete allocated_filters[i];
     Clp_DeleteParser(clp);
     return (errh->nerrors() == 0 ? 0 : 1);
 }
