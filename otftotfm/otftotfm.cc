@@ -741,20 +741,30 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
     // don't print KRN x after printing LIG x
     uint32_t used[8];
     bool any_ligs = false;
+    StringAccum omitted_clig_sa;
     for (int i = 0; i <= 256; i++)
         if (metrics.glyph(i) && minimum_kern < 10000) {
             int any_lig = metrics.ligatures(i, lig_code2, lig_outcode, lig_context);
             int any_kern = metrics.kerns(i, kern_code2, kern_amt);
             if (any_lig || any_kern) {
                 StringAccum kern_sa;
-                memset(&used[0], 0, 32);
+                memset(used, 0, sizeof(used));
                 for (int j = 0; j < lig_code2.size(); j++) {
-                    kern_sa << "   (" << lig_context_str(lig_context[j])
-                            << ' ' << glyph_ids[lig_code2[j]]
-                            << ' ' << glyph_ids[lig_outcode[j]]
-                            << ')' << glyph_comments[lig_code2[j]]
-                            << glyph_comments[lig_outcode[j]] << '\n';
-                    used[lig_code2[j] >> 5] |= (1 << (lig_code2[j] & 0x1F));
+                    if (lig_outcode[j] < 257) {
+                        kern_sa << "   (" << lig_context_str(lig_context[j])
+                                << ' ' << glyph_ids[lig_code2[j]]
+                                << ' ' << glyph_ids[lig_outcode[j]]
+                                << ')' << glyph_comments[lig_code2[j]]
+                                << glyph_comments[lig_outcode[j]] << '\n';
+                        used[lig_code2[j] >> 5] |= (1 << (lig_code2[j] & 0x1F));
+                    } else {
+                        omitted_clig_sa << "(COMMENT omitted "
+                                << lig_context_str(lig_context[j])
+                                << ' ' << metrics.code_name(i)
+                                << ' ' << metrics.code_name(lig_code2[j])
+                                << ' ' << metrics.code_name(lig_outcode[j])
+                                << ")\n";
+                    }
                 }
                 for (Vector<int>::const_iterator k2 = kern_code2.begin(); k2 < kern_code2.end(); k2++)
                     if (!(used[*k2 >> 5] & (1 << (*k2 & 0x1F)))) {
@@ -773,6 +783,8 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
             }
         }
     fprintf(f, "   )\n");
+    if (omitted_clig_sa)
+        fprintf(f, "%s\n", omitted_clig_sa.c_str());
 
     // CHARACTERs
     Vector<Setting> settings;
