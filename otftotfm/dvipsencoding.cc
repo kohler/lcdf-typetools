@@ -883,7 +883,7 @@ DvipsEncoding::make_metrics(Metrics &metrics, const FontInfo &finfo, Secondary *
     if (_altselector_char >= 0 && _altselector_char < _e.size()) {
         metrics.add_altselector_code(_altselector_char, 0);
         if (metrics.glyph(_altselector_char) <= 0 && !literal)
-            (void) secondary->encode_uni(_altselector_char, "altselector", U_ALTSELECTOR, metrics, errh);
+            (void) secondary->encode_uni(_altselector_char, "<altselector>", U_ALTSELECTOR, metrics, errh);
     }
 
     // final pass: complain
