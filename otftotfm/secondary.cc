@@ -232,8 +232,10 @@ double FontInfo::x_height(const Transform& font_xform) const {
         } catch (Efont::OpenType::Bounds) {
         }
     static bool warned = false;
-    if (_override_x_height == x_height_auto && x1 >= 0 && x2 >= 0
-        && fabs(x1 - x2) > units_per_em() / 100.) {
+    if (_override_x_height == x_height_auto
+        && x1 >= 0
+        && x2 >= 0
+        && fabs(x1 - x2) > units_per_em() / 50.) {
         if (!warned) {
             ErrorHandler* errh = ErrorHandler::default_handler();
             errh->warning("font x-height and height of %<x%> differ by %d%%", (int) (fabs(x1 - x2) * 100 / units_per_em()));
