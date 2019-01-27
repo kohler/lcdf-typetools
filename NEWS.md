@@ -1,6 +1,13 @@
 LCDF Typetools NEWS
 ===================
 
+## Version 2.108 – 27.Jan.2019
+
+* Handle more fonts.
+
+* `otftotfm -a`: Run `updmap-sys` by default.
+
+
 ## Version 2.107 – 22.Feb.2018
 
 * Some corrections to output of `--math-spacing`.
