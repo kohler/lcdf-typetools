@@ -693,12 +693,14 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 
 #if HAVE_KPATHSEA && !WIN32
         // run 'updmap' if present
+        String updmap_prog = output_flags & G_UPDMAP_USER ? "updmap-user" : "updmap-sys";
         String updmap_dir, updmap_file;
         if (automatic && (output_flags & G_UPDMAP))
             updmap_dir = getodir(O_MAP_PARENT, errh);
-        if (updmap_dir && (updmap_file = updmap_dir + "/updmap")
+        if (updmap_dir
+            && (updmap_file = updmap_dir + "/" + updmap_prog)
             && access(updmap_file.c_str(), X_OK) >= 0) {
-            // want to run 'updmap' from its directory, can't use system()
+            // want to run `updmap` from its directory, can't use system()
             if (verbose)
                 errh->message("running %s", updmap_file.c_str());
 
@@ -709,7 +711,9 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
                 // change to updmap directory, run it
                 if (chdir(updmap_dir.c_str()) < 0)
                     errh->fatal("%s: %s during chdir", updmap_dir.c_str(), strerror(errno));
-                if (execl("./updmap", updmap_file.c_str(), (const char*) 0) < 0)
+                if (execl(output_flags & G_UPDMAP_USER ? "./updmap-user" : "./updmap-sys",
+                          updmap_file.c_str(),
+                          (const char*) 0) < 0)
                     errh->fatal("%s: %s during exec", updmap_file.c_str(), strerror(errno));
                 exit(1);        // should never get here
             }
@@ -742,8 +746,8 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
             if (slash >= 0)
                 filename = filename.substring(slash + 1);
             String redirect = verbose ? " 1>&2" : " >" DEV_NULL " 2>&1";
-            String command = "updmap --nomkmap --enable Map " + shell_quote(filename) + redirect
-                + CMD_SEP " updmap" + redirect;
+            String command = updmap_prog + " --nomkmap --enable Map " + shell_quote(filename) + redirect
+                + CMD_SEP " " + updmap_prog + redirect;
             int retval = mysystem(command.c_str(), errh);
             if (retval == 127)
                 errh->warning("could not run %<%s%>", command.c_str());

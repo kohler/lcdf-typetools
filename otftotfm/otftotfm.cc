@@ -140,10 +140,12 @@ using namespace Efont;
 #define NO_TYPE1_OPT            (NO_OUTPUT_OPTS + G_TYPE1)
 #define NO_DOTLESSJ_OPT         (NO_OUTPUT_OPTS + G_DOTLESSJ)
 #define NO_UPDMAP_OPT           (NO_OUTPUT_OPTS + G_UPDMAP)
+#define UPDMAP_SYS_OPT          (NO_OUTPUT_OPTS + G_UPDMAP_USER)
 
 #define YES_OUTPUT_OPTS         2000
 #define TRUETYPE_OPT            (YES_OUTPUT_OPTS + G_TRUETYPE)
 #define TYPE42_OPT              (YES_OUTPUT_OPTS + G_TYPE42)
+#define UPDMAP_USER_OPT         (YES_OUTPUT_OPTS + G_UPDMAP_USER)
 
 #define CHAR_OPTTYPE            (Clp_ValFirstUser)
 
@@ -199,6 +201,8 @@ static Clp_Option options[] = {
     { "no-type1", 0, NO_TYPE1_OPT, 0, 0 },
     { "no-dotlessj", 0, NO_DOTLESSJ_OPT, 0, 0 },
     { "no-updmap", 0, NO_UPDMAP_OPT, 0, 0 },
+    { "updmap-sys", 0, UPDMAP_SYS_OPT, 0, 0 },
+    { "updmap-user", 0, UPDMAP_USER_OPT, 0, 0 },
     { "truetype", 0, TRUETYPE_OPT, 0, Clp_Negate },
     { "type42", 0, TYPE42_OPT, 0, Clp_Negate },
     { "map-file", 0, MAP_FILE_OPT, Clp_ValString, Clp_Negate },
@@ -370,8 +374,9 @@ Automatic mode options:\n\
       --typeface=NAME          Set typeface name for TDS [<font family>].\n\
       --no-type1               Do not generate Type 1 fonts.\n\
       --no-dotlessj            Do not generate dotless-j fonts.\n\
-      --no-updmap              Do not run updmap.\n\
       --no-truetype            Do not install TrueType-flavored input fonts.\n\
+      --no-updmap              Do not run updmap.\n\
+      --updmap-user            Run `updmap-user` instead of `updmap-sys`.\n\
 \n\
 Output options:\n\
   -n, --name=NAME              Generated font name is NAME.\n\
@@ -2108,12 +2113,14 @@ main(int argc, char *argv[])
         case NO_TYPE1_OPT:
         case NO_DOTLESSJ_OPT:
         case NO_UPDMAP_OPT:
+        case UPDMAP_SYS_OPT:
             output_flags &= ~(opt - NO_OUTPUT_OPTS);
             specified_output_flags |= opt - NO_OUTPUT_OPTS;
             break;
 
         case TRUETYPE_OPT:
         case TYPE42_OPT:
+        case UPDMAP_USER_OPT:
             if (!clp->negated)
                 output_flags |= (opt - YES_OUTPUT_OPTS);
             else

@@ -29,7 +29,7 @@ call -fliga -fkern $dir/Warnock/WarnockPro-Regular.otf WarnoProReg--eka
     call -fliga -fkern $dir/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fcpsp -fcpsp
 
     call -fliga -fkern $dir/Warnock/WarnockPro-Regular.otf WarnoProReg--eka--Fsmcp--Flnum -fsmcp -flnum
-    
+
     call -fliga -fkern $dir/Warnock/WarnockPro-It.otf WarnoProIt--eka
     call -fliga -fkern $dir/Warnock/WarnockPro-It.otf WarnoProIt--eka--Fswsh -fswsh
 
@@ -179,14 +179,14 @@ Mz () {
     call -fliga -fkern --design-size=9 $dir/+OTF/MinionProOpticals/MinionPro-Regular.otf MinioProReg--eka--D9
 }
 
-#rm -rf /tmp/pk/Warno*; W; updmap; exit
-rm -rf /tmp/pk/Minio*; Mx; updmap; exit
-#W; updmap; exit
-#M; updmap; exit
+#rm -rf /tmp/pk/Warno*; W; updmap-sys; exit
+rm -rf /tmp/pk/Minio*; Mx; updmap-sys; exit
+#W; updmap-sys; exit
+#M; updmap-sys; exit
 WW; WWW; MM; MMM
 W
 M
 A
 My
 Ex
-updmap
+updmap-sys

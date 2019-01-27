@@ -645,7 +645,7 @@ LCDF Typetools NEWS
   `--clear-subs` options (inspired by patch from Achim Blumensath).
 
 * otftotfm: Update documentation and behavior for newer teTeX
-  installations.  For instance, run the system 'updmap' by default (unless
+  installations.  For instance, run the system `updmap` by default (unless
   you give the `--no-updmap` option).  This makes automatic mode much
   easier to set up.
 
