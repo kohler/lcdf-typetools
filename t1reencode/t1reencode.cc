@@ -1090,7 +1090,7 @@ particular purpose.\n");
     if (!output_file || strcmp(output_file, "-") == 0)
 	outf = stdout;
     else {
-	outf = fopen(output_file, "w");
+	outf = fopen(output_file, binary ? "wb" : "w");
 	if (!outf)
 	    errh->fatal("%s: %s", output_file, strerror(errno));
     }
