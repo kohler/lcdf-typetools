@@ -313,7 +313,7 @@ update_odir(int o, String file, ErrorHandler *errh)
     String ls_r = writable_texdir + "ls-R";
     bool success = false;
     if (access(ls_r.c_str(), R_OK) >= 0) // make sure it already exists
-        if (FILE *f = fopen(ls_r.c_str(), "a")) {
+        if (FILE *f = fopen(ls_r.c_str(), "ab")) {
             fprintf(f, "./%s:\n%s\n", directory.c_str(), file.c_str());
             success = true;
             fclose(f);
@@ -677,7 +677,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 #endif
             {
                 fclose(f);
-                f = fopen(map_file.c_str(), "w");
+                f = fopen(map_file.c_str(), "wb");
                 fd = fileno(f);
             }
 

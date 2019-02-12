@@ -590,7 +590,7 @@ output_pl(Metrics &metrics, const String &ps_name, int boundary_char,
 
     if (verbose)
         errh->message("creating %s", filename.c_str());
-    FILE *f = fopen(filename.c_str(), "w");
+    FILE *f = fopen(filename.c_str(), "wb");
     if (!f) {
         errh->error("%s: %s", filename.c_str(), strerror(errno));
         return;
@@ -1048,7 +1048,7 @@ write_encoding_file(String &filename, const String &encoding_name,
 #endif
     {
         fclose(f);
-        f = fopen(filename.c_str(), "w");
+        f = fopen(filename.c_str(), "wb");
         fd = fileno(f);
     }
 
