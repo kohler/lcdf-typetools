@@ -63,6 +63,7 @@ usage_error(ErrorHandler *errh, const char *error_message, ...)
     errh->xmessage(ErrorHandler::e_error, error_message, val);
   errh->message("Type %s --help for more information.", program_name);
   exit(1);
+  va_end(val);
 }
 
 void
