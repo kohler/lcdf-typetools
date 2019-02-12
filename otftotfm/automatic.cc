@@ -126,7 +126,16 @@ look_for_writable_texdir(const char *path_variable, bool create)
 static void
 find_writable_texdir(ErrorHandler *errh, const char *)
 {
-    look_for_writable_texdir("$TEXMFVAR", true);
+    // Check if TEXMFVAR is writable.
+    // Some distributions like W32TeX do not have TEXMFVAR defined,
+    // in which case we check TEXMFLOCAL.
+    char *p = kpsei_var_value("TEXMFVAR");
+    if (p == NULL)
+        look_for_writable_texdir("$TEXMFLOCAL", true);
+    else {
+        free (p);
+        look_for_writable_texdir("$TEXMFVAR", true);
+    }
     if (!writable_texdir)
         look_for_writable_texdir("$VARTEXMF", false);
     if (!writable_texdir)
