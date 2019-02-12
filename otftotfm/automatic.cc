@@ -334,7 +334,11 @@ update_odir(int o, String file, ErrorHandler *errh)
     if (!success && writable_texdir.find_left('\'') < 0 && directory.find_left('\'') < 0 && file.find_left('\'') < 0) {
         // look for mktexupd script
         if (!mktexupd_tried) {
+#ifdef _WIN32
+            mktexupd = "mktexupd.exe";
+#else
             mktexupd = kpsei_string(kpsei_find_file("mktexupd", KPSEI_FMT_WEB2C));
+#endif
             mktexupd_tried = true;
         }
 
