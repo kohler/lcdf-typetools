@@ -16,6 +16,7 @@
 #endif
 #ifdef WIN32
 # define _USE_MATH_DEFINES
+# include <io.h>
 #endif
 #include <efont/psres.hh>
 #include <efont/t1rw.hh>

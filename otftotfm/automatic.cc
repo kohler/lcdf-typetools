@@ -39,7 +39,9 @@
 #include <algorithm>
 
 #ifdef WIN32
-# define mkdir(dir, access) mkdir(dir)
+# include <io.h>
+# include <direct.h>
+# define mkdir(dir, access) _mkdir(dir)
 # define COPY_CMD "copy"
 # define CMD_SEP "&"
 #else
