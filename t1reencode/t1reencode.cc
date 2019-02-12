@@ -1020,7 +1020,9 @@ particular purpose.\n");
 	input_file = "<stdin>";
 
     // read the encoding
-    if (!encoding_file && !encoding_text)
+    if (encoding_text)
+        encoding_file = "<argument>";
+    if (!encoding_file)
 	errh->fatal("missing %<-e ENCODING%> argument");
     Type1Encoding *t1e = 0;
     if (strcmp(encoding_file, "StandardEncoding") == 0) {
@@ -1073,7 +1075,7 @@ particular purpose.\n");
 	else if (strcmp(encoding_file, "SymbolEncoding") == 0)
 	    text = String::make_stable(SymbolEncoding);
 	else if (encoding_text)
-	    text = String::make_stable(encoding_text), encoding_file = "<argument>";
+	    text = String::make_stable(encoding_text);
 	else if ((text = read_file(encoding_file, errh)), errh->nerrors() > 0)
 	    exit(1);
 	if (!(t1e = parse_encoding(text, encoding_file, errh)))

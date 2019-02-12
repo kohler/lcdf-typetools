@@ -850,7 +850,8 @@ Type1Font::create_mmspace(ErrorHandler *errh) const
 
     int nmasters = master_positions.size();
     if (nmasters <= 0) {
-        errh->error("bad BlendDesignPositions");
+        if (errh)
+            errh->error("bad BlendDesignPositions");
         return 0;
     }
     int naxes = master_positions[0].size();

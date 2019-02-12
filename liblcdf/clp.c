@@ -1297,9 +1297,12 @@ Clp_AddStringListType(Clp_Parser *clp, int val_type, int flags, ...)
     va_end(val);
     if (finish_string_list(clp, val_type, flags, items, nitems, itemscap) >= 0)
 	return 0;
+    else
+        goto free_items;
 
   error:
     va_end(val);
+  free_items:
     if (items)
 	free(items);
     return -1;
@@ -2278,9 +2281,9 @@ ambiguity_error(Clp_Parser *clp, int ambiguous, int *ambiguous_values,
     if (ambiguous > MAX_AMBIGUOUS_VALUES)
 	append_build_string(bs, ", and others", -1);
     append_build_string(bs, ".)\n", -1);
-    va_end(val);
 
   done:
+    va_end(val);
     do_error(clp, bs);
     free_build_string(bs);
     return 0;
