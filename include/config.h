@@ -7,6 +7,7 @@
 #ifdef WIN32
 # ifdef __MINGW32__
 #  include <winsock2.h>
+#  include <windows.h>
 # else
 #  include <win32lib.h>
 # endif

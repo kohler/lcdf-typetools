@@ -7,6 +7,7 @@ extern "C" {
 void kpsei_init(const char* argv0, const char* progname);
 extern int kpsei_env_sep_char;
 char* kpsei_path_expand(const char* path); /* free() result */
+char* kpsei_var_value(const char *name);
 enum { KPSEI_FMT_WEB2C, KPSEI_FMT_ENCODING, KPSEI_FMT_TYPE1,
        KPSEI_FMT_OTHER_TEXT, KPSEI_FMT_MAP, KPSEI_FMT_TRUETYPE,
        KPSEI_FMT_OPENTYPE, KPSEI_FMT_TYPE42 };

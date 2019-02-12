@@ -39,7 +39,9 @@
 #include <algorithm>
 
 #ifdef WIN32
-# define mkdir(dir, access) mkdir(dir)
+# include <io.h>
+# include <direct.h>
+# define mkdir(dir, access) _mkdir(dir)
 # define COPY_CMD "copy"
 # define CMD_SEP "&"
 #else
@@ -124,7 +126,16 @@ look_for_writable_texdir(const char *path_variable, bool create)
 static void
 find_writable_texdir(ErrorHandler *errh, const char *)
 {
-    look_for_writable_texdir("$TEXMFVAR", true);
+    // Check if TEXMFVAR is writable.
+    // Some distributions like W32TeX do not have TEXMFVAR defined,
+    // in which case we check TEXMFLOCAL.
+    char *p = kpsei_var_value("TEXMFVAR");
+    if (p == NULL)
+        look_for_writable_texdir("$TEXMFLOCAL", true);
+    else {
+        free (p);
+        look_for_writable_texdir("$TEXMFVAR", true);
+    }
     if (!writable_texdir)
         look_for_writable_texdir("$VARTEXMF", false);
     if (!writable_texdir)
@@ -313,7 +324,7 @@ update_odir(int o, String file, ErrorHandler *errh)
     String ls_r = writable_texdir + "ls-R";
     bool success = false;
     if (access(ls_r.c_str(), R_OK) >= 0) // make sure it already exists
-        if (FILE *f = fopen(ls_r.c_str(), "a")) {
+        if (FILE *f = fopen(ls_r.c_str(), "ab")) {
             fprintf(f, "./%s:\n%s\n", directory.c_str(), file.c_str());
             success = true;
             fclose(f);
@@ -323,7 +334,11 @@ update_odir(int o, String file, ErrorHandler *errh)
     if (!success && writable_texdir.find_left('\'') < 0 && directory.find_left('\'') < 0 && file.find_left('\'') < 0) {
         // look for mktexupd script
         if (!mktexupd_tried) {
+#ifdef _WIN32
+            mktexupd = "mktexupd.exe";
+#else
             mktexupd = kpsei_string(kpsei_find_file("mktexupd", KPSEI_FMT_WEB2C));
+#endif
             mktexupd_tried = true;
         }
 
@@ -677,7 +692,7 @@ update_autofont_map(const String &fontname, String mapline, ErrorHandler *errh)
 #endif
             {
                 fclose(f);
-                f = fopen(map_file.c_str(), "w");
+                f = fopen(map_file.c_str(), "wb");
                 fd = fileno(f);
             }
 
