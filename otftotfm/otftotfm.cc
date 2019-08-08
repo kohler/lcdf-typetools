@@ -439,7 +439,7 @@ handle_sigchld()
 #if HAVE_SIGACTION
     struct sigaction sa;
     sigaction(sigchld, 0, &sa);
-    sa.sa_handler = sigchld_handler;
+    sa.sa_handler = (void (*)()) sigchld_handler;
     sa.sa_flags = 0;
     sigaction(sigchld, &sa, 0);
 #else
