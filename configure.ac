@@ -32,11 +32,7 @@ if test "$enable_adobe_code" = yes; then
 fi
 
 
-dnl AN_MAKEVAR([AR], [AC_PROG_AR])
-dnl AN_PROGRAM([ar], [AC_PROG_AR])
-dnl AC_DEFUN([AC_PROG_AR], [AC_CHECK_TOOL(AR, ar, :)])
-dnl AC_PROG_AR
-
+AM_PROG_AR
 AC_PROG_RANLIB
 
 

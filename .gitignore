@@ -6,6 +6,7 @@
 Makefile
 Makefile.in
 aclocal.m4
+ar-lib
 autoconf.h
 autoconf.h.in
 autoconf.h.in~
