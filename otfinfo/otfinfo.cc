@@ -112,7 +112,7 @@ usage()
 %<Otfinfo%> reports information about an OpenType font to standard output.\n\
 Options specify what information to print.\n\
 \n\
-Usage: %s [-sfzpg | OPTIONS] [OTFFILES...]\n\n",
+Usage: %s [-sfzpgu | OPTIONS] [OTFFILES...]\n\n",
 	   program_name);
     uerrh.message("\
 Query options:\n\
@@ -124,6 +124,7 @@ Query options:\n\
   -v, --font-version           Report font%,s version information.\n\
   -i, --info                   Report font%,s names and designer/vendor info.\n\
   -g, --glyphs                 Report font%,s glyph names.\n\
+  -u, --unicode                Report font%,s Unicode code points.\n\
   -t, --tables                 Report font%,s OpenType tables.\n\
   -T, --dump-table NAME        Output font%,s %<NAME%> table.\n\
 \n\
