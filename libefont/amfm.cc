@@ -243,8 +243,7 @@ AmfmMetrics::interpolate(const Vector<double> &design_vector,
  **/
 
 AmfmReader::AmfmReader(AfmParser &afmp, AmfmMetrics *amfm, ErrorHandler *errh)
-    : _amfm(amfm), _finder(amfm->_finder), _l(afmp),
-      _mmspace(amfm->_mmspace)
+    : _amfm(amfm), _l(afmp), _mmspace(amfm->_mmspace)
 {
     _errh = errh ? errh : ErrorHandler::silent_handler();
 }
