@@ -121,44 +121,43 @@ static const NameId fontinfo_names[] = {
 static void
 fprint_sfnts(FILE *f, const String &data, bool glyf, const OpenType::Font &font)
 {
-    if (glyf && data.length() >= 65535) {
-	OpenType::Data head = font.table("head");
-	OpenType::Data loca = font.table("loca");
-	bool loca_long = (head.length() >= 52 && head.u16(50) != 0);
-	int loca_size = (loca_long ? 4 : 2);
-	uint32_t first_offset = 0;
-	for (int i = 1; i * loca_size < loca.length(); i++) {
-	    uint32_t next_offset = (loca_long ? loca.u32(4*i) : loca.u16(2*i) * 2);
-	    if (next_offset - first_offset >= 65535) {
-		uint32_t prev_offset = (loca_long ? loca.u32(4*i - 4) : loca.u16(2*i - 2) * 2);
-		fprint_sfnts(f, data.substring(first_offset, prev_offset - first_offset), false, font);
-		first_offset = prev_offset;
-	    }
-	}
-	fprint_sfnts(f, data.substring(first_offset), false, font);
-	return;
+    OpenType::Data head = font.table("head");
+    bool loca_long = (head.length() >= 52 && head.u16(50) != 0);
+    // Do not split fonts with long offsets -- Werner Lemberg
+    if (glyf && data.length() >= 65535 && !loca_long) {
+        OpenType::Data loca = font.table("loca");
+        int loca_size = (loca_long ? 4 : 2);
+        uint32_t first_offset = 0;
+        for (int i = 1; i * loca_size < loca.length(); i++) {
+            uint32_t next_offset = (loca_long ? loca.u32(4*i) : loca.u16(2*i) * 2);
+            if (next_offset - first_offset >= 65535) {
+                uint32_t prev_offset = (loca_long ? loca.u32(4*i - 4) : loca.u16(2*i - 2) * 2);
+                fprint_sfnts(f, data.substring(first_offset, prev_offset - first_offset), false, font);
+                first_offset = prev_offset;
+            }
+        }
+        fprint_sfnts(f, data.substring(first_offset), false, font);
     } else if (data.length() >= 65535) {
-	for (int offset = 0; offset < data.length(); ) {
-	    int next_offset = offset + 65534;
-	    if (next_offset > data.length())
-		next_offset = data.length();
-	    fprint_sfnts(f, data.substring(offset, next_offset - offset), false, font);
-	    offset = next_offset;
-	}
-	return;
+        for (int offset = 0; offset < data.length(); ) {
+            int next_offset = offset + 65534;
+            if (next_offset > data.length())
+                next_offset = data.length();
+            fprint_sfnts(f, data.substring(offset, next_offset - offset), false, font);
+            offset = next_offset;
+        }
+    } else {
+        fputc('<', f);
+        const uint8_t *s = data.udata();
+        for (int i = 0; i < data.length(); i++) {
+            if (i && (i % 38) == 0)
+                fputc('\n', f);
+            fputc("0123456789ABCDEF"[(s[i] >> 4) & 0xF], f);
+            fputc("0123456789ABCDEF"[s[i] & 0xF], f);
+        }
+        if ((data.length() % 38) == 0)
+            fputc('\n', f);
+        fputs("00>\n", f);
     }
-
-    fputc('<', f);
-    const uint8_t *s = data.udata();
-    for (int i = 0; i < data.length(); i++) {
-	if (i && (i % 38) == 0)
-	    fputc('\n', f);
-	fputc("0123456789ABCDEF"[(s[i] >> 4) & 0xF], f);
-	fputc("0123456789ABCDEF"[s[i] & 0xF], f);
-    }
-    if ((data.length() % 38) == 0)
-	fputc('\n', f);
-    fputs("00>\n", f);
 }
 
 static void
