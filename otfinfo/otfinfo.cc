@@ -126,6 +126,7 @@ Query options:\n\
   -g, --glyphs                 Report font%,s glyph names.\n\
   -t, --tables                 Report font%,s OpenType tables.\n\
   -T, --dump-table NAME        Output font%,s %<NAME%> table.\n\
+  -u, --unicode                Report font%,s supported Unicode code points.\n\
 \n\
 Other options:\n\
       --script=SCRIPT[.LANG]   Set script used for --features [latn].\n\
