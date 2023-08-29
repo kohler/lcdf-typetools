@@ -487,7 +487,15 @@ add_number_def(Type1Font* output, int dict, PermString name, const Cff::Font* fo
 }
 
 static void
-add_delta_def(Type1Font *output, int dict, PermString name, const Cff::Font *font, Cff::DictOperator op)
+add_number_def(Type1Font* output, int dict, PermString name, const Cff::Font* font, Cff::DictOperator op, double default_value)
+{
+    double v;
+    if (font->dict_value(op, &v) && v != default_value)
+        output->add_definition(dict, Type1Definition::make(name, v, "def"));
+}
+
+static void
+add_delta_def(Type1Font* output, int dict, PermString name, const Cff::Font* font, Cff::DictOperator op)
 {
     Vector<double> vec;
     if (font->dict_value(op, vec)) {
@@ -506,8 +514,22 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
 {
     String version = font->dict_string(Cff::oVersion);
     Type1Font *output = Type1Font::skeleton_make(font->font_name(), version);
-    output->skeleton_comments_end();
     StringAccum sa;
+    double v;
+    Vector<double> vec;
+    const char* old_double_format = StringAccum::double_format;
+    StringAccum::double_format = "%.9g";
+
+    output->add_definition(Type1Font::dF, Type1Definition::make("FontType", 1.0, "def"));
+    output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontName", "/" + font->font_name(), "def"));
+    font->dict_value(Cff::oPaintType, &v);
+    output->add_definition(Type1Font::dF, Type1Definition::make("PaintType", v, "def"));
+    if (font->dict_value(Cff::oFontMatrix, vec) && vec.size() == 6) {
+        sa << '[' << vec[0] << ' ' << vec[1] << ' ' << vec[2] << ' ' << vec[3] << ' ' << vec[4] << ' ' << vec[5] << ']';
+        output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontMatrix", sa.take_string(), "readonly def"));
+    } else {
+        output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontMatrix", "[0.001 0 0 0.001 0 0]", "readonly def"));
+    }
 
     // FontInfo dictionary
     if (version)
@@ -522,7 +544,6 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
         output->add_definition(Type1Font::dFI, Type1Definition::make_string("FamilyName", s, "readonly def"));
     if (String s = font->dict_string(Cff::oWeight))
         output->add_definition(Type1Font::dFI, Type1Definition::make_string("Weight", s, "readonly def"));
-    double v;
     if (font->dict_value(Cff::oIsFixedPitch, &v))
         output->add_definition(Type1Font::dFI, Type1Definition::make_literal("isFixedPitch", (v ? "true" : "false"), "def"));
     add_number_def(output, Type1Font::dFI, "ItalicAngle", font, Cff::oItalicAngle);
@@ -532,15 +553,6 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
 
     // Encoding, other font dictionary entries
     output->add_item(font->type1_encoding_copy());
-    font->dict_value(Cff::oPaintType, &v);
-    output->add_definition(Type1Font::dF, Type1Definition::make("PaintType", v, "def"));
-    output->add_definition(Type1Font::dF, Type1Definition::make("FontType", 1.0, "def"));
-    Vector<double> vec;
-    if (font->dict_value(Cff::oFontMatrix, vec) && vec.size() == 6) {
-        sa << '[' << vec[0] << ' ' << vec[1] << ' ' << vec[2] << ' ' << vec[3] << ' ' << vec[4] << ' ' << vec[5] << ']';
-        output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontMatrix", sa.take_string(), "readonly def"));
-    } else
-        output->add_definition(Type1Font::dF, Type1Definition::make_literal("FontMatrix", "[0.001 0 0 0.001 0 0]", "readonly def"));
     add_number_def(output, Type1Font::dF, "StrokeWidth", font, Cff::oStrokeWidth);
     add_number_def(output, Type1Font::dF, "UniqueID", font, Cff::oUniqueID);
     if (font->dict_value(Cff::oXUID, vec) && vec.size()) {
@@ -557,13 +569,16 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     output->skeleton_fontdict_end();
 
     // Private dictionary
-    add_delta_def(output, Type1Font::dP, "BlueValues", font, Cff::oBlueValues);
+    if (font->dict_has(Cff::oBlueValues))
+        add_delta_def(output, Type1Font::dP, "BlueValues", font, Cff::oBlueValues);
+    else
+        output->add_definition(Type1Font::dP, Type1Definition::make_literal("BlueValues", "[]", "|-"));
     add_delta_def(output, Type1Font::dP, "OtherBlues", font, Cff::oOtherBlues);
     add_delta_def(output, Type1Font::dP, "FamilyBlues", font, Cff::oFamilyBlues);
     add_delta_def(output, Type1Font::dP, "FamilyOtherBlues", font, Cff::oFamilyOtherBlues);
-    add_number_def(output, Type1Font::dP, "BlueScale", font, Cff::oBlueScale);
-    add_number_def(output, Type1Font::dP, "BlueShift", font, Cff::oBlueShift);
-    add_number_def(output, Type1Font::dP, "BlueFuzz", font, Cff::oBlueFuzz);
+    add_number_def(output, Type1Font::dP, "BlueScale", font, Cff::oBlueScale, 0.039625);
+    add_number_def(output, Type1Font::dP, "BlueShift", font, Cff::oBlueShift, 7);
+    add_number_def(output, Type1Font::dP, "BlueFuzz", font, Cff::oBlueFuzz, 1);
     if (font->dict_value(Cff::oStdHW, &v))
         output->add_definition(Type1Font::dP, Type1Definition::make_literal("StdHW", String("[") + String(v) + "]", "|-"));
     if (font->dict_value(Cff::oStdVW, &v))
@@ -572,8 +587,8 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     add_delta_def(output, Type1Font::dP, "StemSnapV", font, Cff::oStemSnapV);
     if (font->dict_value(Cff::oForceBold, &v))
         output->add_definition(Type1Font::dP, Type1Definition::make_literal("ForceBold", (v ? "true" : "false"), "def"));
-    add_number_def(output, Type1Font::dP, "LanguageGroup", font, Cff::oLanguageGroup);
-    add_number_def(output, Type1Font::dP, "ExpansionFactor", font, Cff::oExpansionFactor);
+    add_number_def(output, Type1Font::dP, "LanguageGroup", font, Cff::oLanguageGroup, 0);
+    add_number_def(output, Type1Font::dP, "ExpansionFactor", font, Cff::oExpansionFactor, 0.06);
     add_number_def(output, Type1Font::dP, "UniqueID", font, Cff::oUniqueID);
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("MinFeature", "{16 16}", "|-"));
     output->add_definition(Type1Font::dP, Type1Definition::make_literal("password", "5839", "def"));
@@ -585,6 +600,7 @@ create_type1_font(Cff::Font *font, ErrorHandler *errh)
     MakeType1CharstringInterp maker(5);
     maker.run(font, output, " |-", errh);
 
+    StringAccum::double_format = old_double_format;
     return output;
 }
 

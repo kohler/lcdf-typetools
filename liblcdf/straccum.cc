@@ -55,6 +55,7 @@
  * Out-of-memory StringAccum objects have length zero.
  */
 
+const char* StringAccum::double_format = "%.12g";
 
 void
 StringAccum::assign_out_of_memory()
@@ -252,7 +253,7 @@ StringAccum&
 operator<<(StringAccum& sa, double d)
 {
     if (char* x = sa.reserve(256)) {
-        int len = sprintf(x, "%.12g", d);
+        int len = sprintf(x, StringAccum::double_format, d);
         sa.adjust_length(len);
     }
     return sa;

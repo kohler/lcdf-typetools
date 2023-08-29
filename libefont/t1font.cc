@@ -78,7 +78,7 @@ Type1Font::set_item(int i, Type1Item *it)
 }
 
 static const char * const dict_starters[] = {
-    "0 dict begin", "/FontInfo 0 dict dup begin", "dup /Private 0 dict dup begin", "/Blend 0 dict dup begin", 0, 0
+    "0 dict dup begin", "/FontInfo 0 dict dup begin", "dup /Private 0 dict dup begin", "/Blend 0 dict dup begin", 0, 0
 };
 
 void

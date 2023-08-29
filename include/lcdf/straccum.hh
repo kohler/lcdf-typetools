@@ -141,6 +141,8 @@ class StringAccum { public:
 
     // see also operator<< declarations below
 
+    static const char* double_format;
+
   private:
 
     enum {
