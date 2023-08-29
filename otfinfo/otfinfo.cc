@@ -125,8 +125,8 @@ Query options:\n\
   -i, --info                   Report font%,s names and designer/vendor info.\n\
   -g, --glyphs                 Report font%,s glyph names.\n\
   -t, --tables                 Report font%,s OpenType tables.\n\
-  -T, --dump-table NAME        Output font%,s %<NAME%> table.\n\
   -u, --unicode                Report font%,s supported Unicode code points.\n\
+  -T, --dump-table NAME        Output font%,s %<NAME%> table.\n\
 \n\
 Other options:\n\
       --script=SCRIPT[.LANG]   Set script used for --features [latn].\n\
@@ -445,6 +445,25 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
                     s = s.substring(s.begin(), s.end() - 1);
                 if (s)
                     sa << "Vendor ID:           " << s << "\n";
+            }
+            uint16_t emb = os2.type_flags();
+            sa << "Permissions:         ";
+            if ((emb & 15) == 0) {
+                sa << "Installable";
+            } else if ((emb & 15) == 2) {
+                sa << "Restricted License";
+            } else if ((emb & 15) == 4) {
+                sa << "Preview & Print";
+            } else if ((emb & 15) == 8) {
+                sa << "Editable";
+            } else {
+                sa << "Unknown (" << (emb & 15) << ")";
+            }
+            if ((emb & 0x100) != 0) {
+                sa << ", No subsetting";
+            }
+            if ((emb & 0x200) != 0) {
+                sa << ", Bitmap only";
             }
         }
     }
