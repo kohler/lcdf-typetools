@@ -29,13 +29,13 @@ minimize(Type1Font *font)
 
     // Subrs
     for (int i = 0; i < font->nsubrs(); i++)
-	if (Type1Subr *s = font->subr_x(i))
-	    output->set_subr(s->subrno(), s->t1cs(), s->definer());
+        if (Type1Subr *s = font->subr_x(i))
+            output->set_subr(s->subrno(), s->t1cs(), s->definer());
 
     // CharStrings
     for (int i = 0; i < font->nglyphs(); i++)
-	if (Type1Subr *g = font->glyph_x(i))
-	    output->add_glyph(Type1Subr::make_glyph(g->name(), g->t1cs(), g->definer()));
+        if (Type1Subr *g = font->glyph_x(i))
+            output->add_glyph(Type1Subr::make_glyph(g->name(), g->t1cs(), g->definer()));
 
     return output;
 }

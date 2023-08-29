@@ -62,29 +62,29 @@ kpsei_find_file(const char* name, int format)
     char *result;
     switch (format) {
       case KPSEI_FMT_WEB2C:
-	return kpse_find_file(name, kpse_web2c_format, true);
+        return kpse_find_file(name, kpse_web2c_format, true);
     case KPSEI_FMT_ENCODING:
 #if HAVE_DECL_KPSE_ENC_FORMAT
-	if ((result = kpse_find_file(name, kpse_enc_format, true)))
-	    return result;
+        if ((result = kpse_find_file(name, kpse_enc_format, true)))
+            return result;
 #endif
-	return kpse_find_file(name, kpse_tex_ps_header_format, true);
+        return kpse_find_file(name, kpse_tex_ps_header_format, true);
       case KPSEI_FMT_TYPE1:
-	return kpse_find_file(name, kpse_type1_format, false);
+        return kpse_find_file(name, kpse_type1_format, false);
       case KPSEI_FMT_TYPE42:
-	return kpse_find_file(name, kpse_type42_format, false);
+        return kpse_find_file(name, kpse_type42_format, false);
       case KPSEI_FMT_TRUETYPE:
-	return kpse_find_file(name, kpse_truetype_format, false);
+        return kpse_find_file(name, kpse_truetype_format, false);
 #if HAVE_DECL_KPSE_OPENTYPE_FORMAT
       case KPSEI_FMT_OPENTYPE:
-	return kpse_find_file(name, kpse_opentype_format, false);
+        return kpse_find_file(name, kpse_opentype_format, false);
 #endif
       case KPSEI_FMT_OTHER_TEXT:
-	return kpse_find_file(name, kpse_program_text_format, true);
+        return kpse_find_file(name, kpse_program_text_format, true);
       case KPSEI_FMT_MAP:
-	return kpse_find_file(name, kpse_fontmap_format, true);
+        return kpse_find_file(name, kpse_fontmap_format, true);
       default:
-	return 0;
+        return 0;
     }
 }
 

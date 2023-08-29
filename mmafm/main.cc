@@ -30,19 +30,19 @@
 # include <time.h>
 #endif
 
-#define WEIGHT_OPT	300
-#define WIDTH_OPT	301
-#define OPSIZE_OPT	302
-#define STYLE_OPT	303
-#define N1_OPT		304
-#define N2_OPT		305
-#define N3_OPT		306
-#define N4_OPT		307
-#define VERSION_OPT	308
-#define HELP_OPT	309
-#define OUTPUT_OPT	310
-#define PRECISION_OPT	311
-#define KERN_PREC_OPT	312
+#define WEIGHT_OPT      300
+#define WIDTH_OPT       301
+#define OPSIZE_OPT      302
+#define STYLE_OPT       303
+#define N1_OPT          304
+#define N2_OPT          305
+#define N3_OPT          306
+#define N4_OPT          307
+#define VERSION_OPT     308
+#define HELP_OPT        309
+#define OUTPUT_OPT      310
+#define PRECISION_OPT   311
+#define KERN_PREC_OPT   312
 
 const Clp_Option options[] = {
   { "1", '1', N1_OPT, Clp_ValDouble, 0 },
@@ -308,11 +308,11 @@ main(int argc, char *argv[])
      case OUTPUT_OPT:
       if (output_file) errh->fatal("output file already specified");
       if (strcmp(clp->vstr, "-") == 0)
-	output_file = stdout;
+        output_file = stdout;
       else {
-	output_file = fopen(clp->vstr, "wb");
-	if (!output_file)
-	    errh->fatal("%s: %s", clp->vstr, strerror(errno));
+        output_file = fopen(clp->vstr, "wb");
+        if (!output_file)
+            errh->fatal("%s: %s", clp->vstr, strerror(errno));
       }
       break;
 
@@ -392,7 +392,7 @@ particular purpose.\n");
   // components are unknown.
   if (!KNOWN(design[0]))
     errh->fatal("must specify %s%,s %s coordinate", amfm->font_name().c_str(),
-		mmspace->axis_type(0).c_str());
+                mmspace->axis_type(0).c_str());
 
   Metrics *m = amfm->interpolate(design, weight, errh);
   if (m) {
@@ -407,7 +407,7 @@ particular purpose.\n");
       int time_len = strlen(time_str) - 1;
       char *buf = new char[strlen(VERSION) + time_len + 100];
       sprintf(buf, "Interpolated by mmafm-%s on %.*s.", VERSION,
-	      time_len, time_str);
+              time_len, time_str);
 #else
       char *buf = new char[strlen(VERSION) + 100];
       sprintf(buf, "Interpolated by mmafm-%s.", VERSION);
