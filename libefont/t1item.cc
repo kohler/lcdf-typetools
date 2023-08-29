@@ -471,7 +471,7 @@ Type1Definition::set_string(const String& v)
             if (s[pos] == '(' || s[pos] == ')' || s[pos] == '\\')
                 sa << s[pos];
             else
-                sprintf(sa.reserve(8), "%03o", (unsigned char) (s[pos]));
+                snprintf(sa.extend(3, 1), 4, "%03o", (unsigned char) (s[pos]));
             left = pos + 1;
         }
     sa << v.substring(left) << ')';

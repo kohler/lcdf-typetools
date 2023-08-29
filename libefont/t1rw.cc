@@ -504,8 +504,8 @@ Type1Writer &
 Type1Writer::operator<<(int x)
 {
     char str[128];
-    sprintf(str, "%d", x);
-    print(str, strlen(str));
+    size_t len = snprintf(str, sizeof(str), "%d", x);
+    print(str, len);
     return *this;
 }
 
@@ -514,8 +514,8 @@ Type1Writer &
 Type1Writer::operator<<(double x)
 {
     char str[256];
-    sprintf(str, "%g", x);
-    print(str, strlen(str));
+    size_t len = snprintf(str, sizeof(str), "%g", x);
+    print(str, len);
     return *this;
 }
 

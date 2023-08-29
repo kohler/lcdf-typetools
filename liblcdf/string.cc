@@ -203,8 +203,8 @@ String::String(int x)
         assign_memo(int_data + 2 * x, 1, 0);
     else {
         char buf[128];
-        sprintf(buf, "%d", x);
-        assign(buf, -1, false);
+        int len = snprintf(buf, sizeof(buf), "%d", x);
+        assign(buf, len, false);
     }
 }
 
@@ -215,8 +215,8 @@ String::String(unsigned x)
         assign_memo(int_data + 2 * x, 1, 0);
     else {
         char buf[128];
-        sprintf(buf, "%u", x);
-        assign(buf, -1, false);
+        int len = snprintf(buf, sizeof(buf), "%u", x);
+        assign(buf, len, false);
     }
 }
 
@@ -227,8 +227,8 @@ String::String(long x)
         assign_memo(int_data + 2 * x, 1, 0);
     else {
         char buf[128];
-        sprintf(buf, "%ld", x);
-        assign(buf, -1, false);
+        int len = snprintf(buf, sizeof(buf), "%ld", x);
+        assign(buf, len, false);
     }
 }
 
@@ -239,15 +239,15 @@ String::String(unsigned long x)
         assign_memo(int_data + 2 * x, 1, 0);
     else {
         char buf[128];
-        sprintf(buf, "%lu", x);
-        assign(buf, -1, false);
+        int len = snprintf(buf, sizeof(buf), "%lu", x);
+        assign(buf, len, false);
     }
 }
 
 String::String(double x)
 {
     char buf[128];
-    int len = sprintf(buf, "%.12g", x);
+    int len = snprintf(buf, sizeof(buf), "%.12g", x);
     assign(buf, len, false);
 }
 
@@ -589,7 +589,7 @@ hard_printable(const String &s, int pos, int type)
         else if (x[pos] < 32 && type != 1)
             sa << '^' << (unsigned char)(x[pos] + 64);
         else if (char *buf = sa.extend(4, 1))
-            sprintf(buf, "\\%03o", x[pos]);
+            snprintf(buf, 5, "\\%03o", x[pos]);
     }
     return sa.take_string();
 }

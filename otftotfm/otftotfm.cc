@@ -566,7 +566,7 @@ String Printer::render(double value) const {
         return String(value);
     else {
         char buf[128];
-        sprintf(buf, "%.4f", value);
+        snprintf(buf, sizeof(buf), "%.4f", value);
         return String(buf);
     }
 }

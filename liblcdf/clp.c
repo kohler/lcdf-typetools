@@ -2107,7 +2107,7 @@ Clp_vbsprintf(Clp_Parser *clp, Clp_BuildString *bs,
             goto char_c;
 
           char_c:
-            if (ENSURE_BUILD_STRING(bs, 4)) {
+            if (ENSURE_BUILD_STRING(bs, 5)) {
                 if (c >= 32 && c <= 126)
                     *bs->pos++ = c;
                 else if (c < 32) {
@@ -2116,7 +2116,7 @@ Clp_vbsprintf(Clp_Parser *clp, Clp_BuildString *bs,
                 } else if (cli->utf8 && c >= 127 && c < 0x110000) {
                     bs->pos = encode_utf8(bs->pos, 4, c);
                 } else if (c >= 127 && c <= 255) {
-                    sprintf(bs->pos, "\\%03o", c & 0xFF);
+                    snprintf(bs->pos, 5, "\\%03o", c & 0xFF);
                     bs->pos += 4;
                 } else {
                     *bs->pos++ = '\\';
@@ -2128,8 +2128,7 @@ Clp_vbsprintf(Clp_Parser *clp, Clp_BuildString *bs,
           case 'd': {
               int d = va_arg(val, int);
               if (ENSURE_BUILD_STRING(bs, 32)) {
-                  sprintf(bs->pos, "%d", d);
-                  bs->pos = strchr(bs->pos, 0);
+                  bs->pos += snprintf(bs->pos, 32, "%d", d);
               }
               break;
           }

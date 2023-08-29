@@ -556,9 +556,9 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
             else if (c < 0 || c >= 256)
                 strcpy(numbuf, "(bad char)");
             else if (c < 32 || c >= 0177)
-                sprintf(numbuf, "\\%03o", c);
+                snprintf(numbuf, sizeof(numbuf), "\\%03o", c);
             else
-                sprintf(numbuf, "%c", c);
+                snprintf(numbuf, sizeof(numbuf), "%c", c);
             s1 = numbuf;
             s2 = strchr(numbuf, 0);
             break;
@@ -695,11 +695,11 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
             if (flags & cf_alternate_form)
                 *f++ = '#';
             if (precision >= 0)
-                f += sprintf(f, ".%d", precision);
+                f += snprintf(f, 72, ".%d", precision);
             *f++ = s[-1];
             *f++ = 0;
 
-            int len = sprintf(new_numbuf, format, va_arg(val, double));
+            int len = snprintf(new_numbuf, sizeof(new_numbuf), format, va_arg(val, double));
 
             s2 = numbuf + NUMBUF_SIZE;
             s1 = s2 - len;

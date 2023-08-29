@@ -350,8 +350,9 @@ particular purpose.\n");
   MultipleMasterSpace *mmspace = amfm->mmspace();
 #if MMAFM_RUN_MMPFB
   if (!mmspace->check_intermediate()) {
-    char *buf = new char[amfm->font_name().length() + 30];
-    sprintf(buf, "mmpfb -q --amcp-info '%s'", amfm->font_name().c_str());
+    size_t bufsz = amfm->font_name().length() + 30;
+    char *buf = new char[bufsz];
+    snprintf(buf, bufsz, "mmpfb -q --amcp-info '%s'", amfm->font_name().c_str());
 
     FILE *f = popen(buf, "r");
     if (f) {
@@ -405,12 +406,13 @@ particular purpose.\n");
       time_t cur_time = time(0);
       char *time_str = ctime(&cur_time);
       int time_len = strlen(time_str) - 1;
-      char *buf = new char[strlen(VERSION) + time_len + 100];
-      sprintf(buf, "Interpolated by mmafm-%s on %.*s.", VERSION,
-              time_len, time_str);
+      size_t bufsz = strlen(VERSION) + time_len + 100;
+      char* buf = new char[bufsz];
+      snprintf(buf, bufsz, "Interpolated by mmafm-%s on %.*s.", VERSION,
+               time_len, time_str);
 #else
-      char *buf = new char[strlen(VERSION) + 100];
-      sprintf(buf, "Interpolated by mmafm-%s.", VERSION);
+      char* buf = new char[strlen(VERSION) + 100];
+      snprintf(buf, strlen(VERSION) + 100, "Interpolated by mmafm-%s.", VERSION);
 #endif
 
       afm_xt->opening_comments.push_back(buf);

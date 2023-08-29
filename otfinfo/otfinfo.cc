@@ -527,9 +527,9 @@ do_query_unicode(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* re
         for (std::pair<uint32_t, int>* it = u2g.begin(); it != u2g.end(); ++it) {
             char name[10];
             if (it->first < 0x10000)
-                sprintf(name, "uni%04X", it->first);
+                snprintf(name, sizeof(name), "uni%04X", it->first);
             else
-                sprintf(name, "u%X", it->first);
+                snprintf(name, sizeof(name), "u%X", it->first);
             if (it->second < glyph_names.size())
                 result_errh->message("%s %d %s\n", name, it->second, glyph_names[it->second].c_str());
             else

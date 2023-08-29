@@ -230,7 +230,7 @@ StringAccum&
 operator<<(StringAccum& sa, long i)
 {
     if (char* x = sa.reserve(24)) {
-        int len = sprintf(x, "%ld", i);
+        int len = snprintf(x, 24, "%ld", i);
         sa.adjust_length(len);
     }
     return sa;
@@ -243,7 +243,7 @@ StringAccum&
 operator<<(StringAccum& sa, unsigned long u)
 {
     if (char* x = sa.reserve(24)) {
-        int len = sprintf(x, "%lu", u);
+        int len = snprintf(x, 24, "%lu", u);
         sa.adjust_length(len);
     }
     return sa;
@@ -253,7 +253,7 @@ StringAccum&
 operator<<(StringAccum& sa, double d)
 {
     if (char* x = sa.reserve(256)) {
-        int len = sprintf(x, StringAccum::double_format, d);
+        int len = snprintf(x, 256, StringAccum::double_format, d);
         sa.adjust_length(len);
     }
     return sa;

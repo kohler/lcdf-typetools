@@ -274,8 +274,7 @@ vpermprintf(const char *s, va_list val)
                   // FIXME FIXME rewrite for sense
                   double x = va_arg(val, double);
                   char buffer[1000];
-                  int len;
-                  sprintf(buffer, "%.10g%n", x, &len);
+                  int len = snprintf(buffer, sizeof(buffer), "%.10g", x);
                   extend(len);
                   strcpy(psc + pspos, buffer);
                   pspos += len;

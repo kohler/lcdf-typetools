@@ -436,12 +436,13 @@ particular purpose.\n");
     time_t cur_time = time(0);
     char *time_str = ctime(&cur_time);
     int time_len = strlen(time_str) - 1;
-    char *buf = new char[strlen(VERSION) + time_len + 100];
-    sprintf(buf, "%%%% Interpolated by mmpfb-%s on %.*s.", VERSION,
-            time_len, time_str);
+    size_t bufsz = strlen(VERSION) + time_len + 100;
+    char* buf = new char[bufsz];
+    snprintf(buf, bufsz, "%%%% Interpolated by mmpfb-%s on %.*s.", VERSION,
+             time_len, time_str);
 #else
-    char *buf = new char[strlen(VERSION) + 100];
-    sprintf(buf, "%%%% Interpolated by mmpfb-%s.", VERSION);
+    char* buf = new char[strlen(VERSION) + 100];
+    snprintf(buf, strlen(VERSION) + 100, "%%%% Interpolated by mmpfb-%s.", VERSION);
 #endif
 
     t1font->add_header_comment(buf);
