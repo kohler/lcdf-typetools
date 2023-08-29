@@ -1,6 +1,11 @@
 LCDF Typetools NEWS
 ===================
 
+## Version 2.109 – 29.Aug.2023
+
+* Change output to avoid triggering pdftex bug.
+
+
 ## Version 2.108 – 27.Jan.2019
 
 * Handle more fonts.
