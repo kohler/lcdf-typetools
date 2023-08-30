@@ -80,6 +80,7 @@ const Clp_Option options[] = {
     { "dump-table", 'T', DUMP_TABLE_OPT, Clp_ValString, 0 },
     { "unicode", 'u', QUERY_UNICODE_OPT, 0, 0 },
     { "variable", 0, QUERY_VARIABLE_OPT, 0, 0 },
+    { "variations", 0, QUERY_VARIABLE_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
 };
@@ -587,14 +588,27 @@ do_query_variable(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* r
         StringAccum sa;
         for (int i = 0; i != naxes; ++i) {
             OpenType::Axis ax = fvar.axis(i);
-            sa << "Axis " << i << ":         " << ax.tag().text();
+            sa << "Axis " << i << ":                 " << ax.tag().text() << "\n";
             if (name.ok() && ax.nameid() && (s = name.english_name(ax.nameid()))) {
-                sa << " " << s;
+                sa << "Axis " << i << " name:            " << s << "\n";
             }
-            sa << "\n";
-            sa << "Axis " << i << " range:   " << ax.min_value() << " " << ax.max_value() << "\n";
-            sa << "Axis " << i << " default: " << ax.default_value() << "\n";
+            sa << "Axis " << i << " range:           " << ax.min_value() << " " << ax.max_value() << "\n";
+            sa << "Axis " << i << " default:         " << ax.default_value() << "\n";
         }
+
+        int ninstances = fvar.ninstances();
+        for (int i = 0; i != ninstances; ++i) {
+            OpenType::FvarInstance in = fvar.instance(i);
+            const char* sp = i < 10 ? "  " : " ";
+            if (name.ok() && in.nameid() && (s = name.english_name(in.nameid()))) {
+                sa << "Instance " << i << " name:      " << sp << s << "\n";
+            }
+            sa << "Instance " << i << " position: " << sp;
+            for (int j = 0; j != naxes; ++j)
+                sa << " " << in.coord(j);
+            sa << "\n";
+        }
+
         result_errh->message("%s", sa.c_str());
     } catch (OpenType::Error) {
     }

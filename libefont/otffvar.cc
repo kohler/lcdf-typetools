@@ -23,17 +23,13 @@
 #include <string.h>
 #include <efont/otfdata.hh>     // for ntohl()
 
-#define USHORT_AT(d)            (Data::u16_aligned(d))
-#define SHORT_AT(d)             (Data::s16_aligned(d))
-#define ULONG_AT(d)             (Data::u32_aligned(d))
-#define ULONG_AT2(d)            (Data::u32_aligned16(d))
-
 namespace Efont { namespace OpenType {
 
-Fvar::Fvar(const Data& d)
-    : _d(d)
+Fvar::Fvar(Data d)
+    : _id(nullptr)
 {
-    _d.align_long();
+    d.align_long();
+    _d = d.udata();
     // USHORT   majorVersion
     // USHORT   minorVersion
     // OFFSET16 axesArrayOffset
@@ -42,17 +38,25 @@ Fvar::Fvar(const Data& d)
     // USHORT   axisSize
     // USHORT   instanceCount
     // USHORT   instanceSize
-    if (_d.length() == 0)
+    if (d.length() == 0)
         throw BlankTable("fvar");
-    if (_d.u16(0) != 1
-        || _d.length() < HEADER_SIZE
-        || _d.u16(X_AXISOFF) < HEADER_SIZE
-        || (_d.u16(X_AXISOFF) % 2) != 0
-        || _d.u16(X_AXISCOUNT) == 0
-        || _d.u16(X_AXISSIZE) < AXIS_SIZE
-        || (_d.u16(X_AXISSIZE) % 2) != 0
-        || _d.u16(X_AXISOFF) + _d.u16(X_AXISCOUNT) * _d.u16(X_AXISSIZE) > _d.length())
+    if (d.length() < HEADER_SIZE
+        || d.u16(0) != 1)
         throw Format("fvar");
+    int axoff = d.u16(X_AXISOFF), nax = d.u16(X_AXISCOUNT),
+        axsz = d.u16(X_AXISSIZE);
+    if (axoff < HEADER_SIZE
+        || (axoff % 2) != 0
+        || nax == 0
+        || axsz < AXIS_SIZE
+        || (axsz % 2) != 0
+        || axoff + nax * axsz > d.length())
+        throw Format("fvar");
+    int nin = d.u16(X_INSTANCECOUNT), insz = d.u16(X_INSTANCESIZE);
+    if (insz >= 4 + nax * 4
+        && (insz % 2) == 0
+        && axoff + axsz * nax + insz * nin <= d.length())
+        _id = _d + axoff + axsz * nax;
 }
 
 }}
