@@ -31,10 +31,10 @@ class Name { public:
     typedef uint8_t namerecord_t[NAMEREC_SIZE];
     typedef const namerecord_t *const_iterator;
 
-    inline static int nameid(const namerecord_t &);
-    inline static int platform(const namerecord_t &);
-    inline static int encoding(const namerecord_t &);
-    inline static int language(const namerecord_t &);
+    inline static int nameid(const namerecord_t&);
+    inline static int platform(const namerecord_t&);
+    inline static int encoding(const namerecord_t&);
+    inline static int language(const namerecord_t&);
 
     inline const_iterator begin() const;
     inline const_iterator end() const;
@@ -47,14 +47,14 @@ class Name { public:
 
     struct PlatformPred {
         inline PlatformPred(int nameid, int platform = -1, int encoding = -1, int language = -1);
-        inline bool operator()(const namerecord_t &) const;
+        inline bool operator()(const namerecord_t&) const;
       private:
         int _nameid, _platform, _encoding, _language;
     };
 
     struct EnglishPlatformPred {
         EnglishPlatformPred(int nameid) : _nameid(nameid) { }
-        inline bool operator()(const namerecord_t &) const;
+        inline bool operator()(const namerecord_t&) const;
       private:
         int _nameid;
     };
@@ -69,19 +69,19 @@ class Name { public:
 };
 
 
-inline int Name::nameid(const namerecord_t &nr) {
+inline int Name::nameid(const namerecord_t& nr) {
     return Data::u16_aligned(reinterpret_cast<const unsigned char*>(&nr) + 6);
 }
 
-inline int Name::platform(const namerecord_t &nr) {
+inline int Name::platform(const namerecord_t& nr) {
     return Data::u16_aligned(reinterpret_cast<const unsigned char*>(&nr));
 }
 
-inline int Name::encoding(const namerecord_t &nr) {
+inline int Name::encoding(const namerecord_t& nr) {
     return Data::u16_aligned(reinterpret_cast<const unsigned char*>(&nr) + 2);
 }
 
-inline int Name::language(const namerecord_t &nr) {
+inline int Name::language(const namerecord_t& nr) {
     return Data::u16_aligned(reinterpret_cast<const unsigned char*>(&nr) + 4);
 }
 
@@ -102,14 +102,14 @@ inline Name::PlatformPred::PlatformPred(int nid, int p, int e, int l)
     : _nameid(nid), _platform(p), _encoding(e), _language(l) {
 }
 
-inline bool Name::PlatformPred::operator()(const namerecord_t &i) const {
+inline bool Name::PlatformPred::operator()(const namerecord_t& i) const {
     return (_nameid == nameid(i))
         && (_platform < 0 || _platform == platform(i))
         && (_encoding < 0 || _encoding == encoding(i))
         && (_language < 0 || _language == language(i));
 }
 
-inline bool Name::EnglishPlatformPred::operator()(const namerecord_t &i) const {
+inline bool Name::EnglishPlatformPred::operator()(const namerecord_t& i) const {
     if (_nameid == nameid(i)) {
         int p = platform(i), e = encoding(i), l = language(i);
         return (p == P_MACINTOSH && e == E_MAC_ROMAN && l == 0)
