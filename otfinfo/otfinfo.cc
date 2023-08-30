@@ -16,6 +16,7 @@
 #endif
 #include <efont/psres.hh>
 #include <efont/otfcmap.hh>
+#include <efont/otffvar.hh>
 #include <efont/otfgsub.hh>
 #include <efont/otfgpos.hh>
 #include <efont/otfname.hh>
@@ -60,6 +61,7 @@ using namespace Efont;
 #define INFO_OPT                328
 #define DUMP_TABLE_OPT          329
 #define QUERY_UNICODE_OPT       330
+#define QUERY_VARIABLE_OPT      331
 
 const Clp_Option options[] = {
     { "script", 0, SCRIPT_OPT, Clp_ValString, 0 },
@@ -77,6 +79,7 @@ const Clp_Option options[] = {
     { "tables", 't', TABLES_OPT, 0, 0 },
     { "dump-table", 'T', DUMP_TABLE_OPT, Clp_ValString, 0 },
     { "unicode", 'u', QUERY_UNICODE_OPT, 0, 0 },
+    { "variable", 0, QUERY_VARIABLE_OPT, 0, 0 },
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 0, VERSION_OPT, 0, 0 },
 };
@@ -126,6 +129,7 @@ Query options:\n\
   -g, --glyphs                 Report font%,s glyph names.\n\
   -t, --tables                 Report font%,s OpenType tables.\n\
   -u, --unicode                Report font%,s supported Unicode code points.\n\
+      --variable               Report variable font information.\n\
   -T, --dump-table NAME        Output font%,s %<NAME%> table.\n\
 \n\
 Other options:\n\
@@ -535,6 +539,7 @@ do_query_unicode(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* re
     else if (otf.table("post"))
         do_query_glyphs_post(otf, errh, glyph_names);
 
+    int before_nerrors = errh->nerrors();
     try {
         OpenType::Cmap cmap(otf.table("cmap"), errh);
         if (!cmap.ok())
@@ -555,6 +560,43 @@ do_query_unicode(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* re
                 result_errh->message("%s %d\n", name, it->second);
         }
     } catch (OpenType::Error) {
+        if (errh->nerrors() == before_nerrors)
+            errh->message("corrupted tables");
+    }
+}
+
+static void
+do_query_variable(const OpenType::Font& otf, ErrorHandler* errh, ErrorHandler* result_errh)
+{
+    if (!otf.table("fvar")) {
+        result_errh->message("Not a variable font\n");
+        return;
+    }
+
+    int before_nerrors = errh->nerrors();
+    try {
+        OpenType::Fvar fvar(otf.table("fvar"));
+        int naxes = fvar.naxes();
+        if (naxes == 0) {
+            result_errh->message("Not a variable font\n");
+            return;
+        }
+
+        OpenType::Name name(otf.table("name"));
+        String s;
+        StringAccum sa;
+        for (int i = 0; i != naxes; ++i) {
+            OpenType::Axis ax = fvar.axis(i);
+            sa << "Axis " << i << ":         " << ax.tag().text();
+            if (name.ok() && ax.nameid() && (s = name.english_name(ax.nameid()))) {
+                sa << " " << s;
+            }
+            sa << "\n";
+            sa << "Axis " << i << " range:   " << ax.min_value() << " " << ax.max_value() << "\n";
+            sa << "Axis " << i << " default: " << ax.default_value() << "\n";
+        }
+        result_errh->message("%s", sa.c_str());
+    } catch (OpenType::Error) {
     }
 }
 
@@ -572,7 +614,7 @@ do_tables(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_er
             }
     } catch (OpenType::Error) {
         if (errh->nerrors() == before_nerrors)
-            result_errh->message("corrupted tables");
+            errh->message("corrupted tables");
     }
 }
 
@@ -638,6 +680,7 @@ main(int argc, char *argv[])
           case QUERY_FAMILY_OPT:
           case QUERY_FVERSION_OPT:
         case QUERY_UNICODE_OPT:
+        case QUERY_VARIABLE_OPT:
           case TABLES_OPT:
           case INFO_OPT:
             if (query)
@@ -734,6 +777,8 @@ particular purpose.\n");
             do_query_family_name(otf, &cerrh, result_errh);
         else if (query == QUERY_FVERSION_OPT)
             do_query_font_version(otf, &cerrh, result_errh);
+        else if (query == QUERY_VARIABLE_OPT)
+            do_query_variable(otf, &cerrh, result_errh);
         else if (query == TABLES_OPT)
             do_tables(otf, &cerrh, result_errh);
         else if (query == DUMP_TABLE_OPT)

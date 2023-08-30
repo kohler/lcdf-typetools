@@ -132,6 +132,19 @@ Print each Unicode code point supported by the font, followed by the glyph numbe
 representing that code point (and, if present, the name of the corresponding glyph).
 .Sp
 .TP 5
+.BR \-\-variable
+Print information about a variable font's variation axes, including their
+names and parameter ranges. For example:
+.nf
+  Axis 0:         wght Weight
+  Axis 0 range:   300 800
+  Axis 0 default: 400
+  Axis 1:         wdth Width
+  Axis 1 range:   75 100
+  Axis 1 default: 100
+.fi
+.Sp
+.TP 5
 .BR \-t ", " \-\-tables
 Print the size and name of every OpenType table in the font. For example:
 .nf
