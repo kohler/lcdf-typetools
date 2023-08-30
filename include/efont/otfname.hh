@@ -23,7 +23,8 @@ class Name { public:
                   N_PREF_SUBFAMILY = 17, N_MAC_COMPAT_FULLNAME = 18,
                   N_SAMPLE_TEXT = 19, N_POSTSCRIPT_CID = 20 };
     enum Platform { P_UNICODE = 0, P_MACINTOSH = 1, P_MICROSOFT = 3,
-                    E_MS_UNICODE_BMP = 1, E_MAC_ROMAN = 0,
+                    E_MS_UNICODE_BMP = 1, E_MS_UNICODE_FULL = 10,
+                    E_MAC_ROMAN = 0,
                     L_MS_ENGLISH_AMERICAN = 0x409 };
     enum { HEADER_SIZE = 6, NAMEREC_SIZE = 12 };
 
@@ -112,7 +113,8 @@ inline bool Name::EnglishPlatformPred::operator()(const namerecord_t &i) const {
     if (_nameid == nameid(i)) {
         int p = platform(i), e = encoding(i), l = language(i);
         return (p == P_MACINTOSH && e == E_MAC_ROMAN && l == 0)
-            || (p == P_MICROSOFT && e == E_MS_UNICODE_BMP && l == L_MS_ENGLISH_AMERICAN);
+            || (p == P_MICROSOFT && e == E_MS_UNICODE_BMP && l == L_MS_ENGLISH_AMERICAN)
+            || (p == P_MICROSOFT && e == E_MS_UNICODE_FULL && l == L_MS_ENGLISH_AMERICAN);
     } else
         return false;
 }
