@@ -28,7 +28,7 @@ AC_ARG_ENABLE([adobe-code],
   [AS_HELP_STRING([--disable-adobe-code], [do not include Adobe code])],
   [], [enable_adobe_code=yes])
 if test "$enable_adobe_code" = yes; then
-   AC_DEFINE([HAVE_ADOBE_CODE], [1], [Define to incldue Adobe code in output fonts.])
+   AC_DEFINE([HAVE_ADOBE_CODE], [1], [Define to include Adobe code in output fonts.])
 fi
 
 
@@ -133,6 +133,21 @@ if test "$ac_cv_good_new_hdr" = yes; then
    AC_DEFINE([HAVE_NEW_HDR], [1], [Define if <new> exists and works.])
 fi
 AC_CHECK_HEADERS([new.h])
+
+dnl `nullptr`
+AC_MSG_CHECKING([for nullptr])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[
+  int* x = nullptr;
+  return !!x;
+]])],[AC_MSG_RESULT([supported])],[AC_MSG_RESULT([not supported])
+  AC_MSG_CHECKING([for nullptr with -std=gnu++11])
+  OLD_CXX="$CXX"
+  CXX="$CXX -std=gnu++11"
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[
+    int* x = nullptr;
+    return !!x;
+  ]])],[AC_MSG_RESULT([supported])],[AC_MSG_RESULT([not supported])
+    AC_MSG_ERROR([The $OLD_CXX compiler does not support the C++11 `nullptr` keyword.])])])
 
 
 dnl
