@@ -7,6 +7,7 @@ else
     thisdir="`pwd`/$thisdir"
 fi
 thisdir=`echo "$thisdir" | sed -e 's,/*$,/,' | sed -e 's,/\./,/,'`
+ekaenc=$HOME/texmf/dvips/eka.enc
 
 run () {
     echo + "$@" 1>&2
@@ -16,7 +17,7 @@ run () {
 dofont () {
     fontname="$1"
     shift
-    encoding=eka
+    encoding=$ekaenc
     if expr "$fontname" : ".*--7t" >/dev/null 2>&1; then
 	encoding=7t
     fi
@@ -30,7 +31,7 @@ dofont () {
 }
 
 # more recent releases of MinionPro have different features
-font="$HOME/fonts/+OTF/MinionPro/MinionPro-Regular-1.011.otf"
+font="$HOME/fonts/MinionPro/MinionPro-Regular-1.011.otf"
 otfinfo -v $font > MinionPro-Regular-version.txt
 dofont MinioProReg--eka -fkern -fliga
 dofont MinioProReg--eka--Fsmcp -fkern -fliga -fsmcp
@@ -51,7 +52,7 @@ dofont MinioProReg--eka--Fornm -fornm
 dofont MinioProReg--eka--Fc2sc -fkern -fliga -fc2sc
 dofont MinioProReg--7t--Ffrac--Fordn -fkern -fliga -ffrac -fordn
 
-font="$HOME/fonts/+OTF/MinionPro/MinionPro-It-1.011.otf"
+font="$HOME/fonts/MinionPro/MinionPro-It-1.011.otf"
 otfinfo -v $font > MinionPro-It-version.txt
 dofont MinioProIt--eka -fkern -fliga
 dofont MinioProIt--eka--Fsmcp -fkern -fliga -fsmcp
@@ -73,7 +74,7 @@ dofont MinioProIt--eka--Fornm -fornm
 dofont MinioProIt--eka--Fc2sc -fkern -fliga -fc2sc
 dofont MinioProIt--7t--Ffrac--Fordn -fkern -fliga -ffrac -fordn
 
-font="$HOME/fonts/+OTF/WarnockPro/WarnockPro-Regular.otf"
+font="$HOME/fonts/WarnockPro/WarnockPro-Regular.otf"
 otfinfo -v $font > WarnockPro-Regular-version.txt
 dofont WarnoProReg--eka -fkern -fliga
 dofont WarnoProReg--eka--Fsmcp -fkern -fliga -fsmcp
@@ -94,7 +95,7 @@ dofont WarnoProReg--eka--Fornm -fornm
 dofont WarnoProReg--eka--Fc2sc -fkern -fliga -fc2sc
 dofont WarnoProReg--7t--Ffrac--Fordn -fkern -fliga -ffrac -fordn
 
-font="$HOME/fonts/+OTF/WarnockPro/WarnockPro-It.otf"
+font="$HOME/fonts/WarnockPro/WarnockPro-It.otf"
 otfinfo -v $font > WarnockPro-It-version.txt
 dofont WarnoProIt--eka -fkern -fliga
 dofont WarnoProIt--eka--Fsmcp -fkern -fliga -fsmcp
@@ -116,10 +117,10 @@ dofont WarnoProIt--eka--Fornm -fornm
 dofont WarnoProIt--eka--Fc2sc -fkern -fliga -fc2sc
 dofont WarnoProIt--7t--Ffrac--Fordn -fkern -fliga -ffrac -fordn
 
-font="$HOME/fonts/+OTF/MyriadPro/MyriadPro-Regular.otf"
+font="$HOME/fonts/MyriadPro/MyriadPro-Regular.otf"
 dofont MyriaProReg--eka -fkern -fliga
 
-font="$HOME/fonts/+OTF/MyriadPro/MyriadPro-Bold.otf"
+font="$HOME/fonts/MyriadPro/MyriadPro-Bold.otf"
 dofont MyriaProBol--eka -fkern -fliga
 
 updmap
