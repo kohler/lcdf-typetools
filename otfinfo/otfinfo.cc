@@ -22,6 +22,7 @@
 #include <efont/otfname.hh>
 #include <efont/otfos2.hh>
 #include <efont/otfpost.hh>
+#include <efont/ttfhead.hh>
 #include <efont/cff.hh>
 #include <lcdf/clp.h>
 #include <lcdf/error.hh>
@@ -470,6 +471,20 @@ do_info(const OpenType::Font &otf, ErrorHandler *errh, ErrorHandler *result_errh
             if ((emb & 0x200) != 0) {
                 sa << ", Bitmap only";
             }
+            sa << "\n";
+        }
+    }
+
+    if (String head_table = otf.table("head")) {
+        OpenType::Head head(head_table, errh);
+        if (head.ok()) {
+            sa.snprintf(80, "Font revision:       %.5f", head.font_revision());
+            int len = sa.length();
+            while (sa[len - 1] == '0' && sa[len - 2] != '.') {
+                --len;
+            }
+            sa.set_length(len);
+            sa << '\n';
         }
     }
 

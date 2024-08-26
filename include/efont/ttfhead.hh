@@ -16,6 +16,7 @@ class Head { public:
 
     unsigned units_per_em() const;
     unsigned index_to_loc_format() const;
+    double font_revision() const;
 
   private:
 
@@ -29,12 +30,17 @@ class Head { public:
 
 inline unsigned Head::units_per_em() const
 {
-    return (_error >= 0 ? _d.u16(18) : 0);
+    return _error >= 0 ? _d.u16(18) : 0;
 }
 
 inline unsigned Head::index_to_loc_format() const
 {
-    return (_error >= 0 ? _d.u16(50) : 0);
+    return _error >= 0 ? _d.u16(50) : 0;
+}
+
+inline double Head::font_revision() const
+{
+    return _error >= 0 ? _d.fixed(4) : 0.0;
 }
 
 }}
