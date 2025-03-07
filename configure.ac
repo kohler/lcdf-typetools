@@ -307,8 +307,9 @@ Cannot find a definition for ntohs and/or ntohl!
 =========================================])
 fi
 AC_LANG([C])
-AC_SEARCH_LIBS([ntohs], [-lnet -lwinsock32])
-
+AC_SEARCH_LIBS([ntohs], [ws2_32 net winsock32], [], [
+    AC_MSG_ERROR([Cannot find a library providing ntohs])
+])
 
 dnl
 dnl is va_list addressable?
