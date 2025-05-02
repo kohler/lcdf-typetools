@@ -122,28 +122,35 @@ static void
 fprint_sfnts(FILE *f, const String &data, bool glyf, const OpenType::Font &font)
 {
     OpenType::Data head = font.table("head");
-    bool loca_long = (head.length() >= 52 && head.u16(50) != 0);
-    // Do not split fonts with long offsets -- Werner Lemberg
-    if (glyf && data.length() >= 65535 && !loca_long) {
+    if (glyf && data.length() >= 65535) {
         OpenType::Data loca = font.table("loca");
+        bool loca_long = (head.length() >= 52 && head.u16(50) != 0);
         int loca_size = (loca_long ? 4 : 2);
-        uint32_t first_offset = 0;
-        for (int i = 1; i * loca_size < loca.length(); i++) {
-            uint32_t next_offset = (loca_long ? loca.u32(4*i) : loca.u16(2*i) * 2);
-            if (next_offset - first_offset >= 65535) {
-                uint32_t prev_offset = (loca_long ? loca.u32(4*i - 4) : loca.u16(2*i - 2) * 2);
-                fprint_sfnts(f, data.substring(first_offset, prev_offset - first_offset), false, font);
-                first_offset = prev_offset;
+        uint32_t first_offset = 0, cut_offset = 0;
+        for (int i = 1; i * loca_size < loca.length(); ++i) {
+            uint32_t offset = (loca_long ? loca.u32(4*i) : loca.u16(2*i) * 2);
+            if (offset - first_offset >= 65535) {
+                if (cut_offset == first_offset) {
+                    // either single glyph >= 65535 bytes, or offsets not even:
+                    // divide up to `offset`
+                    cut_offset = offset;
+                }
+                fprint_sfnts(f, data.substring(first_offset, cut_offset - first_offset), false, font);
+                first_offset = cut_offset;
+            }
+            if ((offset - first_offset) % 2 == 0) {
+                cut_offset = offset;
             }
         }
         fprint_sfnts(f, data.substring(first_offset), false, font);
     } else if (data.length() >= 65535) {
-        for (int offset = 0; offset < data.length(); ) {
-            int next_offset = offset + 65534;
-            if (next_offset > data.length())
-                next_offset = data.length();
-            fprint_sfnts(f, data.substring(offset, next_offset - offset), false, font);
-            offset = next_offset;
+        for (uint32_t offset = 0; offset < data.length(); ) {
+            uint32_t cut_offset = offset + 65534;
+            if (cut_offset > data.length()) {
+                cut_offset = data.length();
+            }
+            fprint_sfnts(f, data.substring(offset, cut_offset - offset), false, font);
+            offset = cut_offset;
         }
     } else {
         fputc('<', f);
